@@ -1,0 +1,16 @@
+[project]
+name = "tofscope-prototype"
+version = "0.1.0"
+description = "Local browser prototype for Tofwerk FIB-ToF-SIMS exploration"
+requires-python = ">=3.11"
+dependencies = [
+    "h5py>=3.11",
+    "numpy>=2.0",
+    "marimo>=0.25.1",
+    "plotly>=6.0",
+    "anywidget>=0.11.0",
+]
+
+[dependency-groups]
+dev = ["playwright>=1.50"]
+
