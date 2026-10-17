@@ -2,6 +2,8 @@
 import unittest
 import csv
 import io
+import tempfile
+from pathlib import Path
 from unittest.mock import patch, Mock
 import numpy as np
 from plots import profile_plot, front_projection
@@ -10,14 +12,16 @@ from workspace import ExplorerWorkspace
 
 class ComparisonTests(unittest.TestCase):
     def setUp(self):
-        self.meta = dict(path='example.h5', name='example.h5', bytes=1, shape=(5,2,2,6),
+        directory=tempfile.TemporaryDirectory();self.addCleanup(directory.cleanup)
+        path=Path(directory.name).resolve()/'example.h5';path.touch()
+        self.meta = dict(path=str(path), name='example.h5', bytes=1, shape=(5,2,2,6),
             fov_um=None, raw_shape=(5,2,2), image_names=[], masses=np.arange(10.), spectrum=np.ones(10),
             peaks=[dict(index=i, mass=float(i+1), low=i+.5, high=i+1.5, label=f'ion{i}') for i in range(6)])
         self.patches = [patch('workspace.inspect_file',return_value=self.meta),
             patch('workspace.stored_peak',side_effect=lambda path,index:np.full((5,2,2),index+1.,dtype=np.float32)),
             patch('workspace.get_plotlyjs',return_value=''),patch.object(ExplorerWorkspace,'figures',return_value={})]
         for p in self.patches: p.start(); self.addCleanup(p.stop)
-        self.w = ExplorerWorkspace('example.h5'); self.w.send=Mock()
+        self.w = ExplorerWorkspace(path); self.w.send=Mock()
 
     def event(self, name, **payload):
         self.w.handle_message(None,dict(event=name,payload=payload),None)

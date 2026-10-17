@@ -8,18 +8,19 @@ app = marimo.App(width="full", app_title="ToFScope")
 def _():
     import os
     import marimo as mo
-    from explorer import DEFAULT_FILE
+    from server_config import load_server_settings
     from workspace import ExplorerWorkspace
-    return os, mo, DEFAULT_FILE, ExplorerWorkspace
+    return os, mo, load_server_settings, ExplorerWorkspace
 
 
 @app.cell
-def _(os, mo, DEFAULT_FILE, ExplorerWorkspace):
+def _(os, mo, load_server_settings, ExplorerWorkspace):
     try:
-        workspace = ExplorerWorkspace(os.environ.get('TOF_FILE',str(DEFAULT_FILE)))
+        settings = load_server_settings(os.environ)
+        workspace = ExplorerWorkspace(settings.initial_file, settings=settings)
         view = mo.ui.anywidget(workspace)
     except (OSError,ValueError,KeyError) as exc:
-        view = mo.callout(f'Cannot open dataset: {exc}. Set TOF_FILE to a supported local HDF5 file.',kind='danger')
+        view = mo.callout(f'Cannot configure ToFScope: {exc}',kind='danger')
     view
     return
 

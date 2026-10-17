@@ -33,3 +33,14 @@ The order can change: items 2 and 6 are independent, and item 1 can precede item
 - What storage filesystem will host writable acquisitions, and which other processes may open them?
 
 These choices are recorded as proposals so the plans can be reviewed without mistaking them for confirmed client requirements. Execution is not started automatically.
+
+## Confirmed requirements — 2026-10-17
+
+- Execution continues in the recommended order; disjoint windows are complete.
+- Storage is a POSIX filesystem such as an NFS mount, configured on the server.
+- Depth calibration includes a fixed anchor at frame 0 / depth 0; interpolate
+  between known anchors and leave later uncalibrated depths unknown.
+- Atomic isotope ions suffice for the initial identification helper.
+- Write-back must expose new channels to commercial ToF-Explorer. A namespaced
+  extension alone is insufficient; native schema export and a commercial
+  round-trip are acceptance requirements. Test on disposable copies first.
