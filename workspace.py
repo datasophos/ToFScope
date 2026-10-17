@@ -8,6 +8,7 @@ from html import escape
 
 from signals import SignalRecipe,read_signal,interval_label
 from integration import canonical_intervals
+from server_config import ServerSettings, resolve_data_path
 
 import anywidget
 import numpy as np
@@ -25,8 +26,9 @@ class ExplorerWorkspace(anywidget.AnyWidget):
     plotly_js = traitlets.Unicode().tag(sync=True)
     interval_editor_js = traitlets.Unicode().tag(sync=True)
 
-    def __init__(self, path):
+    def __init__(self, path, settings=None):
         super().__init__()
+        self.settings=settings or ServerSettings(Path(path).expanduser().resolve().parent)
         self.revision = 0
         self.logarithmic = True
         self.relative = False
@@ -42,6 +44,8 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.on_msg(self.handle_message)
 
     def load_file(self, path):
+        # Constructor paths are internal; client open events resolve separately.
+        path=resolve_data_path(self.settings,str(Path(path).resolve().relative_to(self.settings.data_root)),require_file=True)
         meta = inspect_file(path)
         index = min(meta['peaks'], key=lambda p: abs(p['mass']-27))['index']
         volume = stored_peak(meta['path'], index)
@@ -63,6 +67,9 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.reset_draft(self.active_recipe.intervals)
         self.draft_frames = self.frames
         self.set_color_range()
+
+    def public_path(self):
+        return str(Path(self.meta['path']).relative_to(self.settings.data_root))
 
     def set_color_range(self):
         sample = self.volume[::max(1,len(self.volume)//64)]
@@ -134,7 +141,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
             self.send(dict(progress=dict(done=done,total=total)))
 
     def state(self):
-        return dict(name=self.meta['name'], path=self.meta['path'], shape=list(self.meta['shape']),
+        return dict(name=self.meta['name'], path=self.public_path(), shape=list(self.meta['shape']),
                     gib=round(self.meta['bytes']/2**30,2), peaks=self.meta['peaks'],
                     fov=self.meta['fov_um'], raw=self.meta['raw_shape'] is not None,
                     raw_shape=self.meta['raw_shape'], index=self.index, comparisons=self.comparisons, map_projection=self.map_projection,
@@ -408,7 +415,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 self.quality = p.get('quality',self.quality)
                 keys = ['ion','front','profile','xz','yz','volume']
             elif event == 'open':
-                self.load_file(p['path'])
+                self.load_file(resolve_data_path(self.settings,p['path'],require_file=True))
                 keys = None
             elif event == 'export':
                 self.export(p['format'])
@@ -441,7 +448,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
             filename,text = 'depth-profile.csv',out.getvalue()
         else:
             recipe=self.active_recipe.to_dict()
-            recipe.update(dataset=self.meta['path'],signal=self.label,frames_inclusive=selected_frames,
+            recipe.update(dataset=self.public_path(),signal=self.label,frames_inclusive=selected_frames,
                           loaded_frames_inclusive=self.frames,roi_pixels_inclusive=self.roi,
                           z_units='frame',fov_um=self.meta['fov_um'],comparisons=self.comparisons)
             if len(self.active_recipe.intervals)==1:

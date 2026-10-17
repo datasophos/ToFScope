@@ -1,6 +1,6 @@
 # ToFScope roadmap design brief
 
-Status: proposed design for six implementation plans; features are not implemented by this document.
+Status: execution approved; confirmed requirements dated 2026-10-17 in the roadmap index override earlier proposals.
 Source requirements: [TODO.md](../../../TODO.md). Inspect the current working tree, including the full-window UI changes after commit `54057cb`, before executing.
 
 ## Current architecture and evidence
@@ -31,7 +31,7 @@ Tiled mode shows at most four scenes per page, with paging and persistent layer/
 
 ## 2. On-server file browser
 
-Introduce immutable server settings with a data root, initial acquisition and write permission. Environment variables: `TOFSCOPE_DATA_ROOT`, existing `TOF_FILE`, and `TOFSCOPE_ALLOW_WRITES` (default false). When `TOFSCOPE_DATA_ROOT` is absent, the local demo root is `DEFAULT_FILE.parent` and the default initial file is `DEFAULT_FILE` if it exists. When a root is explicitly configured and `TOF_FILE` is absent, start unloaded in the browser. An explicit `TOF_FILE` must resolve inside the root or fail with a configuration error. Deployment instructions require explicitly setting the root.
+Introduce immutable server settings with a data root on a POSIX filesystem (including an NFS mount), initial acquisition and write permission. Environment variables: `TOFSCOPE_DATA_ROOT`, existing `TOF_FILE`, and `TOFSCOPE_ALLOW_WRITES` (default false). When `TOFSCOPE_DATA_ROOT` is absent, the local demo root is `DEFAULT_FILE.parent` and the default initial file is `DEFAULT_FILE` if it exists. When a root is explicitly configured and `TOF_FILE` is absent, start unloaded in the browser. An explicit `TOF_FILE` must resolve inside the root or fail with a configuration error. Deployment instructions require explicitly setting the root.
 
 The browser sends root-relative paths. Resolve and enforce the configured root for every listing, opening and future write operation, including legacy text-path events. Allow symlinks only when their resolved target stays under the root. Hide temporary/backup/internal files. The configured root is managed by a trusted server administrator; a root writable by hostile local processes needs additional filesystem isolation.
 
@@ -42,7 +42,7 @@ List one directory at a time, paginated, with breadcrumbs and name filtering; op
 Two levels must be distinguished:
 
 1. First deliverable: save recipe, full-XY integrated volume for its explicit frame coverage, provenance, and optional calibration into `/ToFScope/Integrations/<uuid>` in the same acquisition file. ToFScope discovers these records on reopening. Existing vendor groups remain unchanged.
-2. Later compatibility milestone: export into native `PeakData` only after proving exact vendor/reader schema requirements. Existing readers and commercial software are not assumed to discover the namespaced extension. A disjoint recipe cannot be honestly represented by one lower/upper bound spanning its gaps.
+2. Required acceptance milestone: export into native `PeakData` after proving exact vendor/reader schema requirements. Commercial ToF-Explorer must discover the saved channels; a namespaced extension alone does not meet the requirement. Existing readers and commercial software are not assumed to discover the namespaced extension. A disjoint recipe cannot be honestly represented by one lower/upper bound spanning its gaps.
 
 Default mutation strategy: acquire a per-file inter-process lock, check source identity, make a backup and sibling temporary copy, modify and verify the temporary file, recheck identity, and replace the original path with `os.replace` on the same filesystem. This is copy-and-replace at the original path, not an in-place HDF5 transaction. It preserves the original on ordinary pre-replacement failures, at the cost of disk space and time. Validate actual filesystem replacement/locking behavior before enabling it on a network or cloud-synchronized volume; no crash-durability claim is made beyond the tested environment.
 
@@ -72,7 +72,7 @@ The table shows isotope, predicted m/z, reference abundance/range, selected meas
 
 ## 6. Known-depth calibration
 
-Users assign physical depths to acquisition frames in an editable anchor table, or add an anchor at a clicked profile location. Require two distinct frames to activate calibration; keep zero/one anchors as an inactive draft. Sort by frame, reject duplicate frames/non-finite values, require depths to increase with frame, and support nm, µm and mm with canonical internal nm. Negative reference depths are allowed if the sequence increases.
+Users assign physical depths to acquisition frames in an editable anchor table, or add an anchor at a clicked profile location. Require two distinct frames to activate calibration; keep zero/one anchors as an inactive draft. Sort by frame, reject duplicate frames/non-finite values, require depths to increase with frame, and support nm, µm and mm with canonical internal nm. Frame 0 is always anchored to depth 0 and cannot be removed or changed. Additional anchors must have positive increasing depths.
 
 Use piecewise-linear interpolation between anchors. Outside the calibrated span return missing depth, with no extrapolation or clamping. A Frames/Depth toggle makes the known span explicit. Selecting in depth coordinates maps back to acquisition frames, preserving original sample intensities and inclusive frame selection. Removing anchors updates or disables the calibrated view without deleting data.
 
