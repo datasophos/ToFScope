@@ -16,6 +16,11 @@ from depth_calibration import DepthAnchor, DepthCalibration, validate_anchors, c
 from isotopes import load_catalog, find_candidates, IonCandidate, ion_mz
 from abundance import measure_isotopes
 from volume_layers import VolumeLayer,build_layer_previews,COLORSCALES
+from dataset_io import dataset_lock,file_identity,save_to_acquisition,required_space
+from integration_store import IntegrationRecord,list_saved_integrations,saved_integration_info
+from vendor_export import validate_native_recipe,validate_native_layout
+from uuid import uuid4
+import h5py
 
 import anywidget
 import numpy as np
@@ -36,6 +41,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
     depth_editor_js = traitlets.Unicode().tag(sync=True)
     peak_helper_js = traitlets.Unicode().tag(sync=True)
     volume_layers_js = traitlets.Unicode().tag(sync=True)
+    save_integration_js = traitlets.Unicode().tag(sync=True)
 
     def __init__(self, path=None, settings=None):
         super().__init__()
@@ -55,6 +61,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.depth_editor_js=(Path(__file__).parent/'web/depth_editor.js').read_text()
         self.peak_helper_js=(Path(__file__).parent/'web/peak_helper.js').read_text()
         self.volume_layers_js=(Path(__file__).parent/'web/volume_layers.js').read_text()
+        self.save_integration_js=(Path(__file__).parent/'web/save_integration.js').read_text()
         self.startup_error=None
         if path is not None:
             try:self.load_file(path)
@@ -68,6 +75,9 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.on_msg(self.handle_message)
 
     def load_file(self, path):
+        with dataset_lock(path):self._load_file(path)
+
+    def _load_file(self, path):
         # Constructor paths are internal; client open events resolve separately.
         path=resolve_data_path(self.settings,str(Path(path).resolve().relative_to(self.settings.data_root)),require_file=True)
         meta = inspect_file(path)
@@ -79,6 +89,8 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         if any(d<=0 for d in volume.shape):raise ValueError('Acquisition dimensions must be nonempty.')
         sample=volume[::max(1,len(volume)//64)];positive=sample[sample>0]
         color_max=float(np.percentile(positive,99.5)) if len(positive) else 1.
+        identity=file_identity(path)
+        saved=list_saved_integrations(path)
         self.meta = meta
         self.index = index
         self.volume = volume
@@ -113,12 +125,60 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.volume_mode='tiles'
         self.volume_scale='independent'
         self.volume_page=0
+        self.loaded_identity=identity
+        self.saved_integrations=saved
+        self.stale=False
+
+    def select_saved(self,identifier):
+        info=saved_integration_info(self.meta['path'],identifier)
+        derivation=info['derivation']
+        recipe=SignalRecipe(source='saved',saved_id=identifier,intervals=derivation['intervals'],
+                            frames=derivation['frames'],label=derivation['label'])
+        volume=read_signal(self.meta['path'],recipe)
+        calibration=info.get('calibration');anchors=None;prepared_calibration=None
+        if calibration:
+            anchors=validate_anchors([DepthAnchor(**a) for a in calibration['anchors']],self.meta['shape'][0])
+            prepared_calibration=DepthCalibration(anchors,self.meta['shape'][0]) if len(anchors)>1 else None
+            convert_depth(1,'nm',calibration['unit'])
+        self.active_recipe=recipe;self.volume=volume;self.frames=recipe.frames
+        self.frame=recipe.frames[0];self.depth_window=None;self.map_projection=True
+        self.custom=True;self.roi=(0,volume.shape[2]-1,0,volume.shape[1]-1)
+        self.reset_draft(recipe.intervals);self.draft_frames=recipe.frames;self.set_color_range()
+        if calibration:
+            self.depth_anchors=anchors;self.calibration=prepared_calibration
+            self.depth_unit=calibration['unit']
+
+    def save_record(self,label=None):
+        if self.active_recipe.source!='custom':raise ValueError('Apply a custom integration before saving it.')
+        recipe=replace(self.active_recipe,label=label) if label is not None else self.active_recipe
+        return IntegrationRecord(str(uuid4()),recipe.to_dict(),tuple(self.meta['shape'][1:3]),
+            asdict(self.loaded_identity),dict(convention='per waveform and active recording channel',
+            values='full XY scientific float32; no ROI, log transform or display sampling'),self.calibration_metadata())
+
+    def public_identity(self):
+        # JavaScript numbers cannot exactly represent POSIX nanosecond times.
+        return {key:str(value) for key,value in asdict(self.loaded_identity).items()}
+
+    def save_preview(self,recipe_id):
+        if recipe_id!=self.active_recipe.id:raise ValueError('The active signal changed. Review the save again.')
+        record=self.save_record('ToFScope_integration')
+        reason=None
+        try:
+            with h5py.File(self.meta['path'],'r') as h5:
+                validate_native_layout(h5);validate_native_recipe(h5,SignalRecipe.from_dict(record.derivation))
+        except (ValueError,UnicodeError) as exc:reason=str(exc)
+        if not self.settings.allow_writes:reason='Acquisition writes are disabled by the server.'
+        elif not self.settings.allow_unverified_native:reason='Experimental native writes are disabled; commercial compatibility is unverified.'
+        return dict(target=self.public_path(),recipe_id=recipe_id,intervals=record.derivation['intervals'],
+            frames=record.derivation['frames'],spatial_shape=list(record.spatial_shape),commercial_status='unverified',
+            expected_identity=self.public_identity(),required_bytes=required_space(self.loaded_identity,record),
+            can_save=reason is None,reason=reason,label='ToFScope_'+str(self.active_recipe.intervals[0][0]).replace('.','p')+'_'+str(self.active_recipe.intervals[-1][1]).replace('.','p'))
 
     def public_path(self):
         return str(Path(self.meta['path']).relative_to(self.settings.data_root))
 
     def safe_error(self,exc):
-        return str(exc).replace(str(self.settings.data_root),'<data root>')
+        return '\n'.join([str(exc),*getattr(exc,'__notes__',[])]).replace(str(self.settings.data_root),'<data root>')
 
     def calibration_metadata(self):
         return dict(anchors=[dict(frame=a.frame,depth_nm=a.depth_nm) for a in self.depth_anchors],
@@ -255,6 +315,9 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                     assignments=self.assignments,abundance_rows=self.abundance_rows,abundance_context=self.abundance_context,
                     volume_layers=[dict(id=l.id,recipe=l.recipe.to_dict(),visible=l.visible,colorscale=l.colorscale,opacity=l.opacity,percentile=l.percentile) for l in self.volume_layers],
                     layered_volume=self.layered_volume,volume_mode=self.volume_mode,volume_scale=self.volume_scale,volume_page=self.volume_page,
+                    saved_integrations=self.saved_integrations,stale=self.stale,
+                    write_enabled=self.settings.allow_writes and self.settings.allow_unverified_native,
+                    commercial_status='unverified',
                     revision=self.revision)
 
     def figures(self, keys=None):
@@ -403,6 +466,21 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.next_comparison_id+=1
 
     def handle_message(self, widget, content, buffers):
+        event=content.get('event')
+        try:
+            path=self.meta['path'] if self.meta else None
+            if event=='open':path=resolve_data_path(self.settings,content.get('payload',{})['path'],require_file=True)
+            if path is not None and event not in ('files_list','export'):
+                with dataset_lock(path):
+                    if event not in ('open','reload_acquisition') and file_identity(path)!=self.loaded_identity:
+                        self.stale=True
+                        raise ValueError('Acquisition changed in another session. Reload acquisition; export Settings JSON first to retain your analysis recipe.')
+                    return self._handle_message(widget,content,buffers)
+            return self._handle_message(widget,content,buffers)
+        except (ValueError,KeyError,OSError,TypeError) as exc:
+            self.send(dict(error=self.safe_error(exc),state=self.state(),figures={}))
+
+    def _handle_message(self, widget, content, buffers):
         event = content.get('event')
         p = content.get('payload',{})
         keys = []
@@ -418,13 +496,34 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 return
             if self.meta is None and event!='open':
                 raise ValueError('Open an acquisition before using analysis controls.')
-            if event=='peak_candidates':
+            if event=='save_preview':
+                self.send(dict(save_preview=dict(**self.save_preview(p['recipe_id']),request_id=p.get('request_id'))))
+                return
+            if event=='save_integration':
+                if p['recipe_id']!=self.active_recipe.id or p['expected_identity']!=self.public_identity():
+                    raise ValueError('Save preview no longer matches the prepared signal. Review it again.')
+                record=self.save_record(p['label'])
+                path=self.meta['path']
+                result=save_to_acquisition(self.settings,self.public_path(),record,lambda:iter(self.volume),self.loaded_identity)
+                saved=dict(id=result.saved_id,backup=str(result.backup.relative_to(self.settings.data_root)),generation=result.generation,warning=result.warning)
+                self.stale=True
+                try:
+                    self.load_file(path);self.select_saved(result.saved_id);self.revision+=1
+                    self.volume_layers=[replace(l,recipe=self.active_recipe) if l.id=='active' else l for l in self.volume_layers]
+                    figures=self.figures()
+                except Exception as exc:
+                    self.stale=True;saved['warning']='Saved successfully. Reload acquisition: '+self.safe_error(exc);figures={}
+                self.send(dict(saved=saved,state=self.state(),figures=figures))
+                return
+            if event=='saved_signal':
+                self.select_saved(p['saved_id']);keys=None
+            elif event=='peak_candidates':
                 rows=find_candidates(float(p['mz']),float(p['tolerance']),p['unit'],tuple(p['charges']),load_catalog())
                 query=dict(mz=float(p['mz']),tolerance=float(p['tolerance']),unit=p['unit'],charges=p['charges'])
                 self.candidate_rows={r.id:dict(id=r.id,**asdict(r),query=query) for r in rows}
                 self.send(dict(peak_candidates=dict(rows=list(self.candidate_rows.values()),request_id=p.get('request_id'))))
                 return
-            if event=='volume_layer_add':
+            elif event=='volume_layer_add':
                 recipes=self.available_recipes()
                 if p['recipe_id'] not in recipes:raise ValueError('Select a registered active/comparison signal.')
                 recipe=recipes[p['recipe_id']]
@@ -623,8 +722,8 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 self.stretch = float(np.clip(float(p.get('stretch',self.stretch)),.2,3))
                 self.quality = p.get('quality',self.quality)
                 keys = ['ion','front','profile','xz','yz','volume']
-            elif event == 'open':
-                path=resolve_data_path(self.settings,p['path'],require_file=True)
+            elif event in ('open','reload_acquisition'):
+                path=resolve_data_path(self.settings,p['path'],require_file=True) if event=='open' else self.meta['path']
                 # Rendering may discover malformed SE or spectrum metadata.
                 # Publish nothing until both the load and all figures succeed.
                 previous=self.__dict__.copy()

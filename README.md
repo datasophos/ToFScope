@@ -229,6 +229,23 @@ of about 170 ms including browser-driver and frame scheduling. These local
 prototype measurements satisfy the proposed 32 MiB / 200 ms budgets; they do
 not establish performance for other hardware, larger selections or raw reconstruction.
 
+## Saving integrations (experimental)
+
+**Save integration…** reviews the active applied custom signal before any write.
+The default server is read only. Experimental native saves require both
+`TOFSCOPE_ALLOW_WRITES=true` and `TOFSCOPE_ALLOW_UNVERIFIED_NATIVE=true`.
+Commercial TOFexplorer compatibility remains **unverified**; see the
+[compatibility and storage notes](docs/hdf5-compatibility.md) before enabling.
+Initially, native saves support contiguous windows covering every frame, with
+an ASCII label. Disjoint or partial-frame native saves are rejected explicitly.
+
+A save retains a backup, verifies a sibling copy, then replaces the selected
+file at its original path. Full XY scientific intensities and exact recipes are
+saved; ROI, log colors and preview sampling do not alter saved values. The
+workspace reloads and selects the saved integration. Saved records are available
+in **Saved integrations**. Other open sessions must reload after a source change;
+export Settings JSON first if you want to retain an old analysis recipe.
+
 ## Verify
 
 ```sh
@@ -251,6 +268,7 @@ uv run python scripts/check_depth_calibration.py
 uv run python scripts/check_peak_helper.py
 uv run python scripts/check_peak_helper_reset.py
 uv run python scripts/check_multi_volume.py
+uv run python scripts/check_writeback.py
 ```
 
 The numerical tests cover empty pixels, inclusive mass-window endpoints,

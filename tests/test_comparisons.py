@@ -8,12 +8,13 @@ from unittest.mock import patch, Mock
 import numpy as np
 from plots import profile_plot, front_projection
 from workspace import ExplorerWorkspace
+from test_signal_recipes import make_acquisition
 
 
 class ComparisonTests(unittest.TestCase):
     def setUp(self):
         directory=tempfile.TemporaryDirectory();self.addCleanup(directory.cleanup)
-        path=Path(directory.name).resolve()/'example.h5';path.touch()
+        path=Path(directory.name).resolve()/'example.h5';make_acquisition(path)
         self.meta = dict(path=str(path), name='example.h5', bytes=1, shape=(5,2,2,6),
             fov_um=None, raw_shape=(5,2,2), image_names=[], masses=np.arange(10.), spectrum=np.ones(10),
             peaks=[dict(index=i, mass=float(i+1), low=i+.5, high=i+1.5, label=f'ion{i}') for i in range(6)])
