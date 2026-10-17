@@ -24,6 +24,9 @@ async function render({ model, el }) {
   const layersURL=URL.createObjectURL(new Blob([model.get('volume_layers_js')],{type:'text/javascript'}));
   let mountVolumeLayers;
   try {({mountVolumeLayers}=await import(layersURL));} finally {URL.revokeObjectURL(layersURL);}
+  const saveURL=URL.createObjectURL(new Blob([model.get('save_integration_js')],{type:'text/javascript'}));
+  let mountSaveIntegration;
+  try {({mountSaveIntegration}=await import(saveURL));} finally {URL.revokeObjectURL(saveURL);}
   const initial = model.get('initial');
   let state = initial.state;
   const figures = {...initial.figures};
@@ -51,12 +54,14 @@ async function render({ model, el }) {
         <div class="tof-brand"><span class="tof-mark">T<span>·</span></span><div><strong>ToFScope</strong><small>FIB–SEM / TOF–SIMS</small></div></div>
         <div class="tof-file"><strong data-field="filename"></strong><small data-field="dimensions"></small></div>
         <button data-action="open-dialog" class="tof-quiet">Open file</button>
+        <button data-action="save-integration" class="tof-quiet">Save integration…</button>
         <button data-action="export-csv" class="tof-quiet">Profile CSV ↓</button>
         <button data-action="export-json" class="tof-quiet">Settings JSON ↓</button>
       </header>
       <div class="tof-body">
         <aside class="tof-sidebar">
           <div class="tof-caption">SIGNAL</div>
+          <label data-field="saved-selector" hidden>Saved integrations<select data-input="saved" aria-label="Saved integrations"></select></label>
           <div class="tof-picker" data-picker="peak">
             <div class="tof-picker-label">Ion channel</div>
             <button type="button" class="tof-picker-trigger" data-picker-trigger="peak" aria-label="Choose ion channel" aria-haspopup="dialog" aria-expanded="false"><span data-picker-value="peak"></span><span aria-hidden="true">⌕</span></button>
@@ -188,11 +193,12 @@ async function render({ model, el }) {
           </section>
         </main>
       </div>
-      <footer class="tof-status"><span data-field="status" role="status">Loading workspace…</span><span data-field="selection-summary"></span><span>LOCAL · READ ONLY</span></footer>
+      <footer class="tof-status"><span data-field="status" role="status">Loading workspace…</span><span data-field="selection-summary"></span><button data-action="reload-acquisition" hidden>Reload acquisition</button><span data-field="write-policy">LOCAL · READ ONLY</span></footer>
       <dialog class="tof-dialog"></dialog>
       <dialog class="tof-dialog tof-depth-dialog"></dialog>
       <dialog class="tof-dialog tof-peak-dialog"></dialog>
       <dialog class="tof-dialog tof-layers-dialog"></dialog>
+      <dialog class="tof-dialog tof-save-dialog"></dialog>
     </div>`;
   const $ = (selector) => el.querySelector(selector);
   const input = (name) => $(`[data-input="${name}"]`);
@@ -209,6 +215,7 @@ async function render({ model, el }) {
     send,apply:payload=>send('integrate',payload),compare:payload=>send('comparison_add',payload)
   });
   const volumeLayers=mountVolumeLayers($('.tof-layers-dialog'),{send,getPlot:()=>plot('volume')});
+  const saveIntegration=mountSaveIntegration($('.tof-save-dialog'),{send});
   const intervalEditor=mountIntervalEditor(field('interval-list'),{send,onSelect(row){
     // Keep the field values paired with the optimistic selection even when
     // Apply is clicked before the server acknowledges the selected row.
@@ -357,9 +364,13 @@ async function render({ model, el }) {
     depthEditor.sync(state,error);
     peakHelper.sync(state,error);
     volumeLayers.update(state,error);
+    saveIntegration.sync(state);
     const loaded=state.loaded!==false;
     $('.tof-body').hidden=!loaded;
     for(const name of ['export-csv','export-json']) $(`[data-action="${name}"]`).disabled=!loaded;
+    $('[data-action="save-integration"]').disabled=!loaded || state.recipe?.source!=='custom' || state.stale;
+    $('[data-action="reload-acquisition"]').hidden=!state.stale;
+    field('write-policy').textContent=state.write_enabled?'LOCAL · EXPERIMENTAL WRITES':'LOCAL · READ ONLY';
     $('.tof-app').dataset.revision=state.revision;
     if(!loaded) {
       field('filename').textContent='No acquisition open';field('filename').title='';
@@ -374,7 +385,10 @@ async function render({ model, el }) {
     field('filename').title = state.path;
     field('dimensions').textContent = `${state.shape[0].toLocaleString()} frames · ${state.shape[2]} × ${state.shape[1]} pixels · ${state.shape[3]} channels · ${state.gib} GiB`;
     field('signal').textContent = state.label;
-    field('source').textContent = state.custom?'RECONSTRUCTED RAW EVENTS':'STORED PEAK CHANNEL';
+    field('source').textContent = state.recipe.source==='saved'?'SAVED INTEGRATION':state.custom?'RECONSTRUCTED RAW EVENTS':'STORED PEAK CHANNEL';
+    field('saved-selector').hidden=!state.saved_integrations?.length;
+    input('saved').replaceChildren(new Option('Choose saved integration…',''),...(state.saved_integrations || []).map(r=>new Option(r.derivation.label,r.id)));
+    input('saved').value=state.recipe.saved_id || '';
     const draftChanged = !sameIntervals(state.draft_intervals,state.intervals);
     intervalEditor.sync(state);
     const displayedFrames=state.depth_window || state.frames;
@@ -596,11 +610,13 @@ async function render({ model, el }) {
   function redraw() {rendering=rendering.then(()=>disposed?null:drawVisible()).catch(e=>status(e.message,true));return rendering;}
   async function receive(message) {
     if(disposed) return;
+    if(message.save_preview){saveIntegration.reviewed(message.save_preview);status('Ready');return;}
     if(message.files){fileBrowser.update(message.files);return;}
     if(message.peak_candidates){peakHelper.candidates(message.peak_candidates);status('Ready');return;}
-    if(message.error)peakHelper.error(message.error);
+    if(message.error){peakHelper.error(message.error);saveIntegration.error(message.error);}
     if(message.progress) {status(`Reconstructing frame ${message.progress.done} / ${message.progress.total}…`);return;}
     if(message.state) syncState(message.state,message.error);
+    if(message.saved)saveIntegration.saved(message.saved);
     if(pendingOpen && message.state){pendingOpen=false;fileBrowser.opened(message.error);}
     for(const [key,figure] of Object.entries(message.figures || {})) {figures[key]=figure;dirty.add(key);}
     for(const [key,patch] of Object.entries(message.relayout || {})) {
@@ -630,6 +646,7 @@ async function render({ model, el }) {
   }
   for(const button of el.querySelectorAll('[data-tab]')) button.addEventListener('click',()=>showTab(button.dataset.tab));
   input('frame').addEventListener('change',()=>send('frame',{frame:number('frame')}));
+  input('saved').addEventListener('change',()=>{if(input('saved').value)send('saved_signal',{saved_id:input('saved').value});});
   for(const name of ['low','high']) input(name).addEventListener('change',()=>send('interval_update',{id:intervalEditor.selectedId(),bounds:[number('low'),number('high')]}));
   for(const name of ['first','last']) input(name).addEventListener('change',()=>send('draft_frames',{frames:[number('first'),number('last')]}));
   for(const name of ['log','relative','percentile','opacity','stretch','quality']) input(name).addEventListener('change',()=>{
@@ -651,6 +668,8 @@ async function render({ model, el }) {
     'volume-edit-region':()=>showTab('slices'),
     'volume-edit-roi':()=>{setImageMode('sims');showTab('slices');},
     'open-dialog':()=>fileBrowser.show(),
+    'save-integration':()=>saveIntegration.show(),
+    'reload-acquisition':()=>send('reload_acquisition'),
     'calibrate-depth':()=>depthEditor.show(),
     'peak-helper':()=>peakHelper.show(),
     'volume-layers':()=>volumeLayers.show(),
@@ -696,7 +715,7 @@ async function render({ model, el }) {
   $('.tof-volume-details').addEventListener('toggle',()=>{if(mounted.size) redraw();});
   syncState(state);
   await redraw();status(state.startup_error || 'Ready',!!state.startup_error);
-  return ()=>{disposed=true;observer.disconnect();document.removeEventListener('pointerdown',closePickers);document.removeEventListener('keydown',onEscape);intervalEditor.dispose();fileBrowser.dispose();depthEditor.dispose();peakHelper.dispose();volumeLayers.dispose();model.off('msg:custom',receive);for(const key of mounted) Plotly.purge(plot(key));el.replaceChildren();};
+  return ()=>{disposed=true;observer.disconnect();document.removeEventListener('pointerdown',closePickers);document.removeEventListener('keydown',onEscape);intervalEditor.dispose();fileBrowser.dispose();depthEditor.dispose();peakHelper.dispose();volumeLayers.dispose();saveIntegration.dispose();model.off('msg:custom',receive);for(const key of mounted) Plotly.purge(plot(key));el.replaceChildren();};
 }
 
 export default {render};
