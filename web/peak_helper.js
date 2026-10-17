@@ -60,7 +60,12 @@ export function mountPeakHelper(dialog,tableRoot,{send,apply,compare}) {
       }
     },
     sync(next,error){state=next;if(next.loaded===false)return;
-      if(dataset!==next.path){dataset=next.path;checked.clear();selected=null;$('tbody').replaceChildren();}
+      if(dataset!==next.path){
+        dataset=next.path;checked.clear();selected=null;pending=false;requestId++;
+        $('tbody').replaceChildren();$('[role=alert]').textContent='';$('.tof-candidate-status').textContent='';
+        for(const key of ['annotate','apply','compare'])$(`[data-${key}]`).disabled=true;
+        input('Candidate window lower').value='';input('Candidate window upper').value='';
+      }
       if(pending){$('[role=alert]').textContent=error||'Annotation saved; original label retained.';pending=false;}
       const signals=[next.recipe,...next.comparisons.map(c=>c.recipe)],unique=[...new Map(signals.map(r=>[r.id,r])).values()];
       for(const id of checked.keys())if(!unique.some(r=>r.id===id))checked.delete(id);
