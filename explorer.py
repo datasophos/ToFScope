@@ -72,27 +72,9 @@ def stored_peak(path, index):
 
 
 def integrate_events(events, mass_axis, clock_ratio, normalization, low, high):
-    """Integrate one ragged depth slice; endpoints are inclusive.
-
-    A cumulative sum across the flat event buffer handles empty pixels without
-    allocating the entire acquisition's ragged event list or a dense spectrum.
-    """
-    if not np.isfinite([low, high]).all() or low >= high:
-        raise ValueError('Mass limits must be finite and lower < upper.')
-    if clock_ratio < 1 or normalization <= 0:
-        raise ValueError('Invalid timing ratio or normalization.')
-    cells = events.ravel()
-    lengths = np.fromiter((len(cell) for cell in cells), dtype=np.int64, count=cells.size)
-    if not lengths.sum():
-        return np.zeros(events.shape, dtype=np.float32)
-    samples = np.concatenate(list(cells)).astype(np.int64) // clock_ratio
-    valid = (samples >= 0) & (samples < len(mass_axis))
-    selected = np.zeros(len(samples), dtype=np.int32)
-    masses = mass_axis[samples[valid]]
-    selected[valid] = (masses >= low) & (masses <= high)
-    boundaries = np.concatenate(([0], np.cumsum(lengths)))
-    counts = np.concatenate(([0], np.cumsum(selected, dtype=np.int64)))
-    return (np.diff(counts[boundaries]).reshape(events.shape) / normalization).astype(np.float32)
+    """Compatibility adapter for one inclusive mass interval."""
+    from integration import integrate_event_windows
+    return integrate_event_windows(events,mass_axis,clock_ratio,normalization,[(low,high)])
 
 
 def integration_parameters(f):
