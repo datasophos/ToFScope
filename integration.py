@@ -27,7 +27,9 @@ def canonical_intervals(intervals, axis_limits):
 
 def integrate_event_windows(events, mass_axis, clock_ratio, normalization, intervals):
     """Count each raw event once when its calibrated mass belongs to the union."""
-    axis=np.asarray(mass_axis)
+    # Compare exact stored bin values with user bounds without rounding those
+    # bounds down to the file's (often float32) dtype.
+    axis=np.asarray(mass_axis,dtype=np.float64)
     if axis.ndim!=1 or not axis.size or not np.isfinite(axis).all():
         raise ValueError('Mass axis must be a nonempty finite one-dimensional array.')
     windows=canonical_intervals(intervals,(float(axis.min()),float(axis.max())))

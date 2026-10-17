@@ -181,7 +181,11 @@ async function render({ model, el }) {
   const plot = (name) => $(`[data-plot="${name}"]`);
   const field = (name) => $(`[data-field="${name}"]`);
   const number = (name) => Number(input(name).value);
-  const intervalEditor=mountIntervalEditor(field('interval-list'),{send});
+  const intervalEditor=mountIntervalEditor(field('interval-list'),{send,onSelect(row){
+    // Keep the field values paired with the optimistic selection even when
+    // Apply is clicked before the server acknowledges the selected row.
+    input('low').value=row.bounds[0];input('high').value=row.bounds[1];
+  }});
   function selectedDraft() {
     return state.draft_windows.find(r=>r.id===intervalEditor.selectedId())?.bounds || state.draft;
   }
@@ -369,7 +373,7 @@ async function render({ model, el }) {
     $('[data-action="comparison-window"]').disabled=!state.raw || !state.draft_windows.length;
     setInput('frame',state.frame);
     input('frame').min=state.frames[0]; input('frame').max=state.frames[1];
-    setInput('low',state.draft?Number(state.draft[0].toFixed(6)):''); setInput('high',state.draft?Number(state.draft[1].toFixed(6)):'');
+    setInput('low',state.draft?state.draft[0]:''); setInput('high',state.draft?state.draft[1]:'');
     input('low').disabled=input('high').disabled=!state.draft;
     $('[data-action="zoom-window"]').disabled=!state.draft;
     setInput('first',state.draft_frames[0]); setInput('last',state.draft_frames[1]);
@@ -433,7 +437,7 @@ async function render({ model, el }) {
           input('first').value=limits[0];input('last').value=limits[1];
           field('depth-note').textContent=`Depth window ${limits[0]}–${limits[1]} · release to select`;
         } else {
-          input('low').value=limits[0].toFixed(6);input('high').value=limits[1].toFixed(6);
+          input('low').value=limits[0];input('high').value=limits[1];
           field('window-note').textContent=`${limits[0].toFixed(4)}–${limits[1].toFixed(4)} Th · release to set draft`;
         }
       }

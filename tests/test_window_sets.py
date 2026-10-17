@@ -28,6 +28,14 @@ class WindowSetTests(unittest.TestCase):
     def test_valid_interval_between_bins_yields_zero(self):
         np.testing.assert_array_equal(integrate_event_windows(self.events,self.axis,64,2,[(2.1,2.9)]),[[0.]])
 
+    def test_float32_axis_does_not_round_user_bounds_onto_a_bin(self):
+        axis=np.array([0.,1.,2.],dtype=np.float32)
+        events=np.empty((1,1),dtype=object);events[0,0]=np.array([1],dtype=np.uint32)
+        for bounds in [[1.00000001,2.],[0.,.99999999]]:
+            with self.subTest(bounds=bounds):
+                np.testing.assert_array_equal(integrate_event_windows(events,axis,1,1,[bounds]),[[0.]])
+        np.testing.assert_array_equal(integrate_event_windows(events,axis,1,1,[(1.,1.5)]),[[1.]])
+
     def test_canonical_order_merging_and_invalid_bounds(self):
         self.assertEqual(canonical_intervals([(4,5),(1,2),(2,3),(1.5,2.5)],(0,5)),((1.,3.),(4.,5.)))
         for windows in [[],[(2,1)],[(2,2)],[(0,float('nan'))],[(-1,1)],[(1,6)],[(1,2,3)]]:

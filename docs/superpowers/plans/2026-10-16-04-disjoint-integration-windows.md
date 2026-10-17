@@ -69,3 +69,25 @@ No other roadmap feature is required. `signals.py` owns identity/serialization/d
 ## Acceptance
 
 One composite signal with two separated intervals works as the active image/3D source and as a comparison; overlap is counted once, gaps are excluded, and its full recipe survives serialization. No acquisition file is modified.
+
+## Completion notes — 2026-10-16
+
+Implemented on `feature/disjoint-integration-windows`. Final review found and
+resolved an immediate row-selection/Apply race and float32 mass-boundary
+rounding. Regression checks first reproduced each failure, then passed after
+the fixes. Numeric fields now preserve entered precision through Apply/export.
+
+Verification: all 34 unittest tests and `marimo check app.py` passed. Browser
+checks passed for disjoint-window editing, immediate selection/Apply and
+comparison creation, precise bounds, spectrum gestures, comparison/layout,
+ROI replacement, the original integration/export workflow, and All depths.
+
+Implementation decisions:
+
+- Draft rows retain stable identities; Apply canonicalizes their union.
+- Legacy stored recipes without a channel index require reselecting a stored
+  channel, avoiding substitution of raw reconstruction for vendor counts.
+- The interval editor loads from locally synced source through a Blob module,
+  preserving offline operation without an asset server or CDN.
+- Saved-signal reading remains deferred to the HDF5 write-back plan. Acquisition
+  files remain read-only. This completes the disjoint-window item only.

@@ -13,7 +13,7 @@ export function sameIntervals(left,right) {
   }
   return JSON.stringify(canonical(left))===JSON.stringify(canonical(right));
 }
-export function mountIntervalEditor(root,{send}) {
+export function mountIntervalEditor(root,{send,onSelect=()=>{}}) {
   let selected=null;
   return {
     selectedId(){return selected;},
@@ -27,7 +27,7 @@ export function mountIntervalEditor(root,{send}) {
         const label=document.createElement('strong');label.textContent=`Interval ${i+1}`;
         const limits=document.createElement('small');limits.textContent=formatIntervals([row.bounds]);
         choose.append(label,limits);
-        choose.addEventListener('click',()=>{selected=row.id;send('interval_select',{id:row.id});});
+        choose.addEventListener('click',()=>{selected=row.id;onSelect(row);send('interval_select',{id:row.id});});
         const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Remove interval');
         remove.addEventListener('click',()=>send('interval_remove',{id:row.id}));
         item.append(choose,remove);root.append(item);
