@@ -30,11 +30,17 @@ def layout(fig, title, height=330, dark=False):
     return fig
 
 
-def spectrum_plot(meta, low=None, high=None, *, intervals=None):
+def spectrum_plot(meta, low=None, high=None, *, intervals=None, window_ids=None, selected_id=None):
     fig = go.Figure(go.Scattergl(x=meta['masses'], y=meta['spectrum'], mode='lines',
                                line=dict(color=TEAL, width=1), name='Sum spectrum'))
-    for lower,upper in (intervals if intervals is not None else [(low,high)]):
-        fig.add_vrect(x0=lower,x1=upper,fillcolor=GOLD,opacity=.22,line_width=1)
+    windows=list(intervals if intervals is not None else [(low,high)])
+    identifiers=list(window_ids if window_ids is not None else range(len(windows)))
+    rows=list(zip(identifiers,windows))
+    rows.sort(key=lambda row:row[0]!=selected_id)
+    for identifier,(lower,upper) in rows:
+        fig.add_vrect(x0=lower,x1=upper,fillcolor=GOLD,opacity=.22,
+                      line=dict(color=GOLD,width=2 if identifier==selected_id else 1),
+                      name=f'draft:{identifier}',editable=False)
     fig.update_xaxes(title='Mass / charge (Th)', rangeslider_visible=True,
                      rangeslider_thickness=.12)
     fig.update_yaxes(title='Summed intensity', type='log')

@@ -64,6 +64,12 @@ a persistent signal sidebar. Marimo edit mode keeps its normal notebook layout.
    the sidebar. The interval is a
    **draft** until you press **Apply custom window**; browsing does not trigger
    raw reconstruction. **Zoom to window** helps adjust narrow intervals.
+   **Mass windows** lists draft intervals. Select a row to edit it, use **Add
+   interval** for another row, or × to remove one. Dragging or entering limits
+   changes only the selected row. Apply combines all rows into one signal: gaps
+   are excluded, and overlapping intervals/shared endpoints count each event
+   once. Removing all rows disables Apply without changing the active signal;
+   Add interval or drawing on the spectrum starts a new draft.
 5. Set the first/last integration frames and Apply. Start with a small interval
    for a quick trial. Reconstruction reads one raw frame at a time and reports
    progress. **Restore stored channel** returns to the original integrated data.
@@ -84,6 +90,11 @@ a persistent signal sidebar. Marimo edit mode keeps its normal notebook layout.
 7. Download the full-resolution ROI mean depth profiles (active signal plus all
    comparisons) with **Profile CSV**, or
    save the active analysis recipe and comparison definitions with **Settings JSON**.
+   Schema 3 records every mass interval, source channel, inclusive frame coverage
+   and a stable recipe UUID. Composite recipes do not substitute one bounding
+   interval for their separated windows. Older raw single-window recipes can be
+   converted by `SignalRecipe.from_dict`; legacy stored recipes need a channel
+   index to preserve vendor-derived values.
    CSV cells outside a comparison’s frame coverage are empty.
 
 Plot interactions update shared Python state through an AnyWidget bridge.
@@ -157,6 +168,7 @@ uv run python scripts/check_display_layout.py
 uv run python scripts/check_all_depths.py
 uv run python scripts/check_roi_replacement.py
 uv run python scripts/check_viewport.py
+uv run python scripts/check_window_sets.py
 ```
 
 The numerical tests cover empty pixels, inclusive mass-window endpoints,

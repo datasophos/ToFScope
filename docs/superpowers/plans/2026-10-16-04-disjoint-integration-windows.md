@@ -60,11 +60,11 @@ No other roadmap feature is required. `signals.py` owns identity/serialization/d
 
 **Interfaces:** Events `interval_add`, `interval_select {id}`, `interval_update {id,bounds}`, `interval_remove {id}` update a draft recipe only. Existing Apply/Add comparison actions receive the complete draft recipe and frame bounds. Put interval-editor logic in `web/interval_editor.js` if the widget module would otherwise grow substantially; use its local relative import through the existing AnyWidget module loader and verify offline loading.
 
-- [ ] Write a failing browser scenario: draw interval 26.8–27.2, add a second 47.8–48.2 interval, edit/remove one, then Apply and add the composite as a comparison. Check visible interval rows and each authoritative spectrum band after every action.
-- [ ] Test removal of the last interval disables Apply, a rejected interval preserves the active signal, and drawn coordinates on a maximized spectrum remain correct after restore. Comparison bands must not become editable draft intervals.
-- [ ] Implement selected-interval drag/edge/Shift-drag behavior, Add interval and row remove controls. Render the interval list as the source of truth; prevent Plotly edit persistence from recreating deleted bands. Show a union summary rather than one misleading bounding window.
-- [ ] Run `uv run python scripts/check_window_sets.py`, `scripts/check_spectrum.py`, `scripts/check_comparisons_layout.py`, and `scripts/check_roi_replacement.py` with the app running; require PASS. Verify CSV intensities against independently accumulated synthetic events and JSON contains both intervals.
-- [ ] Update documentation and commit: `Add direct editing of disjoint integration windows.`
+- [x] Write a failing browser scenario: draw interval 26.8–27.2, add a second 47.8–48.2 interval, edit/remove one, then Apply and add the composite as a comparison. Check visible interval rows and each authoritative spectrum band after every action.
+- [x] Test removal of the last interval disables Apply, a rejected interval preserves the active signal, and drawn coordinates on a maximized spectrum remain correct after restore. Comparison bands must not become editable draft intervals.
+- [x] Implement selected-interval drag/edge/Shift-drag behavior, Add interval and row remove controls. Render the interval list as the source of truth; prevent Plotly edit persistence from recreating deleted bands. Show a union summary rather than one misleading bounding window.
+- [x] Run `uv run python scripts/check_window_sets.py`, `scripts/check_spectrum.py`, `scripts/check_comparisons_layout.py`, and `scripts/check_roi_replacement.py` with the app running; require PASS. Verify CSV intensities against independently accumulated synthetic events and JSON contains both intervals.
+- [x] Update documentation and commit: `Add direct editing of disjoint integration windows.`
 
 ## Acceptance
 

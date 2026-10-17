@@ -8,6 +8,10 @@ async function render({ model, el }) {
     document.head.appendChild(script);
   }
   const Plotly = window.Plotly;
+  const moduleURL=URL.createObjectURL(new Blob([model.get('interval_editor_js')],{type:'text/javascript'}));
+  let intervalModule;
+  try {intervalModule=await import(moduleURL);} finally {URL.revokeObjectURL(moduleURL);}
+  const {mountIntervalEditor,formatIntervals,sameIntervals}=intervalModule;
   const initial = model.get('initial');
   let state = initial.state;
   const figures = {...initial.figures};
@@ -67,8 +71,10 @@ async function render({ model, el }) {
           <label class="tof-check"><input type="checkbox" data-input="log"> Log ion colors</label>
           <label class="tof-check"><input type="checkbox" data-input="relative"> Relative profiles</label>
           <div class="tof-divider"></div>
-          <div class="tof-caption">MASS WINDOW <span class="tof-draft" data-field="draft-tag">DRAFT</span></div>
-          <p class="tof-help">Draw a window on the spectrum, or enter exact limits.</p>
+          <div class="tof-caption">MASS WINDOWS <span class="tof-draft" data-field="draft-tag">DRAFT</span></div>
+          <p class="tof-help">Draw to edit the selected interval, or enter exact limits. Add intervals to combine separated peaks.</p>
+          <div class="tof-interval-list" data-field="interval-list" aria-label="Draft integration intervals"></div>
+          <button data-action="interval-add" class="tof-quiet tof-full">Add interval</button>
           <div class="tof-pair">
             <label>Lower (Th)<input type="number" step="0.001" data-input="low" aria-label="Lower mass limit"></label>
             <label>Upper (Th)<input type="number" step="0.001" data-input="high" aria-label="Upper mass limit"></label>
@@ -175,6 +181,15 @@ async function render({ model, el }) {
   const plot = (name) => $(`[data-plot="${name}"]`);
   const field = (name) => $(`[data-field="${name}"]`);
   const number = (name) => Number(input(name).value);
+  const intervalEditor=mountIntervalEditor(field('interval-list'),{send});
+  function selectedDraft() {
+    return state.draft_windows.find(r=>r.id===intervalEditor.selectedId())?.bounds || state.draft;
+  }
+  function draftPayload() {
+    const selected=intervalEditor.selectedId();
+    const intervals=state.draft_windows.map(row=>row.id===selected?[number('low'),number('high')]:[...row.bounds]);
+    return {intervals,frames:[number('first'),number('last')]};
+  }
   const displayNames={ion:'SIMS top map',front:'SIMS front projection',se:'FIB SE image',spectrum:'Mass spectrum',profile:'Depth profile',xz:'XZ cross-section',yz:'YZ cross-section',volume:'3D volume'};
   const displayHelp={
     ion:'Draw a rectangle on this map to select a spatial ROI. Click the gold outline to reveal its edit handles, then drag to move or resize it.',
@@ -206,7 +221,7 @@ async function render({ model, el }) {
   field('image-note').id=`${helpPrefix}-images`;$('.tof-image-switch .tof-info').setAttribute('aria-describedby',field('image-note').id);
   $('.tof-spectrum-home').append($('.tof-spectrum-view'));
   function status(text, error=false) { field('status').textContent = text; field('status').classList.toggle('tof-error',error); }
-  function send(event,payload={}) { status(event==='integrate'||(event==='comparison_add'&&payload.bounds)?'Reconstructing raw events…':'Updating…'); model.send({event,payload}); }
+  function send(event,payload={}) { status(event==='integrate'||(event==='comparison_add'&&(payload.bounds||payload.intervals))?'Reconstructing raw events…':'Updating…'); model.send({event,payload}); }
   function setInput(name,value) {
     let focused=document.activeElement;
     while(focused?.shadowRoot?.activeElement) focused=focused.shadowRoot.activeElement;
@@ -312,11 +327,12 @@ async function render({ model, el }) {
     field('dimensions').textContent = `${state.shape[0].toLocaleString()} frames · ${state.shape[2]} × ${state.shape[1]} pixels · ${state.shape[3]} channels · ${state.gib} GiB`;
     field('signal').textContent = state.label;
     field('source').textContent = state.custom?'RECONSTRUCTED RAW EVENTS':'STORED PEAK CHANNEL';
-    const draftChanged = Math.abs(state.draft[0]-state.low)>1e-6 || Math.abs(state.draft[1]-state.high)>1e-6;
+    const draftChanged = !sameIntervals(state.draft_intervals,state.intervals);
+    intervalEditor.sync(state);
     const displayedFrames=state.depth_window || state.frames;
     const draftFramesChanged=state.draft_frames[0]!==displayedFrames[0] || state.draft_frames[1]!==displayedFrames[1];
     field('volume-source').textContent=state.custom?'Applied custom integration':'Stored channel from file';
-    field('volume-mass').textContent=`${state.low.toFixed(4)}–${state.high.toFixed(4)} Th`;
+    field('volume-mass').textContent=formatIntervals(state.intervals);
     field('volume-ion').textContent=state.label;
     field('volume-depth').textContent=`Frames ${displayedFrames[0]}–${displayedFrames[1]} · ${displayedFrames[1]-displayedFrames[0]+1} layers`;
     field('volume-roi').textContent=`X ${state.roi[0]}–${state.roi[1]} · Y ${state.roi[2]}–${state.roi[3]} px`;
@@ -326,9 +342,9 @@ async function render({ model, el }) {
     field('volume-preview').textContent=details?`${details.preview_shape.join(' × ')} · ${state.log?'log colors':'linear colors'}`:'Block-averaged intensity';
     field('volume-threshold').textContent=details?.threshold!==null && details?.threshold!==undefined?`${state.percentile}th percentile of nonzero preview voxels · ≥ ${details.threshold.toPrecision(3)} intensity`:'Preview averages spatial and depth blocks';
     field('volume-pending').hidden=!(draftChanged || draftFramesChanged);
-    field('volume-pending').textContent=`Pending custom integration: ${state.draft[0].toFixed(4)}–${state.draft[1].toFixed(4)} Th, frames ${state.draft_frames[0]}–${state.draft_frames[1]}. Press Apply custom window to update the volume. The active-data summary above describes what is currently rendered.`;
+    field('volume-pending').textContent=`Pending custom integration: ${formatIntervals(state.draft_intervals)}, frames ${state.draft_frames[0]}–${state.draft_frames[1]}. Press Apply custom window to update the volume. The active-data summary above describes what is currently rendered.`;
     field('draft-tag').textContent = draftChanged?'DRAFT':'WINDOW';
-    field('window-note').textContent = `${state.draft[0].toFixed(4)}–${state.draft[1].toFixed(4)} Th${draftChanged?' · draft, not applied':''}`;
+    field('window-note').textContent = `${formatIntervals(state.draft_intervals)}${draftChanged?' · draft, not applied':''}`;
     field('roi').textContent = `X ${state.roi[0]}–${state.roi[1]} · Y ${state.roi[2]}–${state.roi[3]} px`;
     field('selection-summary').textContent = state.depth_window?`Integrated frames ${state.depth_window[0]}–${state.depth_window[1]} · Ion sum / SE mean`:state.map_projection?`All loaded depths · frames ${state.frames[0]}–${state.frames[1]} · ${state.custom?'Custom window':'Stored channel'}`:`Frame ${state.frame} / ${state.frames[0]}–${state.frames[1]} · ${state.custom?'Custom window':'Stored channel'}`;
     $('[data-action="clear-depth"]').hidden=!state.depth_window && state.map_projection;
@@ -342,7 +358,7 @@ async function render({ model, el }) {
       row.style.setProperty('--curve-color',c.color);
       const text=document.createElement('div'), label=document.createElement('strong'), limits=document.createElement('small');
       label.textContent=c.label;
-      limits.textContent=`${c.low.toFixed(4)}–${c.high.toFixed(4)} Th · frames ${c.frames[0]}–${c.frames[1]}`;
+      limits.textContent=`${formatIntervals(c.intervals)} · frames ${c.frames[0]}–${c.frames[1]}`;
       text.append(label,limits);
       const remove=document.createElement('button');remove.type='button';remove.textContent='×';
       remove.setAttribute('aria-label',`Remove comparison ${c.label}`);
@@ -350,17 +366,19 @@ async function render({ model, el }) {
       row.append(text,remove);field('comparison-list').append(row);
     }
     $('[data-action="comparison-clear"]').hidden=!state.comparisons.length;
-    $('[data-action="comparison-window"]').disabled=!state.raw;
+    $('[data-action="comparison-window"]').disabled=!state.raw || !state.draft_windows.length;
     setInput('frame',state.frame);
     input('frame').min=state.frames[0]; input('frame').max=state.frames[1];
-    setInput('low',Number(state.draft[0].toFixed(6))); setInput('high',Number(state.draft[1].toFixed(6)));
+    setInput('low',state.draft?Number(state.draft[0].toFixed(6)):''); setInput('high',state.draft?Number(state.draft[1].toFixed(6)):'');
+    input('low').disabled=input('high').disabled=!state.draft;
+    $('[data-action="zoom-window"]').disabled=!state.draft;
     setInput('first',state.draft_frames[0]); setInput('last',state.draft_frames[1]);
     for (const name of ['first','last']) input(name).max=state.shape[0]-1;
     for (const [i,name] of ['x0','x1','y0','y1'].entries()) setInput(name,state.roi[i]);
     for (const name of ['percentile','opacity','stretch','quality']) setInput(name,state[name]);
     for (const name of ['log','relative']) input(name).checked=state[name];
     setInput('path',state.path);
-    $('[data-action="integrate"]').disabled=!state.raw;
+    $('[data-action="integrate"]').disabled=!state.raw || !state.draft_windows.length;
     $('.tof-app').dataset.revision=state.revision;
     $('.tof-app').dataset.frame=state.frame;
     $('.tof-app').dataset.roi=JSON.stringify(state.roi);
@@ -383,11 +401,18 @@ async function render({ model, el }) {
           inside:x>=xa._offset && x<=xa._offset+xa._length && y>=ya._offset && y<=ya._offset+ya._length};
       }
       function band(low,high) {
-        const shapes=isDepth?[gd.layout.shapes[0]]:[];
-        if(low!==null) shapes.push({type:'rect',xref:'x',yref:'paper',x0:low,x1:high,
-          y0:0,y1:1,editable:false,line:{color:'#d18c24',width:2},
-          fillcolor:'rgba(209,140,36,.18)'});
-        if(!isDepth) shapes.push(...(figures.spectrum.layout.shapes || []).slice(1));
+        let shapes;
+        if(isDepth) shapes=[gd.layout.shapes[0]];
+        else {
+          const id=gesture?.intervalId ?? intervalEditor.selectedId();
+          shapes=(figures.spectrum.layout.shapes || []).filter(s=>s.name!==`draft:${id}`);
+        }
+        if(low!==null) {
+          const shape={type:'rect',xref:'x',yref:'paper',x0:low,x1:high,
+            y0:0,y1:1,editable:false,line:{color:'#d18c24',width:2},fillcolor:'rgba(209,140,36,.18)'};
+          if(isDepth) shapes.push(shape);
+          else {shape.name=`draft:${gesture?.intervalId ?? intervalEditor.selectedId()}`;shapes.unshift(shape);}
+        }
         Plotly.relayout(gd,{shapes});
       }
       function preview(e) {
@@ -415,20 +440,20 @@ async function render({ model, el }) {
       gd.addEventListener('pointerdown',(e)=>{
         if(e.button!==0 || e.target.closest('.modebar') || gd.layout.dragmode) return;
         const start=position(e);if(!start?.inside) return;
-        const original=[...(isDepth?(state.depth_window || [state.frame,state.frame]):state.draft)], xa=gd._fullLayout.xaxis;
+        const original=[...(isDepth?(state.depth_window || [state.frame,state.frame]):(selectedDraft() || [start.mass,start.mass]))], xa=gd._fullLayout.xaxis;
         const lowDistance=Math.abs(start.pixel-xa.d2p(original[0]));
         const highDistance=Math.abs(start.pixel-xa.d2p(original[1]));
         let mode='new';
         if(original[0]!==original[1] && Math.min(lowDistance,highDistance)<=7) mode=lowDistance<highDistance?'low':'high';
         else if(e.shiftKey && start.mass>=original[0] && start.mass<=original[1]) mode='move';
-        gesture={start,original,mode,clientX:e.clientX,distance:0,limits:original};
+        gesture={start,original,mode,clientX:e.clientX,distance:0,limits:original,intervalId:isDepth?null:intervalEditor.selectedId()};
         e.preventDefault();e.stopImmediatePropagation();gd.setPointerCapture(e.pointerId);
       },true);
       gd.addEventListener('pointermove',(e)=>{
         if(gesture) {e.preventDefault();e.stopImmediatePropagation();preview(e);}
         else if(!gd.layout.dragmode) {
           const pos=position(e),xa=gd._fullLayout?.xaxis;
-          const limits=isDepth?(state.depth_window || []):state.draft;
+          const limits=isDepth?(state.depth_window || []):(selectedDraft() || []);
           const near=pos?.inside && limits.some(v=>Math.abs(pos.pixel-xa.d2p(v))<=7);
           gd.style.cursor=near?'ew-resize':'crosshair';
         }
@@ -439,13 +464,16 @@ async function render({ model, el }) {
         const distance=Math.max(gesture.distance,Math.abs(e.clientX-gesture.clientX));
         if(distance>=3) preview(e);
         const finished=gesture;gesture=null;
-        if(distance>=3 && finished.limits[1]>finished.limits[0]) send(isDepth?'depth_window':'window',{bounds:finished.limits});
+        if(distance>=3 && finished.limits[1]>finished.limits[0]) {
+          if(isDepth) send('depth_window',{bounds:finished.limits});
+          else send(finished.intervalId===null?'interval_add':'interval_update',{id:finished.intervalId,bounds:finished.limits});
+        }
         else if(isDepth) {
           band(...(state.depth_window || [null,null]));
           const pos=position(e);if(pos) send('frame',{frame:pos.mass});
-        } else {band(...state.draft);syncState(state);status('Drag horizontally to select a mass interval.');}
+        } else {band(...(state.draft || [null,null]));syncState(state);status('Drag horizontally to select a mass interval.');}
       },true);
-      gd.addEventListener('pointercancel',()=>{if(gesture){gesture=null;band(...(isDepth?(state.depth_window || [null,null]):state.draft));syncState(state);status('Ready');}},true);
+      gd.addEventListener('pointercancel',()=>{if(gesture){gesture=null;band(...(isDepth?(state.depth_window || [null,null]):(state.draft || [null,null])));syncState(state);status('Ready');}},true);
     }
     if (key==='xz' || key==='yz' || key==='front') {
       let scrubbing=false;
@@ -535,7 +563,7 @@ async function render({ model, el }) {
   }
   for(const button of el.querySelectorAll('[data-tab]')) button.addEventListener('click',()=>showTab(button.dataset.tab));
   input('frame').addEventListener('change',()=>send('frame',{frame:number('frame')}));
-  for(const name of ['low','high']) input(name).addEventListener('change',()=>send('window',{bounds:[number('low'),number('high')]}));
+  for(const name of ['low','high']) input(name).addEventListener('change',()=>send('interval_update',{id:intervalEditor.selectedId(),bounds:[number('low'),number('high')]}));
   for(const name of ['first','last']) input(name).addEventListener('change',()=>send('draft_frames',{frames:[number('first'),number('last')]}));
   for(const name of ['log','relative','percentile','opacity','stretch','quality']) input(name).addEventListener('change',()=>{
     send('display',{log:input('log').checked,relative:input('relative').checked,
@@ -546,8 +574,9 @@ async function render({ model, el }) {
     stored:()=>send('peak',{index:state.index}),
     'reset-roi':()=>send('reset_roi'),
     'roi-exact':()=>send('roi_pixels',{roi:['x0','x1','y0','y1'].map(number)}),
-    integrate:()=>send('integrate',{bounds:[number('low'),number('high')],frames:[number('first'),number('last')]}),
-    'comparison-window':()=>send('comparison_add',{bounds:[number('low'),number('high')],frames:[number('first'),number('last')]}),
+    integrate:()=>send('integrate',draftPayload()),
+    'interval-add':()=>send('interval_add'),
+    'comparison-window':()=>send('comparison_add',draftPayload()),
     'comparison-clear':()=>send('comparison_clear'),
     'restore-display':()=>restoreDisplay(),
     'export-csv':()=>send('export',{format:'csv'}), 'export-json':()=>send('export',{format:'json'}),
@@ -598,7 +627,7 @@ async function render({ model, el }) {
   $('.tof-volume-details').addEventListener('toggle',()=>{if(mounted.size) redraw();});
   syncState(state);
   await redraw();status('Ready');
-  return ()=>{disposed=true;observer.disconnect();document.removeEventListener('pointerdown',closePickers);document.removeEventListener('keydown',onEscape);model.off('msg:custom',receive);for(const key of mounted) Plotly.purge(plot(key));el.replaceChildren();};
+  return ()=>{disposed=true;observer.disconnect();document.removeEventListener('pointerdown',closePickers);document.removeEventListener('keydown',onEscape);intervalEditor.dispose();model.off('msg:custom',receive);for(const key of mounted) Plotly.purge(plot(key));el.replaceChildren();};
 }
 
 export default {render};

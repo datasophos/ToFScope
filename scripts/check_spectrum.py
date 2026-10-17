@@ -36,6 +36,7 @@ with sync_playwright() as p:
         deadline=time.monotonic()+20
         while not gd.evaluate('(g)=>!!g._fullLayout?.xaxis'):
             assert time.monotonic()<deadline;page.wait_for_timeout(100)
+        page.wait_for_timeout(400)  # Wait for the already-mounted Explore plot to resize in its full tab.
         rev=app.get_attribute('data-revision')
         drag(page,point(gd,40),point(gd,60))
         expect(app).not_to_have_attribute('data-revision',rev,timeout=20000);ready(app)
