@@ -23,6 +23,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
     _css = Path(__file__).parent / 'web/workspace.css'
     initial = traitlets.Dict().tag(sync=True)
     plotly_js = traitlets.Unicode().tag(sync=True)
+    interval_editor_js = traitlets.Unicode().tag(sync=True)
 
     def __init__(self, path):
         super().__init__()
@@ -33,6 +34,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.opacity = .12
         self.stretch = 1.2
         self.quality = 'Fast'
+        self.interval_editor_js=(Path(__file__).parent/'web/interval_editor.js').read_text()
         self.load_file(path)
         self.plotly_js = get_plotlyjs()
         figures=self.figures()
@@ -57,8 +59,8 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.custom = False
         p = meta['peaks'][index]
         self.active_recipe=self.stored_recipe(index)
-        self.draft_intervals=self.active_recipe.intervals
-        self.draft = self.draft_intervals[0]
+        self.next_interval_id=0
+        self.reset_draft(self.active_recipe.intervals)
         self.draft_frames = self.frames
         self.set_color_range()
 
@@ -78,6 +80,39 @@ class ExplorerWorkspace(anywidget.AnyWidget):
     @property
     def high(self):
         return self.active_recipe.intervals[0][1] if len(self.active_recipe.intervals)==1 else None
+
+    @property
+    def draft_intervals(self):
+        return tuple(tuple(row['bounds']) for row in self.draft_windows)
+
+    @property
+    def draft(self):
+        row=next((r for r in self.draft_windows if r['id']==self.selected_interval_id),None)
+        return tuple(row['bounds']) if row else None
+
+    def reset_draft(self,intervals):
+        self.draft_windows=[]
+        for bounds in intervals:
+            self.draft_windows.append(dict(id=self.next_interval_id,bounds=tuple(bounds)))
+            self.next_interval_id+=1
+        self.selected_interval_id=self.draft_windows[0]['id'] if self.draft_windows else None
+
+    def draft_row(self,identifier):
+        row=next((r for r in self.draft_windows if r['id']==identifier),None)
+        if row is None:
+            raise ValueError('Unknown draft interval.')
+        return row
+
+    def checked_bounds(self,bounds):
+        axis=self.meta['masses']
+        return canonical_intervals([bounds],(float(axis.min()),float(axis.max())))[0]
+
+    def add_interval(self,bounds=None):
+        bounds=self.checked_bounds(bounds if bounds is not None else self.draft or self.active_recipe.intervals[0])
+        identifier=self.next_interval_id
+        self.next_interval_id+=1
+        self.draft_windows.append(dict(id=identifier,bounds=bounds))
+        self.selected_interval_id=identifier
 
     def stored_recipe(self,index):
         p=self.meta['peaks'][index]
@@ -106,6 +141,8 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                     frame=self.frame, frames=self.frames, depth_window=self.depth_window,
                     roi=self.roi, low=self.low, high=self.high, recipe=self.active_recipe.to_dict(),
                     intervals=self.active_recipe.intervals, draft_intervals=self.draft_intervals,
+                    draft_windows=[dict(id=r['id'],bounds=list(r['bounds'])) for r in self.draft_windows],
+                    selected_interval_id=self.selected_interval_id,
                     draft=self.draft, draft_frames=self.draft_frames, custom=self.custom,
                     label=self.label, log=self.logarithmic, relative=self.relative,
                     percentile=self.percentile, opacity=self.opacity, stretch=self.stretch,
@@ -165,17 +202,20 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 fig.add_hline(y=self.frame,line_color='#d18c24',line_width=1,
                               visible=not self.map_projection or self.depth_window is not None)
             elif key == 'spectrum':
-                fig = spectrum_plot(self.meta,intervals=self.draft_intervals)
+                fig = spectrum_plot(self.meta,intervals=self.draft_intervals,
+                                    window_ids=[r['id'] for r in self.draft_windows],selected_id=self.selected_interval_id)
                 for c in self.comparisons:
-                    for low,high in c['intervals']:
+                    for i,(low,high) in enumerate(c['intervals']):
                         fig.add_vrect(x0=low,x1=high,fillcolor=c['color'],opacity=.12,
-                                      line=dict(color=c['color'],width=1),layer='below')
+                                      line=dict(color=c['color'],width=1),layer='below',name=f"comparison:{c['id']}:{i}")
                 fig.update_xaxes(rangeslider_visible=False)
                 # Spectrum selection is one-dimensional and handled by the
                 # widget. Plotly's 2D drawrect leaves zero-height shapes for a
                 # horizontal drag and lets trace/shape hit targets intercept it.
                 fig.update_layout(dragmode=False)
-                fig.layout.shapes[0].update(editable=False,fillcolor='rgba(209,140,36,.15)')
+                fig.update_layout(editrevision=self.revision)
+                if self.draft_windows:
+                    fig.layout.shapes[0].update(editable=False,fillcolor='rgba(209,140,36,.15)')
             elif key == 'volume':
                 fig, preview_shape = volume_plot(selected_volume,selected_frames,self.roi,self.meta['fov_um'],
                                       self.percentile,self.opacity,self.stretch,self.logarithmic,self.quality)
@@ -290,8 +330,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 self.custom = False
                 peak = self.meta['peaks'][index]
                 self.active_recipe=self.stored_recipe(index)
-                self.draft_intervals=self.active_recipe.intervals
-                self.draft=self.draft_intervals[0]
+                self.reset_draft(self.active_recipe.intervals)
                 self.draft_frames = self.depth_window or self.frames
                 self.set_color_range()
                 keys = None
@@ -307,17 +346,27 @@ class ExplorerWorkspace(anywidget.AnyWidget):
             elif event == 'reset_roi':
                 self.roi = (0,self.volume.shape[2]-1,0,self.volume.shape[1]-1)
                 keys = ['ion','front','profile','xz','yz','volume']
-            elif event == 'window':
-                low,high = sorted(float(v) for v in p['bounds'])
-                if not np.isfinite([low,high]).all():
-                    raise ValueError('Mass bounds must be finite.')
-                low = max(float(self.meta['masses'].min()),low)
-                high = min(float(self.meta['masses'].max()),high)
-                if low >= high:
-                    raise ValueError('Lower mass limit must be smaller than upper limit.')
-                self.draft = (low,high)
-                self.draft_intervals=(self.draft,)
-                keys = ['spectrum']
+            elif event in ('window','interval_update'):
+                bounds=self.checked_bounds(p['bounds'])
+                identifier=p.get('id',self.selected_interval_id)
+                if identifier is None and event=='window':
+                    self.add_interval(bounds)
+                else:
+                    self.draft_row(identifier)['bounds']=bounds
+                keys=['spectrum']
+            elif event == 'interval_add':
+                self.add_interval(p.get('bounds'))
+                keys=['spectrum']
+            elif event == 'interval_select':
+                self.draft_row(p['id'])
+                self.selected_interval_id=p['id']
+                keys=['spectrum']
+            elif event == 'interval_remove':
+                self.draft_row(p['id'])
+                self.draft_windows=[r for r in self.draft_windows if r['id']!=p['id']]
+                if self.selected_interval_id==p['id']:
+                    self.selected_interval_id=self.draft_windows[0]['id'] if self.draft_windows else None
+                keys=['spectrum']
             elif event == 'draft_frames':
                 first,last = map(int,p['frames'])
                 if not 0 <= first <= last < self.meta['shape'][0]:
@@ -333,8 +382,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                     lo,hi=max(first,self.depth_window[0]),min(last,self.depth_window[1])
                     self.depth_window=(lo,hi) if lo<=hi else None
                 self.frame=int(np.clip(self.frame,first,last))
-                self.draft_intervals=recipe.intervals
-                self.draft=self.draft_intervals[0]
+                self.reset_draft(recipe.intervals)
                 self.draft_frames=recipe.frames
                 self.custom=True
                 self.set_color_range()
@@ -371,7 +419,8 @@ class ExplorerWorkspace(anywidget.AnyWidget):
             figures = self.figures(keys) if keys is None or keys else {}
             self.send(dict(state=self.state(),figures=figures,relayout=relayout))
         except (ValueError,KeyError,OSError,TypeError) as exc:
-            self.send(dict(error=str(exc),state=self.state()))
+            self.send(dict(error=str(exc),state=self.state(),figures=self.figures(['spectrum'])
+                           if event in ('window','interval_add','interval_update','interval_select','interval_remove') else {}))
         except Exception as exc:
             traceback.print_exc()
             self.send(dict(error=f'Unexpected error: {exc}',state=self.state()))
