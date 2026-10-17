@@ -30,23 +30,33 @@ The app opens as a single tabbed workspace with a persistent signal sidebar.
    or a stored label (`Pt`). Search results show exact masses and integration
    limits, with at most eight results visible. Use Arrow keys and Enter to
    select, or Escape to cancel. Recent channels appear as one-click shortcuts.
-   The comparison picker works the same way; its × button clears the comparison.
+   The comparison picker adds stored channels to a persistent list. Add as many
+   comparison windows as needed; each row has its own remove button and color.
+   The same colors identify depth-profile curves and spectrum bands.
    Searches use file labels rather than inferring ion identities for nominal bins.
-2. In **Slices & profile**, click the depth profile to pick a frame. Drag across
+2. **Explore** shows images on the left and the mass spectrum above the depth
+   profile on the right. The four plot frames share an even grid; hover or focus
+   a small **i** icon for interaction help. Each display has a **⤢** maximize button.
+   Use **Restore layout** or **Escape** to return with its selections and zoom intact.
+   Toggle **SIMS images** / **FIB SE image** above the images.
+   SIMS opens with a top projection summed over loaded depth, and a front XZ
+   projection summed over the ROI’s Y rows. Click the depth profile to pick a frame. Drag across
    it to select a persistent shaded depth window, such as frames 200–400. Drag
    its edges to resize, or Shift-drag inside it to move the interval. The window
    **sums the ion maps** and shows the **mean SE image** over the inclusive frame
    interval. Plot titles state the aggregation and frame count. The window also
    crops cross-sections, 3D and exports, and fills the integration frame fields.
    The full loaded profile remains visible for context. Clicking a frame exits
-   window mode and restores single-frame maps; **Clear depth window** also clears
-   the selected interval.
+   window mode and restores single-frame maps. **All depths**, beside the frame
+   controls, clears either a single-frame selection or a depth window and restores
+   the top projection over all loaded depths. The depth profile also offers this
+   reset while a selection is active, including when maximized.
    Use the frame number or previous/next buttons for exact single-frame steps.
 3. Draw a rectangle on the ion map to define a spatial ROI. Click its gold
    outline to reveal edit handles, then drag to move or resize it. The depth profile, cross-sections and 3D crop
    share that region. **Reset to full field** clears it; exact pixel limits are
    available in the sidebar.
-4. Open **Mass spectrum**. Drag horizontally to select a mass interval, including
+4. Use the embedded spectrum, or open **Mass spectrum** for a larger view. Drag horizontally to select a mass interval, including
    when starting directly on a peak. Drag a gold edge to resize it; Shift-drag
    inside the band to move it. If you switch to Plotly's zoom/pan tools, use
    **Draw window** to return to interval selection. The exact limits appear in
@@ -56,25 +66,37 @@ The app opens as a single tabbed workspace with a persistent signal sidebar.
 5. Set the first/last integration frames and Apply. Start with a small interval
    for a quick trial. Reconstruction reads one raw frame at a time and reports
    progress. **Restore stored channel** returns to the original integrated data.
+   To keep the image signal and add a comparison instead, choose **Add window to
+   comparisons**. Each custom comparison retains its own mass bounds and frame
+   coverage. Frames outside that coverage are missing, not zero. ROI changes
+   recompute every comparison; relative scaling normalizes each curve separately.
 6. Use **Cross-sections** for XZ/YZ views or **3D volume** to rotate the selected
-   signal. **Active data in this volume** shows the stored/applied source,
+   signal. The compact selection strip and expandable **Data & preview details** show the stored/applied source,
    exact mass limits, depth layers, spatial ROI and preview resolution. Each 3D
    voxel contains the active mass-window intensity at one X/Y/depth position;
-   the slice tab's integrated ion map sums those layers. Comparison channels
-   and relative-profile scaling affect the profile chart only. Pending mass
+   the integrated top projection sums those layers. Comparison channels
+   affect comparison curves and spectrum bands; relative-profile scaling affects
+   the profile chart only. Neither changes the active image or 3D signal. Pending mass
    or reconstruction-frame edits are called out separately until Apply.
    Context links jump to the spectrum or slice/profile view to edit the source
    selection. Opacity, threshold and display stretch change rendering only.
-7. Download a full-resolution ROI mean depth profile with **Profile CSV**, or
-   save the active analysis recipe with **Settings JSON**.
+7. Download the full-resolution ROI mean depth profiles (active signal plus all
+   comparisons) with **Profile CSV**, or
+   save the active analysis recipe and comparison definitions with **Settings JSON**.
+   CSV cells outside a comparison’s frame coverage are empty.
 
 Plot interactions update shared Python state through an AnyWidget bridge.
 Plotly's JavaScript bundle comes from the installed package; no CDN is required.
-Only the active tab renders its plots. Frame changes update slices and markers
+Only visible plots in the active tab render. Frame changes update slices and markers
 without rebuilding the 3D volume. The frontend lives in `web/`; `workspace.py`
 handles its events and `explorer.py` contains reusable file/analysis functions.
 
 ## Scientific and performance scope
+
+Comparison count has no fixed cap. Custom comparisons retain their reconstructed
+volumes in memory so spatial ROI changes remain exact; narrow the frame range
+when trying many custom windows on a large acquisition.
+
 
 - `explorer.py` is a reusable data layer independent of Marimo. It reads the
   Tofwerk schema directly with h5py to bound access to individual peak channels
@@ -112,7 +134,7 @@ handles its events and `explorer.py` contains reusable file/analysis functions.
   re-import is not implemented yet.
 - The example's 217-channel array expands to 17.2 GiB. The app loads channels
   individually (81.3 MiB each), caches up to three stored channels, and retains
-  the active custom channel. Full custom reintegration can take a minute or
+  the active custom channel and each custom comparison. Full custom reintegration can take a minute or
   longer. Progress appears while that calculation is running.
 - This is a prototype for files that contain `PeakData/PeakData`, a peak table,
   mass axis and sum spectrum. Raw-only files, physical depth calibration,
@@ -129,10 +151,16 @@ uv run python scripts/check_spectrum.py
 uv run python scripts/check_depth_window.py
 uv run python scripts/check_peak_picker.py
 uv run python scripts/check_volume_context.py
+uv run python scripts/check_comparisons_layout.py
+uv run python scripts/check_display_layout.py
+uv run python scripts/check_all_depths.py
+uv run python scripts/check_roi_replacement.py
 ```
 
 The numerical tests cover empty pixels, inclusive mass-window endpoints,
 out-of-range events, invalid bounds, pooling of thin features and partial
-blocks, and conversion of drawn coordinates to pixel regions. Browser checks
+blocks, conversion of drawn coordinates to pixel regions, comparison frame
+alignment and ROI updates, independent normalization, and exact XZ projections. Browser checks
 use installed Google Chrome and the real example to exercise profile clicks
-and drags, ROI drawing/editing, mass-window drawing, tabs, integration and exports.
+and drags, ROI drawing/editing, mass-window drawing, tabs, integration, multiple
+comparison windows, the SIMS/SE toggle, and exports.
