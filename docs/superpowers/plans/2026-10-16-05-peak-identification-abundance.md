@@ -36,11 +36,11 @@ Requires the `SignalRecipe`/`read_signal` interfaces from the disjoint-window pl
 
 **Interfaces:** `IsotopeRecord(symbol, mass_number, neutral_mass_u, abundance_low, abundance_high, source_id)`; `load_catalog(path=None) -> tuple[IsotopeRecord,...]`; `ion_mz(record, charge: int) -> float`; `find_candidates(mz: float, tolerance: float, tolerance_unit: str, charges: tuple[int,...], catalog) -> list[IonCandidate]`. Candidate fields include signed charge, predicted m/z, signed Th/ppm error and reference provenance.
 
-- [ ] Write synthetic-catalog tests at neutral masses 10 and 12 for both Th and ppm tolerance, inclusive boundaries, tied masses, zero m/z, invalid tolerance, and forbidden charge zero/outside ±1..3. Check positive and negative electron corrections against separately sourced reference fixtures, not rounded atomic weights.
-- [ ] Test abundance ranges and absent values survive parsing/serialization. Each catalog has a recorded source revision/retrieval date, license/redistribution review and checksum; invalid reference records fail validation rather than being dropped silently.
-- [ ] Run `uv run python -m unittest discover -s tests -p 'test_isotopes.py' -v`; verify failure, then implement exact-mass matching, deterministic error ordering and explicit polarity. The convention starts from neutral isotope mass, accounts for signed electron count, and documents omitted binding-energy corrections.
-- [ ] Build the offline catalog from NIST isotope masses and CIAAW abundance values/ranges. The update script runs manually; app startup never downloads data. Pin the chosen reference releases and verify one mono-isotopic and one multi-isotopic element against their source tables.
-- [ ] Run matcher/catalog tests. Commit: `Add offline isotope mass candidate matching.`
+- [x] Write synthetic-catalog tests at neutral masses 10 and 12 for both Th and ppm tolerance, inclusive boundaries, tied masses, zero m/z, invalid tolerance, and forbidden charge zero/outside ±1..3. Check positive and negative electron corrections against separately sourced reference fixtures, not rounded atomic weights.
+- [x] Test abundance ranges and absent values survive parsing/serialization. Each catalog has a recorded source revision/retrieval date, license/redistribution review and checksum; invalid reference records fail validation rather than being dropped silently.
+- [x] Run `uv run python -m unittest discover -s tests -p 'test_isotopes.py' -v`; verify failure, then implement exact-mass matching, deterministic error ordering and explicit polarity. The convention starts from neutral isotope mass, accounts for signed electron count, and documents omitted binding-energy corrections.
+- [x] Build the offline catalog from NIST isotope masses and CIAAW abundance values/ranges. The update script runs manually; app startup never downloads data. Pin the chosen reference releases and verify one mono-isotopic and one multi-isotopic element against their source tables.
+- [x] Run matcher/catalog tests. Commit: `Add offline isotope mass candidate matching.`
 
 ### Task 2: Compute explicit observed isotope areas
 
@@ -48,11 +48,11 @@ Requires the `SignalRecipe`/`read_signal` interfaces from the disjoint-window pl
 
 **Interfaces:** `measure_isotopes(path, recipes: Sequence[SignalRecipe], roi: tuple[int,int,int,int], frames: tuple[int,int]) -> list[IsotopeMeasurement]`. A row records recipe/reference ID, requested and actual coverage, summed original intensity, observed selected-set fraction or null, reference interval, and ambiguity/status. Measured ratios are not inferred atomic concentration.
 
-- [ ] Write tests for two non-overlapping synthetic isotope signals of 30 and 70 normalized counts: measured selected-set fractions 0.3/0.7. Zero totals yield null fractions; missing coverage stays missing. ROI and frame changes must produce independently verified sums of original values.
-- [ ] Test same/overlapping mass-window recipes: mark those rows ambiguous and suppress an independent observed-fraction estimate until overlap is resolved. If recipes have different frame coverage, require their common covered interval for a ratio, display it explicitly, and return unavailable when it is empty.
-- [ ] Run `uv run python -m unittest discover -s tests -p 'test_abundance.py' -v`; verify failure, then implement through `read_signal`. Do not sum rounded CSV or logarithmic display arrays. Preserve reference abundance ranges; avoid deriving sample composition or confidence probabilities.
-- [ ] Add regression fixtures for a mono-isotopic reference, an isotope without a natural abundance, and an enriched-sample observation far from the natural expectation; report the observation without forcing a fit to natural abundance.
-- [ ] Run all numerical tests. Commit: `Measure isotope areas with explicit coverage and ambiguity.`
+- [x] Write tests for two non-overlapping synthetic isotope signals of 30 and 70 normalized counts: measured selected-set fractions 0.3/0.7. Zero totals yield null fractions; missing coverage stays missing. ROI and frame changes must produce independently verified sums of original values.
+- [x] Test same/overlapping mass-window recipes: mark those rows ambiguous and suppress an independent observed-fraction estimate until overlap is resolved. If recipes have different frame coverage, require their common covered interval for a ratio, display it explicitly, and return unavailable when it is empty.
+- [x] Run `uv run python -m unittest discover -s tests -p 'test_abundance.py' -v`; verify failure, then implement through `read_signal`. Do not sum rounded CSV or logarithmic display arrays. Preserve reference abundance ranges; avoid deriving sample composition or confidence probabilities.
+- [x] Add regression fixtures for a mono-isotopic reference, an isotope without a natural abundance, and an enriched-sample observation far from the natural expectation; report the observation without forcing a fit to natural abundance.
+- [x] Run all numerical tests. Commit: `Measure isotope areas with explicit coverage and ambiguity.`
 
 ### Task 3: Ship identification assistance and the abundance table
 
@@ -60,11 +60,11 @@ Requires the `SignalRecipe`/`read_signal` interfaces from the disjoint-window pl
 
 **Interfaces:** `peak_candidates {mz,tolerance,unit,charges}` returns candidate records only; `abundance_measure {recipes,frames,roi}` explicitly starts integration with progress. `peak_assignment {recipe_id,candidate_id}` records a user annotation while preserving the original file label. Reference metadata travels with assignments and exports.
 
-- [ ] Write a failing browser scenario opening the helper from a selected spectrum peak, changing tolerance/polarity, inspecting two candidates, selecting an annotation, and explicitly measuring a requested isotope set. Verify source label and primary signal are unchanged until the user chooses an analysis action.
-- [ ] Test empty matches, nominal bins spanning several identities, isobars, measured/reference columns, abundance ranges, enriched observations, and missing/overlap statuses. Verify sorting and CSV headers remain stable for similar isotope names/charges.
-- [ ] Implement a compact helper dialog and abundance tab/table with element/isotope, charge, predicted m/z, mass error, reference abundance, measured area and observed fraction. Offer Add as comparison and Apply window as explicit actions. Molecular/adduct search remains excluded and is stated in help.
-- [ ] Run `uv run python scripts/check_peak_helper.py` with the app and all isotope/abundance tests. Verify the feature works offline and no candidate-list request triggers full raw reconstruction.
-- [ ] Update README and commit: `Add peak identification and isotope abundance inspection.`
+- [x] Write a failing browser scenario opening the helper from a selected spectrum peak, changing tolerance/polarity, inspecting two candidates, selecting an annotation, and explicitly measuring a requested isotope set. Verify source label and primary signal are unchanged until the user chooses an analysis action.
+- [x] Test empty matches, nominal bins spanning several identities, isobars, measured/reference columns, abundance ranges, enriched observations, and missing/overlap statuses. Verify sorting and CSV headers remain stable for similar isotope names/charges.
+- [x] Implement a compact helper dialog and abundance tab/table with element/isotope, charge, predicted m/z, mass error, reference abundance, measured area and observed fraction. Offer Add as comparison and Apply window as explicit actions. Molecular/adduct search remains excluded and is stated in help.
+- [x] Run `uv run python scripts/check_peak_helper.py` with the app and all isotope/abundance tests. Verify the feature works offline and no candidate-list request triggers full raw reconstruction.
+- [x] Update README and commit: `Add peak identification and isotope abundance inspection.`
 
 ## Acceptance
 

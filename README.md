@@ -187,6 +187,24 @@ values blank; JSON retains canonical nm anchors and the interpolation policy.
 Removing all positive-depth anchors restores frame coordinates. Cross-sections
 and 3D still use acquisition frames and the existing arbitrary display stretch.
 
+## Atomic ions and isotope measurements
+
+Use **Identify…** on the spectrum to search an explicit m/z tolerance in Th or
+ppm, polarity, and charges 1–3. The helper uses the offline NIST/CIAAW catalog;
+reference version and mass convention are in [data/reference/README.md](data/reference/README.md).
+Select a candidate and **Annotate signal** to record an interpretation alongside
+the original label. **Apply window** and **Add as comparison** are separate
+analysis actions with editable exact integration limits.
+
+The **Isotopes** tab explicitly measures selected active/comparison signals in
+the current ROI and depth window. It shows original intensity sums, observed
+fractions within that selected set, natural reference abundances/ranges and
+coverage/status. Ratios use common covered frames. Overlapping windows suppress
+fractions; unknown reference abundances remain unknown. These are signal ratios,
+not a quantitative composition fit. **Isotope CSV** and Settings JSON preserve
+measurement scope and annotations; measurements do not automatically rerun when
+you change the ROI or depth window. Molecular ions/adducts are outside this pass.
+
 ## Verify
 
 ```sh
@@ -206,6 +224,7 @@ uv run python scripts/check_window_sets.py
 uv run python scripts/check_interval_selection_race.py
 uv run python scripts/check_file_browser.py
 uv run python scripts/check_depth_calibration.py
+uv run python scripts/check_peak_helper.py
 ```
 
 The numerical tests cover empty pixels, inclusive mass-window endpoints,
