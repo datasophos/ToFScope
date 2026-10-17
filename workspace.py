@@ -9,6 +9,7 @@ from html import escape
 from signals import SignalRecipe,read_signal,interval_label
 from integration import canonical_intervals
 from server_config import ServerSettings, resolve_data_path
+from file_browser import list_data_files
 
 import anywidget
 import numpy as np
@@ -26,9 +27,12 @@ class ExplorerWorkspace(anywidget.AnyWidget):
     plotly_js = traitlets.Unicode().tag(sync=True)
     interval_editor_js = traitlets.Unicode().tag(sync=True)
 
-    def __init__(self, path, settings=None):
+    def __init__(self, path=None, settings=None):
         super().__init__()
+        if settings is None and path is None:
+            raise ValueError('Server settings are required without an initial acquisition.')
         self.settings=settings or ServerSettings(Path(path).expanduser().resolve().parent)
+        self.meta=None
         self.revision = 0
         self.logarithmic = True
         self.relative = False
@@ -37,7 +41,11 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.stretch = 1.2
         self.quality = 'Fast'
         self.interval_editor_js=(Path(__file__).parent/'web/interval_editor.js').read_text()
-        self.load_file(path)
+        self.startup_error=None
+        if path is not None:
+            try:self.load_file(path)
+            except (OSError,ValueError,KeyError) as exc:
+                self.startup_error=self.safe_error(exc)
         self.plotly_js = get_plotlyjs()
         figures=self.figures()
         self.initial = dict(state=self.state(), figures=figures)
@@ -70,6 +78,9 @@ class ExplorerWorkspace(anywidget.AnyWidget):
 
     def public_path(self):
         return str(Path(self.meta['path']).relative_to(self.settings.data_root))
+
+    def safe_error(self,exc):
+        return str(exc).replace(str(self.settings.data_root),'<data root>')
 
     def set_color_range(self):
         sample = self.volume[::max(1,len(self.volume)//64)]
@@ -141,7 +152,9 @@ class ExplorerWorkspace(anywidget.AnyWidget):
             self.send(dict(progress=dict(done=done,total=total)))
 
     def state(self):
-        return dict(name=self.meta['name'], path=self.public_path(), shape=list(self.meta['shape']),
+        if self.meta is None:
+            return dict(loaded=False,revision=self.revision,startup_error=self.startup_error)
+        return dict(loaded=True,name=self.meta['name'], path=self.public_path(), shape=list(self.meta['shape']),
                     gib=round(self.meta['bytes']/2**30,2), peaks=self.meta['peaks'],
                     fov=self.meta['fov_um'], raw=self.meta['raw_shape'] is not None,
                     raw_shape=self.meta['raw_shape'], index=self.index, comparisons=self.comparisons, map_projection=self.map_projection,
@@ -157,6 +170,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                     revision=self.revision)
 
     def figures(self, keys=None):
+        if self.meta is None:return {}
         keys = keys or ['ion','front','se','profile','xz','yz','spectrum','volume']
         result = {}
         selected_frames = self.depth_window or self.frames
@@ -299,6 +313,16 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         keys = []
         relayout = {}
         try:
+            if event=='files_list':
+                try:
+                    page=list_data_files(self.settings,p.get('path',''),query=p.get('query',''),offset=p.get('offset',0),limit=p.get('limit',100))
+                    response=page.to_dict()
+                except (ValueError,OSError,TypeError) as exc:
+                    response=dict(error=self.safe_error(exc))
+                self.send(dict(files=dict(**response,request_id=p.get('request_id'))))
+                return
+            if self.meta is None and event!='open':
+                raise ValueError('Open an acquisition before using analysis controls.')
             if event == 'frame':
                 self.map_projection = False
                 self.frame = int(np.clip(round(float(p['frame'])),*self.frames))
@@ -416,6 +440,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 keys = ['ion','front','profile','xz','yz','volume']
             elif event == 'open':
                 self.load_file(resolve_data_path(self.settings,p['path'],require_file=True))
+                self.startup_error=None
                 keys = None
             elif event == 'export':
                 self.export(p['format'])
@@ -426,7 +451,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
             figures = self.figures(keys) if keys is None or keys else {}
             self.send(dict(state=self.state(),figures=figures,relayout=relayout))
         except (ValueError,KeyError,OSError,TypeError) as exc:
-            self.send(dict(error=str(exc),state=self.state(),figures=self.figures(['spectrum'])
+            self.send(dict(error=self.safe_error(exc),state=self.state(),figures=self.figures(['spectrum'])
                            if event in ('window','interval_add','interval_update','interval_select','interval_remove') else {}))
         except Exception as exc:
             traceback.print_exc()
