@@ -44,7 +44,8 @@ def resolve_data_path(settings, relative_path: str, *, require_file: bool=False)
     relative=Path(relative_path)
     if relative.is_absolute() or '..' in relative.parts:
         raise ValueError('Paths must stay inside the configured data root.')
-    target=(settings.data_root/relative).resolve()
+    try:target=(settings.data_root/relative).resolve()
+    except RuntimeError:raise ValueError('The selected path contains a symbolic-link cycle.') from None
     if not target.is_relative_to(settings.data_root):
         raise ValueError('Paths must stay inside the configured data root.')
     if not target.exists():raise ValueError('The selected data path no longer exists.')
