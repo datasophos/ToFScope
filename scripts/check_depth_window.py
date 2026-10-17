@@ -2,6 +2,8 @@
 import json
 import time
 import base64
+import os
+from pathlib import Path
 import h5py
 import numpy as np
 from playwright.sync_api import sync_playwright,expect
@@ -56,7 +58,7 @@ with sync_playwright() as p:
             actual=np.frombuffer(base64.b64decode(values['bdata']),dtype=values['dtype']).reshape(128,128)
         else:
             actual=np.asarray(values)
-        path=app.get_by_label('Local HDF5 path',exact=True).input_value()
+        path=os.environ.get('TOF_FILE',str(Path(__file__).resolve().parents[2]/'2025-12-05_example_datasets/pfib_1301x128x128_AlTiPt.h5'))
         with h5py.File(path,'r') as f:
             expected=f['PeakData/PeakData'][interval[0]:interval[1]+1,:,:,26].sum(axis=0,dtype=np.float64)
         np.testing.assert_array_equal(actual,expected)

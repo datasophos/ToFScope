@@ -20,8 +20,12 @@ with sync_playwright() as p:
             revision=app.get_attribute('data-revision');dialog.get_by_role('button',name='Add anchor',exact=True).click();changed(app,revision)
         expect(dialog.locator('[data-anchor-frame]')).to_have_count(3)
         expect(dialog.locator('[data-anchor-frame="0"]')).to_contain_text('Fixed')
+        dialog.get_by_label('Known depth',exact=True).fill('100')
         revision=app.get_attribute('data-revision');dialog.get_by_label('Depth display unit',exact=True).select_option('µm');changed(app,revision)
+        assert float(dialog.get_by_label('Known depth',exact=True).input_value())==.1
+        dialog.get_by_label('Depth at frame 100',exact=True).fill('.06')
         revision=app.get_attribute('data-revision');dialog.get_by_label('Profile coordinates',exact=True).select_option('depth');changed(app,revision)
+        assert float(dialog.get_by_label('Depth at frame 100',exact=True).input_value())==.06
         dialog.get_by_role('button',name='Done',exact=True).click()
         gd=app.locator('[data-plot="profile"]');expect(gd.locator('.xtitle')).to_have_text('Depth (µm)',timeout=10000)
         a=point(gd,.025);c=point(gd,.150);revision=app.get_attribute('data-revision')

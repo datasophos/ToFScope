@@ -27,6 +27,11 @@ class CalibratedProfileTests(unittest.TestCase):
         self.assertTrue(np.isnan(np.asarray(depth.data[0].x)[101:]).all())
         self.assertEqual(depth.layout.meta['axis_kind'],'depth');self.assertEqual(depth.layout.shapes[0].x0,100)
 
+    def test_one_calibrated_sample_is_visible(self):
+        c=DepthCalibration((DepthAnchor(0,0),DepthAnchor(100,50)),301)
+        fig,_=profile_plot(np.ones((201,1,1)),(100,300),(0,0,0,0),100,'ion',calibration=c)
+        self.assertIn('markers',fig.data[0].mode)
+
     def test_controller_export_partial_depth_and_anchor_validation(self):
         temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup)
         path=Path(temp.name)/'a.h5';make_acquisition(path)

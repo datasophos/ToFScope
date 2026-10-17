@@ -78,3 +78,10 @@ coordinates. Browser verification covers unsorted anchor entry, unit switching,
 physical-range selection yielding original frames, export, maximized removal
 back to Frames and All depths. The original layout and All depths checks passed.
 Acquisition files remain read-only; physical 3D geometry remains separate.
+
+Final review fixes: typed new-anchor and existing-row drafts now retain their
+physical values through unit/axis changes; numerical values are stored in nm
+until explicit Add/Update. Single finite calibrated samples show a marker. Each
+regression was observed failing before the fix, and the full suite passed.
+Deferred minor: the resize hover cursor still uses frame coordinates on the
+calibrated axis; actual dragging uses the correct physical coordinates.
