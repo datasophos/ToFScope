@@ -76,24 +76,30 @@ def image_plot(data, title, fov=None, log=False, vmax=None, roi=None, gray=False
     return layout(fig, title, 390)
 
 
-def profile_plot(volume, frames, roi, selected_frame, label, comparison=None, relative=False):
+def profile_plot(volume, frames, roi, selected_frame, label, comparison=None, relative=False,calibration=None,unit="nm"):
+    from depth_calibration import convert_depth
     x0, x1, y0, y1 = roi
     profile = volume[:, y0:y1+1, x0:x1+1].mean(axis=(1, 2), dtype=np.float64)
     z = np.arange(frames[0], frames[1] + 1)
+    coords=convert_depth(calibration.frame_to_depth(z),"nm",unit) if calibration else z
     curves = [(label, profile, TEAL), *(comparison or [])]
     fig = go.Figure()
     for name, values, color in curves:
         finite = values[np.isfinite(values)]
         maximum = finite.max() if finite.size else 0
         values = values / maximum if relative and maximum > 0 else values
-        fig.add_trace(go.Scatter(x=z, y=values, name=name,
+        fig.add_trace(go.Scatter(x=coords, y=values, name=name,customdata=z,
                                 mode='lines+markers' if finite.size==1 else 'lines',
                                 marker=dict(color=color,size=6),connectgaps=False,
                                 line=dict(color=color, width=1.6)))
-    fig.add_vline(x=selected_frame, line_color='#8b99a8', line_dash='dot')
-    fig.update_xaxes(title='Depth frame')
+    marker=float(convert_depth(calibration.frame_to_depth(selected_frame),'nm',unit)) if calibration else selected_frame
+    fig.add_vline(x=marker if np.isfinite(marker) else 0,visible=bool(np.isfinite(marker)),line_color='#8b99a8',line_dash='dot')
+    fig.update_xaxes(title=f'Depth ({unit})' if calibration else 'Depth frame')
     fig.update_yaxes(title='Relative to each curve’s maximum' if relative else 'Mean intensity / pixel')
     layout(fig, 'Depth profile · selected spatial ROI', 290)
+    fig.update_layout(meta=dict(axis_kind='depth' if calibration else 'frame',unit=unit if calibration else 'frame',
+                               calibrated_span=[calibration.anchors[0].frame,calibration.anchors[-1].frame] if calibration else None))
+    if calibration:fig.update_layout(title=f'Depth profile · calibrated frames 0–{calibration.anchors[-1].frame}')
     fig.update_layout(margin=dict(t=86), title=dict(y=.98,yanchor='top'),
                       legend=dict(orientation='h',y=1.02,yanchor='bottom',maxheight=50,font=dict(size=10)))
     return fig, profile

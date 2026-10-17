@@ -10,6 +10,7 @@ from signals import SignalRecipe,read_signal,interval_label
 from integration import canonical_intervals
 from server_config import ServerSettings, resolve_data_path
 from file_browser import list_data_files
+from depth_calibration import DepthAnchor, DepthCalibration, validate_anchors, convert_depth
 
 import anywidget
 import numpy as np
@@ -49,7 +50,9 @@ class ExplorerWorkspace(anywidget.AnyWidget):
             except (OSError,ValueError,KeyError) as exc:
                 self.startup_error=self.safe_error(exc)
         self.plotly_js = get_plotlyjs()
-        figures=self.figures()
+        try:figures=self.figures()
+        except (OSError,ValueError,KeyError,TypeError) as exc:
+            self.meta=None;self.startup_error=self.safe_error(exc);figures={}
         self.initial = dict(state=self.state(), figures=figures)
         self.on_msg(self.handle_message)
 
@@ -83,12 +86,26 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.reset_draft(self.active_recipe.intervals)
         self.draft_frames = self.frames
         self.color_max=color_max
+        self.depth_anchors=(DepthAnchor(0,0.),)
+        self.calibration=None
+        self.depth_unit='nm'
+        self.profile_axis='frame'
 
     def public_path(self):
         return str(Path(self.meta['path']).relative_to(self.settings.data_root))
 
     def safe_error(self,exc):
         return str(exc).replace(str(self.settings.data_root),'<data root>')
+
+    def calibration_metadata(self):
+        return dict(anchors=[dict(frame=a.frame,depth_nm=a.depth_nm) for a in self.depth_anchors],
+                    unit=self.depth_unit,acquisition_frames=self.meta['shape'][0],
+                    interpolation='piecewise_linear',extrapolation=False)
+
+    def profile_coordinate(self,frame):
+        if self.profile_axis=='depth' and self.calibration:
+            return float(convert_depth(self.calibration.frame_to_depth(frame),'nm',self.depth_unit))
+        return frame
 
     def set_color_range(self):
         sample = self.volume[::max(1,len(self.volume)//64)]
@@ -175,6 +192,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                     label=self.label, log=self.logarithmic, relative=self.relative,
                     percentile=self.percentile, opacity=self.opacity, stretch=self.stretch,
                     quality=self.quality, volume_details=getattr(self,'volume_details',None),
+                    depth_calibration=self.calibration_metadata(),profile_axis=self.profile_axis,
                     revision=self.revision)
 
     def figures(self, keys=None):
@@ -214,12 +232,16 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                                   intensity_label='Mean SE signal' if self.depth_window else 'Intensity')
             elif key == 'profile':
                 fig, _ = profile_plot(self.volume,self.frames,self.roi,self.frame,self.label,
-                                      self.comparison_curves(),self.relative)
+                                      self.comparison_curves(),self.relative,
+                                      calibration=self.calibration if self.profile_axis=='depth' else None,unit=self.depth_unit)
                 fig.update_layout(dragmode=False, hovermode='x unified')
                 fig.layout.shapes[0].update(line=dict(color='#d18c24',width=2),
-                                            visible=not self.map_projection or self.depth_window is not None)
+                                            visible=(not self.map_projection or self.depth_window is not None) and np.isfinite(self.profile_coordinate(self.frame)))
                 if self.depth_window:
-                    fig.add_vrect(x0=self.depth_window[0],x1=self.depth_window[1],
+                    bounds=[self.profile_coordinate(z) for z in self.depth_window]
+                    if self.profile_axis=='depth':
+                        bounds=[self.profile_coordinate(int(np.clip(z,0,self.calibration.anchors[-1].frame))) for z in self.depth_window]
+                    fig.add_vrect(x0=bounds[0],x1=bounds[1],
                                   fillcolor='rgba(209,140,36,.18)',line_color='#d18c24',
                                   line_width=2,editable=False)
             elif key == 'front':
@@ -262,7 +284,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
             fig.update_layout(autosize=True)
             fig.layout.height = None
             fig.layout.width = None
-            fig.update_layout(uirevision=f'{self.meta["path"]}:{key}')
+            fig.update_layout(uirevision=f'{self.meta["path"]}:{key}:{self.profile_axis}:{self.depth_unit}' if key=='profile' else f'{self.meta["path"]}:{key}')
             result[key] = json.loads(fig.to_json())
         return result
 
@@ -343,6 +365,8 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                     relayout = {'profile':{'shapes[0].x0':self.frame,'shapes[0].x1':self.frame,'shapes[0].visible':True}}
                     relayout.update({k:{'shapes[0].y0':self.frame,'shapes[0].y1':self.frame,'shapes[0].visible':True} for k in ['xz','yz']})
                     relayout['front']={'shapes[1].y0':self.frame,'shapes[1].y1':self.frame,'shapes[1].visible':True}
+                    if self.profile_axis=='depth':
+                        keys.append('profile');relayout.pop('profile',None)
             elif event == 'depth_window':
                 bounds = np.asarray(p['bounds'],dtype=float)
                 if bounds.shape != (2,) or not np.isfinite(bounds).all():
@@ -358,6 +382,28 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 self.depth_window = None
                 self.draft_frames = self.frames
                 keys = ['ion','front','se','profile','xz','yz','volume']
+            elif event in ('depth_anchor_set','depth_anchor_remove'):
+                frame=p['frame']
+                if type(frame) is not int:raise ValueError('Depth anchor frame must be an integer.')
+                if frame==0:raise ValueError('Frame 0 is fixed at depth 0.')
+                rows=[a for a in self.depth_anchors if a.frame!=frame]
+                existing=len(rows)!=len(self.depth_anchors)
+                if event=='depth_anchor_set':
+                    if existing and not p.get('replace',False):raise ValueError('An anchor already exists at this frame; edit its row.')
+                    rows.append(DepthAnchor(frame,float(convert_depth(p['depth'],p['unit'],'nm'))))
+                elif not existing:raise ValueError('Unknown depth anchor.')
+                rows=validate_anchors(rows,self.meta['shape'][0])
+                calibration=DepthCalibration(rows,self.meta['shape'][0]) if len(rows)>=2 else None
+                self.depth_anchors=rows;self.calibration=calibration
+                if calibration is None:self.profile_axis='frame'
+                keys=['profile']
+            elif event=='depth_unit':
+                convert_depth(1,'nm',p['unit']);self.depth_unit='µm' if p['unit']=='um' else p['unit']
+                keys=['profile']
+            elif event=='profile_axis':
+                if p['axis'] not in ('frame','depth'):raise ValueError('Unknown profile axis.')
+                if p['axis']=='depth' and self.calibration is None:raise ValueError('Add a positive-depth anchor first.')
+                self.profile_axis=p['axis'];keys=['profile']
             elif event == 'peak':
                 index = int(p['index'])
                 if not 0 <= index < len(self.meta['peaks']):
@@ -447,9 +493,20 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 self.quality = p.get('quality',self.quality)
                 keys = ['ion','front','profile','xz','yz','volume']
             elif event == 'open':
-                self.load_file(resolve_data_path(self.settings,p['path'],require_file=True))
-                self.startup_error=None
-                keys = None
+                path=resolve_data_path(self.settings,p['path'],require_file=True)
+                # Rendering may discover malformed SE or spectrum metadata.
+                # Publish nothing until both the load and all figures succeed.
+                previous=self.__dict__.copy()
+                try:
+                    self.load_file(path)
+                    self.startup_error=None
+                    self.revision+=1
+                    prepared=self.figures()
+                except Exception:
+                    self.__dict__.clear();self.__dict__.update(previous)
+                    raise
+                self.send(dict(state=self.state(),figures=prepared,relayout={}))
+                return
             elif event == 'export':
                 self.export(p['format'])
                 return
@@ -474,16 +531,18 @@ class ExplorerWorkspace(anywidget.AnyWidget):
             out = io.StringIO()
             writer = csv.writer(out)
             curves = self.comparison_curves()
-            writer.writerow(['frame','roi_mean_intensity',*[f"{c['label']} [comparison {c['id']+1}]" for c in self.comparisons]])
+            writer.writerow(['frame',*(['depth_nm'] if self.calibration else []),'roi_mean_intensity',*[f"{c['label']} [comparison {c['id']+1}]" for c in self.comparisons]])
             for i,z in enumerate(range(selected_frames[0],selected_frames[1]+1)):
                 offset = z-self.frames[0]
-                writer.writerow([z,f'{profile[i]:.9g}',*[f'{c[1][offset]:.9g}' if np.isfinite(c[1][offset]) else '' for c in curves]])
+                depth=self.calibration.frame_to_depth(z) if self.calibration else None
+                writer.writerow([z,*([f'{float(depth):.9g}' if np.isfinite(depth) else ''] if self.calibration else []),f'{profile[i]:.9g}',*[f'{c[1][offset]:.9g}' if np.isfinite(c[1][offset]) else '' for c in curves]])
             filename,text = 'depth-profile.csv',out.getvalue()
         else:
             recipe=self.active_recipe.to_dict()
             recipe.update(dataset=self.public_path(),signal=self.label,frames_inclusive=selected_frames,
                           loaded_frames_inclusive=self.frames,roi_pixels_inclusive=self.roi,
                           z_units='frame',fov_um=self.meta['fov_um'],comparisons=self.comparisons)
+            recipe.update(depth_calibration=self.calibration_metadata(),profile_axis=self.profile_axis)
             if len(self.active_recipe.intervals)==1:
                 recipe.update(lower_Th=self.low,upper_Th=self.high)
             filename,text = 'mass-window.json',json.dumps(recipe,indent=2)

@@ -47,7 +47,8 @@ class FileBrowserTests(unittest.TestCase):
         with patch('workspace.get_plotlyjs',return_value=''):
             w=ExplorerWorkspace(settings=self.settings);w.send=Mock()
         self.assertFalse(w.state()['loaded']);self.assertEqual(w.initial['figures'],{})
-        for event,payload in [('files_list',dict(path='',request_id=8)),('files_list',dict(path='../',request_id=9)),('open',dict(path='missing.h5')),('frame',dict(frame=1)),('export',dict(format='json'))]:
+        (self.root/'loop').symlink_to('loop')
+        for event,payload in [('files_list',dict(path='',request_id=8)),('files_list',dict(path='../',request_id=9)),('files_list',dict(path='loop',request_id=10)),('open',dict(path='missing.h5')),('frame',dict(frame=1)),('export',dict(format='json'))]:
             w.handle_message(None,dict(event=event,payload=payload),None)
             response=w.send.call_args.args[0]
             if event=='files_list':self.assertEqual(response['files']['request_id'],payload['request_id'])
@@ -68,3 +69,16 @@ class FileBrowserTests(unittest.TestCase):
         w.handle_message(None,dict(event='open',payload=dict(path='bad.h5')),None)
         self.assertIn('error',w.send.call_args.args[0]);self.assertIs(w.volume,before)
         self.assertIs(w.meta,meta);self.assertIs(w.active_recipe,recipe)
+
+    def test_render_failure_preserves_previous_dataset_and_plots(self):
+        from test_signal_recipes import make_acquisition
+        import h5py
+        good=self.root/'good.h5';bad=self.root/'bad.h5';make_acquisition(good);make_acquisition(bad)
+        with h5py.File(bad,'r+') as f:f.create_group('FIBImages/frame0')
+        with patch('workspace.get_plotlyjs',return_value=''):w=ExplorerWorkspace(good,settings=self.settings)
+        w.send=Mock();before=w.volume;meta=w.meta
+        w.handle_message(None,dict(event='open',payload=dict(path='bad.h5')),None)
+        response=w.send.call_args.args[0]
+        self.assertIn('error',response);self.assertEqual(response['state']['path'],'good.h5')
+        self.assertIs(w.meta,meta);self.assertIs(w.volume,before)
+        self.assertEqual(response.get('figures',{}),{})
