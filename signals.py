@@ -89,3 +89,19 @@ class SignalRecipe:
     def computation_key(self,path):
         from explorer import file_key
         return (file_key(path),self.source,self.stored_index,self.saved_id,self.intervals,self.frames)
+
+
+def read_signal(path, recipe, progress=None):
+    """Return (depth,y,x), with array index zero at recipe.frames[0]."""
+    import h5py
+    from explorer import stored_peak
+    from integration import custom_peak_windows
+    if recipe.source=='saved':
+        raise ValueError('Saved HDF5 integrations are not supported yet.')
+    if recipe.source=='custom':
+        return custom_peak_windows(path,recipe.intervals,*recipe.frames,progress)
+    with h5py.File(path,'r') as f:
+        shape=f['PeakData/PeakData'].shape
+        if recipe.frames[1]>=shape[0] or recipe.stored_index>=shape[-1]:
+            raise ValueError('Stored channel or frame range is outside the acquisition.')
+    return stored_peak(path,recipe.stored_index)[recipe.frames[0]:recipe.frames[1]+1]

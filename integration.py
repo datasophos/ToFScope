@@ -48,3 +48,32 @@ def integrate_event_windows(events, mass_axis, clock_ratio, normalization, inter
     boundaries=np.concatenate(([0],np.cumsum(lengths)))
     counts=np.concatenate(([0],np.cumsum(selected,dtype=np.int64)))
     return (np.diff(counts[boundaries]).reshape(events.shape)/normalization).astype(np.float32)
+
+
+def custom_peak_windows(path, intervals, first, last, progress=None):
+    """Reconstruct a union in one read per supported acquisition depth slice."""
+    import h5py
+    from operator import index
+    from explorer import integration_parameters
+    try:
+        if isinstance(first,bool) or isinstance(last,bool):
+            raise TypeError
+        first,last=index(first),index(last)
+    except TypeError as exc:
+        raise ValueError('Integration frames must be integers.') from exc
+    with h5py.File(path,'r') as f:
+        if 'FullSpectra/EventList' not in f:
+            raise ValueError('This file does not retain raw events.')
+        nz,ny,nx,_=f['PeakData/PeakData'].shape
+        raw=f['FullSpectra/EventList']
+        axis=f['FullSpectra/MassAxis'][:]
+        windows=canonical_intervals(intervals,(float(axis.min()),float(axis.max())))
+        if not 0<=first<=last<nz or last>=raw.shape[0] or raw.shape[1:]!=(ny,nx):
+            raise ValueError('Requested frame range or raw spatial shape is invalid.')
+        ratio,normalization=integration_parameters(f)
+        volume=np.empty((last-first+1,ny,nx),dtype=np.float32)
+        for i,z in enumerate(range(first,last+1)):
+            volume[i]=integrate_event_windows(raw[z,:,:],axis,ratio,normalization,windows)
+            if progress is not None:
+                progress(i+1,len(volume))
+        return volume

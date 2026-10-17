@@ -41,7 +41,7 @@ class ComparisonTests(unittest.TestCase):
 
     def test_custom_partial_frames_align_and_recompute_for_roi(self):
         custom=np.arange(8.,dtype=np.float32).reshape(2,2,2)
-        with patch('workspace.custom_peak',return_value=custom):
+        with patch('workspace.read_signal',return_value=custom):
             self.event('comparison_add',bounds=[2.2,2.7],frames=[1,2])
         descriptor=self.w.comparisons[0]
         self.assertEqual(descriptor['frames'],[1,2])
@@ -63,7 +63,7 @@ class ComparisonTests(unittest.TestCase):
         np.testing.assert_array_equal(curves[0][1],[2,4,8])
 
     def test_same_mass_different_frame_ranges_have_unique_names_and_csv_columns(self):
-        with patch('workspace.custom_peak',return_value=np.ones((1,2,2),dtype=np.float32)):
+        with patch('workspace.read_signal',return_value=np.ones((1,2,2),dtype=np.float32)):
             self.event('comparison_add',bounds=[2.2,2.7],frames=[1,1])
             self.event('comparison_add',bounds=[2.2,2.7],frames=[2,2])
         self.assertNotEqual(self.w.comparisons[0]['label'],self.w.comparisons[1]['label'])

@@ -96,28 +96,9 @@ def integration_parameters(f):
 
 
 def custom_peak(path, low, high, first, last, progress=None):
-    """Build one custom channel for inclusive frame range; never modify input.
-
-    Uses the integrated data's frame count as the supported navigation domain.
-    Any extra trailing raw write is explicitly excluded, not silently appended.
-    """
-    with h5py.File(path, 'r') as f:
-        if 'FullSpectra/EventList' not in f:
-            raise ValueError('This file does not retain raw events.')
-        nz, ny, nx, _ = f['PeakData/PeakData'].shape
-        raw = f['FullSpectra/EventList']
-        axis = f['FullSpectra/MassAxis'][:]
-        if not np.isfinite([low, high]).all() or not axis.min() <= low < high <= axis.max():
-            raise ValueError(f'Mass window must lie within {axis.min():.3f}–{axis.max():.3f}.')
-        if not 0 <= first <= last < nz or last >= raw.shape[0] or raw.shape[1:] != (ny, nx):
-            raise ValueError('Requested frame range or raw spatial shape is invalid.')
-        ratio, normalization = integration_parameters(f)
-        volume = np.empty((last - first + 1, ny, nx), dtype=np.float32)
-        for i, z in enumerate(range(first, last + 1)):
-            volume[i] = integrate_events(raw[z, :, :], axis, ratio, normalization, low, high)
-            if progress is not None:
-                progress(i + 1, len(volume))
-        return volume
+    """Compatibility adapter for a single raw integration interval."""
+    from integration import custom_peak_windows
+    return custom_peak_windows(path,[(low,high)],first,last,progress)
 
 
 def se_image(path, names, frame):

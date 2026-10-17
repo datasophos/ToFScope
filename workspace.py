@@ -6,12 +6,15 @@ from pathlib import Path
 import traceback
 from html import escape
 
+from signals import SignalRecipe,read_signal,interval_label
+from integration import canonical_intervals
+
 import anywidget
 import numpy as np
 import traitlets
 from plotly.offline import get_plotlyjs
 
-from explorer import inspect_file, stored_peak, custom_peak, se_image, roi_from_bounds, sum_depth_window, se_mean
+from explorer import inspect_file, stored_peak, se_image, roi_from_bounds, sum_depth_window, se_mean
 from plots import image_plot, profile_plot, cross_section, spectrum_plot, volume_plot, front_projection, comparison_color
 
 
@@ -53,8 +56,9 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.map_projection = True
         self.custom = False
         p = meta['peaks'][index]
-        self.low, self.high = p['low'], p['high']
-        self.draft = (self.low, self.high)
+        self.active_recipe=self.stored_recipe(index)
+        self.draft_intervals=self.active_recipe.intervals
+        self.draft = self.draft_intervals[0]
         self.draft_frames = self.frames
         self.set_color_range()
 
@@ -65,8 +69,34 @@ class ExplorerWorkspace(anywidget.AnyWidget):
 
     @property
     def label(self):
-        return (f'Custom {self.low:.4f}–{self.high:.4f} Th' if self.custom else
-                f"{self.meta['peaks'][self.index]['mass']:.4f} Th · {self.meta['peaks'][self.index]['label']}")
+        return self.active_recipe.label
+
+    @property
+    def low(self):
+        return self.active_recipe.intervals[0][0] if len(self.active_recipe.intervals)==1 else None
+
+    @property
+    def high(self):
+        return self.active_recipe.intervals[0][1] if len(self.active_recipe.intervals)==1 else None
+
+    def stored_recipe(self,index):
+        p=self.meta['peaks'][index]
+        return SignalRecipe(source='stored',stored_index=index,intervals=((p['low'],p['high']),),
+                            frames=(0,self.meta['shape'][0]-1),label=f"{p['mass']:.4f} Th · {p['label']}")
+
+    def custom_recipe(self,payload):
+        intervals=payload.get('intervals', [payload['bounds']] if 'bounds' in payload else self.draft_intervals)
+        axis=self.meta['masses']
+        windows=canonical_intervals(intervals,(float(axis.min()),float(axis.max())))
+        recipe=SignalRecipe(source='custom',intervals=windows,frames=tuple(payload.get('frames',self.draft_frames)),
+                            label=f'Custom {interval_label(windows)}')
+        if recipe.frames[1]>=self.meta['shape'][0]:
+            raise ValueError('Integration frame limits must lie within the acquisition.')
+        return recipe
+
+    def progress(self,done,total):
+        if done%10==0 or done==total:
+            self.send(dict(progress=dict(done=done,total=total)))
 
     def state(self):
         return dict(name=self.meta['name'], path=self.meta['path'], shape=list(self.meta['shape']),
@@ -74,7 +104,8 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                     fov=self.meta['fov_um'], raw=self.meta['raw_shape'] is not None,
                     raw_shape=self.meta['raw_shape'], index=self.index, comparisons=self.comparisons, map_projection=self.map_projection,
                     frame=self.frame, frames=self.frames, depth_window=self.depth_window,
-                    roi=self.roi, low=self.low, high=self.high,
+                    roi=self.roi, low=self.low, high=self.high, recipe=self.active_recipe.to_dict(),
+                    intervals=self.active_recipe.intervals, draft_intervals=self.draft_intervals,
                     draft=self.draft, draft_frames=self.draft_frames, custom=self.custom,
                     label=self.label, log=self.logarithmic, relative=self.relative,
                     percentile=self.percentile, opacity=self.opacity, stretch=self.stretch,
@@ -134,10 +165,11 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 fig.add_hline(y=self.frame,line_color='#d18c24',line_width=1,
                               visible=not self.map_projection or self.depth_window is not None)
             elif key == 'spectrum':
-                fig = spectrum_plot(self.meta,*self.draft)
+                fig = spectrum_plot(self.meta,intervals=self.draft_intervals)
                 for c in self.comparisons:
-                    fig.add_vrect(x0=c['low'],x1=c['high'],fillcolor=c['color'],opacity=.12,
-                                  line=dict(color=c['color'],width=1),layer='below')
+                    for low,high in c['intervals']:
+                        fig.add_vrect(x0=low,x1=high,fillcolor=c['color'],opacity=.12,
+                                      line=dict(color=c['color'],width=1),layer='below')
                 fig.update_xaxes(rangeslider_visible=False)
                 # Spectrum selection is one-dimensional and handled by the
                 # widget. Plotly's 2D drawrect leaves zero-height shapes for a
@@ -150,7 +182,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 source='Custom integration' if self.custom else self.label
                 x0,x1,y0,y1=self.roi
                 fig.update_layout(title=dict(text=f'3D ion volume · {escape(source)}<br>'
-                    f'<sup>Mass {self.low:.4f}–{self.high:.4f} Th · frames {selected_frames[0]}–{selected_frames[1]} '
+                    f'<sup>Mass {escape(interval_label(self.active_recipe.intervals))} · frames {selected_frames[0]}–{selected_frames[1]} '
                     f'· X {x0}–{x1}, Y {y0}–{y1} px</sup>',font=dict(size=14)),margin=dict(t=66))
                 threshold=None
                 if fig.data and fig.data[0].type=='volume':
@@ -180,38 +212,39 @@ class ExplorerWorkspace(anywidget.AnyWidget):
             curves.append((c['label'],values,c['color']))
         return curves
 
-    def add_comparison(self, payload):
-        index = payload.get('index')
+    def add_comparison(self,payload):
+        index=payload.get('index')
         if index is not None:
-            index = int(index)
-            if not 0 <= index < len(self.meta['peaks']):
+            index=int(index)
+            if not 0<=index<len(self.meta['peaks']):
                 raise ValueError('Unknown comparison channel.')
-            if any(c['index']==index for c in self.comparisons):
-                return
-            peak = self.meta['peaks'][index]
-            low,high = peak['low'],peak['high']
-            first,last = 0,self.meta['shape'][0]-1
-            label = f"{peak['mass']:.4f} Th · {peak['label']}"
-            volume = None
+            recipe=self.stored_recipe(index)
+            volume=None
         else:
-            low,high = map(float,payload['bounds'])
-            first,last = map(int,payload['frames'])
-            if any(c['index'] is None and (c['low'],c['high'])==(low,high) and c['frames']==[first,last] for c in self.comparisons):
+            recipe=self.custom_recipe(payload)
+            volume=None
+        for c in self.comparisons:
+            other=SignalRecipe.from_dict(c['recipe'])
+            if (other.source,other.stored_index,other.intervals,other.frames)==(recipe.source,recipe.stored_index,recipe.intervals,recipe.frames):
                 return
-            def progress(done,total):
-                if done%10==0 or done==total:
-                    self.send(dict(progress=dict(done=done,total=total)))
-            volume = custom_peak(self.meta['path'],low,high,first,last,progress)
-            label = f'Custom {low:.4f}–{high:.4f} Th'
-        identifier = self.next_comparison_id
-        if index is None:
-            label += f' · W{identifier+1} · frames {first}–{last}'
-        descriptor = dict(id=identifier,index=index,label=label,low=low,high=high,
-                          frames=[first,last],color=comparison_color(identifier))
+        if recipe.source=='custom':
+            volume=read_signal(self.meta['path'],recipe,self.progress)
+        identifier=self.next_comparison_id
+        label=recipe.label
+        if recipe.source=='custom':
+            from dataclasses import replace
+            label+=f' · W{identifier+1} · frames {recipe.frames[0]}–{recipe.frames[1]}'
+            recipe=replace(recipe,label=label)
+        one=len(recipe.intervals)==1
+        descriptor=dict(id=identifier,index=index,label=label,
+                        low=recipe.intervals[0][0] if one else None,
+                        high=recipe.intervals[0][1] if one else None,
+                        intervals=[list(w) for w in recipe.intervals],recipe=recipe.to_dict(),
+                        frames=list(recipe.frames),color=comparison_color(identifier))
         if volume is not None:
-            self.comparison_volumes[identifier] = volume
+            self.comparison_volumes[identifier]=volume
         self.comparisons.append(descriptor)
-        self.next_comparison_id += 1
+        self.next_comparison_id+=1
 
     def handle_message(self, widget, content, buffers):
         event = content.get('event')
@@ -256,8 +289,9 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 self.frame = int(np.clip(self.frame,*self.frames))
                 self.custom = False
                 peak = self.meta['peaks'][index]
-                self.low,self.high = peak['low'],peak['high']
-                self.draft = (self.low,self.high)
+                self.active_recipe=self.stored_recipe(index)
+                self.draft_intervals=self.active_recipe.intervals
+                self.draft=self.draft_intervals[0]
                 self.draft_frames = self.depth_window or self.frames
                 self.set_color_range()
                 keys = None
@@ -282,6 +316,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 if low >= high:
                     raise ValueError('Lower mass limit must be smaller than upper limit.')
                 self.draft = (low,high)
+                self.draft_intervals=(self.draft,)
                 keys = ['spectrum']
             elif event == 'draft_frames':
                 first,last = map(int,p['frames'])
@@ -289,22 +324,21 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                     raise ValueError('Integration frame limits must lie within the acquisition.')
                 self.draft_frames = (first,last)
             elif event == 'integrate':
-                low,high = map(float,p['bounds'])
-                first,last = map(int,p['frames'])
-                def progress(done,total):
-                    if done % 10 == 0 or done == total:
-                        self.send(dict(progress=dict(done=done,total=total)))
-                volume = custom_peak(self.meta['path'],low,high,first,last,progress)
-                self.volume,self.frames = volume,(first,last)
+                recipe=self.custom_recipe(p)
+                volume=read_signal(self.meta['path'],recipe,self.progress)
+                first,last=recipe.frames
+                self.volume,self.frames=volume,recipe.frames
+                self.active_recipe=recipe
                 if self.depth_window:
-                    lo,hi = max(first,self.depth_window[0]),min(last,self.depth_window[1])
-                    self.depth_window = (lo,hi) if lo<=hi else None
-                self.frame = int(np.clip(self.frame,first,last))
-                self.low,self.high = low,high
-                self.draft,self.draft_frames = (low,high),(first,last)
-                self.custom = True
+                    lo,hi=max(first,self.depth_window[0]),min(last,self.depth_window[1])
+                    self.depth_window=(lo,hi) if lo<=hi else None
+                self.frame=int(np.clip(self.frame,first,last))
+                self.draft_intervals=recipe.intervals
+                self.draft=self.draft_intervals[0]
+                self.draft_frames=recipe.frames
+                self.custom=True
                 self.set_color_range()
-                keys = None
+                keys=None
             elif event == 'comparison_add':
                 self.add_comparison(p)
                 keys = ['profile','spectrum']
@@ -357,9 +391,11 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 writer.writerow([z,f'{profile[i]:.9g}',*[f'{c[1][offset]:.9g}' if np.isfinite(c[1][offset]) else '' for c in curves]])
             filename,text = 'depth-profile.csv',out.getvalue()
         else:
-            recipe = dict(dataset=self.meta['path'],signal=self.label,source='raw_reconstruction' if self.custom else 'stored',
-                          lower_Th=self.low,upper_Th=self.high,frames_inclusive=selected_frames,
-                          loaded_frames_inclusive=self.frames,
-                          roi_pixels_inclusive=self.roi,z_units='frame',fov_um=self.meta['fov_um'],comparisons=self.comparisons,schema_version=2)
+            recipe=self.active_recipe.to_dict()
+            recipe.update(dataset=self.meta['path'],signal=self.label,frames_inclusive=selected_frames,
+                          loaded_frames_inclusive=self.frames,roi_pixels_inclusive=self.roi,
+                          z_units='frame',fov_um=self.meta['fov_um'],comparisons=self.comparisons)
+            if len(self.active_recipe.intervals)==1:
+                recipe.update(lower_Th=self.low,upper_Th=self.high)
             filename,text = 'mass-window.json',json.dumps(recipe,indent=2)
         self.send(dict(download=dict(filename=filename,text=text),state=self.state()))
