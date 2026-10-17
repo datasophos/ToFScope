@@ -175,6 +175,18 @@ when trying many custom windows on a large acquisition.
   background subtraction, mass recalibration, multi-ion 3D overlays,
   segmentation and quantitative composition are outside its current scope.
 
+## Known-depth calibration
+
+Use **Depth…** on the profile to edit known depths. Frame 0 is fixed at depth 0;
+add positive-depth anchors at acquisition frames. The selected frame pre-fills
+the anchor entry. Switch **Profile coordinates** to physical depth and choose
+nm, µm or mm. Between anchors the profile uses piecewise-linear interpolation;
+later depths stay unknown. Dragging still selects original acquisition frames,
+without resampling or changing intensities. CSV adds `depth_nm`, leaving unknown
+values blank; JSON retains canonical nm anchors and the interpolation policy.
+Removing all positive-depth anchors restores frame coordinates. Cross-sections
+and 3D still use acquisition frames and the existing arbitrary display stretch.
+
 ## Verify
 
 ```sh
@@ -193,6 +205,7 @@ uv run python scripts/check_viewport.py
 uv run python scripts/check_window_sets.py
 uv run python scripts/check_interval_selection_race.py
 uv run python scripts/check_file_browser.py
+uv run python scripts/check_depth_calibration.py
 ```
 
 The numerical tests cover empty pixels, inclusive mass-window endpoints,

@@ -36,11 +36,11 @@ Independent of other plans. Create `depth_calibration.py` for the numerical mode
 
 **Interfaces:** Frozen `DepthAnchor(frame: int, depth_nm: float)` and `DepthCalibration(anchors: tuple[DepthAnchor,...], acquisition_frames: int)`; `validate_anchors(...) -> tuple[DepthAnchor,...]`, `frame_to_depth(frames: np.ndarray) -> np.ndarray`, `depth_to_frame(depth_nm: np.ndarray) -> np.ndarray`, `convert_depth(value, source_unit, target_unit)`. Valid units are `nm`, `µm`, `mm` (accept `um` as input alias).
 
-- [ ] Write `test_piecewise_depth`: anchors `(0,0),(100,50),(300,250)` nm map frames `[0,50,100,200,300]` to `[0,25,50,150,250]`; inverse transformation recovers those frames. Fractional inverse frame coordinates are permitted before UI rounding.
-- [ ] Test nonzero anchor origins, negative starting depths, sorted input, duplicate/out-of-range/non-integer frames, non-finite values, non-increasing depths, and conversion of 1 µm to 1000 nm. Frames/depths outside the anchor span must return `NaN`.
-- [ ] Run `uv run python -m unittest discover -s tests -p 'test_depth_calibration.py' -v`; confirm failure, then implement validation and piecewise-linear interpolation with explicit out-of-span masking. The validator may retain one draft anchor; constructing an active `DepthCalibration` requires at least two. A single anchor is an inactive draft, not a constant-depth calibration.
-- [ ] Add JSON round-trip tests retaining canonical nm values, display unit and exact anchor frames. Verify unit conversion does not mutate original values.
-- [ ] Run the test module; require all expected coordinates and rejected inputs. Commit: `Add piecewise-linear frame-to-depth calibration.`
+- [x] Write `test_piecewise_depth`: anchors `(0,0),(100,50),(300,250)` nm map frames `[0,50,100,200,300]` to `[0,25,50,150,250]`; inverse transformation recovers those frames. Fractional inverse frame coordinates are permitted before UI rounding.
+- [x] Test fixed frame-zero/depth-zero origin, rejected negative depths, sorted input, duplicate/out-of-range/non-integer frames, non-finite values, non-increasing depths, and conversion of 1 µm to 1000 nm. Frames/depths outside the anchor span must return `NaN`.
+- [x] Run `uv run python -m unittest discover -s tests -p 'test_depth_calibration.py' -v`; confirm failure, then implement validation and piecewise-linear interpolation with explicit out-of-span masking. The validator may retain one draft anchor; constructing an active `DepthCalibration` requires at least two. A single anchor is an inactive draft, not a constant-depth calibration.
+- [x] Add JSON round-trip tests retaining canonical nm values, display unit and exact anchor frames. Verify unit conversion does not mutate original values.
+- [x] Run the test module; require all expected coordinates and rejected inputs. Commit: `Add piecewise-linear frame-to-depth calibration.`
 
 ### Task 2: Add calibrated profile coordinates and exports
 
@@ -48,11 +48,11 @@ Independent of other plans. Create `depth_calibration.py` for the numerical mode
 
 **Interfaces:** Controller stores draft anchors, active `DepthCalibration|None`, and display axis (`frame`/`depth`). Profile figure metadata includes `axis_kind`, `unit`, calibrated span, and acquisition-frame customdata. Event payloads for selection still contain acquisition frames. CSV optionally adds `depth_nm` while preserving existing frame and signal columns.
 
-- [ ] Write tests showing the profile's intensity values are bit-identical with calibration on/off, including comparisons with missing frame coverage. Test loaded frames 100–300: plotting and inverse selection use absolute frames, not positions 0–200.
-- [ ] Test anchors inside the acquisition: calibrated view omits unmapped coordinates visibly and labels its partial span; CSV retains all selected frame rows and leaves uncalibrated depth cells empty. JSON records anchor/unit/interpolation/no-extrapolation metadata.
-- [ ] Run `uv run python -m unittest discover -s tests -p 'test_calibrated_profiles.py' -v`; verify failure, then pass optional calibrated X coordinates into `profile_plot`, preserving its existing frame-mode interface for callers without calibration.
-- [ ] Convert the frame marker and depth-window bands into display coordinates. Add conversion helpers used by pointer down/move/up; inverse-map, then round/clamp to valid inclusive acquisition frames. Disabling calibration returns to Frames without changing selected frames.
-- [ ] Run all numerical tests. Commit: `Display and export calibrated profile depths.`
+- [x] Write tests showing the profile's intensity values are bit-identical with calibration on/off, including comparisons with missing frame coverage. Test loaded frames 100–300: plotting and inverse selection use absolute frames, not positions 0–200.
+- [x] Test anchors inside the acquisition: calibrated view omits unmapped coordinates visibly and labels its partial span; CSV retains all selected frame rows and leaves uncalibrated depth cells empty. JSON records anchor/unit/interpolation/no-extrapolation metadata.
+- [x] Run `uv run python -m unittest discover -s tests -p 'test_calibrated_profiles.py' -v`; verify failure, then pass optional calibrated X coordinates into `profile_plot`, preserving its existing frame-mode interface for callers without calibration.
+- [x] Convert the frame marker and depth-window bands into display coordinates. Add conversion helpers used by pointer down/move/up; inverse-map, then round/clamp to valid inclusive acquisition frames. Disabling calibration returns to Frames without changing selected frames.
+- [x] Run all numerical tests. Commit: `Display and export calibrated profile depths.`
 
 ### Task 3: Add anchor editing and linked navigation
 
@@ -60,12 +60,21 @@ Independent of other plans. Create `depth_calibration.py` for the numerical mode
 
 **Interfaces:** Events `depth_anchor_set {frame,depth,unit}`, `depth_anchor_remove {frame}`, `depth_unit {unit}`, `profile_axis {axis}`. Server validates the full candidate anchor set before replacing active calibration. A draft with fewer than two anchors deactivates calibration and returns the axis to frames.
 
-- [ ] Write a failing browser scenario: click a profile point, assign known depth, add a second and third anchor, switch units/axis, then select a depth range. Assert ion maps and 3D still receive the expected original acquisition frame limits.
-- [ ] Test duplicate frame rejection, unsorted table entry, removal to one anchor, All depths, partial calibration span, comparison persistence and maximize/restore. Rejected edits preserve the last valid calibration; removing an anchor is a deliberate state change.
-- [ ] Implement an anchor table in a compact dialog plus Add known depth at selected frame. Show Frames/Depth and units near the profile; put interpolation details in an info tooltip. Clearly identify a partial calibrated span without another permanent instruction paragraph.
-- [ ] Run `uv run python scripts/check_depth_calibration.py`, existing depth-window/all-depths/display checks, and numerical tests. Confirm 3D remains labeled in frames and its arbitrary stretch is unchanged; physical 3D geometry is outside this first deliverable.
-- [ ] Update README and commit: `Edit known-depth anchors from the profile.`
+- [x] Write a failing browser scenario: click a profile point, assign known depth, add a second and third anchor, switch units/axis, then select a depth range. Assert ion maps and 3D still receive the expected original acquisition frame limits.
+- [x] Test duplicate frame rejection, unsorted table entry, removal to one anchor, All depths, partial calibration span, comparison persistence and maximize/restore. Rejected edits preserve the last valid calibration; removing an anchor is a deliberate state change.
+- [x] Implement an anchor table in a compact dialog plus Add known depth at selected frame. Show Frames/Depth and units near the profile; put interpolation details in an info tooltip. Clearly identify a partial calibrated span without another permanent instruction paragraph.
+- [x] Run `uv run python scripts/check_depth_calibration.py`, existing depth-window/all-depths/display checks, and numerical tests. Confirm 3D remains labeled in frames and its arbitrary stretch is unchanged; physical 3D geometry is outside this first deliverable.
+- [x] Update README and commit: `Edit known-depth anchors from the profile.`
 
 ## Acceptance
 
 Two or more known-depth anchors enable an invertible calibrated profile axis. Selection remains correct in the maps, intensities are unchanged, and CSV/JSON explain calibrated and uncalibrated frames explicitly.
+
+## Confirmed scope and verification
+
+The 2026-10-17 requirement fixes frame 0 at depth 0; arbitrary/negative origins
+from the original proposal are excluded. One additional anchor activates depth
+coordinates. Browser verification covers unsorted anchor entry, unit switching,
+physical-range selection yielding original frames, export, maximized removal
+back to Frames and All depths. The original layout and All depths checks passed.
+Acquisition files remain read-only; physical 3D geometry remains separate.
