@@ -4,7 +4,8 @@ import csv
 import json
 from pathlib import Path
 import traceback
-from dataclasses import asdict
+from time import perf_counter
+from dataclasses import asdict,replace
 from html import escape
 
 from signals import SignalRecipe,read_signal,interval_label
@@ -14,6 +15,7 @@ from file_browser import list_data_files
 from depth_calibration import DepthAnchor, DepthCalibration, validate_anchors, convert_depth
 from isotopes import load_catalog, find_candidates, IonCandidate, ion_mz
 from abundance import measure_isotopes
+from volume_layers import VolumeLayer,build_layer_previews,COLORSCALES
 
 import anywidget
 import numpy as np
@@ -21,7 +23,7 @@ import traitlets
 from plotly.offline import get_plotlyjs
 
 from explorer import inspect_file, stored_peak, se_image, roi_from_bounds, sum_depth_window, se_mean
-from plots import image_plot, profile_plot, cross_section, spectrum_plot, volume_plot, front_projection, comparison_color
+from plots import image_plot, profile_plot, cross_section, spectrum_plot, volume_plot, front_projection, comparison_color,overlay_volume_plot,tiled_volume_plot
 
 
 class ExplorerWorkspace(anywidget.AnyWidget):
@@ -33,6 +35,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
     file_browser_js = traitlets.Unicode().tag(sync=True)
     depth_editor_js = traitlets.Unicode().tag(sync=True)
     peak_helper_js = traitlets.Unicode().tag(sync=True)
+    volume_layers_js = traitlets.Unicode().tag(sync=True)
 
     def __init__(self, path=None, settings=None):
         super().__init__()
@@ -51,6 +54,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.file_browser_js=(Path(__file__).parent/'web/file_browser.js').read_text()
         self.depth_editor_js=(Path(__file__).parent/'web/depth_editor.js').read_text()
         self.peak_helper_js=(Path(__file__).parent/'web/peak_helper.js').read_text()
+        self.volume_layers_js=(Path(__file__).parent/'web/volume_layers.js').read_text()
         self.startup_error=None
         if path is not None:
             try:self.load_file(path)
@@ -102,6 +106,13 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.calibration=None
         self.depth_unit='nm'
         self.profile_axis='frame'
+        self.volume_layers=[VolumeLayer('active',recipe)]
+        self.layer_sources={}
+        self.layered_volume=False
+        self.next_layer_id=1
+        self.volume_mode='tiles'
+        self.volume_scale='independent'
+        self.volume_page=0
 
     def public_path(self):
         return str(Path(self.meta['path']).relative_to(self.settings.data_root))
@@ -184,6 +195,25 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         if identifier not in self.candidate_rows:raise ValueError('Search for this candidate before assigning it.')
         return self.candidate_rows[identifier]
 
+    def layer_reader(self,path,recipe):
+        if recipe.id==self.active_recipe.id:return self.volume
+        if recipe.id in self.layer_sources:return self.layer_sources[recipe.id]
+        return read_signal(path,recipe)
+
+    def layered_figure(self,frames):
+        started=perf_counter()
+        enabled=[l for l in self.volume_layers if l.visible]
+        pages=max(1,(len(enabled)+3)//4)
+        self.volume_page=min(self.volume_page,pages-1)
+        layers=enabled[self.volume_page*4:self.volume_page*4+4] if self.volume_mode=='tiles' else enabled
+        previews=build_layer_previews(self.meta['path'],layers,self.roi,tuple(frames),quality=self.quality,reader=self.layer_reader)
+        constructor=tiled_volume_plot if self.volume_mode=='tiles' else overlay_volume_plot
+        fig=constructor(previews,layers,scale_mode=self.volume_scale,stretch=self.stretch,log=self.logarithmic)
+        self.volume_details=dict(preview_shape=list(previews[0].values.shape) if previews else [0,0,0],threshold=None,
+            layers=fig.layout.meta['layers'],page=self.volume_page,pages=pages,mode=self.volume_mode,voxel_budget=500_000,
+            encoded_bytes=len(fig.to_json().encode()),preparation_seconds=perf_counter()-started)
+        return fig
+
     def custom_recipe(self,payload):
         intervals=payload.get('intervals', [payload['bounds']] if 'bounds' in payload else self.draft_intervals)
         axis=self.meta['masses']
@@ -216,6 +246,8 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                     quality=self.quality, volume_details=getattr(self,'volume_details',None),
                     depth_calibration=self.calibration_metadata(),profile_axis=self.profile_axis,
                     assignments=self.assignments,abundance_rows=self.abundance_rows,abundance_context=self.abundance_context,
+                    volume_layers=[dict(id=l.id,recipe=l.recipe.to_dict(),visible=l.visible,colorscale=l.colorscale,opacity=l.opacity,percentile=l.percentile) for l in self.volume_layers],
+                    layered_volume=self.layered_volume,volume_mode=self.volume_mode,volume_scale=self.volume_scale,volume_page=self.volume_page,
                     revision=self.revision)
 
     def figures(self, keys=None):
@@ -291,17 +323,20 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 if self.draft_windows:
                     fig.layout.shapes[0].update(editable=False,fillcolor='rgba(209,140,36,.15)')
             elif key == 'volume':
-                fig, preview_shape = volume_plot(selected_volume,selected_frames,self.roi,self.meta['fov_um'],
-                                      self.percentile,self.opacity,self.stretch,self.logarithmic,self.quality)
-                source='Custom integration' if self.custom else self.label
-                x0,x1,y0,y1=self.roi
-                fig.update_layout(title=dict(text=f'3D ion volume · {escape(source)}<br>'
-                    f'<sup>Mass {escape(interval_label(self.active_recipe.intervals))} · frames {selected_frames[0]}–{selected_frames[1]} '
-                    f'· X {x0}–{x1}, Y {y0}–{y1} px</sup>',font=dict(size=14)),margin=dict(t=66))
-                threshold=None
-                if fig.data and fig.data[0].type=='volume':
-                    threshold=float(np.expm1(fig.data[0].isomin) if self.logarithmic else fig.data[0].isomin)
-                self.volume_details=dict(preview_shape=list(preview_shape),threshold=threshold)
+                if self.layered_volume:
+                    fig=self.layered_figure(selected_frames)
+                else:
+                    fig, preview_shape = volume_plot(selected_volume,selected_frames,self.roi,self.meta['fov_um'],
+                                          self.percentile,self.opacity,self.stretch,self.logarithmic,self.quality)
+                    source='Custom integration' if self.custom else self.label
+                    x0,x1,y0,y1=self.roi
+                    fig.update_layout(title=dict(text=f'3D ion volume · {escape(source)}<br>'
+                        f'<sup>Mass {escape(interval_label(self.active_recipe.intervals))} · frames {selected_frames[0]}–{selected_frames[1]} '
+                        f'· X {x0}–{x1}, Y {y0}–{y1} px</sup>',font=dict(size=14)),margin=dict(t=66))
+                    threshold=None
+                    if fig.data and fig.data[0].type=='volume':
+                        threshold=float(np.expm1(fig.data[0].isomin) if self.logarithmic else fig.data[0].isomin)
+                    self.volume_details=dict(preview_shape=list(preview_shape),threshold=threshold)
             else:
                 continue
             fig.update_layout(autosize=True)
@@ -382,7 +417,41 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 self.candidate_rows={r.id:dict(id=r.id,**asdict(r),query=query) for r in rows}
                 self.send(dict(peak_candidates=dict(rows=list(self.candidate_rows.values()),request_id=p.get('request_id'))))
                 return
-            if event=='peak_assignment':
+            if event=='volume_layer_add':
+                recipes=self.available_recipes()
+                if p['recipe_id'] not in recipes:raise ValueError('Select a registered active/comparison signal.')
+                recipe=recipes[p['recipe_id']]
+                if not any(l.recipe.id==recipe.id for l in self.volume_layers):
+                    source=next((self.comparison_volumes[c['id']] for c in self.comparisons if c['recipe']['id']==recipe.id and c['id'] in self.comparison_volumes),None)
+                    self.layer_sources[recipe.id]=source if source is not None else self.layer_reader(self.meta['path'],recipe)
+                    self.volume_layers.append(VolumeLayer(f'layer-{self.next_layer_id}',recipe,colorscale=COLORSCALES[self.next_layer_id%len(COLORSCALES)]))
+                    self.next_layer_id+=1
+                self.layered_volume=True;keys=['volume']
+            elif event=='volume_layer_solo':
+                if not any(l.id==p['id'] for l in self.volume_layers):raise ValueError('Unknown volume layer.')
+                self.volume_layers=[replace(l,visible=l.id==p['id']) for l in self.volume_layers]
+                self.layered_volume=True;keys=['volume']
+            elif event in ('volume_layer_remove','volume_layer_style'):
+                i=next((i for i,l in enumerate(self.volume_layers) if l.id==p['id']),None)
+                if i is None:raise ValueError('Unknown volume layer.')
+                if event=='volume_layer_remove':
+                    self.volume_layers=[l for l in self.volume_layers if l.id!=p['id']]
+                    used={l.recipe.id for l in self.volume_layers};self.layer_sources={k:v for k,v in self.layer_sources.items() if k in used}
+                else:
+                    changes={k:p[k] for k in ('visible','colorscale','opacity','percentile') if k in p}
+                    self.volume_layers[i]=replace(self.volume_layers[i],**changes)
+                    if p['id']=='active':self.percentile=self.volume_layers[i].percentile;self.opacity=self.volume_layers[i].opacity
+                self.layered_volume=True;keys=['volume']
+            elif event=='volume_layout':
+                if p['mode'] not in ('tiles','overlay'):raise ValueError('Unknown volume layout.')
+                self.volume_mode=p['mode'];self.layered_volume=True;keys=['volume']
+            elif event=='volume_scale':
+                if p['mode'] not in ('independent','shared'):raise ValueError('Unknown intensity scale.')
+                self.volume_scale=p['mode'];self.layered_volume=True;keys=['volume']
+            elif event=='volume_page':
+                if type(p['page']) is not int or p['page']<0:raise ValueError('Invalid volume page.')
+                self.volume_page=p['page'];keys=['volume']
+            elif event=='peak_assignment':
                 recipes=self.available_recipes()
                 if p['recipe_id'] not in recipes:raise ValueError('Select a current signal to annotate.')
                 candidate=self.candidate_record(p['candidate_id'])
@@ -568,6 +637,9 @@ class ExplorerWorkspace(anywidget.AnyWidget):
             else:
                 raise ValueError('Unknown workspace action.')
             self.revision += 1
+            self.volume_layers=[replace(l,recipe=self.active_recipe) if l.id=='active' else l for l in self.volume_layers]
+            if event=='display':
+                self.volume_layers=[replace(l,percentile=self.percentile,opacity=self.opacity) if l.id=='active' else l for l in self.volume_layers]
             figures = self.figures(keys) if keys is None or keys else {}
             self.send(dict(state=self.state(),figures=figures,relayout=relayout))
         except (ValueError,KeyError,OSError,TypeError) as exc:
@@ -599,6 +671,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                           z_units='frame',fov_um=self.meta['fov_um'],comparisons=self.comparisons)
             recipe.update(depth_calibration=self.calibration_metadata(),profile_axis=self.profile_axis)
             recipe.update(assignments=self.assignments,abundance_rows=self.abundance_rows,abundance_context=self.abundance_context)
+            recipe.update(volume_layers=self.state()['volume_layers'],volume_mode=self.volume_mode,volume_scale=self.volume_scale)
             if len(self.active_recipe.intervals)==1:
                 recipe.update(lower_Th=self.low,upper_Th=self.high)
             filename,text = 'mass-window.json',json.dumps(recipe,indent=2)
