@@ -5,6 +5,7 @@ from uuid import UUID
 import json
 import h5py
 import numpy as np
+from dataset_io import locked_read
 
 ROOT='ToFScope/Integrations'
 
@@ -72,6 +73,7 @@ def _read_info(group):
     return metadata
 
 
+@locked_read
 def list_saved_integrations(path):
     result=[]
     with h5py.File(path,'r') as h5:
@@ -81,11 +83,13 @@ def list_saved_integrations(path):
     return result
 
 
+@locked_read
 def saved_integration_info(path,saved_id):
     checked_uuid(saved_id)
     with h5py.File(path,'r') as h5:return _read_info(h5[f'{ROOT}/{saved_id}'])
 
 
+@locked_read
 def read_saved_integration(path,saved_id):
     checked_uuid(saved_id)
     with h5py.File(path,'r') as h5:
