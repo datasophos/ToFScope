@@ -73,9 +73,19 @@ class VolumeFigureTests(unittest.TestCase):
                 for i in range(5):
                     w.handle_message(None,dict(event='comparison_add',payload=dict(intervals=[[1+i*.1,2+i*.1]],frames=[0,2])),None)
                     w.handle_message(None,dict(event='volume_layer_add',payload=dict(recipe_id=w.comparisons[-1]['recipe']['id'])),None)
+                w.volume_scale='shared'
                 first=w.layered_figure((0,2));self.assertEqual(len(first.layout.meta['layers']),4)
                 first_ids=[l['id'] for l in first.layout.meta['layers']]
                 w.volume_page=1;second=w.layered_figure((0,2));self.assertEqual(len(second.layout.meta['layers']),2)
                 self.assertFalse(set(first_ids)&{l['id'] for l in second.layout.meta['layers']})
+                self.assertEqual(first.layout.meta['layers'][0]['scale_max'],second.layout.meta['layers'][0]['scale_max'])
                 w.volume_page=0;again=w.layered_figure((0,2));self.assertEqual([l['id'] for l in again.layout.meta['layers']],first_ids)
                 w.volume_layers=[];empty=w.layered_figure((0,2));self.assertEqual(len(empty.data),0);self.assertTrue(empty.layout.annotations)
+
+    def test_single_covered_plane_inside_larger_grid_uses_visible_points(self):
+        styles=self.fixture()[1][:1]
+        grid=PreviewGrid(np.array([0.,1.,2.]),np.array([0.,1.]),np.array([0.,1.]),(np.arange(4),np.arange(3),np.arange(3)),False)
+        values=np.full((3,2,2),np.nan);values[1]=[[1,2],[3,4]]
+        preview=VolumePreview('a',styles[0].recipe,grid,values,np.isfinite(values),np.isfinite(values))
+        fig=overlay_volume_plot([preview],styles)
+        self.assertEqual(fig.data[0].type,'scatter3d');self.assertEqual(set(fig.data[0].z),{1.})
