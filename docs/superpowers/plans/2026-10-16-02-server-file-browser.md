@@ -36,11 +36,11 @@ Independent of other roadmap plans. Create `server_config.py` for settings and r
 
 **Interfaces:** Frozen `ServerSettings(data_root: Path, allow_writes: bool=False, initial_file: Path|None=None)`; `load_server_settings(env: Mapping[str,str]) -> ServerSettings`; `resolve_data_path(settings, relative_path: str, *, require_file: bool=False) -> Path`. The last function returns the canonical contained path, not the user's unvalidated string.
 
-- [ ] Write tests for configured/default demo roots, `TOF_FILE` validation, missing roots, rejected invalid booleans, and `TOFSCOPE_ALLOW_WRITES=false` by default. An initial file outside the root is an actionable configuration error.
-- [ ] Test `../outside.h5`, absolute paths, sibling-prefix confusion (`data-other`), escaping directory/file symlinks, and allowed in-root symlinks. Use temporary directories, not client files.
-- [ ] Run `uv run python -m unittest discover -s tests -p 'test_server_config.py' -v`; verify failure, then implement environment parsing and canonical `Path.relative_to` containment after resolution. Document the trusted-root ownership assumption.
-- [ ] Pass settings into `ExplorerWorkspace`; make every `open` path resolve through this helper, even messages from the old path-input UI. Keep internal absolute paths private; publish root-relative dataset paths to browser state/recipes when scoped browsing is enabled.
-- [ ] Run config tests and existing dataset-opening tests. Commit: `Configure and enforce the server data root.`
+- [x] Write tests for configured/default demo roots, `TOF_FILE` validation, missing roots, rejected invalid booleans, and `TOFSCOPE_ALLOW_WRITES=false` by default. An initial file outside the root is an actionable configuration error.
+- [x] Test `../outside.h5`, absolute paths, sibling-prefix confusion (`data-other`), escaping directory/file symlinks, and allowed in-root symlinks. Use temporary directories, not client files.
+- [x] Run `uv run python -m unittest discover -s tests -p 'test_server_config.py' -v`; verify failure, then implement environment parsing and canonical `Path.relative_to` containment after resolution. Document the trusted-root ownership assumption.
+- [x] Pass settings into `ExplorerWorkspace`; make every `open` path resolve through this helper, even messages from the old path-input UI. Keep internal absolute paths private; publish root-relative dataset paths to browser state/recipes when scoped browsing is enabled.
+- [x] Run config tests and existing dataset-opening tests. Commit: `Configure and enforce the server data root.`
 
 ### Task 2: Provide bounded directory listings
 
@@ -48,11 +48,11 @@ Independent of other roadmap plans. Create `server_config.py` for settings and r
 
 **Interfaces:** `list_data_files(settings, relative_dir: str='', *, query: str='', offset: int=0, limit: int=100) -> DirectoryPage`; entries contain root-relative path, name, kind, file size and modification time. `DirectoryPage` contains entries, total matches and next offset; enforce `1 <= limit <= 200`. Event `files_list` returns a separate `files` response without replacing acquisition state.
 
-- [ ] Write tests for directories-first/name sorting, `.h5`/`.hdf5` case-insensitive filtering, query filtering, pagination, and suppression of dot-prefixed backup/temp/lock entries. Directory pages never include an outside-root target.
-- [ ] Add a 5,000-entry fixture and patch `h5py.File` to raise if called during listing; listing must still succeed. Test unreadable directories and a disappearing file using controlled mocks where platform permissions make chmod unreliable.
-- [ ] Run `uv run python -m unittest discover -s tests -p 'test_file_browser.py' -v`; verify failure, then implement shallow `os.scandir` enumeration, filtering and page metadata. Do not recurse or inspect peak arrays while listing.
-- [ ] Add `files_list` validation and structured errors to the widget message handler. Resolve paths again when opening; do not trust a previously displayed listing entry or offset as authorization.
-- [ ] Run both new test modules. Commit: `List server acquisitions with scoped pagination.`
+- [x] Write tests for directories-first/name sorting, `.h5`/`.hdf5` case-insensitive filtering, query filtering, pagination, and suppression of dot-prefixed backup/temp/lock entries. Directory pages never include an outside-root target.
+- [x] Add a 5,000-entry fixture and patch `h5py.File` to raise if called during listing; listing must still succeed. Test unreadable directories and a disappearing file using controlled mocks where platform permissions make chmod unreliable.
+- [x] Run `uv run python -m unittest discover -s tests -p 'test_file_browser.py' -v`; verify failure, then implement shallow `os.scandir` enumeration, filtering and page metadata. Do not recurse or inspect peak arrays while listing.
+- [x] Add `files_list` validation and structured errors to the widget message handler. Resolve paths again when opening; do not trust a previously displayed listing entry or offset as authorization.
+- [x] Run both new test modules. Commit: `List server acquisitions with scoped pagination.`
 
 ### Task 3: Ship the file picker and empty startup state
 
@@ -60,11 +60,11 @@ Independent of other roadmap plans. Create `server_config.py` for settings and r
 
 **Interfaces:** Browser component `mountFileBrowser(root, {requestPage, openFile}) -> {update, dispose}`; opens use root-relative paths. `ExplorerWorkspace(path=None, settings=...)` must represent an unloaded dataset without attempting plots/ROI calculations; opening a valid file transitions to the existing loaded state.
 
-- [ ] Write a failing browser scenario with a temporary configured root: open subdirectory via breadcrumbs, filter, page, choose a file, and return to the parent. Assert successful dataset switch and no path outside the root in the picker.
-- [ ] Test an empty root/no initial file, unsupported HDF5, missing file after listing, and direct forged `open`/`files_list` messages. A failed load preserves the prior dataset and closes no usable view. When unloaded, analysis/export controls stay disabled while Open file remains usable.
-- [ ] Implement a keyboard-accessible dialog with breadcrumbs, search, list, loading/error/empty states and explicit Open. Remove the free-form absolute server path input. Reset selection when changing directories and ignore stale listing responses using a request ID.
-- [ ] Run `uv run python scripts/check_file_browser.py` against its fixture-configured server plus all config/list tests and `uv run marimo check app.py`. Document `TOFSCOPE_DATA_ROOT=/path/to/acquisitions`, `TOF_FILE` and read-only defaults without adding remote hosting/authentication scope.
-- [ ] Commit: `Browse server files from the acquisition picker.`
+- [x] Write a failing browser scenario with a temporary configured root: open subdirectory via breadcrumbs, filter, page, choose a file, and return to the parent. Assert successful dataset switch and no path outside the root in the picker.
+- [x] Test an empty root/no initial file, unsupported HDF5, missing file after listing, and direct forged `open`/`files_list` messages. A failed load preserves the prior dataset and closes no usable view. When unloaded, analysis/export controls stay disabled while Open file remains usable.
+- [x] Implement a keyboard-accessible dialog with breadcrumbs, search, list, loading/error/empty states and explicit Open. Remove the free-form absolute server path input. Reset selection when changing directories and ignore stale listing responses using a request ID.
+- [x] Run `uv run python scripts/check_file_browser.py` against its fixture-configured server plus all config/list tests and `uv run marimo check app.py`. Document `TOFSCOPE_DATA_ROOT=/path/to/acquisitions`, `TOF_FILE` and read-only defaults without adding remote hosting/authentication scope.
+- [x] Commit: `Browse server files from the acquisition picker.`
 
 ## Acceptance
 

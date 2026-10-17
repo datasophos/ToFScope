@@ -12,6 +12,9 @@ async function render({ model, el }) {
   let intervalModule;
   try {intervalModule=await import(moduleURL);} finally {URL.revokeObjectURL(moduleURL);}
   const {mountIntervalEditor,formatIntervals,sameIntervals}=intervalModule;
+  const filesURL=URL.createObjectURL(new Blob([model.get('file_browser_js')],{type:'text/javascript'}));
+  let mountFileBrowser;
+  try {({mountFileBrowser}=await import(filesURL));} finally {URL.revokeObjectURL(filesURL);}
   const initial = model.get('initial');
   let state = initial.state;
   const figures = {...initial.figures};
@@ -174,13 +177,18 @@ async function render({ model, el }) {
         </main>
       </div>
       <footer class="tof-status"><span data-field="status" role="status">Loading workspace…</span><span data-field="selection-summary"></span><span>LOCAL · READ ONLY</span></footer>
-      <dialog class="tof-dialog"><form method="dialog"><h3>Open acquisition</h3><label>Local HDF5 path<input type="text" data-input="path" aria-label="Local HDF5 path"></label><p>Files stay on the computer running Python.</p><div><button value="cancel" class="tof-quiet">Cancel</button><button type="button" data-action="open-file" class="tof-primary">Open dataset</button></div></form></dialog>
+      <dialog class="tof-dialog"></dialog>
     </div>`;
   const $ = (selector) => el.querySelector(selector);
   const input = (name) => $(`[data-input="${name}"]`);
   const plot = (name) => $(`[data-plot="${name}"]`);
   const field = (name) => $(`[data-field="${name}"]`);
   const number = (name) => Number(input(name).value);
+  let pendingOpen=false;
+  const fileBrowser=mountFileBrowser($('.tof-dialog'),{
+    requestPage:payload=>send('files_list',payload),
+    openFile:path=>{pendingOpen=true;send('open',{path});}
+  });
   const intervalEditor=mountIntervalEditor(field('interval-list'),{send,onSelect(row){
     // Keep the field values paired with the optimistic selection even when
     // Apply is clicked before the server acknowledges the selected row.
@@ -225,7 +233,7 @@ async function render({ model, el }) {
   field('image-note').id=`${helpPrefix}-images`;$('.tof-image-switch .tof-info').setAttribute('aria-describedby',field('image-note').id);
   $('.tof-spectrum-home').append($('.tof-spectrum-view'));
   function status(text, error=false) { field('status').textContent = text; field('status').classList.toggle('tof-error',error); }
-  function send(event,payload={}) { status(event==='integrate'||(event==='comparison_add'&&(payload.bounds||payload.intervals))?'Reconstructing raw events…':'Updating…'); model.send({event,payload}); }
+  function send(event,payload={}) { if(event==='files_list'){model.send({event,payload});return;} status(event==='integrate'||(event==='comparison_add'&&(payload.bounds||payload.intervals))?'Reconstructing raw events…':'Updating…'); model.send({event,payload}); }
   function setInput(name,value) {
     let focused=document.activeElement;
     while(focused?.shadowRoot?.activeElement) focused=focused.shadowRoot.activeElement;
@@ -322,6 +330,15 @@ async function render({ model, el }) {
   document.addEventListener('pointerdown',closePickers);
   function syncState(next) {
     state = next;
+    const loaded=state.loaded!==false;
+    $('.tof-body').hidden=!loaded;
+    for(const name of ['export-csv','export-json']) $(`[data-action="${name}"]`).disabled=!loaded;
+    $('.tof-app').dataset.revision=state.revision;
+    if(!loaded) {
+      field('filename').textContent='No acquisition open';field('filename').title='';
+      field('dimensions').textContent='Open a file from the server data directory';
+      field('selection-summary').textContent='';return;
+    }
     if (datasetPath !== state.path) {
       Object.values(pickers).forEach(p=>p.reset());
       datasetPath = state.path;
@@ -381,7 +398,6 @@ async function render({ model, el }) {
     for (const [i,name] of ['x0','x1','y0','y1'].entries()) setInput(name,state.roi[i]);
     for (const name of ['percentile','opacity','stretch','quality']) setInput(name,state[name]);
     for (const name of ['log','relative']) input(name).checked=state[name];
-    setInput('path',state.path);
     $('[data-action="integrate"]').disabled=!state.raw || !state.draft_windows.length;
     $('.tof-app').dataset.revision=state.revision;
     $('.tof-app').dataset.frame=state.frame;
@@ -519,6 +535,7 @@ async function render({ model, el }) {
   }
   function visibleKeys(){return focusedDisplay?[focusedDisplay.key]:tabs[active];}
   async function drawVisible() {
+    if(state.loaded===false)return;
     for(const key of visibleKeys()) {
       const gd=plot(key);
       if(gd.closest('[hidden]')) continue;
@@ -537,8 +554,10 @@ async function render({ model, el }) {
   function redraw() {rendering=rendering.then(()=>disposed?null:drawVisible()).catch(e=>status(e.message,true));return rendering;}
   async function receive(message) {
     if(disposed) return;
+    if(message.files){fileBrowser.update(message.files);return;}
     if(message.progress) {status(`Reconstructing frame ${message.progress.done} / ${message.progress.total}…`);return;}
     if(message.state) syncState(message.state);
+    if(pendingOpen && message.state){pendingOpen=false;fileBrowser.opened(message.error);}
     for(const [key,figure] of Object.entries(message.figures || {})) {figures[key]=figure;dirty.add(key);}
     for(const [key,patch] of Object.entries(message.relayout || {})) {
       for(const [path,value] of Object.entries(patch)) {
@@ -587,8 +606,7 @@ async function render({ model, el }) {
     'volume-edit-mass':()=>showTab('spectrum'),
     'volume-edit-region':()=>showTab('slices'),
     'volume-edit-roi':()=>{setImageMode('sims');showTab('slices');},
-    'open-dialog':()=>$('.tof-dialog').showModal(),
-    'open-file':()=>{$('.tof-dialog').close();send('open',{path:input('path').value});},
+    'open-dialog':()=>fileBrowser.show(),
     'zoom-window':()=>Plotly.relayout(plot('spectrum'),{'xaxis.range':[number('low')-2,number('high')+2]}),
     'draw-window':()=>{Plotly.relayout(plot('spectrum'),{dragmode:false});status('Drag horizontally to select a mass interval.');},
     'clear-depth':()=>send('clear_depth_window'),
@@ -630,8 +648,8 @@ async function render({ model, el }) {
   observer.observe($('.tof-main'));
   $('.tof-volume-details').addEventListener('toggle',()=>{if(mounted.size) redraw();});
   syncState(state);
-  await redraw();status('Ready');
-  return ()=>{disposed=true;observer.disconnect();document.removeEventListener('pointerdown',closePickers);document.removeEventListener('keydown',onEscape);intervalEditor.dispose();model.off('msg:custom',receive);for(const key of mounted) Plotly.purge(plot(key));el.replaceChildren();};
+  await redraw();status(state.startup_error || 'Ready',!!state.startup_error);
+  return ()=>{disposed=true;observer.disconnect();document.removeEventListener('pointerdown',closePickers);document.removeEventListener('keydown',onEscape);intervalEditor.dispose();fileBrowser.dispose();model.off('msg:custom',receive);for(const key of mounted) Plotly.purge(plot(key));el.replaceChildren();};
 }
 
 export default {render};

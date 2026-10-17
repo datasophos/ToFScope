@@ -26,6 +26,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
     initial = traitlets.Dict().tag(sync=True)
     plotly_js = traitlets.Unicode().tag(sync=True)
     interval_editor_js = traitlets.Unicode().tag(sync=True)
+    file_browser_js = traitlets.Unicode().tag(sync=True)
 
     def __init__(self, path=None, settings=None):
         super().__init__()
@@ -41,6 +42,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.stretch = 1.2
         self.quality = 'Fast'
         self.interval_editor_js=(Path(__file__).parent/'web/interval_editor.js').read_text()
+        self.file_browser_js=(Path(__file__).parent/'web/file_browser.js').read_text()
         self.startup_error=None
         if path is not None:
             try:self.load_file(path)
@@ -57,6 +59,12 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         meta = inspect_file(path)
         index = min(meta['peaks'], key=lambda p: abs(p['mass']-27))['index']
         volume = stored_peak(meta['path'], index)
+        p=meta['peaks'][index]
+        recipe=SignalRecipe(source='stored',stored_index=index,intervals=((p['low'],p['high']),),
+                            frames=(0,len(volume)-1),label=f"{p['mass']:.4f} Th · {p['label']}")
+        if any(d<=0 for d in volume.shape):raise ValueError('Acquisition dimensions must be nonempty.')
+        sample=volume[::max(1,len(volume)//64)];positive=sample[sample>0]
+        color_max=float(np.percentile(positive,99.5)) if len(positive) else 1.
         self.meta = meta
         self.index = index
         self.volume = volume
@@ -70,11 +78,11 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.map_projection = True
         self.custom = False
         p = meta['peaks'][index]
-        self.active_recipe=self.stored_recipe(index)
+        self.active_recipe=recipe
         self.next_interval_id=0
         self.reset_draft(self.active_recipe.intervals)
         self.draft_frames = self.frames
-        self.set_color_range()
+        self.color_max=color_max
 
     def public_path(self):
         return str(Path(self.meta['path']).relative_to(self.settings.data_root))
