@@ -9,8 +9,15 @@ dependencies = [
     "marimo>=0.25.1",
     "plotly>=6.0",
     "anywidget>=0.11.0",
+    "filelock>=4.2.0",
 ]
 
 [dependency-groups]
-dev = ["playwright>=1.50"]
+dev = [
+    "playwright>=1.50",
+    "rosettasciio",
+]
+
+[tool.uv.sources]
+rosettasciio = { git = "https://github.com/hyperspy/rosettasciio", rev = "9959c56799693418182d3c175c7261a3d7f9f1b8" }
 
