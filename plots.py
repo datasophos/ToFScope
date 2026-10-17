@@ -1,6 +1,7 @@
 """Plotly views. Display transformations never alter the analysis arrays."""
 import numpy as np
 import plotly.graph_objects as go
+from html import escape
 from explorer import preview_grid
 
 TEAL = '#078d83'
@@ -194,3 +195,64 @@ def front_projection(volume, frames, roi, fov, log):
     fig.add_vrect(x0=(x0 if fov else x0-.5)*sx,x1=(x1+1 if fov else x1+.5)*sx,
                   line=dict(color=GOLD,width=1),fillcolor='rgba(209,140,36,.04)')
     return layout(fig,f'Front projection · sum Y {y0}–{y1} px',330)
+
+
+def _layer_volume_plot(previews,layer_styles,*,tiled=False,scale_mode='independent',stretch=1.2,log=True):
+    """Plot aligned previews; colors transform display values only."""
+    from plotly.subplots import make_subplots
+    from signals import interval_label
+    if scale_mode not in ('independent','shared'):raise ValueError('Unknown volume intensity scale mode.')
+    if tiled and len(previews)>4:raise ValueError('Tile pages contain at most four scenes.')
+    styles={s.id:s for s in layer_styles}
+    count=len(previews);cols=2 if count>1 else 1;rows=max(1,int(np.ceil(count/cols)))
+    titles=[escape(p.recipe.label) for p in previews] if tiled else None
+    fig=make_subplots(rows=rows,cols=cols,specs=[[{'type':'scene'}]*cols for _ in range(rows)],subplot_titles=titles) if tiled else go.Figure()
+    transform=lambda a:np.log1p(np.maximum(a,0)) if log else a
+    positive=[p.values[np.isfinite(p.values)&(p.values>0)] for p in previews]
+    nonempty=[v for v in positive if v.size]
+    all_values=np.concatenate(nonempty) if nonempty else np.array([])
+    common_hi=float(np.percentile(transform(all_values),99.7)) if all_values.size else 1.
+    common_lo=0.
+    layer_meta=[]
+    for i,(preview,nonzero) in enumerate(zip(previews,positive)):
+        style=styles[preview.layer_id];scene='scene' if i==0 or not tiled else f'scene{i+1}'
+        grid=preview.grid;zz,yy,xx=np.meshgrid(grid.z,grid.y,grid.x,indexing='ij');values=transform(preview.values)
+        label=preview.recipe.label
+        lower=None;cmin=0.;cmax=1.
+        if nonzero.size:
+            lower=float(np.percentile(transform(nonzero),style.percentile));upper=float(np.percentile(transform(nonzero),99.7))
+            upper=max(upper,lower+max(abs(lower)*.01,1e-6))
+            cmin,cmax=(common_lo,common_hi) if scale_mode=='shared' else (0.,upper)
+            finite=np.isfinite(values)
+            if min(values.shape)<2 or np.ptp(values[finite])==0:
+                shown=finite&(values>=lower)
+                trace=go.Scatter3d(x=xx[shown],y=yy[shown],z=zz[shown],name=label,scene=scene,mode='markers',
+                    marker=dict(size=3,color=values[shown],cmin=cmin,cmax=cmax,colorscale=style.colorscale,opacity=style.opacity),hoverinfo='skip')
+            else:
+                trace=go.Volume(x=xx.ravel(),y=yy.ravel(),z=zz.ravel(),value=values.ravel(),name=label,scene=scene,
+                    isomin=lower,isomax=upper,cmin=cmin,cmax=cmax,opacity=style.opacity,surface_count=10,
+                    colorscale=style.colorscale,showscale=False,showlegend=True,caps=dict(x_show=False,y_show=False,z_show=False),hoverinfo='skip')
+            fig.add_trace(trace)
+        else:
+            fig.add_annotation(text=f'{label}: no positive signal in this selection',xref='paper',yref='paper',x=.5,y=.5-i*.05,showarrow=False)
+        extent_x,extent_y=grid.xy_extent or (1.,1.);extent=max(extent_x,extent_y)
+        fig.update_layout(**{scene:dict(xaxis_title='X (µm)' if grid.physical_xy else 'X (pixel)',
+            yaxis_title='Y (µm)' if grid.physical_xy else 'Y (pixel)',zaxis=dict(title='Depth frame',autorange='reversed'),
+            aspectmode='manual',aspectratio=dict(x=extent_x/extent,y=extent_y/extent,z=stretch),uirevision=f'layer:{preview.layer_id}' if tiled else 'overlay-camera')})
+        layer_meta.append(dict(id=preview.layer_id,label=preview.recipe.label,intervals=preview.recipe.intervals,
+            frames=preview.recipe.frames,shape=preview.values.shape,valid_voxels=int(np.count_nonzero(preview.coverage)),
+            threshold=float(np.expm1(lower) if log else lower) if lower is not None else None,
+            intensity_scale=scale_mode,scale_min=cmin,scale_max=cmax,colorscale=style.colorscale))
+    if not previews:fig.add_annotation(text='No visible layers · enable a layer in Layers',showarrow=False)
+    fig.update_layout(meta=dict(layers=layer_meta,scale_mode=scale_mode),legend=dict(orientation='h',font=dict(size=10)))
+    title='3D ion layers · tiled' if tiled else '3D ion layers · overlay'
+    if len(previews)==1:title+=' · '+escape(previews[0].recipe.label)+'<br><sup>Mass '+interval_label(previews[0].recipe.intervals)+'</sup>'
+    return layout(fig,title,550,dark=True)
+
+
+def overlay_volume_plot(previews,layer_styles,*,scale_mode='independent',stretch=1.2,log=True):
+    return _layer_volume_plot(previews,layer_styles,scale_mode=scale_mode,stretch=stretch,log=log)
+
+
+def tiled_volume_plot(previews,layer_styles,*,scale_mode='independent',stretch=1.2,log=True):
+    return _layer_volume_plot(previews,layer_styles,tiled=True,scale_mode=scale_mode,stretch=stretch,log=log)

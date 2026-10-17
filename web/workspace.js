@@ -21,6 +21,9 @@ async function render({ model, el }) {
   const helperURL=URL.createObjectURL(new Blob([model.get('peak_helper_js')],{type:'text/javascript'}));
   let mountPeakHelper;
   try {({mountPeakHelper}=await import(helperURL));} finally {URL.revokeObjectURL(helperURL);}
+  const layersURL=URL.createObjectURL(new Blob([model.get('volume_layers_js')],{type:'text/javascript'}));
+  let mountVolumeLayers;
+  try {({mountVolumeLayers}=await import(layersURL));} finally {URL.revokeObjectURL(layersURL);}
   const initial = model.get('initial');
   let state = initial.state;
   const figures = {...initial.figures};
@@ -165,11 +168,12 @@ async function render({ model, el }) {
                   <div><small>SPATIAL ROI</small><span data-field="volume-roi-size"></span><button data-action="volume-edit-roi" class="tof-quiet">Draw on ion map →</button></div>
                   <div><small>DISPLAY PREVIEW</small><strong data-field="volume-preview"></strong><span data-field="volume-threshold"></span></div>
                 </div>
-                <p>Same active ion as the ion map. The ion map sums the selected depth layers; this view keeps them in 3D. Comparison channels and relative scaling apply to the profile chart. Rendering controls change appearance only.</p>
+                <p data-field="volume-relation">Same active ion as the ion map. The ion map sums the selected depth layers; this view keeps them in 3D.</p>
               </details>
             </div>
             <div class="tof-volume-pending" data-field="volume-pending" hidden></div>
             <div class="tof-volume-options">
+              <button data-action="volume-layers" aria-label="3D layers">Layers…</button>
               <label>Hide below percentile<input type="number" min="0" max="99" step="1" data-input="percentile" aria-label="3D lower percentile"></label>
               <label>Opacity<input type="number" min="0.02" max="0.4" step="0.02" data-input="opacity" aria-label="3D opacity"></label>
               <label>Z display stretch<input type="number" min="0.2" max="3" step="0.1" data-input="stretch" aria-label="Z display stretch"></label>
@@ -188,6 +192,7 @@ async function render({ model, el }) {
       <dialog class="tof-dialog"></dialog>
       <dialog class="tof-dialog tof-depth-dialog"></dialog>
       <dialog class="tof-dialog tof-peak-dialog"></dialog>
+      <dialog class="tof-dialog tof-layers-dialog"></dialog>
     </div>`;
   const $ = (selector) => el.querySelector(selector);
   const input = (name) => $(`[data-input="${name}"]`);
@@ -203,6 +208,7 @@ async function render({ model, el }) {
   const peakHelper=mountPeakHelper($('.tof-peak-dialog'),$('[data-panel="abundance"]'),{
     send,apply:payload=>send('integrate',payload),compare:payload=>send('comparison_add',payload)
   });
+  const volumeLayers=mountVolumeLayers($('.tof-layers-dialog'),{send,getPlot:()=>plot('volume')});
   const intervalEditor=mountIntervalEditor(field('interval-list'),{send,onSelect(row){
     // Keep the field values paired with the optimistic selection even when
     // Apply is clicked before the server acknowledges the selected row.
@@ -350,6 +356,7 @@ async function render({ model, el }) {
     state = next;
     depthEditor.sync(state,error);
     peakHelper.sync(state,error);
+    volumeLayers.update(state,error);
     const loaded=state.loaded!==false;
     $('.tof-body').hidden=!loaded;
     for(const name of ['export-csv','export-json']) $(`[data-action="${name}"]`).disabled=!loaded;
@@ -375,6 +382,13 @@ async function render({ model, el }) {
     field('volume-source').textContent=state.custom?'Applied custom integration':'Stored channel from file';
     field('volume-mass').textContent=formatIntervals(state.intervals);
     field('volume-ion').textContent=state.label;
+    if(state.layered_volume) {
+      const enabled=state.volume_layers.filter(l=>l.visible);
+      field('volume-source').textContent=`${enabled.length} enabled signal layers · ${state.volume_mode}`;
+      field('volume-mass').textContent=enabled.map(l=>l.recipe.label).join(' + ')||'No visible layers';
+      field('volume-ion').textContent='Each layer uses its own mass recipe; inspect Layers for limits and scales.';
+    }
+    field('volume-relation').textContent=state.layered_volume?'Layers use their own mass intervals and share the selected spatial ROI and depth window. Relative profile scaling does not affect 3D. Layer controls show original coverage, preview resolution and displayed intensity scales.':'Same active ion as the ion map. The map sums the selected depth layers; this view keeps them in 3D. Relative profiles change only the profile chart.';
     field('volume-depth').textContent=`Frames ${displayedFrames[0]}–${displayedFrames[1]} · ${displayedFrames[1]-displayedFrames[0]+1} layers`;
     field('volume-roi').textContent=`X ${state.roi[0]}–${state.roi[1]} · Y ${state.roi[2]}–${state.roi[3]} px`;
     const nx=state.roi[1]-state.roi[0]+1,ny=state.roi[3]-state.roi[2]+1;
@@ -425,6 +439,7 @@ async function render({ model, el }) {
     $('.tof-app').dataset.depthWindow=JSON.stringify(state.depth_window || null);
     $('.tof-app').dataset.peak=state.index;
     $('.tof-app').dataset.comparisons=JSON.stringify(state.comparisons.map(c=>c.id));
+    $('.tof-app').dataset.volumeDetails=JSON.stringify(state.volume_details);
   }
 
   function bindPlot(key,gd) {
@@ -575,6 +590,7 @@ async function render({ model, el }) {
         dirty.delete(key); updating.delete(key);
       }
       await Plotly.Plots.resize(gd);
+      if(key==='volume')await volumeLayers.attach();
     }
   }
   function redraw() {rendering=rendering.then(()=>disposed?null:drawVisible()).catch(e=>status(e.message,true));return rendering;}
@@ -637,6 +653,7 @@ async function render({ model, el }) {
     'open-dialog':()=>fileBrowser.show(),
     'calibrate-depth':()=>depthEditor.show(),
     'peak-helper':()=>peakHelper.show(),
+    'volume-layers':()=>volumeLayers.show(),
     'zoom-window':()=>Plotly.relayout(plot('spectrum'),{'xaxis.range':[number('low')-2,number('high')+2]}),
     'draw-window':()=>{Plotly.relayout(plot('spectrum'),{dragmode:false});status('Drag horizontally to select a mass interval.');},
     'clear-depth':()=>send('clear_depth_window'),
@@ -679,7 +696,7 @@ async function render({ model, el }) {
   $('.tof-volume-details').addEventListener('toggle',()=>{if(mounted.size) redraw();});
   syncState(state);
   await redraw();status(state.startup_error || 'Ready',!!state.startup_error);
-  return ()=>{disposed=true;observer.disconnect();document.removeEventListener('pointerdown',closePickers);document.removeEventListener('keydown',onEscape);intervalEditor.dispose();fileBrowser.dispose();depthEditor.dispose();peakHelper.dispose();model.off('msg:custom',receive);for(const key of mounted) Plotly.purge(plot(key));el.replaceChildren();};
+  return ()=>{disposed=true;observer.disconnect();document.removeEventListener('pointerdown',closePickers);document.removeEventListener('keydown',onEscape);intervalEditor.dispose();fileBrowser.dispose();depthEditor.dispose();peakHelper.dispose();volumeLayers.dispose();model.off('msg:custom',receive);for(const key of mounted) Plotly.purge(plot(key));el.replaceChildren();};
 }
 
 export default {render};

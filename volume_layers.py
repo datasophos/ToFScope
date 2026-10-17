@@ -32,6 +32,7 @@ class PreviewGrid:
     x: np.ndarray
     edges: tuple[np.ndarray,np.ndarray,np.ndarray]
     physical_xy: bool
+    xy_extent: tuple[float,float] | None = None
 
 
 @dataclass(frozen=True)
@@ -72,7 +73,8 @@ def build_layer_previews(path,layers,roi,frames,*,quality,voxel_budget=500_000,r
     z,y,x=((e[:-1]+e[1:]-1)/2 for e in edges)
     fov=meta['fov_um']
     if fov:y=(y+.5)*fov/shape[1];x=(x+.5)*fov/shape[2]
-    grid=PreviewGrid(z,y,x,edges,bool(fov));result=[];identity=file_key(path)
+    extent=((x1-x0+1)*fov/shape[2],(y1-y0+1)*fov/shape[1]) if fov else (x1-x0+1,y1-y0+1)
+    grid=PreviewGrid(z,y,x,edges,bool(fov),extent);result=[];identity=file_key(path)
     block_sizes=np.diff(edges[0])[:,None,None]*np.diff(edges[1])[None,:,None]*np.diff(edges[2])[None,None,:]
     for layer in enabled:
         r=layer.recipe

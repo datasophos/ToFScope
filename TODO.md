@@ -1,6 +1,6 @@
 # ToFScope TODO
 
-- [ ] Multi-peak 3D mapping ([plan](docs/superpowers/plans/2026-10-16-01-multi-peak-3d.md)): support multiple tiled views and overlays with a separate colormap for each peak.
+- [x] Multi-peak 3D mapping ([plan](docs/superpowers/plans/2026-10-16-01-multi-peak-3d.md)): support multiple tiled views and overlays with a separate colormap for each peak.
 - [x] File browser for on-server files ([plan](docs/superpowers/plans/2026-10-16-02-server-file-browser.md)): configure the data storage location on the server and browse files within it.
 - [ ] Write custom integration windows and their integrated data back into the HDF5 file ([plan](docs/superpowers/plans/2026-10-16-03-hdf5-write-back.md)).
 - [x] Select multiple disjoint integration windows and combine them into one signal ([plan](docs/superpowers/plans/2026-10-16-04-disjoint-integration-windows.md)).

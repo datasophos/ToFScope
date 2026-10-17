@@ -205,6 +205,30 @@ not a quantitative composition fit. **Isotope CSV** and Settings JSON preserve
 measurement scope and annotations; measurements do not automatically rerun when
 you change the ROI or depth window. Molecular ions/adducts are outside this pass.
 
+## Multiple 3D ion layers
+
+In **3D volume**, open **Layers…** to add registered active/comparison signals.
+Each layer retains its mass recipe and coverage, with its own colormap, opacity,
+percentile threshold, visibility and Solo action. Choose tiled or overlay views;
+tiles page four scenes at a time and support linked or independent cameras.
+The selected ROI and depth window apply to all layers. Their shared preview
+grid preserves missing coverage and valid partial-block means. A total budget
+of 500,000 displayed voxels is shared across rendered layers; styles reuse cached
+previews. Relative profile scaling does not affect volume values.
+
+Layers lists exact mass intervals, source coverage, actual preview resolution,
+and displayed numerical intensity ranges. Independent scales are the default;
+shared scales use the same numerical range without normalizing individual ions.
+Overlay transparency can obscure a layer, so tiled views and Solo remain useful.
+Thin/constant selections use points. Z remains frames with arbitrary stretch.
+
+The AlTiPt example's three stored Fast layers produced a 10,815,206-byte encoded
+figure (three 93 × 32 × 32 previews). Cached preparation took about 0.09 s;
+30 headless Chrome/SwiftShader drag interactions had a measured 95th percentile
+of about 170 ms including browser-driver and frame scheduling. These local
+prototype measurements satisfy the proposed 32 MiB / 200 ms budgets; they do
+not establish performance for other hardware, larger selections or raw reconstruction.
+
 ## Verify
 
 ```sh
@@ -225,6 +249,8 @@ uv run python scripts/check_interval_selection_race.py
 uv run python scripts/check_file_browser.py
 uv run python scripts/check_depth_calibration.py
 uv run python scripts/check_peak_helper.py
+uv run python scripts/check_peak_helper_reset.py
+uv run python scripts/check_multi_volume.py
 ```
 
 The numerical tests cover empty pixels, inclusive mass-window endpoints,
