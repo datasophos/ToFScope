@@ -97,7 +97,12 @@ def read_signal(path, recipe, progress=None):
     from explorer import stored_peak
     from integration import custom_peak_windows
     if recipe.source=='saved':
-        raise ValueError('Saved HDF5 integrations are not supported yet.')
+        from integration_store import read_saved_integration,saved_integration_info
+        info=saved_integration_info(path,recipe.saved_id)
+        first,last=info['derivation']['frames']
+        if recipe.frames[0]<first or recipe.frames[1]>last or recipe.intervals!=tuple(tuple(w) for w in info['derivation']['intervals']):
+            raise ValueError('Saved reference coverage or intervals do not match its derivation.')
+        return read_saved_integration(path,recipe.saved_id)[recipe.frames[0]-first:recipe.frames[1]-first+1]
     if recipe.source=='custom':
         return custom_peak_windows(path,recipe.intervals,*recipe.frames,progress)
     with h5py.File(path,'r') as f:
