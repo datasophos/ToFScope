@@ -15,6 +15,9 @@ async function render({ model, el }) {
   const filesURL=URL.createObjectURL(new Blob([model.get('file_browser_js')],{type:'text/javascript'}));
   let mountFileBrowser;
   try {({mountFileBrowser}=await import(filesURL));} finally {URL.revokeObjectURL(filesURL);}
+  const depthURL=URL.createObjectURL(new Blob([model.get('depth_editor_js')],{type:'text/javascript'}));
+  let mountDepthEditor,profileToFrame,frameToProfile;
+  try {({mountDepthEditor,profileToFrame,frameToProfile}=await import(depthURL));} finally {URL.revokeObjectURL(depthURL);}
   const initial = model.get('initial');
   let state = initial.state;
   const figures = {...initial.figures};
@@ -178,6 +181,7 @@ async function render({ model, el }) {
       </div>
       <footer class="tof-status"><span data-field="status" role="status">Loading workspace…</span><span data-field="selection-summary"></span><span>LOCAL · READ ONLY</span></footer>
       <dialog class="tof-dialog"></dialog>
+      <dialog class="tof-dialog tof-depth-dialog"></dialog>
     </div>`;
   const $ = (selector) => el.querySelector(selector);
   const input = (name) => $(`[data-input="${name}"]`);
@@ -189,6 +193,7 @@ async function render({ model, el }) {
     requestPage:payload=>send('files_list',payload),
     openFile:path=>{pendingOpen=true;send('open',{path});}
   });
+  const depthEditor=mountDepthEditor($('.tof-depth-dialog'),{send});
   const intervalEditor=mountIntervalEditor(field('interval-list'),{send,onSelect(row){
     // Keep the field values paired with the optimistic selection even when
     // Apply is clicked before the server acknowledges the selected row.
@@ -226,6 +231,7 @@ async function render({ model, el }) {
     const maximize=document.createElement('button');maximize.type='button';maximize.className='tof-maximize';maximize.textContent='⤢';maximize.title=`Maximize ${label.toLowerCase()}`;maximize.setAttribute('aria-label',maximize.title);
     maximize.addEventListener('click',()=>maximizeDisplay(key));
     if(key==='profile') {
+      const calibrate=document.createElement('button');calibrate.type='button';calibrate.className='tof-clear-depth';calibrate.textContent='Depth…';calibrate.dataset.action='calibrate-depth';calibrate.setAttribute('aria-label','Calibrate depth');tools.append(calibrate);
       const clear=document.createElement('button');clear.type='button';clear.className='tof-clear-depth';clear.textContent='All depths';clear.dataset.action='clear-depth';clear.title='Show all loaded depths';clear.setAttribute('aria-label','Clear depth window');tools.append(clear);
     }
     tools.append(tip,maximize);frame.append(tools);
@@ -328,8 +334,9 @@ async function render({ model, el }) {
   pickers.peak=createPicker('peak');pickers.comparison=createPicker('comparison');
   function closePickers(e) {for(const picker of Object.values(pickers))if(!e.composedPath().includes(picker.root))picker.close();}
   document.addEventListener('pointerdown',closePickers);
-  function syncState(next) {
+  function syncState(next,error=null) {
     state = next;
+    depthEditor.sync(state,error);
     const loaded=state.loaded!==false;
     $('.tof-body').hidden=!loaded;
     for(const name of ['export-csv','export-json']) $(`[data-action="${name}"]`).disabled=!loaded;
@@ -416,7 +423,13 @@ async function render({ model, el }) {
         if(!layout) return null;
         const x=e.clientX-rect.left, y=e.clientY-rect.top, xa=layout.xaxis, ya=layout.yaxis;
         let value=xa.p2d(Math.max(0,Math.min(xa._length,x-xa._offset)));
-        if(isDepth) value=Math.max(state.frames[0],Math.min(state.frames[1],Math.round(value)));
+        if(isDepth) {
+          if(state.profile_axis==='depth') {
+            const anchors=state.depth_calibration.anchors;
+            value=Math.max(frameToProfile(Math.max(state.frames[0],anchors[0].frame),state),Math.min(frameToProfile(Math.min(state.frames[1],anchors.at(-1).frame),state),value));
+          }
+          value=Math.max(state.frames[0],Math.min(state.frames[1],Math.round(profileToFrame(value,state))));
+        }
         return {pixel:x-xa._offset, mass:value,
           inside:x>=xa._offset && x<=xa._offset+xa._length && y>=ya._offset && y<=ya._offset+ya._length};
       }
@@ -428,7 +441,7 @@ async function render({ model, el }) {
           shapes=(figures.spectrum.layout.shapes || []).filter(s=>s.name!==`draft:${id}`);
         }
         if(low!==null) {
-          const shape={type:'rect',xref:'x',yref:'paper',x0:low,x1:high,
+          const shape={type:'rect',xref:'x',yref:'paper',x0:isDepth?frameToProfile(low,state):low,x1:isDepth?frameToProfile(high,state):high,
             y0:0,y1:1,editable:false,line:{color:'#d18c24',width:2},fillcolor:'rgba(209,140,36,.18)'};
           if(isDepth) shapes.push(shape);
           else {shape.name=`draft:${gesture?.intervalId ?? intervalEditor.selectedId()}`;shapes.unshift(shape);}
@@ -461,8 +474,8 @@ async function render({ model, el }) {
         if(e.button!==0 || e.target.closest('.modebar') || gd.layout.dragmode) return;
         const start=position(e);if(!start?.inside) return;
         const original=[...(isDepth?(state.depth_window || [state.frame,state.frame]):(selectedDraft() || [start.mass,start.mass]))], xa=gd._fullLayout.xaxis;
-        const lowDistance=Math.abs(start.pixel-xa.d2p(original[0]));
-        const highDistance=Math.abs(start.pixel-xa.d2p(original[1]));
+        const lowDistance=Math.abs(start.pixel-xa.d2p(isDepth?frameToProfile(original[0],state):original[0]));
+        const highDistance=Math.abs(start.pixel-xa.d2p(isDepth?frameToProfile(original[1],state):original[1]));
         let mode='new';
         if(original[0]!==original[1] && Math.min(lowDistance,highDistance)<=7) mode=lowDistance<highDistance?'low':'high';
         else if(e.shiftKey && start.mass>=original[0] && start.mass<=original[1]) mode='move';
@@ -556,7 +569,7 @@ async function render({ model, el }) {
     if(disposed) return;
     if(message.files){fileBrowser.update(message.files);return;}
     if(message.progress) {status(`Reconstructing frame ${message.progress.done} / ${message.progress.total}…`);return;}
-    if(message.state) syncState(message.state);
+    if(message.state) syncState(message.state,message.error);
     if(pendingOpen && message.state){pendingOpen=false;fileBrowser.opened(message.error);}
     for(const [key,figure] of Object.entries(message.figures || {})) {figures[key]=figure;dirty.add(key);}
     for(const [key,patch] of Object.entries(message.relayout || {})) {
@@ -607,6 +620,7 @@ async function render({ model, el }) {
     'volume-edit-region':()=>showTab('slices'),
     'volume-edit-roi':()=>{setImageMode('sims');showTab('slices');},
     'open-dialog':()=>fileBrowser.show(),
+    'calibrate-depth':()=>depthEditor.show(),
     'zoom-window':()=>Plotly.relayout(plot('spectrum'),{'xaxis.range':[number('low')-2,number('high')+2]}),
     'draw-window':()=>{Plotly.relayout(plot('spectrum'),{dragmode:false});status('Drag horizontally to select a mass interval.');},
     'clear-depth':()=>send('clear_depth_window'),
@@ -649,7 +663,7 @@ async function render({ model, el }) {
   $('.tof-volume-details').addEventListener('toggle',()=>{if(mounted.size) redraw();});
   syncState(state);
   await redraw();status(state.startup_error || 'Ready',!!state.startup_error);
-  return ()=>{disposed=true;observer.disconnect();document.removeEventListener('pointerdown',closePickers);document.removeEventListener('keydown',onEscape);intervalEditor.dispose();fileBrowser.dispose();model.off('msg:custom',receive);for(const key of mounted) Plotly.purge(plot(key));el.replaceChildren();};
+  return ()=>{disposed=true;observer.disconnect();document.removeEventListener('pointerdown',closePickers);document.removeEventListener('keydown',onEscape);intervalEditor.dispose();fileBrowser.dispose();depthEditor.dispose();model.off('msg:custom',receive);for(const key of mounted) Plotly.purge(plot(key));el.replaceChildren();};
 }
 
 export default {render};

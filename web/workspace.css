@@ -61,3 +61,4 @@
 .tof-files-list strong{overflow-wrap:anywhere;font-weight:500;}.tof-files-list small{color:#6e8391;white-space:nowrap;}
 .tof-dialog [role=alert]{color:#a52d2d;min-height:16px;overflow-wrap:anywhere;}.tof-files-pages,.tof-files-actions{display:flex;justify-content:space-between;gap:8px;margin-top:12px;}
 .tof-files-actions{justify-content:flex-end;}.tof-dialog button:focus-visible{outline:2px solid #168d7b;outline-offset:2px;}
+.tof-depth-options{display:flex;align-items:end;gap:12px;margin:12px 0;}.tof-depth-options label{flex:1;min-width:0;}.tof-depth-options select{width:100%;}.tof-depth-dialog table{border-collapse:collapse;width:100%;font-size:12px;}.tof-depth-dialog td,.tof-depth-dialog th{padding:8px;text-align:left;border-bottom:1px solid #e0e7ed;}.tof-depth-dialog td input{width:160px;}.tof-depth-dialog td button{margin-right:5px;}.tof-depth-dialog .tof-depth-span{font-size:11px;line-height:1.5;}

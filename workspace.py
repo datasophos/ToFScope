@@ -28,6 +28,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
     plotly_js = traitlets.Unicode().tag(sync=True)
     interval_editor_js = traitlets.Unicode().tag(sync=True)
     file_browser_js = traitlets.Unicode().tag(sync=True)
+    depth_editor_js = traitlets.Unicode().tag(sync=True)
 
     def __init__(self, path=None, settings=None):
         super().__init__()
@@ -44,6 +45,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.quality = 'Fast'
         self.interval_editor_js=(Path(__file__).parent/'web/interval_editor.js').read_text()
         self.file_browser_js=(Path(__file__).parent/'web/file_browser.js').read_text()
+        self.depth_editor_js=(Path(__file__).parent/'web/depth_editor.js').read_text()
         self.startup_error=None
         if path is not None:
             try:self.load_file(path)
