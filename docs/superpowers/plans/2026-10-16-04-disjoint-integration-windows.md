@@ -48,11 +48,11 @@ No other roadmap feature is required. `signals.py` owns identity/serialization/d
 
 **Interfaces:** `integration.custom_peak_windows(path, intervals, first: int, last: int, progress=None) -> np.ndarray`; `signals.read_signal(path, recipe: SignalRecipe, progress=None) -> np.ndarray`. `explorer.custom_peak(...)` remains the existing single-interval wrapper. The raw reader owns normalization metadata; `signals.py` does not duplicate it. `read_signal` returns exactly `recipe.frames` in `(depth,y,x)` order with absolute frame origin recorded by the recipe. Keep imports between legacy wrappers and new integration functions local to the wrapper/function, so delegating from `explorer.py` does not introduce an import cycle with its timing helpers.
 
-- [ ] Write tests for a synthetic three-frame HDF5 event list: one interval matches the old reader exactly; two intervals are accumulated in one frame pass; progress reaches the requested frame count; the extra trailing raw write is excluded.
-- [ ] Test a recipe covering frames 10–12 against active frames 9–13: samples at 9 and 13 must remain missing in profile/export adapters, not zero. Rename/color changes must not invalidate numerical cache keys; interval changes must.
-- [ ] Run `uv run python -m unittest discover -s tests -p 'test_signal_recipes.py' -v`; verify failure, then implement streaming reconstruction and `read_signal` dispatch for stored/custom recipes. Reserve the saved-reader dispatch for the write-back plan and report unsupported saved references clearly until it exists.
-- [ ] Migrate active/comparison state to recipes through adapters. Keep integer frontend comparison IDs separate from recipe UUIDs, retain legacy scalar low/high fields only for single-interval compatibility, and export schema 3 with complete interval lists.
-- [ ] Run all numerical tests and existing comparison browser checks. Commit: `Support composite signals across maps profiles and exports.`
+- [x] Write tests for a synthetic three-frame HDF5 event list: one interval matches the old reader exactly; two intervals are accumulated in one frame pass; progress reaches the requested frame count; the extra trailing raw write is excluded.
+- [x] Test a recipe covering frames 10–12 against active frames 9–13: samples at 9 and 13 must remain missing in profile/export adapters, not zero. Rename/color changes must not invalidate numerical cache keys; interval changes must.
+- [x] Run `uv run python -m unittest discover -s tests -p 'test_signal_recipes.py' -v`; verify failure, then implement streaming reconstruction and `read_signal` dispatch for stored/custom recipes. Reserve the saved-reader dispatch for the write-back plan and report unsupported saved references clearly until it exists.
+- [x] Migrate active/comparison state to recipes through adapters. Keep integer frontend comparison IDs separate from recipe UUIDs, retain legacy scalar low/high fields only for single-interval compatibility, and export schema 3 with complete interval lists.
+- [x] Run all numerical tests and existing comparison browser checks. Commit: `Support composite signals across maps profiles and exports.`
 
 ### Task 3: Add an explicit multi-interval spectrum editor
 

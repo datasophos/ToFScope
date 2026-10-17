@@ -121,7 +121,7 @@ with sync_playwright() as p:
         with page.expect_download() as download:
             app.get_by_role('button',name='Settings JSON ↓',exact=True).click()
         recipe=json.loads(Path(download.value.path()).read_text())
-        assert recipe['source']=='raw_reconstruction'
+        assert recipe['source']=='custom'
         assert recipe['frames_inclusive']==[0,3]
         assert not errors,errors
         print('PASS: exports and no browser errors',flush=True)
