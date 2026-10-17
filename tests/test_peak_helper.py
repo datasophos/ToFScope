@@ -31,6 +31,20 @@ class PeakHelperTests(unittest.TestCase):
         result=self.event('peak_candidates',mz=.0001,tolerance=0,unit='Th',charges=[1],request_id=2)
         self.assertEqual(result['peak_candidates']['rows'],[])
 
+    def test_annotation_retains_measured_error_and_csv_uncertainty(self):
+        result=self.event('peak_candidates',mz=47.95,tolerance=.01,unit='Th',charges=[1],request_id=9)
+        candidate=next(r for r in result['peak_candidates']['rows'] if r['id']=='Ti-48:+1')
+        self.event('peak_assignment',recipe_id=self.w.active_recipe.id,candidate_id=candidate['id'])
+        annotation=self.w.state()['assignments'][self.w.active_recipe.id]['candidate']
+        self.assertEqual(annotation['error_ppm'],candidate['error_ppm'])
+        self.assertNotEqual(annotation['error_ppm'],0.)
+        self.event('abundance_measure',recipe_ids=[self.w.active_recipe.id],frames=[0,1],roi=[0,1,0,0])
+        self.event('abundance_export')
+        import csv,io
+        rows=list(csv.DictReader(io.StringIO(self.w.send.call_args.args[0]['download']['text'])))
+        self.assertEqual(float(rows[0]['reference_abundance_uncertainty']),.0003)
+        self.assertEqual(rows[0]['reference_source_id'],'NIST-2015-CIAAW-2024')
+
     def test_explicit_measurement_export_and_stale_annotation_rejection(self):
         self.event('abundance_measure',recipe_ids=[self.w.active_recipe.id],frames=[0,1],roi=[0,1,0,0])
         row=self.w.state()['abundance_rows'][0]

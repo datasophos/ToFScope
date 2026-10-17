@@ -5,6 +5,7 @@ No download occurs: fetch/save the named official pages, then pass their paths.
 import argparse
 from dataclasses import asdict
 from datetime import date
+from decimal import Decimal
 from html.parser import HTMLParser
 import hashlib
 import json
@@ -41,7 +42,7 @@ def number_with_uncertainty(text):
     match=re.fullmatch(r'(\d+(?:\.\d+)?)(?:\((\d+)(#?)\))?',text)
     if not match:raise ValueError(f'Unsupported reference number: {text!r}')
     value=float(match[1]);digits=len(match[1].split('.')[1]) if '.' in match[1] else 0
-    uncertainty=int(match[2])*10**(-digits) if match[2] else None
+    uncertainty=float(Decimal(match[2]).scaleb(-digits)) if match[2] else None
     return value,uncertainty,bool(match[3])
 
 

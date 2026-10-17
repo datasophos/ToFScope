@@ -91,6 +91,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.active_recipe=recipe
         self.stored_recipes={index:recipe}
         self.assignments={}
+        self.candidate_rows={}
         self.abundance_rows=[]
         self.abundance_context=None
         self.next_interval_id=0
@@ -180,11 +181,8 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         return {r.id:r for r in [self.active_recipe,*(SignalRecipe.from_dict(c['recipe']) for c in self.comparisons)]}
 
     def candidate_record(self,identifier):
-        for isotope in load_catalog():
-            for charge in (-3,-2,-1,1,2,3):
-                candidate=IonCandidate(isotope,charge,ion_mz(isotope,charge),0.,0.)
-                if candidate.id==identifier:return dict(id=candidate.id,**asdict(candidate))
-        raise ValueError('Unknown atomic-ion reference.')
+        if identifier not in self.candidate_rows:raise ValueError('Search for this candidate before assigning it.')
+        return self.candidate_rows[identifier]
 
     def custom_recipe(self,payload):
         intervals=payload.get('intervals', [payload['bounds']] if 'bounds' in payload else self.draft_intervals)
@@ -380,7 +378,9 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 raise ValueError('Open an acquisition before using analysis controls.')
             if event=='peak_candidates':
                 rows=find_candidates(float(p['mz']),float(p['tolerance']),p['unit'],tuple(p['charges']),load_catalog())
-                self.send(dict(peak_candidates=dict(rows=[dict(id=r.id,**asdict(r)) for r in rows],request_id=p.get('request_id'))))
+                query=dict(mz=float(p['mz']),tolerance=float(p['tolerance']),unit=p['unit'],charges=p['charges'])
+                self.candidate_rows={r.id:dict(id=r.id,**asdict(r),query=query) for r in rows}
+                self.send(dict(peak_candidates=dict(rows=list(self.candidate_rows.values()),request_id=p.get('request_id'))))
                 return
             if event=='peak_assignment':
                 recipes=self.available_recipes()
@@ -403,9 +403,10 @@ class ExplorerWorkspace(anywidget.AnyWidget):
             elif event=='abundance_export':
                 if not self.abundance_rows:raise ValueError('Measure an isotope set first.')
                 out=io.StringIO();writer=csv.writer(out)
-                writer.writerow(['recipe_id','signal','atomic_ion','summed_original_intensity','observed_selected_set_fraction','reference_abundance_low','reference_abundance_high','first_frame','last_frame','roi_pixels','status'])
+                writer.writerow(['recipe_id','signal','atomic_ion','summed_original_intensity','observed_selected_set_fraction','reference_abundance_low','reference_abundance_high','reference_abundance_uncertainty','reference_source_id','mass_error_Th','mass_error_ppm','first_frame','last_frame','requested_first_frame','requested_last_frame','dataset','roi_pixels','status'])
                 for row in self.abundance_rows:
-                    writer.writerow([row['recipe_id'],row['label'],(row['candidate'] or {}).get('id',''),row['summed_intensity'],row['observed_fraction'],row['reference_abundance_low'],row['reference_abundance_high'],*(row['actual_frames'] or ('','')),json.dumps(self.abundance_context['roi']),row['status']])
+                    candidate=row['candidate'] or {};isotope=candidate.get('isotope',{})
+                    writer.writerow([row['recipe_id'],row['label'],candidate.get('id',''),row['summed_intensity'],row['observed_fraction'],row['reference_abundance_low'],row['reference_abundance_high'],isotope.get('abundance_uncertainty'),isotope.get('source_id',''),candidate.get('error_Th'),candidate.get('error_ppm'),*(row['actual_frames'] or ('','')),*self.abundance_context['frames'],self.abundance_context['dataset'],json.dumps(self.abundance_context['roi']),row['status']])
                 self.send(dict(download=dict(filename='isotope-areas.csv',text=out.getvalue()),state=self.state()));return
             elif event == 'frame':
                 self.map_projection = False
