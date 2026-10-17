@@ -7,6 +7,11 @@ TEAL = '#078d83'
 GOLD = '#d18c24'
 
 
+def comparison_color(index):
+    palette = ['#d18c24','#6a5acd','#d14d72','#2279b5','#8c613c','#609b35','#b85ac0','#507d89']
+    return palette[index] if index < len(palette) else f'hsl({(index*137.508)%360:.1f},60%,43%)'
+
+
 def layout(fig, title, height=330, dark=False):
     fig.update_layout(
         title=dict(text=title, font=dict(size=15)), height=height,
@@ -68,19 +73,23 @@ def profile_plot(volume, frames, roi, selected_frame, label, comparison=None, re
     x0, x1, y0, y1 = roi
     profile = volume[:, y0:y1+1, x0:x1+1].mean(axis=(1, 2), dtype=np.float64)
     z = np.arange(frames[0], frames[1] + 1)
-    curves = [(label, profile, TEAL)]
-    if comparison is not None:
-        name, other = comparison
-        curves.append((name, other[frames[0]:frames[1]+1, y0:y1+1, x0:x1+1].mean(axis=(1, 2), dtype=np.float64), GOLD))
+    curves = [(label, profile, TEAL), *(comparison or [])]
     fig = go.Figure()
     for name, values, color in curves:
-        values = values / values.max() if relative and values.max() > 0 else values
-        fig.add_trace(go.Scatter(x=z, y=values, name=name, mode='lines', line=dict(color=color, width=1.6)))
+        finite = values[np.isfinite(values)]
+        maximum = finite.max() if finite.size else 0
+        values = values / maximum if relative and maximum > 0 else values
+        fig.add_trace(go.Scatter(x=z, y=values, name=name,
+                                mode='lines+markers' if finite.size==1 else 'lines',
+                                marker=dict(color=color,size=6),connectgaps=False,
+                                line=dict(color=color, width=1.6)))
     fig.add_vline(x=selected_frame, line_color='#8b99a8', line_dash='dot')
     fig.update_xaxes(title='Depth frame')
     fig.update_yaxes(title='Relative to each curve’s maximum' if relative else 'Mean intensity / pixel')
-    fig.update_layout(legend=dict(orientation='h', y=1.16))
-    return layout(fig, 'Depth profile · selected spatial ROI', 290), profile
+    layout(fig, 'Depth profile · selected spatial ROI', 290)
+    fig.update_layout(margin=dict(t=86), title=dict(y=.98,yanchor='top'),
+                      legend=dict(orientation='h',y=1.02,yanchor='bottom',maxheight=50,font=dict(size=10)))
+    return fig, profile
 
 
 def cross_section(volume, frames, roi, direction, fov, log, vmax):
@@ -153,3 +162,22 @@ def volume_plot(volume, frames, roi, fov, percentile=70, opacity=.12, stretch=1.
         camera=dict(eye=dict(x=1.5, y=1.5, z=.9))),
         scene_uirevision='volume-camera')
     return layout(fig, '3D ion volume · drag to rotate', 550, dark=True), grid.shape
+
+
+def front_projection(volume, frames, roi, fov, log):
+    """XZ projection sums the ROI's Y rows, retaining X and each depth layer."""
+    x0,x1,y0,y1 = roi
+    data = volume[:,y0:y1+1,:].sum(axis=1,dtype=np.float64)
+    nx = volume.shape[2]
+    x = (np.arange(nx)+.5)*fov/nx if fov else np.arange(nx)
+    shown = np.log1p(np.maximum(data,0)) if log else data
+    fig = go.Figure(go.Heatmap(z=shown,x=x,y=np.arange(frames[0],frames[1]+1),
+        customdata=data,colorscale='Viridis',zmin=0,
+        colorbar=dict(title='logₑ(1+ΣI)' if log else 'Sum intensity',thickness=10),
+        hovertemplate='X=%{x:.3f}<br>Frame=%{y}<br>Y-sum=%{customdata:.5g}<extra></extra>'))
+    fig.update_xaxes(title=f'X ({"µm" if fov else "pixel"})')
+    fig.update_yaxes(title='Depth frame',autorange='reversed')
+    sx=fov/nx if fov else 1
+    fig.add_vrect(x0=(x0 if fov else x0-.5)*sx,x1=(x1+1 if fov else x1+.5)*sx,
+                  line=dict(color=GOLD,width=1),fillcolor='rgba(209,140,36,.04)')
+    return layout(fig,f'Front projection · sum Y {y0}–{y1} px',330)

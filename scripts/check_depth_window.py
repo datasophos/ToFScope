@@ -46,8 +46,11 @@ with sync_playwright() as p:
         assert int(app.get_by_label('Last integration frame',exact=True).input_value())==interval[1]
         ion=app.locator('[data-plot="ion"]')
         se=app.locator('[data-plot="se"]')
-        assert ion.evaluate('(g)=>g.layout.title.text').startswith('Ion sum · frames')
+        assert ion.evaluate('(g)=>g.layout.title.text').startswith('Top projection · frames')
+        app.get_by_role('button',name='FIB SE image',exact=True).click()
+        expect(se).to_have_class(__import__('re').compile('js-plotly-plot'),timeout=30000)
         assert se.evaluate('(g)=>g.layout.title.text').startswith('SE mean · frames')
+        app.get_by_role('button',name='SIMS images',exact=True).click()
         values=ion.evaluate('(g)=>g.data[0].customdata')
         if isinstance(values,dict):
             actual=np.frombuffer(base64.b64decode(values['bdata']),dtype=values['dtype']).reshape(128,128)
@@ -96,7 +99,7 @@ with sync_playwright() as p:
         assert min(zr)>=moved[0]-20 and max(zr)<=moved[1]+20,(zr,moved)
         print('PASS: 3D volume is cropped to the selected depth window',flush=True)
 
-        app.get_by_role('tab',name='Slices & profile',exact=True).click()
+        app.get_by_role('tab',name='Explore',exact=True).click()
         app.get_by_role('button',name='Clear depth window',exact=True).click();ready(app)
         expect(app).to_have_attribute('data-depth-window','null',timeout=30000)
         assert not errors,errors

@@ -1,4 +1,4 @@
-const tabs = {slices: ['ion','se','profile'], sections: ['xz','yz'], spectrum: ['spectrum'], volume: ['volume']};
+const tabs = {slices: ['ion','front','se','spectrum','profile'], sections: ['xz','yz'], spectrum: ['spectrum'], volume: ['volume']};
 
 async function render({ model, el }) {
   // Use the installed Plotly bundle: no CDN or data upload is required.
@@ -15,6 +15,8 @@ async function render({ model, el }) {
   const updating = new Set();
   const mounted = new Set();
   let active = 'slices';
+  let imageMode = 'sims';
+  let focusedDisplay = null;
   let disposed = false;
   let rendering = Promise.resolve();
   let datasetPath = '';
@@ -42,15 +44,17 @@ async function render({ model, el }) {
             </div>
           </div>
           <div class="tof-picker" data-picker="comparison">
-            <div class="tof-picker-label">Compare profile</div>
-            <div class="tof-picker-control"><button type="button" class="tof-picker-trigger" data-picker-trigger="comparison" aria-label="Choose comparison channel" aria-haspopup="dialog" aria-expanded="false"><span data-picker-value="comparison"></span><span aria-hidden="true">⌕</span></button><button type="button" class="tof-picker-clear" data-picker-clear aria-label="Clear comparison" hidden>×</button></div>
+            <div class="tof-picker-label">Comparison profiles <span data-field="comparison-count"></span></div>
+            <div class="tof-picker-control"><button type="button" class="tof-picker-trigger" data-picker-trigger="comparison" aria-label="Add comparison channel" aria-haspopup="dialog" aria-expanded="false"><span data-picker-value="comparison"></span><span aria-hidden="true">⌕</span></button></div>
             <div class="tof-picker-recent" data-picker-recent="comparison"></div>
-            <div class="tof-picker-popup" data-picker-popup="comparison" role="dialog" aria-label="Choose comparison channel" hidden>
+            <div class="tof-picker-popup" data-picker-popup="comparison" role="dialog" aria-label="Add comparison channel" hidden>
               <input type="search" role="combobox" data-picker-search="comparison" aria-label="Search comparison channels" aria-autocomplete="list" aria-expanded="true" placeholder="Mass or label · 48, Pt" autocomplete="off">
               <div class="tof-picker-count" data-picker-count="comparison" aria-live="polite"></div>
               <div class="tof-picker-results" data-picker-results="comparison" role="listbox" aria-label="Matching comparison channels"></div>
             </div>
           </div>
+          <div class="tof-comparison-list" data-field="comparison-list" aria-label="Comparison windows"></div>
+          <button data-action="comparison-clear" class="tof-quiet tof-full" hidden>Clear comparisons</button>
           <div class="tof-source"><span data-field="source"></span><strong data-field="signal"></strong></div>
           <label class="tof-check"><input type="checkbox" data-input="log"> Log ion colors</label>
           <label class="tof-check"><input type="checkbox" data-input="relative"> Relative profiles</label>
@@ -66,6 +70,8 @@ async function render({ model, el }) {
             <label>Last frame<input type="number" step="1" min="0" data-input="last" aria-label="Last integration frame"></label>
           </div>
           <button data-action="integrate" class="tof-primary">Apply custom window</button>
+          <button data-action="comparison-window" class="tof-quiet tof-full">Add window to comparisons</button>
+          <p class="tof-help">Comparisons use the mass and frame limits above; the active image signal stays selected.</p>
           <button data-action="stored" class="tof-quiet tof-full">Restore stored channel</button>
           <div class="tof-divider"></div>
           <div class="tof-caption">SPATIAL REGION</div>
@@ -81,31 +87,44 @@ async function render({ model, el }) {
         <main class="tof-main">
           <div class="tof-toolbar">
             <nav class="tof-tabs" role="tablist" aria-label="Explorer views">
-              <button role="tab" data-tab="slices" aria-selected="true">Slices & profile</button>
+              <button role="tab" data-tab="slices" aria-selected="true">Explore</button>
               <button role="tab" data-tab="sections" aria-selected="false">Cross-sections</button>
               <button role="tab" data-tab="spectrum" aria-selected="false">Mass spectrum</button>
               <button role="tab" data-tab="volume" aria-selected="false">3D volume</button>
             </nav>
-            <div class="tof-frame-nav"><button data-action="prev" aria-label="Previous frame">‹</button><label>Frame <input type="number" data-input="frame" aria-label="Depth frame"></label><button data-action="next" aria-label="Next frame">›</button></div>
+            <div class="tof-frame-nav"><button data-action="all-depths" class="tof-all-depths" aria-pressed="true" title="Show all loaded depths">All depths</button><button data-action="prev" aria-label="Previous frame">‹</button><label>Frame <input type="number" data-input="frame" aria-label="Depth frame"></label><button data-action="next" aria-label="Next frame">›</button></div>
           </div>
-          <div class="tof-panel" data-panel="slices" role="tabpanel" aria-label="Slices and profile">
-            <div class="tof-hint"><span class="tof-dot"></span> Click for a single frame; drag to sum ion maps and average SE images. Drag window edges to resize; Shift-drag to move.
-              <button data-action="select-depth" class="tof-quiet">Select depth window</button>
-              <button data-action="clear-depth" class="tof-quiet">Clear depth window</button>
-              <span data-field="depth-note"></span></div>
-            <div class="tof-slice-grid"><div class="tof-plot" data-plot="ion"></div><div class="tof-plot" data-plot="se"></div></div>
-            <div class="tof-plot tof-profile" data-plot="profile"></div>
-            <div class="tof-footnote">SE images are paired by index and shown in native pixels; spatial registration and timing alignment are unverified.</div>
+          <div class="tof-panel" data-panel="slices" role="tabpanel" aria-label="Images, spectrum and profiles">
+            <div class="tof-explore-grid">
+              <section class="tof-image-pane" aria-label="Acquisition images">
+                <div class="tof-image-switch" role="group" aria-label="Image source">
+                  <button data-image-mode="sims" aria-pressed="true">SIMS images</button>
+                  <button data-image-mode="se" aria-pressed="false">FIB SE image</button>
+                  <span class="tof-help-tip"><button class="tof-info" aria-label="Image help">i</button><span role="tooltip" data-field="image-note">Draw on the top map to select a spatial ROI. Front projection sums Y within that ROI.</span></span>
+                </div>
+                <div class="tof-sims-stack" data-image-content="sims">
+                  <div class="tof-plot" data-plot="ion"></div>
+                  <div class="tof-plot" data-plot="front"></div>
+                </div>
+                <div class="tof-plot tof-se-view" data-image-content="se" data-plot="se" hidden></div>
+              </section>
+              <section class="tof-analysis-stack" aria-label="Spectrum and depth profile">
+                <div class="tof-spectrum-home"></div>
+                <div class="tof-profile-view">
+                  <span class="tof-sr-only" data-field="depth-note" aria-live="polite"></span>
+                  <div class="tof-plot tof-profile" data-plot="profile"></div>
+                </div>
+              </section>
+            </div>
           </div>
           <div class="tof-panel" data-panel="sections" role="tabpanel" aria-label="Cross-sections" hidden>
-            <div class="tof-hint">Sections show the selected depth window through the center of the spatial ROI. Click a section to select a frame.</div>
             <div class="tof-section-grid"><div class="tof-plot" data-plot="xz"></div><div class="tof-plot" data-plot="yz"></div></div>
           </div>
           <div class="tof-panel" data-panel="spectrum" role="tabpanel" aria-label="Mass spectrum" hidden>
-            <div class="tof-hint">Drag horizontally to select a mass interval, even on a peak. Drag gold edges to resize; Shift-drag the band to move it. Apply to reconstruct.</div>
+            <div class="tof-spectrum-view">
             <div class="tof-subtoolbar"><button data-action="draw-window" class="tof-quiet">Draw window</button><button data-action="zoom-window" class="tof-quiet">Zoom to window</button><button data-action="zoom-spectrum" class="tof-quiet">Show full spectrum</button><span data-field="window-note"></span></div>
             <div class="tof-plot tof-spectrum" data-plot="spectrum"></div>
-            <div class="tof-footnote">The highlighted interval is a draft until Apply. Custom integration uses inclusive mass bounds and normalized raw events; small differences from vendor processing are possible.</div>
+            </div>
           </div>
           <div class="tof-panel" data-panel="volume" role="tabpanel" aria-label="3D volume" hidden>
             <div class="tof-volume-context" aria-label="3D data selection">
@@ -133,8 +152,11 @@ async function render({ model, el }) {
               <label>Preview quality<select data-input="quality" aria-label="3D preview quality"><option>Fast</option><option>Detailed</option></select></label>
             </div>
             <div class="tof-plot tof-volume" data-plot="volume"></div>
-            <div class="tof-footnote">Drag to rotate; scroll to zoom. Preview voxels are block means. Z is acquisition frames; display stretch is arbitrary, not calibrated physical depth. Profiles and exports retain original resolution.</div>
           </div>
+          <section class="tof-focus-pane" aria-label="Maximized display" hidden>
+            <div class="tof-focus-bar"><strong data-field="focus-title"></strong><button data-action="restore-display" aria-label="Restore layout">↙ Restore layout <small>Esc</small></button></div>
+            <div class="tof-focus-body"></div>
+          </section>
         </main>
       </div>
       <footer class="tof-status"><span data-field="status" role="status">Loading workspace…</span><span data-field="selection-summary"></span><span>LOCAL · READ ONLY</span></footer>
@@ -145,8 +167,38 @@ async function render({ model, el }) {
   const plot = (name) => $(`[data-plot="${name}"]`);
   const field = (name) => $(`[data-field="${name}"]`);
   const number = (name) => Number(input(name).value);
+  const displayNames={ion:'SIMS top map',front:'SIMS front projection',se:'FIB SE image',spectrum:'Mass spectrum',profile:'Depth profile',xz:'XZ cross-section',yz:'YZ cross-section',volume:'3D volume'};
+  const displayHelp={
+    ion:'Draw a rectangle on this map to select a spatial ROI. Click the gold outline to reveal its edit handles, then drag to move or resize it.',
+    front:'This XZ projection sums the selected spatial ROI’s Y rows. Click to select a depth frame.',
+    se:'SE images are paired by index and shown in native pixels. A selected depth window shows their unregistered mean; registration and timing alignment are unverified.',
+    spectrum:'Drag horizontally to select a mass window. Drag gold edges to resize; Shift-drag to move. Apply custom window for images, or Add window to comparisons for another profile. Limits are inclusive; raw reconstruction can differ slightly from vendor processing.',
+    profile:'Click for one frame; drag to integrate a depth window. Drag edges to resize; Shift-drag to move. Each curve is the mean signal within the spatial ROI. Relative profiles scales each curve to its own maximum.',
+    xz:'A section through the center Y of the spatial ROI. Click to select a depth frame.',
+    yz:'A section through the center X of the spatial ROI. Click to select a depth frame.',
+    volume:'Drag to rotate; scroll to zoom. Preview voxels are block means. Z is acquisition frames; stretch is arbitrary, not a calibrated physical depth. Profiles and exports retain original resolution.'
+  };
+  const helpPrefix=`help-${Math.random().toString(36).slice(2)}`;
+  for(const [key,label] of Object.entries(displayNames)) {
+    const gd=plot(key),frame=document.createElement('div');
+    frame.className='tof-display';frame.dataset.display=key;
+    if(gd.dataset.imageContent){frame.dataset.imageContent=gd.dataset.imageContent;frame.hidden=gd.hidden;gd.hidden=false;delete gd.dataset.imageContent;}
+    gd.replaceWith(frame);frame.append(gd);
+    const tools=document.createElement('div');tools.className='tof-display-tools';
+    const tip=document.createElement('span');tip.className='tof-help-tip';
+    const info=document.createElement('button');info.type='button';info.className='tof-info';info.textContent='i';info.setAttribute('aria-label',`${label} help`);
+    const help=document.createElement('span');help.setAttribute('role','tooltip');help.textContent=displayHelp[key];help.id=`${helpPrefix}-${key}`;info.setAttribute('aria-describedby',help.id);tip.append(info,help);
+    const maximize=document.createElement('button');maximize.type='button';maximize.className='tof-maximize';maximize.textContent='⤢';maximize.title=`Maximize ${label.toLowerCase()}`;maximize.setAttribute('aria-label',maximize.title);
+    maximize.addEventListener('click',()=>maximizeDisplay(key));
+    if(key==='profile') {
+      const clear=document.createElement('button');clear.type='button';clear.className='tof-clear-depth';clear.textContent='All depths';clear.dataset.action='clear-depth';clear.title='Show all loaded depths';clear.setAttribute('aria-label','Clear depth window');tools.append(clear);
+    }
+    tools.append(tip,maximize);frame.append(tools);
+  }
+  field('image-note').id=`${helpPrefix}-images`;$('.tof-image-switch .tof-info').setAttribute('aria-describedby',field('image-note').id);
+  $('.tof-spectrum-home').append($('.tof-spectrum-view'));
   function status(text, error=false) { field('status').textContent = text; field('status').classList.toggle('tof-error',error); }
-  function send(event,payload={}) { status(event==='integrate'?'Reconstructing raw events…':'Updating…'); model.send({event,payload}); }
+  function send(event,payload={}) { status(event==='integrate'||(event==='comparison_add'&&payload.bounds)?'Reconstructing raw events…':'Updating…'); model.send({event,payload}); }
   function setInput(name,value) {
     let focused=document.activeElement;
     while(focused?.shadowRoot?.activeElement) focused=focused.shadowRoot.activeElement;
@@ -170,7 +222,7 @@ async function render({ model, el }) {
       search.removeAttribute('aria-activedescendant');
       if(focus) trigger.focus();
     }
-    function choose(index) {close(true);send(name==='peak'?'peak':'comparison',{index});}
+    function choose(index) {close(true);send(name==='peak'?'peak':'comparison_add',{index});}
     function drawResults() {
       const query=search.value.trim().toLowerCase();
       const numeric=query!=='' && /^\d+(?:\.\d*)?$/.test(query)?Number(query):null;
@@ -222,7 +274,7 @@ async function render({ model, el }) {
         if(index>=0) history=[index,...history.filter(v=>v!==index)].slice(0,5);
       }
       const p=state.peaks.find(p=>p.index===index);
-      value.textContent=p?title(p):'No comparison';trigger.title=value.textContent;
+      value.textContent=name==='comparison'?'+ Add stored channel':p?title(p):'Choose channel';trigger.title=value.textContent;
       recent.replaceChildren();
       const others=history.filter(v=>v!==index);
       if(others.length) {
@@ -239,7 +291,6 @@ async function render({ model, el }) {
     }};
   }
   pickers.peak=createPicker('peak');pickers.comparison=createPicker('comparison');
-  $('[data-picker-clear]').addEventListener('click',()=>{pickers.comparison.close();send('comparison',{index:-1});});
   function closePickers(e) {for(const picker of Object.values(pickers))if(!e.composedPath().includes(picker.root))picker.close();}
   document.addEventListener('pointerdown',closePickers);
   function syncState(next) {
@@ -271,10 +322,27 @@ async function render({ model, el }) {
     field('draft-tag').textContent = draftChanged?'DRAFT':'WINDOW';
     field('window-note').textContent = `${state.draft[0].toFixed(4)}–${state.draft[1].toFixed(4)} Th${draftChanged?' · draft, not applied':''}`;
     field('roi').textContent = `X ${state.roi[0]}–${state.roi[1]} · Y ${state.roi[2]}–${state.roi[3]} px`;
-    field('selection-summary').textContent = state.depth_window?`Integrated frames ${state.depth_window[0]}–${state.depth_window[1]} · Ion sum / SE mean`:`Frame ${state.frame} / ${state.frames[0]}–${state.frames[1]} · ${state.custom?'Custom window':'Stored channel'}`;
+    field('selection-summary').textContent = state.depth_window?`Integrated frames ${state.depth_window[0]}–${state.depth_window[1]} · Ion sum / SE mean`:state.map_projection?`All loaded depths · frames ${state.frames[0]}–${state.frames[1]} · ${state.custom?'Custom window':'Stored channel'}`:`Frame ${state.frame} / ${state.frames[0]}–${state.frames[1]} · ${state.custom?'Custom window':'Stored channel'}`;
+    $('[data-action="clear-depth"]').hidden=!state.depth_window && state.map_projection;
+    $('[data-action="all-depths"]').setAttribute('aria-pressed',String(!state.depth_window && state.map_projection));
     field('depth-note').textContent = state.depth_window?`Selected depth: ${state.depth_window[0]}–${state.depth_window[1]}`:'Full depth';
-    pickers.peak.sync(state.index);pickers.comparison.sync(state.comparison);
-    $('[data-picker-clear]').hidden=state.comparison<0;
+    pickers.peak.sync(state.index);pickers.comparison.sync(-1);
+    field('comparison-count').textContent=state.comparisons.length?`(${state.comparisons.length})`:'';
+    field('comparison-list').replaceChildren();
+    for(const c of state.comparisons) {
+      const row=document.createElement('div');row.className='tof-comparison-row';
+      row.style.setProperty('--curve-color',c.color);
+      const text=document.createElement('div'), label=document.createElement('strong'), limits=document.createElement('small');
+      label.textContent=c.label;
+      limits.textContent=`${c.low.toFixed(4)}–${c.high.toFixed(4)} Th · frames ${c.frames[0]}–${c.frames[1]}`;
+      text.append(label,limits);
+      const remove=document.createElement('button');remove.type='button';remove.textContent='×';
+      remove.setAttribute('aria-label',`Remove comparison ${c.label}`);
+      remove.addEventListener('click',()=>send('comparison_remove',{id:c.id}));
+      row.append(text,remove);field('comparison-list').append(row);
+    }
+    $('[data-action="comparison-clear"]').hidden=!state.comparisons.length;
+    $('[data-action="comparison-window"]').disabled=!state.raw;
     setInput('frame',state.frame);
     input('frame').min=state.frames[0]; input('frame').max=state.frames[1];
     setInput('low',Number(state.draft[0].toFixed(6))); setInput('high',Number(state.draft[1].toFixed(6)));
@@ -290,7 +358,7 @@ async function render({ model, el }) {
     $('.tof-app').dataset.roi=JSON.stringify(state.roi);
     $('.tof-app').dataset.depthWindow=JSON.stringify(state.depth_window || null);
     $('.tof-app').dataset.peak=state.index;
-    $('.tof-app').dataset.comparison=state.comparison;
+    $('.tof-app').dataset.comparisons=JSON.stringify(state.comparisons.map(c=>c.id));
   }
 
   function bindPlot(key,gd) {
@@ -311,6 +379,7 @@ async function render({ model, el }) {
         if(low!==null) shapes.push({type:'rect',xref:'x',yref:'paper',x0:low,x1:high,
           y0:0,y1:1,editable:false,line:{color:'#d18c24',width:2},
           fillcolor:'rgba(209,140,36,.18)'});
+        if(!isDepth) shapes.push(...(figures.spectrum.layout.shapes || []).slice(1));
         Plotly.relayout(gd,{shapes});
       }
       function preview(e) {
@@ -370,7 +439,7 @@ async function render({ model, el }) {
       },true);
       gd.addEventListener('pointercancel',()=>{if(gesture){gesture=null;band(...(isDepth?(state.depth_window || [null,null]):state.draft));syncState(state);status('Ready');}},true);
     }
-    if (key==='xz' || key==='yz') {
+    if (key==='xz' || key==='yz' || key==='front') {
       let scrubbing=false;
       function coordinate(e) {
         const rect=gd.getBoundingClientRect(), layout=gd._fullLayout;
@@ -408,9 +477,11 @@ async function render({ model, el }) {
       });
     }
   }
+  function visibleKeys(){return focusedDisplay?[focusedDisplay.key]:tabs[active];}
   async function drawVisible() {
-    for(const key of tabs[active]) {
+    for(const key of visibleKeys()) {
       const gd=plot(key);
+      if(gd.closest('[hidden]')) continue;
       if(dirty.has(key) || !mounted.has(key)) {
         updating.add(key);
         const config={responsive:true,displaylogo:false,scrollZoom:key==='volume',
@@ -434,7 +505,7 @@ async function render({ model, el }) {
         const match=path.match(/^shapes\[(\d+)\]\.(.+)$/);
         if(match && figures[key].layout.shapes?.[Number(match[1])]) figures[key].layout.shapes[Number(match[1])][match[2]]=value;
       }
-      if(mounted.has(key) && tabs[active].includes(key)) await Plotly.relayout(plot(key),patch);
+      if(mounted.has(key) && visibleKeys().includes(key) && !plot(key).closest('[hidden]')) await Plotly.relayout(plot(key),patch);
       else dirty.add(key);
     }
     if(message.download) {
@@ -447,7 +518,9 @@ async function render({ model, el }) {
   }
   model.on('msg:custom',receive);
   function showTab(name) {
+    if(focusedDisplay) restoreDisplay();
     active=name;
+    (name==='spectrum'?$('[data-panel="spectrum"]'):$('.tof-spectrum-home')).append($('.tof-spectrum-view'));
     for(const b of el.querySelectorAll('[data-tab]')) b.setAttribute('aria-selected',String(b.dataset.tab===name));
     for(const panel of el.querySelectorAll('[data-panel]')) panel.hidden=panel.dataset.panel!==active;
     redraw();
@@ -466,25 +539,58 @@ async function render({ model, el }) {
     'reset-roi':()=>send('reset_roi'),
     'roi-exact':()=>send('roi_pixels',{roi:['x0','x1','y0','y1'].map(number)}),
     integrate:()=>send('integrate',{bounds:[number('low'),number('high')],frames:[number('first'),number('last')]}),
+    'comparison-window':()=>send('comparison_add',{bounds:[number('low'),number('high')],frames:[number('first'),number('last')]}),
+    'comparison-clear':()=>send('comparison_clear'),
+    'restore-display':()=>restoreDisplay(),
     'export-csv':()=>send('export',{format:'csv'}), 'export-json':()=>send('export',{format:'json'}),
     'volume-edit-mass':()=>showTab('spectrum'),
     'volume-edit-region':()=>showTab('slices'),
-    'volume-edit-roi':()=>showTab('slices'),
+    'volume-edit-roi':()=>{setImageMode('sims');showTab('slices');},
     'open-dialog':()=>$('.tof-dialog').showModal(),
     'open-file':()=>{$('.tof-dialog').close();send('open',{path:input('path').value});},
     'zoom-window':()=>Plotly.relayout(plot('spectrum'),{'xaxis.range':[number('low')-2,number('high')+2]}),
     'draw-window':()=>{Plotly.relayout(plot('spectrum'),{dragmode:false});status('Drag horizontally to select a mass interval.');},
-    'select-depth':()=>{Plotly.relayout(plot('profile'),{dragmode:false});status('Click for a frame or drag to select a depth window.');},
     'clear-depth':()=>send('clear_depth_window'),
+    'all-depths':()=>send('clear_depth_window'),
     'zoom-spectrum':()=>Plotly.relayout(plot('spectrum'),{'xaxis.autorange':true}),
   };
   for(const button of el.querySelectorAll('[data-action]')) button.addEventListener('click',()=>actions[button.dataset.action]());
+  function maximizeDisplay(key) {
+    if(focusedDisplay) restoreDisplay();
+    const frame=plot(key).closest('.tof-display'),placeholder=document.createComment(`display-${key}`);
+    frame.before(placeholder);
+    focusedDisplay={key,placeholder,frame};
+    field('focus-title').textContent=displayNames[key];
+    $('.tof-focus-body').append(frame);$('.tof-focus-pane').hidden=false;
+    for(const background of el.querySelectorAll('.tof-sidebar,.tof-toolbar,[data-panel]')) background.inert=true;
+    $('.tof-app').classList.add('tof-focused');
+    $('[data-action="restore-display"]').focus();
+    redraw();
+  }
+  function restoreDisplay() {
+    if(!focusedDisplay) return;
+    const {frame,placeholder}=focusedDisplay;
+    for(const background of el.querySelectorAll('.tof-sidebar,.tof-toolbar,[data-panel]')) background.inert=false;
+    placeholder.replaceWith(frame);focusedDisplay=null;
+    $('.tof-focus-pane').hidden=true;$('.tof-app').classList.remove('tof-focused');
+    frame.querySelector('.tof-maximize').focus();redraw();
+  }
+  function onEscape(e){if(e.key==='Escape' && focusedDisplay){e.preventDefault();restoreDisplay();}}
+  document.addEventListener('keydown',onEscape);
+  function setImageMode(mode) {
+    imageMode=mode;
+    for(const button of el.querySelectorAll('[data-image-mode]')) button.setAttribute('aria-pressed',String(button.dataset.imageMode===imageMode));
+    for(const content of el.querySelectorAll('[data-image-content]')) content.hidden=content.dataset.imageContent!==imageMode;
+    field('image-note').textContent=imageMode==='sims'?'Draw on the top map to select a spatial ROI. Front projection sums Y within that ROI.':'SE images are paired by index and shown in native pixels. Spatial registration and timing alignment are unverified; depth windows show an SE mean.';
+    redraw();
+  }
+  for(const button of el.querySelectorAll('[data-image-mode]')) button.addEventListener('click',()=>setImageMode(button.dataset.imageMode));
   const observer=new ResizeObserver(()=>{if(mounted.size) redraw();});
   observer.observe($('.tof-main'));
   $('.tof-volume-details').addEventListener('toggle',()=>{if(mounted.size) redraw();});
   syncState(state);
   await redraw();status('Ready');
-  return ()=>{disposed=true;observer.disconnect();document.removeEventListener('pointerdown',closePickers);model.off('msg:custom',receive);for(const key of mounted) Plotly.purge(plot(key));el.replaceChildren();};
+  return ()=>{disposed=true;observer.disconnect();document.removeEventListener('pointerdown',closePickers);document.removeEventListener('keydown',onEscape);model.off('msg:custom',receive);for(const key of mounted) Plotly.purge(plot(key));el.replaceChildren();};
 }
 
 export default {render};

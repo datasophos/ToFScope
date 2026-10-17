@@ -52,13 +52,13 @@ with sync_playwright() as p:
         expect(primary.get_by_role('button',name='Choose ion channel',exact=True)).to_be_focused()
         print('PASS: keyboard selection, empty results and Escape',flush=True)
 
-        comparison.get_by_role('button',name='Choose comparison channel',exact=True).click()
+        comparison.get_by_role('button',name='Add comparison channel',exact=True).click()
         comparison.get_by_role('combobox',name='Search comparison channels',exact=True).fill('27')
         comparison.get_by_role('option').click()
-        expect(app).to_have_attribute('data-comparison','26',timeout=30000);ready(app)
+        expect(app).to_have_attribute('data-comparisons','[0]',timeout=30000);ready(app)
         assert app.locator('[data-plot="profile"]').evaluate('(g)=>g.data.length')==2
-        comparison.get_by_role('button',name='Clear comparison',exact=True).click()
-        expect(app).to_have_attribute('data-comparison','-1',timeout=30000);ready(app)
+        app.get_by_role('button',name='Clear comparisons',exact=True).click()
+        expect(app).to_have_attribute('data-comparisons','[]',timeout=30000);ready(app)
         assert app.locator('[data-plot="profile"]').evaluate('(g)=>g.data.length')==1
         assert not errors,errors
         print('PASS: searchable comparison and clearing the second curve',flush=True)
