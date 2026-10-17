@@ -153,8 +153,9 @@ when trying many custom windows on a large acquisition.
   without registration. The final SE image is shorter; each mean-image pixel is
   divided by its actual coverage count so missing rows do not bias it downward.
 - X/Y units derive from `FIBParams.ViewField` (millimeters converted to µm).
-  Z remains acquisition frames. **Z stretch is a display setting**, not a
-  calibrated sputter depth or a physical aspect ratio.
+  Z defaults to acquisition frames. Known-depth anchors enable physical depth
+  across profiles, projections, cross-sections and 3D. **Z exaggeration** is a
+  display setting; 1× preserves physical proportions when X/Y are calibrated.
 - Profiles and slices use original-resolution data. The 3D preview uses block
   means (including partial edge blocks), at most 96 × 32 × 32 voxels in Fast mode
   or 160 × 48 × 48 in Detailed mode. Thin features contribute to block means,
@@ -171,26 +172,51 @@ when trying many custom windows on a large acquisition.
   the active custom channel and each custom comparison. Full custom reintegration can take a minute or
   longer. Progress appears while that calculation is running.
 - This is a prototype for files that contain `PeakData/PeakData`, a peak table,
-  mass axis and sum spectrum. Raw-only files, physical depth calibration,
-  background subtraction, mass recalibration, multi-ion 3D overlays,
+  mass axis and sum spectrum. Raw-only files,
+  background subtraction, mass recalibration,
   segmentation and quantitative composition are outside its current scope.
 
 ## Known-depth calibration
 
-Use **Depth…** on the profile to edit known depths. Frame 0 is fixed at depth 0;
-add positive-depth anchors at acquisition frames. The selected frame pre-fills
-the anchor entry. Switch **Profile coordinates** to physical depth and choose
+Use **Depth…** to see the active and comparison profiles, including the current
+spatial ROI and relative scaling. Click a profile position to select its frame,
+then enter the known depth and **Add anchor**. Clicking an existing anchor
+pre-fills its depth for **Update anchor**. Frame 0 stays fixed at depth 0.
+The editor always uses acquisition frames, so you can select unknown depths
+even while the main views use physical coordinates. Drag to zoom or use
+**All frames**; exact frame entry and the anchor table remain available.
+Switch **Depth coordinates** to physical depth and choose
 nm, µm or mm. Between anchors the profile uses piecewise-linear interpolation;
 later depths stay unknown. Dragging still selects original acquisition frames,
 without resampling or changing intensities. CSV adds `depth_nm`, leaving unknown
 values blank; JSON retains canonical nm anchors and the interpolation policy.
-Removing all positive-depth anchors restores frame coordinates. Cross-sections
-and 3D still use acquisition frames and the existing arbitrary display stretch.
+Removing all positive-depth anchors restores frame coordinates in every view.
+**Depth…** is also available on the front projection, XZ/YZ sections and 3D.
+Their depth coordinates and selection markers follow the same calibration;
+clicking a section still selects an original acquisition frame. The ion top
+map and SE image retain their original data and selection behavior.
+
+Physical views omit frames beyond the last anchor, with an explicit coverage
+summary. The 3D preview clips unknown-depth frames before pooling. Preview
+positions average calibrated coordinates within each frame block, including
+blocks spanning changes in calibration slope. No intensities are interpolated
+onto a new depth grid. Tiled and overlay layers share that calibrated geometry.
+
+With a known X/Y field of view, 3D starts at **1× Z exaggeration** and preserves
+physical proportions across nm/µm/mm display changes. Thin specimens can look
+flat at true scale; increase exaggeration to inspect them. Without X/Y scale,
+Z still shows calibrated depth but the 3D aspect ratio remains arbitrary.
+Frame mode retains its separate arbitrary stretch setting.
 
 ## Atomic ions and isotope measurements
 
-Use **Identify…** on the spectrum to search an explicit m/z tolerance in Th or
-ppm, polarity, and charges 1–3. The helper uses the offline NIST/CIAAW catalog;
+Use **Identify…** to open the interactive spectrum. Click a peak to search
+candidate atomic assignments automatically; clicks snap to nearby local maxima
+within seven display pixels, otherwise to the nearest sampled mass bin.
+Drag to zoom, scroll to zoom further, or use **Full spectrum** / **Selected
+window**. The selected mass and predicted candidates are marked on the plot.
+Tolerance in Th or ppm, polarity, charges 1–3 and exact mass entry remain
+editable. The helper uses the offline NIST/CIAAW catalog;
 reference version and mass convention are in [data/reference/README.md](data/reference/README.md).
 Select a candidate and **Annotate signal** to record an interpretation alongside
 the original label. **Apply window** and **Add as comparison** are separate
@@ -265,8 +291,11 @@ uv run python scripts/check_window_sets.py
 uv run python scripts/check_interval_selection_race.py
 uv run python scripts/check_file_browser.py
 uv run python scripts/check_depth_calibration.py
+uv run python scripts/check_calibrated_views.py
+uv run python scripts/check_dialog_position.py
 uv run python scripts/check_peak_helper.py
 uv run python scripts/check_peak_helper_reset.py
+uv run python scripts/check_graphical_tools.py
 uv run python scripts/check_multi_volume.py
 uv run python scripts/check_writeback.py
 ```

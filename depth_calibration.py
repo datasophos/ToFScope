@@ -15,6 +15,18 @@ def convert_depth(value,source_unit,target_unit):
     return np.asarray(value)*scales[source_unit]/scales[target_unit]
 
 
+def calibrated_window(frames,calibration=None):
+    """Intersect display coverage without extrapolating or changing selection."""
+    first,last=frames
+    if calibration:
+        first=max(first,calibration.anchors[0].frame);last=min(last,calibration.anchors[-1].frame)
+    return (first,last) if first<=last else None
+
+
+def display_depth(frames,calibration=None,unit='nm'):
+    return convert_depth(calibration.frame_to_depth(frames),'nm',unit) if calibration else np.asarray(frames)
+
+
 def validate_anchors(anchors,acquisition_frames):
     if type(acquisition_frames) is not int or acquisition_frames<1:raise ValueError('Acquisition must contain frames.')
     rows=[]

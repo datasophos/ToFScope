@@ -12,7 +12,7 @@ from signals import SignalRecipe,read_signal,interval_label
 from integration import canonical_intervals
 from server_config import ServerSettings, resolve_data_path
 from file_browser import list_data_files
-from depth_calibration import DepthAnchor, DepthCalibration, validate_anchors, convert_depth
+from depth_calibration import DepthAnchor, DepthCalibration, validate_anchors, convert_depth,calibrated_window
 from isotopes import load_catalog, find_candidates, IonCandidate, ion_mz
 from abundance import measure_isotopes
 from volume_layers import VolumeLayer,build_layer_previews,COLORSCALES
@@ -42,6 +42,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
     peak_helper_js = traitlets.Unicode().tag(sync=True)
     volume_layers_js = traitlets.Unicode().tag(sync=True)
     save_integration_js = traitlets.Unicode().tag(sync=True)
+    dialog_plot_js = traitlets.Unicode().tag(sync=True)
 
     def __init__(self, path=None, settings=None):
         super().__init__()
@@ -62,6 +63,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.peak_helper_js=(Path(__file__).parent/'web/peak_helper.js').read_text()
         self.volume_layers_js=(Path(__file__).parent/'web/volume_layers.js').read_text()
         self.save_integration_js=(Path(__file__).parent/'web/save_integration.js').read_text()
+        self.dialog_plot_js=(Path(__file__).parent/'web/dialog_plot.js').read_text()
         self.startup_error=None
         if path is not None:
             try:self.load_file(path)
@@ -125,6 +127,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.volume_mode='tiles'
         self.volume_scale='independent'
         self.volume_page=0
+        self.depth_stretch=1.
         self.loaded_identity=identity
         self.saved_integrations=saved
         self.stale=False
@@ -189,6 +192,14 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         if self.profile_axis=='depth' and self.calibration:
             return float(convert_depth(self.calibration.frame_to_depth(frame),'nm',self.depth_unit))
         return frame
+
+    @property
+    def view_calibration(self):
+        return self.calibration if self.profile_axis=='depth' else None
+
+    @property
+    def display_stretch(self):
+        return self.depth_stretch if self.view_calibration else self.stretch
 
     def set_color_range(self):
         sample = self.volume[::max(1,len(self.volume)//64)]
@@ -265,7 +276,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         enabled=[l for l in self.volume_layers if l.visible]
         pages=max(1,(len(enabled)+3)//4)
         self.volume_page=min(self.volume_page,pages-1)
-        all_previews=build_layer_previews(self.meta['path'],enabled,self.roi,tuple(frames),quality=self.quality,reader=self.layer_reader)
+        all_previews=build_layer_previews(self.meta['path'],enabled,self.roi,tuple(frames),quality=self.quality,reader=self.layer_reader,calibration=self.view_calibration)
         previews=all_previews[self.volume_page*4:self.volume_page*4+4] if self.volume_mode=='tiles' else all_previews
         layers=enabled[self.volume_page*4:self.volume_page*4+4] if self.volume_mode=='tiles' else enabled
         shared_range=None
@@ -275,10 +286,14 @@ class ExplorerWorkspace(anywidget.AnyWidget):
             if self.logarithmic:values=np.log1p(values)
             shared_range=(0.,float(np.percentile(values,99.7)) if values.size else 1.)
         constructor=tiled_volume_plot if self.volume_mode=='tiles' else overlay_volume_plot
-        fig=constructor(previews,layers,scale_mode=self.volume_scale,stretch=self.stretch,log=self.logarithmic,shared_range=shared_range)
+        fig=constructor(previews,layers,scale_mode=self.volume_scale,stretch=self.display_stretch,log=self.logarithmic,shared_range=shared_range,calibration=self.view_calibration,unit=self.depth_unit)
+        display_frames=calibrated_window(frames,self.view_calibration)
         self.volume_details=dict(preview_shape=list(previews[0].values.shape) if previews else [0,0,0],threshold=None,
             layers=fig.layout.meta['layers'],page=self.volume_page,pages=pages,mode=self.volume_mode,voxel_budget=500_000,
-            encoded_bytes=len(fig.to_json().encode()),preparation_seconds=perf_counter()-started)
+            encoded_bytes=len(fig.to_json().encode()),preparation_seconds=perf_counter()-started,
+            display_frames=list(display_frames) if display_frames else None,
+            omitted_frames=(frames[1]-frames[0]+1)-(display_frames[1]-display_frames[0]+1 if display_frames else 0),
+            physical_aspect=bool(fig.layout.meta['physical_aspect']),axis_kind='depth' if self.view_calibration else 'frame')
         return fig
 
     def custom_recipe(self,payload):
@@ -309,7 +324,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                     selected_interval_id=self.selected_interval_id,
                     draft=self.draft, draft_frames=self.draft_frames, custom=self.custom,
                     label=self.label, log=self.logarithmic, relative=self.relative,
-                    percentile=self.percentile, opacity=self.opacity, stretch=self.stretch,
+                    percentile=self.percentile, opacity=self.opacity, stretch=self.display_stretch,
                     quality=self.quality, volume_details=getattr(self,'volume_details',None),
                     depth_calibration=self.calibration_metadata(),profile_axis=self.profile_axis,
                     assignments=self.assignments,abundance_rows=self.abundance_rows,abundance_context=self.abundance_context,
@@ -370,13 +385,15 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                                   fillcolor='rgba(209,140,36,.18)',line_color='#d18c24',
                                   line_width=2,editable=False)
             elif key == 'front':
-                fig = front_projection(selected_volume,selected_frames,self.roi,self.meta['fov_um'],self.logarithmic)
-                fig.add_hline(y=self.frame,line_color='#d18c24',line_width=1,
-                              visible=not self.map_projection or self.depth_window is not None)
+                fig = front_projection(selected_volume,selected_frames,self.roi,self.meta['fov_um'],self.logarithmic,calibration=self.view_calibration,unit=self.depth_unit)
+                coordinate=self.profile_coordinate(self.frame)
+                fig.add_hline(y=coordinate if np.isfinite(coordinate) else 0,line_color='#d18c24',line_width=1,
+                              visible=np.isfinite(coordinate) and (not self.map_projection or self.depth_window is not None))
             elif key in ('xz','yz'):
-                fig = cross_section(selected_volume,selected_frames,self.roi,key.upper(),self.meta['fov_um'],self.logarithmic,self.color_max)
-                fig.add_hline(y=self.frame,line_color='#d18c24',line_width=1,
-                              visible=not self.map_projection or self.depth_window is not None)
+                fig = cross_section(selected_volume,selected_frames,self.roi,key.upper(),self.meta['fov_um'],self.logarithmic,self.color_max,calibration=self.view_calibration,unit=self.depth_unit)
+                coordinate=self.profile_coordinate(self.frame)
+                fig.add_hline(y=coordinate if np.isfinite(coordinate) else 0,line_color='#d18c24',line_width=1,
+                              visible=np.isfinite(coordinate) and (not self.map_projection or self.depth_window is not None))
             elif key == 'spectrum':
                 fig = spectrum_plot(self.meta,intervals=self.draft_intervals,
                                     window_ids=[r['id'] for r in self.draft_windows],selected_id=self.selected_interval_id)
@@ -397,7 +414,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                     fig=self.layered_figure(selected_frames)
                 else:
                     fig, preview_shape = volume_plot(selected_volume,selected_frames,self.roi,self.meta['fov_um'],
-                                          self.percentile,self.opacity,self.stretch,self.logarithmic,self.quality)
+                                          self.percentile,self.opacity,self.display_stretch,self.logarithmic,self.quality,calibration=self.view_calibration,unit=self.depth_unit)
                     source='Custom integration' if self.custom else self.label
                     x0,x1,y0,y1=self.roi
                     fig.update_layout(title=dict(text=f'3D ion volume · {escape(source)}<br>'
@@ -406,13 +423,13 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                     threshold=None
                     if fig.data and fig.data[0].type=='volume':
                         threshold=float(np.expm1(fig.data[0].isomin) if self.logarithmic else fig.data[0].isomin)
-                    self.volume_details=dict(preview_shape=list(preview_shape),threshold=threshold)
+                    self.volume_details=dict(preview_shape=list(preview_shape),threshold=threshold,**fig.layout.meta)
             else:
                 continue
             fig.update_layout(autosize=True)
             fig.layout.height = None
             fig.layout.width = None
-            fig.update_layout(uirevision=f'{self.meta["path"]}:{key}:{self.profile_axis}:{self.depth_unit}' if key=='profile' else f'{self.meta["path"]}:{key}')
+            fig.update_layout(uirevision=f'{self.meta["path"]}:{key}:{self.profile_axis}:{self.depth_unit}' if key in ('profile','front','xz','yz','volume') else f'{self.meta["path"]}:{key}')
             result[key] = json.loads(fig.to_json())
         return result
 
@@ -478,7 +495,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                     return self._handle_message(widget,content,buffers)
             return self._handle_message(widget,content,buffers)
         except (ValueError,KeyError,OSError,TypeError) as exc:
-            self.send(dict(error=self.safe_error(exc),state=self.state(),figures={}))
+            self.send(dict(error=self.safe_error(exc),state=self.state(),figures={},depth_request_id=content.get('payload',{}).get('request_id')))
 
     def _handle_message(self, widget, content, buffers):
         event = content.get('event')
@@ -593,8 +610,10 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 else:
                     keys = ['ion','se']
                     relayout = {'profile':{'shapes[0].x0':self.frame,'shapes[0].x1':self.frame,'shapes[0].visible':True}}
-                    relayout.update({k:{'shapes[0].y0':self.frame,'shapes[0].y1':self.frame,'shapes[0].visible':True} for k in ['xz','yz']})
-                    relayout['front']={'shapes[1].y0':self.frame,'shapes[1].y1':self.frame,'shapes[1].visible':True}
+                    coordinate=self.profile_coordinate(self.frame);valid=np.isfinite(coordinate)
+                    coordinate=coordinate if valid else 0
+                    relayout.update({k:{'shapes[0].y0':coordinate,'shapes[0].y1':coordinate,'shapes[0].visible':bool(valid)} for k in ['xz','yz']})
+                    relayout['front']={'shapes[1].y0':coordinate,'shapes[1].y1':coordinate,'shapes[1].visible':bool(valid)}
                     if self.profile_axis=='depth':
                         keys.append('profile');relayout.pop('profile',None)
             elif event == 'depth_window':
@@ -626,14 +645,14 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 calibration=DepthCalibration(rows,self.meta['shape'][0]) if len(rows)>=2 else None
                 self.depth_anchors=rows;self.calibration=calibration
                 if calibration is None:self.profile_axis='frame'
-                keys=['profile']
+                keys=['profile','front','xz','yz','volume']
             elif event=='depth_unit':
                 convert_depth(1,'nm',p['unit']);self.depth_unit='µm' if p['unit']=='um' else p['unit']
-                keys=['profile']
+                keys=['profile','front','xz','yz','volume']
             elif event=='profile_axis':
                 if p['axis'] not in ('frame','depth'):raise ValueError('Unknown profile axis.')
                 if p['axis']=='depth' and self.calibration is None:raise ValueError('Add a positive-depth anchor first.')
-                self.profile_axis=p['axis'];keys=['profile']
+                self.profile_axis=p['axis'];keys=['profile','front','xz','yz','volume']
             elif event == 'peak':
                 index = int(p['index'])
                 if not 0 <= index < len(self.meta['peaks']):
@@ -719,7 +738,9 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 self.relative = bool(p.get('relative',self.relative))
                 self.percentile = float(np.clip(float(p.get('percentile',self.percentile)),0,99))
                 self.opacity = float(np.clip(float(p.get('opacity',self.opacity)),.02,.4))
-                self.stretch = float(np.clip(float(p.get('stretch',self.stretch)),.2,3))
+                stretch=float(np.clip(float(p.get('stretch',self.display_stretch)),.2,1000 if self.view_calibration else 3))
+                if self.view_calibration:self.depth_stretch=stretch
+                else:self.stretch=stretch
                 self.quality = p.get('quality',self.quality)
                 keys = ['ion','front','profile','xz','yz','volume']
             elif event in ('open','reload_acquisition'):
@@ -747,13 +768,13 @@ class ExplorerWorkspace(anywidget.AnyWidget):
             if event=='display':
                 self.volume_layers=[replace(l,percentile=self.percentile,opacity=self.opacity) if l.id=='active' else l for l in self.volume_layers]
             figures = self.figures(keys) if keys is None or keys else {}
-            self.send(dict(state=self.state(),figures=figures,relayout=relayout))
+            self.send(dict(state=self.state(),figures=figures,relayout=relayout,depth_request_id=p.get('request_id')))
         except (ValueError,KeyError,OSError,TypeError) as exc:
-            self.send(dict(error=self.safe_error(exc),state=self.state(),figures=self.figures(['spectrum'])
+            self.send(dict(error=self.safe_error(exc),state=self.state(),depth_request_id=p.get('request_id'),figures=self.figures(['spectrum'])
                            if event in ('window','interval_add','interval_update','interval_select','interval_remove') else {}))
         except Exception as exc:
             traceback.print_exc()
-            self.send(dict(error=f'Unexpected error: {exc}',state=self.state()))
+            self.send(dict(error=f'Unexpected error: {exc}',state=self.state(),depth_request_id=p.get('request_id')))
 
     def export(self, format):
         selected_frames = self.depth_window or self.frames
@@ -776,6 +797,9 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                           loaded_frames_inclusive=self.frames,roi_pixels_inclusive=self.roi,
                           z_units='frame',fov_um=self.meta['fov_um'],comparisons=self.comparisons)
             recipe.update(depth_calibration=self.calibration_metadata(),profile_axis=self.profile_axis)
+            display_frames=calibrated_window(selected_frames,self.view_calibration)
+            recipe.update(display_z_units=self.depth_unit if self.view_calibration else 'frame',
+                          z_display_stretch=self.display_stretch,physical_aspect=bool(self.view_calibration and self.meta['fov_um'] and display_frames and display_frames[1]>display_frames[0]))
             recipe.update(assignments=self.assignments,abundance_rows=self.abundance_rows,abundance_context=self.abundance_context)
             recipe.update(volume_layers=self.state()['volume_layers'],volume_mode=self.volume_mode,volume_scale=self.volume_scale)
             if len(self.active_recipe.intervals)==1:

@@ -24,7 +24,7 @@ with sync_playwright() as p:
         revision=app.get_attribute('data-revision');dialog.get_by_label('Depth display unit',exact=True).select_option('µm');changed(app,revision)
         assert float(dialog.get_by_label('Known depth',exact=True).input_value())==.1
         dialog.get_by_label('Depth at frame 100',exact=True).fill('.06')
-        revision=app.get_attribute('data-revision');dialog.get_by_label('Profile coordinates',exact=True).select_option('depth');changed(app,revision)
+        revision=app.get_attribute('data-revision');dialog.get_by_label('Depth coordinates',exact=True).select_option('depth');changed(app,revision)
         assert float(dialog.get_by_label('Depth at frame 100',exact=True).input_value())==.06
         dialog.get_by_role('button',name='Done',exact=True).click()
         gd=app.locator('[data-plot="profile"]');expect(gd.locator('.xtitle')).to_have_text('Depth (µm)',timeout=10000)
@@ -38,7 +38,7 @@ with sync_playwright() as p:
         app.get_by_role('button',name='Calibrate depth',exact=True).click()
         for frame in [100,300]:
             revision=app.get_attribute('data-revision');dialog.locator(f'[data-anchor-frame="{frame}"]').get_by_role('button',name='Remove anchor',exact=True).click();changed(app,revision)
-        expect(dialog.get_by_label('Profile coordinates',exact=True)).to_have_value('frame')
+        expect(dialog.get_by_label('Depth coordinates',exact=True)).to_have_value('frame')
         dialog.get_by_role('button',name='Done',exact=True).click();expect(gd.locator('.xtitle')).to_have_text('Depth frame')
         page.keyboard.press('Escape');revision=app.get_attribute('data-revision')
         app.get_by_role('button',name='All depths',exact=True).click();changed(app,revision)
