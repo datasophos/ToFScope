@@ -1,4 +1,4 @@
-const tabs = {slices: ['ion','front','se','spectrum','profile'], sections: ['xz','yz'], spectrum: ['spectrum'], volume: ['volume']};
+const tabs = {slices: ['ion','front','se','spectrum','profile'], sections: ['xz','yz'], spectrum: ['spectrum'], volume: ['volume'],abundance:[]};
 
 async function render({ model, el }) {
   // Use the installed Plotly bundle: no CDN or data upload is required.
@@ -18,6 +18,9 @@ async function render({ model, el }) {
   const depthURL=URL.createObjectURL(new Blob([model.get('depth_editor_js')],{type:'text/javascript'}));
   let mountDepthEditor,profileToFrame,frameToProfile;
   try {({mountDepthEditor,profileToFrame,frameToProfile}=await import(depthURL));} finally {URL.revokeObjectURL(depthURL);}
+  const helperURL=URL.createObjectURL(new Blob([model.get('peak_helper_js')],{type:'text/javascript'}));
+  let mountPeakHelper;
+  try {({mountPeakHelper}=await import(helperURL));} finally {URL.revokeObjectURL(helperURL);}
   const initial = model.get('initial');
   let state = initial.state;
   const figures = {...initial.figures};
@@ -111,6 +114,7 @@ async function render({ model, el }) {
               <button role="tab" data-tab="sections" aria-selected="false">Cross-sections</button>
               <button role="tab" data-tab="spectrum" aria-selected="false">Mass spectrum</button>
               <button role="tab" data-tab="volume" aria-selected="false">3D volume</button>
+              <button role="tab" data-tab="abundance" aria-selected="false">Isotopes</button>
             </nav>
             <div class="tof-frame-nav"><button data-action="all-depths" class="tof-all-depths" aria-pressed="true" title="Show all loaded depths">All depths</button><button data-action="prev" aria-label="Previous frame">‹</button><label>Frame <input type="number" data-input="frame" aria-label="Depth frame"></label><button data-action="next" aria-label="Next frame">›</button></div>
           </div>
@@ -173,6 +177,7 @@ async function render({ model, el }) {
             </div>
             <div class="tof-plot tof-volume" data-plot="volume"></div>
           </div>
+          <div class="tof-panel" data-panel="abundance" role="tabpanel" aria-label="Isotope measurements" hidden></div>
           <section class="tof-focus-pane" aria-label="Maximized display" hidden>
             <div class="tof-focus-bar"><strong data-field="focus-title"></strong><button data-action="restore-display" aria-label="Restore layout">↙ Restore layout <small>Esc</small></button></div>
             <div class="tof-focus-body"></div>
@@ -182,6 +187,7 @@ async function render({ model, el }) {
       <footer class="tof-status"><span data-field="status" role="status">Loading workspace…</span><span data-field="selection-summary"></span><span>LOCAL · READ ONLY</span></footer>
       <dialog class="tof-dialog"></dialog>
       <dialog class="tof-dialog tof-depth-dialog"></dialog>
+      <dialog class="tof-dialog tof-peak-dialog"></dialog>
     </div>`;
   const $ = (selector) => el.querySelector(selector);
   const input = (name) => $(`[data-input="${name}"]`);
@@ -194,6 +200,9 @@ async function render({ model, el }) {
     openFile:path=>{pendingOpen=true;send('open',{path});}
   });
   const depthEditor=mountDepthEditor($('.tof-depth-dialog'),{send});
+  const peakHelper=mountPeakHelper($('.tof-peak-dialog'),$('[data-panel="abundance"]'),{
+    send,apply:payload=>send('integrate',payload),compare:payload=>send('comparison_add',payload)
+  });
   const intervalEditor=mountIntervalEditor(field('interval-list'),{send,onSelect(row){
     // Keep the field values paired with the optimistic selection even when
     // Apply is clicked before the server acknowledges the selected row.
@@ -234,12 +243,15 @@ async function render({ model, el }) {
       const calibrate=document.createElement('button');calibrate.type='button';calibrate.className='tof-clear-depth';calibrate.textContent='Depth…';calibrate.dataset.action='calibrate-depth';calibrate.setAttribute('aria-label','Calibrate depth');tools.append(calibrate);
       const clear=document.createElement('button');clear.type='button';clear.className='tof-clear-depth';clear.textContent='All depths';clear.dataset.action='clear-depth';clear.title='Show all loaded depths';clear.setAttribute('aria-label','Clear depth window');tools.append(clear);
     }
+    if(key==='spectrum') {
+      const identify=document.createElement('button');identify.type='button';identify.className='tof-clear-depth';identify.textContent='Identify…';identify.dataset.action='peak-helper';identify.setAttribute('aria-label','Identify atomic ions');tools.append(identify);
+    }
     tools.append(tip,maximize);frame.append(tools);
   }
   field('image-note').id=`${helpPrefix}-images`;$('.tof-image-switch .tof-info').setAttribute('aria-describedby',field('image-note').id);
   $('.tof-spectrum-home').append($('.tof-spectrum-view'));
   function status(text, error=false) { field('status').textContent = text; field('status').classList.toggle('tof-error',error); }
-  function send(event,payload={}) { if(event==='files_list'){model.send({event,payload});return;} status(event==='integrate'||(event==='comparison_add'&&(payload.bounds||payload.intervals))?'Reconstructing raw events…':'Updating…'); model.send({event,payload}); }
+  function send(event,payload={}) { if(event==='files_list'){model.send({event,payload});return;} status(event==='abundance_measure'?'Measuring selected isotope windows…':event==='integrate'||(event==='comparison_add'&&(payload.bounds||payload.intervals))?'Reconstructing raw events…':'Updating…'); model.send({event,payload}); }
   function setInput(name,value) {
     let focused=document.activeElement;
     while(focused?.shadowRoot?.activeElement) focused=focused.shadowRoot.activeElement;
@@ -337,6 +349,7 @@ async function render({ model, el }) {
   function syncState(next,error=null) {
     state = next;
     depthEditor.sync(state,error);
+    peakHelper.sync(state,error);
     const loaded=state.loaded!==false;
     $('.tof-body').hidden=!loaded;
     for(const name of ['export-csv','export-json']) $(`[data-action="${name}"]`).disabled=!loaded;
@@ -568,6 +581,8 @@ async function render({ model, el }) {
   async function receive(message) {
     if(disposed) return;
     if(message.files){fileBrowser.update(message.files);return;}
+    if(message.peak_candidates){peakHelper.candidates(message.peak_candidates);status('Ready');return;}
+    if(message.error)peakHelper.error(message.error);
     if(message.progress) {status(`Reconstructing frame ${message.progress.done} / ${message.progress.total}…`);return;}
     if(message.state) syncState(message.state,message.error);
     if(pendingOpen && message.state){pendingOpen=false;fileBrowser.opened(message.error);}
@@ -621,6 +636,7 @@ async function render({ model, el }) {
     'volume-edit-roi':()=>{setImageMode('sims');showTab('slices');},
     'open-dialog':()=>fileBrowser.show(),
     'calibrate-depth':()=>depthEditor.show(),
+    'peak-helper':()=>peakHelper.show(),
     'zoom-window':()=>Plotly.relayout(plot('spectrum'),{'xaxis.range':[number('low')-2,number('high')+2]}),
     'draw-window':()=>{Plotly.relayout(plot('spectrum'),{dragmode:false});status('Drag horizontally to select a mass interval.');},
     'clear-depth':()=>send('clear_depth_window'),
@@ -663,7 +679,7 @@ async function render({ model, el }) {
   $('.tof-volume-details').addEventListener('toggle',()=>{if(mounted.size) redraw();});
   syncState(state);
   await redraw();status(state.startup_error || 'Ready',!!state.startup_error);
-  return ()=>{disposed=true;observer.disconnect();document.removeEventListener('pointerdown',closePickers);document.removeEventListener('keydown',onEscape);intervalEditor.dispose();fileBrowser.dispose();depthEditor.dispose();model.off('msg:custom',receive);for(const key of mounted) Plotly.purge(plot(key));el.replaceChildren();};
+  return ()=>{disposed=true;observer.disconnect();document.removeEventListener('pointerdown',closePickers);document.removeEventListener('keydown',onEscape);intervalEditor.dispose();fileBrowser.dispose();depthEditor.dispose();peakHelper.dispose();model.off('msg:custom',receive);for(const key of mounted) Plotly.purge(plot(key));el.replaceChildren();};
 }
 
 export default {render};

@@ -4,6 +4,7 @@ import csv
 import json
 from pathlib import Path
 import traceback
+from dataclasses import asdict
 from html import escape
 
 from signals import SignalRecipe,read_signal,interval_label
@@ -11,6 +12,8 @@ from integration import canonical_intervals
 from server_config import ServerSettings, resolve_data_path
 from file_browser import list_data_files
 from depth_calibration import DepthAnchor, DepthCalibration, validate_anchors, convert_depth
+from isotopes import load_catalog, find_candidates, IonCandidate, ion_mz
+from abundance import measure_isotopes
 
 import anywidget
 import numpy as np
@@ -29,6 +32,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
     interval_editor_js = traitlets.Unicode().tag(sync=True)
     file_browser_js = traitlets.Unicode().tag(sync=True)
     depth_editor_js = traitlets.Unicode().tag(sync=True)
+    peak_helper_js = traitlets.Unicode().tag(sync=True)
 
     def __init__(self, path=None, settings=None):
         super().__init__()
@@ -46,6 +50,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.interval_editor_js=(Path(__file__).parent/'web/interval_editor.js').read_text()
         self.file_browser_js=(Path(__file__).parent/'web/file_browser.js').read_text()
         self.depth_editor_js=(Path(__file__).parent/'web/depth_editor.js').read_text()
+        self.peak_helper_js=(Path(__file__).parent/'web/peak_helper.js').read_text()
         self.startup_error=None
         if path is not None:
             try:self.load_file(path)
@@ -84,6 +89,10 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.custom = False
         p = meta['peaks'][index]
         self.active_recipe=recipe
+        self.stored_recipes={index:recipe}
+        self.assignments={}
+        self.abundance_rows=[]
+        self.abundance_context=None
         self.next_interval_id=0
         self.reset_draft(self.active_recipe.intervals)
         self.draft_frames = self.frames
@@ -160,9 +169,22 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         self.selected_interval_id=identifier
 
     def stored_recipe(self,index):
+        if index in self.stored_recipes:return self.stored_recipes[index]
         p=self.meta['peaks'][index]
-        return SignalRecipe(source='stored',stored_index=index,intervals=((p['low'],p['high']),),
+        recipe=SignalRecipe(source='stored',stored_index=index,intervals=((p['low'],p['high']),),
                             frames=(0,self.meta['shape'][0]-1),label=f"{p['mass']:.4f} Th · {p['label']}")
+        self.stored_recipes[index]=recipe
+        return recipe
+
+    def available_recipes(self):
+        return {r.id:r for r in [self.active_recipe,*(SignalRecipe.from_dict(c['recipe']) for c in self.comparisons)]}
+
+    def candidate_record(self,identifier):
+        for isotope in load_catalog():
+            for charge in (-3,-2,-1,1,2,3):
+                candidate=IonCandidate(isotope,charge,ion_mz(isotope,charge),0.,0.)
+                if candidate.id==identifier:return dict(id=candidate.id,**asdict(candidate))
+        raise ValueError('Unknown atomic-ion reference.')
 
     def custom_recipe(self,payload):
         intervals=payload.get('intervals', [payload['bounds']] if 'bounds' in payload else self.draft_intervals)
@@ -195,6 +217,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                     percentile=self.percentile, opacity=self.opacity, stretch=self.stretch,
                     quality=self.quality, volume_details=getattr(self,'volume_details',None),
                     depth_calibration=self.calibration_metadata(),profile_axis=self.profile_axis,
+                    assignments=self.assignments,abundance_rows=self.abundance_rows,abundance_context=self.abundance_context,
                     revision=self.revision)
 
     def figures(self, keys=None):
@@ -355,7 +378,36 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                 return
             if self.meta is None and event!='open':
                 raise ValueError('Open an acquisition before using analysis controls.')
-            if event == 'frame':
+            if event=='peak_candidates':
+                rows=find_candidates(float(p['mz']),float(p['tolerance']),p['unit'],tuple(p['charges']),load_catalog())
+                self.send(dict(peak_candidates=dict(rows=[dict(id=r.id,**asdict(r)) for r in rows],request_id=p.get('request_id'))))
+                return
+            if event=='peak_assignment':
+                recipes=self.available_recipes()
+                if p['recipe_id'] not in recipes:raise ValueError('Select a current signal to annotate.')
+                candidate=self.candidate_record(p['candidate_id'])
+                self.assignments[p['recipe_id']]=dict(candidate=candidate,original_label=recipes[p['recipe_id']].label)
+            elif event=='abundance_measure':
+                recipes=self.available_recipes();ids=p['recipe_ids']
+                if not ids or len(set(ids))!=len(ids) or any(i not in recipes for i in ids):raise ValueError('Choose distinct current signals to measure.')
+                frames=tuple(p.get('frames',self.depth_window or self.frames));roi=tuple(p.get('roi',self.roi))
+                if frames[1]>=self.meta['shape'][0]:raise ValueError('Measurement frames exceed the acquisition.')
+                measured=measure_isotopes(self.meta['path'],[recipes[i] for i in ids],roi,frames)
+                self.abundance_rows=[]
+                for row in measured:
+                    assignment=self.assignments.get(row.recipe_id,{})
+                    isotope=assignment.get('candidate',{}).get('isotope',{})
+                    self.abundance_rows.append(dict(**asdict(row),label=recipes[row.recipe_id].label,
+                        candidate=assignment.get('candidate'),reference_abundance_low=isotope.get('abundance_low'),reference_abundance_high=isotope.get('abundance_high')))
+                self.abundance_context=dict(dataset=self.public_path(),frames=list(frames),roi=list(roi))
+            elif event=='abundance_export':
+                if not self.abundance_rows:raise ValueError('Measure an isotope set first.')
+                out=io.StringIO();writer=csv.writer(out)
+                writer.writerow(['recipe_id','signal','atomic_ion','summed_original_intensity','observed_selected_set_fraction','reference_abundance_low','reference_abundance_high','first_frame','last_frame','roi_pixels','status'])
+                for row in self.abundance_rows:
+                    writer.writerow([row['recipe_id'],row['label'],(row['candidate'] or {}).get('id',''),row['summed_intensity'],row['observed_fraction'],row['reference_abundance_low'],row['reference_abundance_high'],*(row['actual_frames'] or ('','')),json.dumps(self.abundance_context['roi']),row['status']])
+                self.send(dict(download=dict(filename='isotope-areas.csv',text=out.getvalue()),state=self.state()));return
+            elif event == 'frame':
                 self.map_projection = False
                 self.frame = int(np.clip(round(float(p['frame'])),*self.frames))
                 if self.depth_window:
@@ -545,6 +597,7 @@ class ExplorerWorkspace(anywidget.AnyWidget):
                           loaded_frames_inclusive=self.frames,roi_pixels_inclusive=self.roi,
                           z_units='frame',fov_um=self.meta['fov_um'],comparisons=self.comparisons)
             recipe.update(depth_calibration=self.calibration_metadata(),profile_axis=self.profile_axis)
+            recipe.update(assignments=self.assignments,abundance_rows=self.abundance_rows,abundance_context=self.abundance_context)
             if len(self.active_recipe.intervals)==1:
                 recipe.update(lower_Th=self.low,upper_Th=self.high)
             filename,text = 'mass-window.json',json.dumps(recipe,indent=2)
