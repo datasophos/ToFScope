@@ -116,7 +116,8 @@ when trying many custom windows on a large acquisition.
 - Stored channels are already integrated. Editing a true mass window therefore
   reconstructs a new channel from `FullSpectra/EventList`, using calibrated
   `MassAxis`, the TDC clock ratio, and waveform / active-channel normalization.
-  Both mass-window endpoints are inclusive. Missing calibration metadata
+  Both mass-window endpoints are inclusive; entered bounds retain their numeric
+  precision when rendered, applied, and exported. Missing calibration metadata
   produces an error rather than a guessed normalization.
 - A four-frame nominal-27 reconstruction of the supplied example differed
   from the vendor-stored total by approximately **0.005%**, with at most **0.25**
@@ -169,6 +170,7 @@ uv run python scripts/check_all_depths.py
 uv run python scripts/check_roi_replacement.py
 uv run python scripts/check_viewport.py
 uv run python scripts/check_window_sets.py
+uv run python scripts/check_interval_selection_race.py
 ```
 
 The numerical tests cover empty pixels, inclusive mass-window endpoints,
