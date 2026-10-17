@@ -3,6 +3,10 @@
 A local **Marimo + Plotly** explorer for ToF-Explorer / Tofwerk HDF5 data.
 No Panel or Anaconda dependencies. The source HDF5 file is opened read-only.
 
+See the [platform and deployment recommendations](docs/platform-and-deployment.md)
+for the proposed next-stage architecture, simple local/server packaging, and
+incremental migration criteria. The instructions below run the current prototype.
+
 ## Run
 
 From this directory:
