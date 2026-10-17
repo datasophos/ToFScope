@@ -23,22 +23,33 @@ export function mountDepthEditor(root,{send}) {
     <div class="tof-depth-options"><label>Frame<input type="number" min="1" step="1" aria-label="Anchor frame"></label><label>Known depth<input type="number" min="0" step="any" aria-label="Known depth"></label><button type="button" data-add>Add anchor</button></div>
     <p class="tof-depth-span"></p><p role="alert"></p><div class="tof-files-actions"><button type="button" data-done>Done</button></div>`;
   root.setAttribute('aria-labelledby','depth-title');const $=s=>root.querySelector(s);
-  let state=null,pending=false;
-  function submit(event,payload){pending=true;$('[role=alert]').textContent='';send(event,payload);}
+  let state=null,pending=null,unit='nm',newDepth=null,dataset=null;
+  const edits=new Map();
+  function submit(event,payload){pending={event,payload};$('[role=alert]').textContent='';send(event,payload);}
+  $('[aria-label="Known depth"]').addEventListener('input',e=>{newDepth=e.target.value===''?null:Number(e.target.value)*scales[unit];});
   $('[data-add]').addEventListener('click',()=>{
     const frame=$('[aria-label="Anchor frame"]'),depth=$('[aria-label="Known depth"]');
     if(!frame.value || !depth.value){$('[role=alert]').textContent='Enter a frame and known depth.';return;}
-    submit('depth_anchor_set',{frame:Number(frame.value),depth:Number(depth.value),unit:state.depth_calibration.unit});
+    submit('depth_anchor_set',{frame:Number(frame.value),depth:Number(depth.value),unit});
   });
   $('[aria-label="Depth display unit"]').addEventListener('change',e=>submit('depth_unit',{unit:e.target.value}));
   $('[aria-label="Profile coordinates"]').addEventListener('change',e=>submit('profile_axis',{axis:e.target.value}));
   $('[data-done]').addEventListener('click',()=>root.close());
   function dismiss(e){if(e.key==='Escape'){e.preventDefault();e.stopPropagation();root.close();}}
   root.addEventListener('keydown',dismiss,true);
-  return {show(){root.showModal();$('[aria-label="Anchor frame"]').value=state.frame>0?state.frame:'';$('[aria-label="Known depth"]').value='';},
+  return {show(){root.showModal();$('[aria-label="Anchor frame"]').value=state.frame>0?state.frame:'';$('[aria-label="Known depth"]').value='';newDepth=null;},
     sync(next,error){state=next;if(next.loaded===false)return;
-      if(pending){$('[role=alert]').textContent=error || '';pending=false;}
-      const c=state.depth_calibration,body=$('tbody');body.replaceChildren();
+      if(dataset!==next.path){dataset=next.path;edits.clear();newDepth=null;pending=null;}
+      if(pending){
+        $('[role=alert]').textContent=error || '';
+        if(!error && pending.event==='depth_anchor_set') {
+          edits.delete(pending.payload.frame);
+          if(!pending.payload.replace){newDepth=null;$('[aria-label="Known depth"]').value='';}
+        }
+        pending=null;
+      }
+      const c=state.depth_calibration,body=$('tbody');body.replaceChildren();unit=c.unit;
+      if(newDepth!==null)$('[aria-label="Known depth"]').value=newDepth/scales[unit];
       $('[aria-label="Depth display unit"]').value=c.unit;$('[aria-label="Profile coordinates"]').value=state.profile_axis;
       $('[aria-label="Profile coordinates"] option[value=depth]').disabled=c.anchors.length<2;
       $('[aria-label="Anchor frame"]').max=state.shape[0]-1;
@@ -48,7 +59,8 @@ export function mountDepthEditor(root,{send}) {
         const depth=document.createElement('td'),controls=document.createElement('td');
         if(anchor.frame===0){depth.textContent=`0 ${c.unit}`;controls.textContent='Fixed';}
         else {
-          const input=document.createElement('input');input.type='number';input.step='any';input.value=anchor.depth_nm/scales[c.unit];input.setAttribute('aria-label',`Depth at frame ${anchor.frame}`);
+          const input=document.createElement('input');input.type='number';input.step='any';input.value=(edits.get(anchor.frame)??anchor.depth_nm)/scales[c.unit];input.setAttribute('aria-label',`Depth at frame ${anchor.frame}`);
+          input.addEventListener('input',()=>edits.set(anchor.frame,Number(input.value)*scales[unit]));
           const edit=document.createElement('button');edit.type='button';edit.textContent='Update';
           edit.addEventListener('click',()=>submit('depth_anchor_set',{frame:anchor.frame,depth:Number(input.value),unit:c.unit,replace:true}));
           const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Remove anchor');

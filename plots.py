@@ -89,7 +89,7 @@ def profile_plot(volume, frames, roi, selected_frame, label, comparison=None, re
         maximum = finite.max() if finite.size else 0
         values = values / maximum if relative and maximum > 0 else values
         fig.add_trace(go.Scatter(x=coords, y=values, name=name,customdata=z,
-                                mode='lines+markers' if finite.size==1 else 'lines',
+                                mode='lines+markers' if np.count_nonzero(np.isfinite(coords)&np.isfinite(values))==1 else 'lines',
                                 marker=dict(color=color,size=6),connectgaps=False,
                                 line=dict(color=color, width=1.6)))
     marker=float(convert_depth(calibration.frame_to_depth(selected_frame),'nm',unit)) if calibration else selected_frame
