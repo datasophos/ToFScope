@@ -40,7 +40,8 @@ class CalibratedProfileTests(unittest.TestCase):
         def event(name,**payload):
             w.handle_message(None,dict(event=name,payload=payload),None)
             result=w.send.call_args.args[0];self.assertNotIn('error',result,result);return result
-        event('depth_anchor_set',frame=1,depth=.1,unit='µm')
+        response=event('depth_anchor_set',frame=1,depth=.1,unit='µm',request_id=17)
+        self.assertEqual(response['depth_request_id'],17)
         event('profile_axis',axis='depth')
         event('depth_unit',unit='µm')
         self.assertIs(w.volume,original);self.assertEqual(w.state()['depth_calibration']['anchors'][1]['depth_nm'],100)

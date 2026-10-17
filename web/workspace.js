@@ -27,6 +27,9 @@ async function render({ model, el }) {
   const saveURL=URL.createObjectURL(new Blob([model.get('save_integration_js')],{type:'text/javascript'}));
   let mountSaveIntegration;
   try {({mountSaveIntegration}=await import(saveURL));} finally {URL.revokeObjectURL(saveURL);}
+  const dialogPlotURL=URL.createObjectURL(new Blob([model.get('dialog_plot_js')],{type:'text/javascript'}));
+  let mountDialogPlot;
+  try {({mountDialogPlot}=await import(dialogPlotURL));} finally {URL.revokeObjectURL(dialogPlotURL);}
   const initial = model.get('initial');
   let state = initial.state;
   const figures = {...initial.figures};
@@ -150,6 +153,7 @@ async function render({ model, el }) {
             </div>
           </div>
           <div class="tof-panel" data-panel="sections" role="tabpanel" aria-label="Cross-sections" hidden>
+            <div class="tof-subtoolbar"><span data-field="section-depth"></span></div>
             <div class="tof-section-grid"><div class="tof-plot" data-plot="xz"></div><div class="tof-plot" data-plot="yz"></div></div>
           </div>
           <div class="tof-panel" data-panel="spectrum" role="tabpanel" aria-label="Mass spectrum" hidden>
@@ -181,7 +185,7 @@ async function render({ model, el }) {
               <button data-action="volume-layers" aria-label="3D layers">Layers…</button>
               <label>Hide below percentile<input type="number" min="0" max="99" step="1" data-input="percentile" aria-label="3D lower percentile"></label>
               <label>Opacity<input type="number" min="0.02" max="0.4" step="0.02" data-input="opacity" aria-label="3D opacity"></label>
-              <label>Z display stretch<input type="number" min="0.2" max="3" step="0.1" data-input="stretch" aria-label="Z display stretch"></label>
+              <label><span data-field="stretch-label">Z display stretch</span><input type="number" min="0.2" max="3" step="0.1" data-input="stretch" aria-label="Z display stretch"></label>
               <label>Preview quality<select data-input="quality" aria-label="3D preview quality"><option>Fast</option><option>Detailed</option></select></label>
             </div>
             <div class="tof-plot tof-volume" data-plot="volume"></div>
@@ -210,9 +214,10 @@ async function render({ model, el }) {
     requestPage:payload=>send('files_list',payload),
     openFile:path=>{pendingOpen=true;send('open',{path});}
   });
-  const depthEditor=mountDepthEditor($('.tof-depth-dialog'),{send});
+  const createDialogPlot=(root,options)=>mountDialogPlot(root,{...options,Plotly});
+  const depthEditor=mountDepthEditor($('.tof-depth-dialog'),{send,createPlot:createDialogPlot,getFigure:()=>figures.profile});
   const peakHelper=mountPeakHelper($('.tof-peak-dialog'),$('[data-panel="abundance"]'),{
-    send,apply:payload=>send('integrate',payload),compare:payload=>send('comparison_add',payload)
+    send,createPlot:createDialogPlot,getFigure:()=>figures.spectrum,apply:payload=>send('integrate',payload),compare:payload=>send('comparison_add',payload)
   });
   const volumeLayers=mountVolumeLayers($('.tof-layers-dialog'),{send,getPlot:()=>plot('volume')});
   const saveIntegration=mountSaveIntegration($('.tof-save-dialog'),{send});
@@ -238,7 +243,7 @@ async function render({ model, el }) {
     profile:'Click for one frame; drag to integrate a depth window. Drag edges to resize; Shift-drag to move. Each curve is the mean signal within the spatial ROI. Relative profiles scales each curve to its own maximum.',
     xz:'A section through the center Y of the spatial ROI. Click to select a depth frame.',
     yz:'A section through the center X of the spatial ROI. Click to select a depth frame.',
-    volume:'Drag to rotate; scroll to zoom. Preview voxels are block means. Z is acquisition frames; stretch is arbitrary, not a calibrated physical depth. Profiles and exports retain original resolution.'
+    volume:'Drag to rotate; scroll to zoom. Depth coordinates follow the shared calibration. Physical depth omits unknown frames before preview pooling. With known X/Y dimensions, 1× Z exaggeration gives the physical aspect ratio. Without X/Y calibration the aspect ratio remains arbitrary. Intensities are unchanged.'
   };
   const helpPrefix=`help-${Math.random().toString(36).slice(2)}`;
   for(const [key,label] of Object.entries(displayNames)) {
@@ -255,6 +260,10 @@ async function render({ model, el }) {
     if(key==='profile') {
       const calibrate=document.createElement('button');calibrate.type='button';calibrate.className='tof-clear-depth';calibrate.textContent='Depth…';calibrate.dataset.action='calibrate-depth';calibrate.setAttribute('aria-label','Calibrate depth');tools.append(calibrate);
       const clear=document.createElement('button');clear.type='button';clear.className='tof-clear-depth';clear.textContent='All depths';clear.dataset.action='clear-depth';clear.title='Show all loaded depths';clear.setAttribute('aria-label','Clear depth window');tools.append(clear);
+    }
+    if(['front','xz','yz','volume'].includes(key)) {
+      const calibrate=document.createElement('button');calibrate.type='button';calibrate.className='tof-clear-depth';calibrate.textContent='Depth…';calibrate.dataset.action='calibrate-depth';
+      calibrate.setAttribute('aria-label',key==='volume'?'Calibrate 3D depth':`Calibrate ${key} depth`);tools.append(calibrate);
     }
     if(key==='spectrum') {
       const identify=document.createElement('button');identify.type='button';identify.className='tof-clear-depth';identify.textContent='Identify…';identify.dataset.action='peak-helper';identify.setAttribute('aria-label','Identify atomic ions');tools.append(identify);
@@ -359,9 +368,9 @@ async function render({ model, el }) {
   pickers.peak=createPicker('peak');pickers.comparison=createPicker('comparison');
   function closePickers(e) {for(const picker of Object.values(pickers))if(!e.composedPath().includes(picker.root))picker.close();}
   document.addEventListener('pointerdown',closePickers);
-  function syncState(next,error=null) {
+  function syncState(next,error=null,context={}) {
     state = next;
-    depthEditor.sync(state,error);
+    depthEditor.sync(state,error,context.depth_request_id);
     peakHelper.sync(state,error);
     volumeLayers.update(state,error);
     saveIntegration.sync(state);
@@ -404,6 +413,16 @@ async function render({ model, el }) {
     }
     field('volume-relation').textContent=state.layered_volume?'Layers use their own mass intervals and share the selected spatial ROI and depth window. Relative profile scaling does not affect 3D. Layer controls show original coverage, preview resolution and displayed intensity scales.':'Same active ion as the ion map. The map sums the selected depth layers; this view keeps them in 3D. Relative profiles change only the profile chart.';
     field('volume-depth').textContent=`Frames ${displayedFrames[0]}–${displayedFrames[1]} · ${displayedFrames[1]-displayedFrames[0]+1} layers`;
+    const physical=state.profile_axis==='depth',span=state.volume_details?.display_frames;
+    field('section-depth').textContent=physical?`Depth (${state.depth_calibration.unit}) · calibrated frames 0–${state.depth_calibration.anchors.at(-1).frame} · unknown depths omitted`:'Depth in acquisition frames';
+    if(physical) {
+      field('volume-depth').textContent=span?`${frameToProfile(span[0],state).toPrecision(4)}–${frameToProfile(span[1],state).toPrecision(4)} ${state.depth_calibration.unit} · frames ${span.join('–')}`:'No calibrated depth in selection';
+      if(state.volume_details?.omitted_frames)field('volume-depth').textContent+=` · ${state.volume_details.omitted_frames} unknown-depth frames omitted`;
+      if(state.volume_details?.omitted_frames)field('volume-relation').textContent+=' Only calibrated frames are displayed here; the ion top map still integrates the entire selected frame window.';
+    }
+    field('stretch-label').textContent=physical?'Z exaggeration (×)':'Z display stretch';
+    input('stretch').max=physical?1000:3;
+    input('stretch').title=physical?(state.fov?'1× preserves physical X/Y/Z proportions':'X/Y are pixels; physical aspect ratio unavailable'):'Arbitrary display stretch in frame coordinates';
     field('volume-roi').textContent=`X ${state.roi[0]}–${state.roi[1]} · Y ${state.roi[2]}–${state.roi[3]} px`;
     const nx=state.roi[1]-state.roi[0]+1,ny=state.roi[3]-state.roi[2]+1;
     field('volume-roi-size').textContent=state.fov?`${(nx*state.fov/state.shape[2]).toFixed(2)} × ${(ny*state.fov/state.shape[1]).toFixed(2)} µm`:`${nx} × ${ny} pixels`;
@@ -529,7 +548,7 @@ async function render({ model, el }) {
         else if(!gd.layout.dragmode) {
           const pos=position(e),xa=gd._fullLayout?.xaxis;
           const limits=isDepth?(state.depth_window || []):(selectedDraft() || []);
-          const near=pos?.inside && limits.some(v=>Math.abs(pos.pixel-xa.d2p(v))<=7);
+          const near=pos?.inside && limits.some(v=>Math.abs(pos.pixel-xa.d2p(isDepth?frameToProfile(v,state):v))<=7);
           gd.style.cursor=near?'ew-resize':'crosshair';
         }
       },true);
@@ -558,8 +577,10 @@ async function render({ model, el }) {
         const x=e.clientX-rect.left, y=e.clientY-rect.top;
         const xa=layout.xaxis, ya=layout.yaxis;
         if (x<xa._offset || x>xa._offset+xa._length || y<ya._offset || y>ya._offset+ya._length) return null;
-        const value = key==='profile'?xa.p2d(x-xa._offset):ya.p2d(y-ya._offset);
-        return Math.max(state.frames[0],Math.min(state.frames[1],Math.round(value)));
+        if(gd.layout.meta?.axis_kind==='depth' && !gd.layout.meta.display_frames)return null;
+        const value=ya.p2d(y-ya._offset),frame=profileToFrame(value,state);
+        if(!Number.isFinite(frame))return null;
+        return Math.max(state.frames[0],Math.min(state.frames[1],Math.round(frame)));
       }
       let candidate=null;
       function preview(e) {
@@ -615,10 +636,11 @@ async function render({ model, el }) {
     if(message.peak_candidates){peakHelper.candidates(message.peak_candidates);status('Ready');return;}
     if(message.error){peakHelper.error(message.error);saveIntegration.error(message.error);}
     if(message.progress) {status(`Reconstructing frame ${message.progress.done} / ${message.progress.total}…`);return;}
-    if(message.state) syncState(message.state,message.error);
+    if(message.state) syncState(message.state,message.error,message);
     if(message.saved)saveIntegration.saved(message.saved);
     if(pendingOpen && message.state){pendingOpen=false;fileBrowser.opened(message.error);}
     for(const [key,figure] of Object.entries(message.figures || {})) {figures[key]=figure;dirty.add(key);}
+    await depthEditor.refreshPlot();await peakHelper.refreshPlot();
     for(const [key,patch] of Object.entries(message.relayout || {})) {
       for(const [path,value] of Object.entries(patch)) {
         const match=path.match(/^shapes\[(\d+)\]\.(.+)$/);

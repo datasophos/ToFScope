@@ -166,7 +166,7 @@ def roi_from_bounds(bounds, shape, fov=None):
     return tuple(result)
 
 
-def preview_grid(volume, frames, roi, max_depth=96, max_xy=32):
+def preview_grid(volume, frames, roi, max_depth=96, max_xy=32,*,z_coordinates=None):
     """Block means for a compact display volume; profiles use original data.
 
     Unlike simple striding, pooling preserves contributions from thin features.
@@ -176,6 +176,9 @@ def preview_grid(volume, frames, roi, max_depth=96, max_xy=32):
     a = volume[:, y0:y1 + 1, x0:x1 + 1]
     axes = [np.arange(frames[0], frames[0] + len(a), dtype=float),
             np.arange(y0, y1 + 1, dtype=float), np.arange(x0, x1 + 1, dtype=float)]
+    if z_coordinates is not None:
+        axes[0]=np.asarray(z_coordinates,dtype=float)
+        if axes[0].shape!=(len(a),) or not np.isfinite(axes[0]).all():raise ValueError('Preview depth coordinates must cover every input frame.')
     for dim, limit in enumerate((max_depth, max_xy, max_xy)):
         stride = max(1, int(np.ceil(a.shape[dim] / limit)))
         starts = np.arange(0, a.shape[dim], stride)

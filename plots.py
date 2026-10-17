@@ -3,6 +3,7 @@ import numpy as np
 import plotly.graph_objects as go
 from html import escape
 from explorer import preview_grid
+from depth_calibration import calibrated_window,display_depth,convert_depth
 
 TEAL = '#078d83'
 GOLD = '#d18c24'
@@ -106,7 +107,24 @@ def profile_plot(volume, frames, roi, selected_frame, label, comparison=None, re
     return fig, profile
 
 
-def cross_section(volume, frames, roi, direction, fov, log, vmax):
+def _depth_metadata(frames,calibration,unit):
+    window=calibrated_window(frames,calibration)
+    return dict(axis_kind='depth' if calibration else 'frame',unit=unit if calibration else 'frame',
+                display_frames=list(window) if window else None,
+                omitted_frames=(frames[1]-frames[0]+1)-(window[1]-window[0]+1 if window else 0))
+
+
+def _section_depth(fig,frames,calibration,unit):
+    window=calibrated_window(frames,calibration)
+    if not window:fig.add_annotation(text='No calibrated depth in selected frames',showarrow=False)
+    fig.update_layout(meta=_depth_metadata(frames,calibration,unit))
+    fig.update_yaxes(title=f'Depth ({unit})' if calibration else 'Depth frame',autorange='reversed')
+    if calibration and window and window[0]!=window[1]:
+        fig.update_yaxes(range=list(display_depth([window[1],window[0]],calibration,unit)),autorange=False)
+    return window
+
+
+def cross_section(volume, frames, roi, direction, fov, log, vmax,*,calibration=None,unit='nm'):
     x0, x1, y0, y1 = roi
     if direction == 'XZ':
         midpoint = (y0 + y1) // 2
@@ -121,19 +139,57 @@ def cross_section(volume, frames, roi, direction, fov, log, vmax):
         denominator = volume.shape[1]
         axis = 'Y'
     pos = (pos + .5) * fov / denominator if fov else pos
-    fig = go.Figure(go.Heatmap(
-        x=pos, y=np.arange(frames[0], frames[1]+1),
+    window=calibrated_window(frames,calibration)
+    fig=go.Figure();_section_depth(fig,frames,calibration,unit)
+    if window:
+        data=data[window[0]-frames[0]:window[1]-frames[0]+1]
+        z=np.arange(window[0],window[1]+1)
+        fig.add_trace(go.Heatmap(
+        x=pos, y=display_depth(z,calibration,unit),customdata=data,text=np.broadcast_to(z[:,None],data.shape),
         z=np.log1p(np.maximum(data, 0)) if log else data,
         zmin=0, zmax=float(np.log1p(vmax)) if log else vmax,
+        hovertemplate='Frame=%{text}<br>Depth=%{y}<br>Intensity=%{customdata:.5g}<extra></extra>',
         colorscale='Viridis', showscale=False))
     fig.update_xaxes(title=f'{axis} (µm)' if fov else f'{axis} (pixel)')
-    fig.update_yaxes(title='Depth frame', autorange='reversed')
     return layout(fig, f'{direction} section · {"Y" if direction == "XZ" else "X"} pixel {midpoint}', 310)
 
 
-def volume_plot(volume, frames, roi, fov, percentile=70, opacity=.12, stretch=1.2, log=True, quality='Fast'):
+def _volume_scene(extent_xy,physical_xy,frames,calibration,unit,stretch,xy_ranges=None):
+    extent_x,extent_y=extent_xy;extent=max(extent_x,extent_y)
+    physical_aspect=bool(calibration and physical_xy and frames and frames[1]>frames[0])
+    zratio=stretch
+    zaxis=dict(title=f'Depth ({unit})' if calibration else 'Depth frame',autorange='reversed')
+    if calibration and frames:
+        coordinates=display_depth([frames[1],frames[0]],calibration,unit)
+        if frames[1]>frames[0]:zaxis.update(range=coordinates.tolist(),autorange=False)
+        if physical_aspect:
+            z_um=float(convert_depth(coordinates[0]-coordinates[1],unit,'µm'))
+            zratio=max(z_um/extent,1e-6)*stretch
+        elif physical_xy:zratio=1e-6
+    result=dict(xaxis=dict(title='X (µm)' if physical_xy else 'X (pixel)'),
+                yaxis=dict(title='Y (µm)' if physical_xy else 'Y (pixel)'),zaxis=zaxis,
+                aspectmode='manual',aspectratio=dict(x=extent_x/extent,y=extent_y/extent,z=zratio))
+    if calibration and physical_xy and xy_ranges:
+        result['xaxis']['range']=xy_ranges[0];result['yaxis']['range']=xy_ranges[1]
+    return result,physical_aspect
+
+
+def volume_plot(volume, frames, roi, fov, percentile=70, opacity=.12, stretch=1.2, log=True, quality='Fast',*,calibration=None,unit='nm'):
     limits = (96, 32) if quality == 'Fast' else (160, 48)
-    grid, axes = preview_grid(volume, frames, roi, *limits)
+    original_frames=frames;window=calibrated_window(frames,calibration)
+    extent_x=(roi[1]-roi[0]+1)*(fov/volume.shape[2] if fov else 1)
+    extent_y=(roi[3]-roi[2]+1)*(fov/volume.shape[1] if fov else 1)
+    ranges=([roi[0]*fov/volume.shape[2],(roi[1]+1)*fov/volume.shape[2]],
+            [roi[2]*fov/volume.shape[1],(roi[3]+1)*fov/volume.shape[1]]) if fov else None
+    scene,physical=_volume_scene((extent_x,extent_y),bool(fov),window,calibration,unit,stretch,ranges)
+    metadata=dict(**_depth_metadata(original_frames,calibration,unit),physical_aspect=physical,z_exaggeration=stretch)
+    if not window:
+        fig=go.Figure();fig.add_annotation(text='No calibrated depth in selected frames',showarrow=False)
+        fig.update_layout(scene=scene,meta=metadata)
+        return layout(fig,'3D ion volume · no calibrated depth',550,dark=True),(0,0,0)
+    volume=volume[window[0]-frames[0]:window[1]-frames[0]+1];frames=window
+    coords=display_depth(np.arange(frames[0],frames[1]+1),calibration,unit)
+    grid, axes = preview_grid(volume, frames, roi, *limits,z_coordinates=coords)
     z, y, x = axes
     if fov:
         y = (y + .5) * fov / volume.shape[1]
@@ -165,39 +221,35 @@ def volume_plot(volume, frames, roi, fov, percentile=70, opacity=.12, stretch=1.
             hoverinfo='skip'))
     else:
         fig.add_annotation(text='No nonzero signal in this selection', showarrow=False)
-    extent_x = (roi[1] - roi[0] + 1) / (volume.shape[2] if fov else 1)
-    extent_y = (roi[3] - roi[2] + 1) / (volume.shape[1] if fov else 1)
-    extent = max(extent_x, extent_y)
-    fig.update_layout(scene=dict(
-        xaxis_title='X (µm)' if fov else 'X (pixel)',
-        yaxis_title='Y (µm)' if fov else 'Y (pixel)',
-        zaxis=dict(title='Depth frame', autorange='reversed'),
-        aspectmode='manual', aspectratio=dict(x=extent_x/extent, y=extent_y/extent, z=stretch),
-        camera=dict(eye=dict(x=1.5, y=1.5, z=.9))),
+    if calibration and frames[0]==frames[1]:fig.add_annotation(text='Single calibrated plane · depth thickness unknown',showarrow=False)
+    scene['camera']=dict(eye=dict(x=1.5,y=1.5,z=.9))
+    fig.update_layout(scene=scene,meta=metadata,
         scene_uirevision='volume-camera')
     return layout(fig, '3D ion volume · drag to rotate', 550, dark=True), grid.shape
 
 
-def front_projection(volume, frames, roi, fov, log):
+def front_projection(volume, frames, roi, fov, log,*,calibration=None,unit='nm'):
     """XZ projection sums the ROI's Y rows, retaining X and each depth layer."""
     x0,x1,y0,y1 = roi
     data = volume[:,y0:y1+1,:].sum(axis=1,dtype=np.float64)
     nx = volume.shape[2]
     x = (np.arange(nx)+.5)*fov/nx if fov else np.arange(nx)
-    shown = np.log1p(np.maximum(data,0)) if log else data
-    fig = go.Figure(go.Heatmap(z=shown,x=x,y=np.arange(frames[0],frames[1]+1),
+    fig=go.Figure();window=_section_depth(fig,frames,calibration,unit)
+    if window:
+        data=data[window[0]-frames[0]:window[1]-frames[0]+1];z=np.arange(window[0],window[1]+1)
+        shown = np.log1p(np.maximum(data,0)) if log else data
+        fig.add_trace(go.Heatmap(z=shown,x=x,y=display_depth(z,calibration,unit),text=np.broadcast_to(z[:,None],data.shape),
         customdata=data,colorscale='Viridis',zmin=0,
         colorbar=dict(title='logₑ(1+ΣI)' if log else 'Sum intensity',thickness=10),
-        hovertemplate='X=%{x:.3f}<br>Frame=%{y}<br>Y-sum=%{customdata:.5g}<extra></extra>'))
+        hovertemplate='X=%{x:.3f}<br>Frame=%{text}<br>Depth=%{y}<br>Y-sum=%{customdata:.5g}<extra></extra>'))
     fig.update_xaxes(title=f'X ({"µm" if fov else "pixel"})')
-    fig.update_yaxes(title='Depth frame',autorange='reversed')
     sx=fov/nx if fov else 1
     fig.add_vrect(x0=(x0 if fov else x0-.5)*sx,x1=(x1+1 if fov else x1+.5)*sx,
                   line=dict(color=GOLD,width=1),fillcolor='rgba(209,140,36,.04)')
     return layout(fig,f'Front projection · sum Y {y0}–{y1} px',330)
 
 
-def _layer_volume_plot(previews,layer_styles,*,tiled=False,scale_mode='independent',stretch=1.2,log=True,shared_range=None):
+def _layer_volume_plot(previews,layer_styles,*,tiled=False,scale_mode='independent',stretch=1.2,log=True,shared_range=None,calibration=None,unit='nm'):
     """Plot aligned previews; colors transform display values only."""
     from plotly.subplots import make_subplots
     from signals import interval_label
@@ -214,10 +266,14 @@ def _layer_volume_plot(previews,layer_styles,*,tiled=False,scale_mode='independe
     common_hi=float(np.percentile(transform(all_values),99.7)) if all_values.size else 1.
     common_lo=0.
     if shared_range is not None:common_lo,common_hi=shared_range
-    layer_meta=[]
+    layer_meta=[];physical_aspect=False;single_plane=False
     for i,(preview,nonzero) in enumerate(zip(previews,positive)):
         style=styles[preview.layer_id];scene='scene' if i==0 or not tiled else f'scene{i+1}'
-        grid=preview.grid;zz,yy,xx=np.meshgrid(grid.z,grid.y,grid.x,indexing='ij');values=transform(preview.values)
+        grid=preview.grid;z=grid.z
+        if calibration:
+            z=np.array([display_depth(np.arange(lo,hi),calibration,unit).mean() for lo,hi in zip(grid.edges[0],grid.edges[0][1:])])
+            if len(z)!=len(grid.z) or not np.isfinite(z).all():raise ValueError('Build volume previews inside the calibrated frame span.')
+        zz,yy,xx=np.meshgrid(z,grid.y,grid.x,indexing='ij');values=transform(preview.values)
         label=preview.recipe.label
         lower=None;cmin=0.;cmax=1.
         if nonzero.size:
@@ -238,24 +294,31 @@ def _layer_volume_plot(previews,layer_styles,*,tiled=False,scale_mode='independe
             fig.add_trace(trace)
         else:
             fig.add_annotation(text=f'{label}: no positive signal in this selection',xref='paper',yref='paper',x=.5,y=.5-i*.05,showarrow=False)
-        extent_x,extent_y=grid.xy_extent or (1.,1.);extent=max(extent_x,extent_y)
-        fig.update_layout(**{scene:dict(xaxis_title='X (µm)' if grid.physical_xy else 'X (pixel)',
-            yaxis_title='Y (µm)' if grid.physical_xy else 'Y (pixel)',zaxis=dict(title='Depth frame',autorange='reversed'),
-            aspectmode='manual',aspectratio=dict(x=extent_x/extent,y=extent_y/extent,z=stretch),uirevision=f'layer:{preview.layer_id}' if tiled else 'overlay-camera')})
+        extent_x,extent_y=grid.xy_extent or (1.,1.)
+        xrange=(grid.edges[2][[0,-1]]*extent_x/(grid.edges[2][-1]-grid.edges[2][0])).tolist()
+        yrange=(grid.edges[1][[0,-1]]*extent_y/(grid.edges[1][-1]-grid.edges[1][0])).tolist()
+        scene_config,physical=_volume_scene((extent_x,extent_y),grid.physical_xy,
+            (int(grid.edges[0][0]),int(grid.edges[0][-1])-1),calibration,unit,stretch,(xrange,yrange))
+        physical_aspect=physical_aspect or physical
+        single_plane=single_plane or bool(calibration and grid.edges[0][-1]-grid.edges[0][0]==1)
+        scene_config['uirevision']=f'layer:{preview.layer_id}' if tiled else 'overlay-camera'
+        fig.update_layout(**{scene:scene_config})
         layer_meta.append(dict(id=preview.layer_id,label=preview.recipe.label,intervals=preview.recipe.intervals,
             frames=preview.recipe.frames,shape=preview.values.shape,valid_voxels=int(np.count_nonzero(preview.coverage)),
             threshold=float(np.expm1(lower) if log else lower) if lower is not None else None,
             intensity_scale=scale_mode,scale_min=cmin,scale_max=cmax,colorscale=style.colorscale))
-    if not previews:fig.add_annotation(text='No visible layers · enable a layer in Layers',showarrow=False)
-    fig.update_layout(meta=dict(layers=layer_meta,scale_mode=scale_mode),legend=dict(orientation='h',font=dict(size=10)))
+    if not previews:fig.add_annotation(text='No layers with calibrated depth in this selection' if calibration else 'No visible layers · enable a layer in Layers',showarrow=False)
+    if single_plane:fig.add_annotation(text='Single calibrated plane · depth thickness unknown',showarrow=False)
+    fig.update_layout(meta=dict(layers=layer_meta,scale_mode=scale_mode,axis_kind='depth' if calibration else 'frame',
+        unit=unit if calibration else 'frame',physical_aspect=physical_aspect,z_exaggeration=stretch),legend=dict(orientation='h',font=dict(size=10)))
     title='3D ion layers · tiled' if tiled else '3D ion layers · overlay'
     if len(previews)==1:title+=' · '+escape(previews[0].recipe.label)+'<br><sup>Mass '+interval_label(previews[0].recipe.intervals)+'</sup>'
     return layout(fig,title,550,dark=True)
 
 
-def overlay_volume_plot(previews,layer_styles,*,scale_mode='independent',stretch=1.2,log=True,shared_range=None):
-    return _layer_volume_plot(previews,layer_styles,scale_mode=scale_mode,stretch=stretch,log=log,shared_range=shared_range)
+def overlay_volume_plot(previews,layer_styles,*,scale_mode='independent',stretch=1.2,log=True,shared_range=None,calibration=None,unit='nm'):
+    return _layer_volume_plot(previews,layer_styles,scale_mode=scale_mode,stretch=stretch,log=log,shared_range=shared_range,calibration=calibration,unit=unit)
 
 
-def tiled_volume_plot(previews,layer_styles,*,scale_mode='independent',stretch=1.2,log=True,shared_range=None):
-    return _layer_volume_plot(previews,layer_styles,tiled=True,scale_mode=scale_mode,stretch=stretch,log=log,shared_range=shared_range)
+def tiled_volume_plot(previews,layer_styles,*,scale_mode='independent',stretch=1.2,log=True,shared_range=None,calibration=None,unit='nm'):
+    return _layer_volume_plot(previews,layer_styles,tiled=True,scale_mode=scale_mode,stretch=stretch,log=log,shared_range=shared_range,calibration=calibration,unit=unit)

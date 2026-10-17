@@ -5,6 +5,7 @@ import math
 import numpy as np
 from explorer import inspect_file,file_key
 from signals import SignalRecipe,read_signal
+from depth_calibration import calibrated_window
 
 COLORSCALES=('Viridis','Magma','Plasma','Cividis','Reds','Blues','Greens','Purples')
 
@@ -53,7 +54,7 @@ def clear_preview_cache():
     _CACHE.clear();_CACHE_BYTES=0
 
 
-def build_layer_previews(path,layers,roi,frames,*,quality,voxel_budget=500_000,reader=None):
+def build_layer_previews(path,layers,roi,frames,*,quality,voxel_budget=500_000,reader=None,calibration=None):
     global _CACHE_BYTES
     enabled=[layer for layer in layers if layer.visible]
     if not enabled:return []
@@ -61,6 +62,8 @@ def build_layer_previews(path,layers,roi,frames,*,quality,voxel_budget=500_000,r
     if quality not in ('Fast','Detailed'):raise ValueError('Unknown preview quality.')
     meta=inspect_file(path);shape=meta['shape']
     if len(frames)!=2 or any(type(z) is not int for z in frames) or not 0<=frames[0]<=frames[1]<shape[0]:raise ValueError('Invalid preview depth window.')
+    frames=calibrated_window(frames,calibration)
+    if frames is None:return []
     if len(roi)!=4 or any(type(z) is not int for z in roi) or not (0<=roi[0]<=roi[1]<shape[2] and 0<=roi[2]<=roi[3]<shape[1]):raise ValueError('Invalid preview ROI.')
     x0,x1,y0,y1=roi
     sizes=(frames[1]-frames[0]+1,y1-y0+1,x1-x0+1);limits=(96,32,32) if quality=='Fast' else (160,48,48)
