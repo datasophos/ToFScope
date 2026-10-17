@@ -21,6 +21,14 @@ async function render({ model, el }) {
   let rendering = Promise.resolve();
   let datasetPath = '';
   el.classList.add('tof-host');
+  // Published Marimo cells are the app shell; edit-mode cells keep their normal
+  // notebook output so the workspace never covers the source editor.
+  for(let ancestor=el;ancestor;ancestor=ancestor.parentElement || ancestor.getRootNode()?.host) {
+    if(ancestor.classList?.contains('marimo-cell')) {
+      el.classList.toggle('tof-viewport',ancestor.classList.contains('published'));
+      break;
+    }
+  }
   el.innerHTML = `
     <div class="tof-app">
       <header class="tof-header">

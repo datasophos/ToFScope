@@ -24,7 +24,8 @@ uv run --no-dev --locked marimo edit app.py
 
 ## Try it
 
-The app opens as a single tabbed workspace with a persistent signal sidebar.
+The published app fills the browser window with a single tabbed workspace and
+a persistent signal sidebar. Marimo edit mode keeps its normal notebook layout.
 
 1. Click the ion-channel picker and type a mass (for example `27` or `193.95`)
    or a stored label (`Pt`). Search results show exact masses and integration
@@ -155,6 +156,7 @@ uv run python scripts/check_comparisons_layout.py
 uv run python scripts/check_display_layout.py
 uv run python scripts/check_all_depths.py
 uv run python scripts/check_roi_replacement.py
+uv run python scripts/check_viewport.py
 ```
 
 The numerical tests cover empty pixels, inclusive mass-window endpoints,
