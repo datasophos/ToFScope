@@ -53,3 +53,18 @@ class FileBrowserTests(unittest.TestCase):
             if event=='files_list':self.assertEqual(response['files']['request_id'],payload['request_id'])
             else:self.assertIn('error',response)
             self.assertFalse(w.state()['loaded'])
+
+    def test_invalid_peak_metadata_does_not_replace_loaded_state(self):
+        from test_signal_recipes import make_acquisition
+        import h5py
+        good=self.root/'good.h5';bad=self.root/'bad.h5'
+        make_acquisition(good);make_acquisition(bad)
+        with h5py.File(bad,'r+') as f:
+            row=f['PeakData/PeakTable'][0];row['lower integration limit']=4;row['upper integration limit']=2
+            f['PeakData/PeakTable'][0]=row
+        with patch('workspace.get_plotlyjs',return_value=''),patch.object(ExplorerWorkspace,'figures',return_value={}):
+            w=ExplorerWorkspace(good,settings=self.settings);w.send=Mock()
+        before=w.volume;meta=w.meta;recipe=w.active_recipe
+        w.handle_message(None,dict(event='open',payload=dict(path='bad.h5')),None)
+        self.assertIn('error',w.send.call_args.args[0]);self.assertIs(w.volume,before)
+        self.assertIs(w.meta,meta);self.assertIs(w.active_recipe,recipe)

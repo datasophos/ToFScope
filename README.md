@@ -12,9 +12,30 @@ uv run --no-dev --locked marimo run app.py --host 127.0.0.1 --port 2718
 ```
 
 Open <http://127.0.0.1:2718>. The supplied AlTiPt example is selected by
-default. Use **Open file** to open another local file, or set the
-`TOF_FILE` environment variable before starting the app. Paths refer to the
-computer running Python. Keep the server bound to localhost.
+default. **Open file** browses the server data directory with breadcrumbs,
+filtering and paginated results; select a file and press **Open dataset**.
+Files remain on the computer running Python. Keep the server bound to localhost.
+
+For deployment, explicitly configure a POSIX data root (including an NFS mount):
+
+```sh
+TOFSCOPE_DATA_ROOT=/mnt/acquisitions uv run --no-dev --locked marimo run app.py --host 127.0.0.1 --port 2718
+```
+
+An explicit root starts with no acquisition loaded. Optionally set `TOF_FILE`
+to an absolute path inside that root, or a path relative to it. With neither
+setting, the demo root is the supplied example's directory. An empty root
+remains usable; a failed open preserves the current analysis. The picker
+lists `.h5`/`.hdf5` files without reading acquisition arrays. Paths in browser
+state and exported recipes are root-relative. Symlinks must resolve inside the
+root. The root and its directory structure must be controlled by a trusted
+server administrator; this is not a sandbox against hostile local filesystem
+mutations. Authentication and remote multi-user hosting are outside this feature.
+
+`TOFSCOPE_ALLOW_WRITES` accepts only `true` or `false` and defaults to `false`.
+This setting reserves server write policy for the write-back feature; the current
+explorer continues to open acquisitions read-only. NFS locking and replacement
+behavior must be verified on the deployment mount before enabling write-back.
 
 To inspect or modify the reactive notebook:
 
@@ -171,6 +192,7 @@ uv run python scripts/check_roi_replacement.py
 uv run python scripts/check_viewport.py
 uv run python scripts/check_window_sets.py
 uv run python scripts/check_interval_selection_race.py
+uv run python scripts/check_file_browser.py
 ```
 
 The numerical tests cover empty pixels, inclusive mass-window endpoints,
