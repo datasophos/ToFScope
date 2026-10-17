@@ -4,6 +4,7 @@ from operator import index
 from uuid import UUID,uuid4
 
 from integration import canonical_intervals
+from dataset_io import locked_read
 
 
 def _integer(value):
@@ -91,6 +92,7 @@ class SignalRecipe:
         return (file_key(path),self.source,self.stored_index,self.saved_id,self.intervals,self.frames)
 
 
+@locked_read
 def read_signal(path, recipe, progress=None):
     """Return (depth,y,x), with array index zero at recipe.frames[0]."""
     import h5py

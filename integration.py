@@ -1,5 +1,6 @@
 """Inclusive mass-window unions; display transforms never enter this module."""
 import numpy as np
+from dataset_io import locked_read
 
 
 def canonical_intervals(intervals, axis_limits):
@@ -52,6 +53,7 @@ def integrate_event_windows(events, mass_axis, clock_ratio, normalization, inter
     return (np.diff(counts[boundaries]).reshape(events.shape)/normalization).astype(np.float32)
 
 
+@locked_read
 def custom_peak_windows(path, intervals, first, last, progress=None):
     """Reconstruct a union in one read per supported acquisition depth slice."""
     import h5py

@@ -10,6 +10,7 @@ import re
 
 import h5py
 import numpy as np
+from dataset_io import locked_read
 
 
 DEFAULT_FILE = (
@@ -26,6 +27,7 @@ def decode(value):
     return value.decode(errors="replace") if isinstance(value, bytes) else str(value)
 
 
+@locked_read
 def inspect_file(path):
     path = Path(path).expanduser().resolve()
     with h5py.File(path, "r") as f:
@@ -67,6 +69,7 @@ def _stored_peak(key, index):
         return result
 
 
+@locked_read
 def stored_peak(path, index):
     return _stored_peak(file_key(path), int(index))
 
@@ -101,6 +104,7 @@ def custom_peak(path, low, high, first, last, progress=None):
     return custom_peak_windows(path,[(low,high)],first,last,progress)
 
 
+@locked_read
 def se_image(path, names, frame):
     if not names or not 0 <= frame < len(names):
         return None
@@ -116,6 +120,7 @@ def sum_depth_window(volume, frames, window):
     return volume[first-frames[0]:last-frames[0]+1].sum(axis=0,dtype=np.float64)
 
 
+@locked_read
 def se_mean(path, names, first, last):
     return _se_mean(file_key(path),tuple(names),int(first),int(last))
 

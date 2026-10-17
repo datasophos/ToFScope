@@ -10,6 +10,7 @@ class ServerSettings:
     data_root: Path
     allow_writes: bool = False
     initial_file: Path | None = None
+    allow_unverified_native: bool = False
 
     def __post_init__(self):
         root=Path(self.data_root).expanduser().resolve()
@@ -34,7 +35,10 @@ def load_server_settings(env: Mapping[str,str]) -> ServerSettings:
     if initial is not None:
         candidate=Path(initial).expanduser()
         initial=candidate if candidate.is_absolute() else root/candidate
-    return ServerSettings(root,value=='true',initial)
+    experimental=env.get('TOFSCOPE_ALLOW_UNVERIFIED_NATIVE','false').lower()
+    if experimental not in ('true','false'):
+        raise ValueError('TOFSCOPE_ALLOW_UNVERIFIED_NATIVE must be true or false.')
+    return ServerSettings(root,value=='true',initial,experimental=='true')
 
 
 def resolve_data_path(settings, relative_path: str, *, require_file: bool=False) -> Path:

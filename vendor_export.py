@@ -28,20 +28,42 @@ def validate_native_recipe(h5,recipe):
 
 
 def validate_native_layout(h5):
+    seen={h5py.h5o.get_info(h5.id).addr}
+    def contains_reference(dtype):
+        dtype=np.dtype(dtype)
+        if h5py.check_dtype(ref=dtype) is not None:return True
+        if dtype.fields and any(contains_reference(field[0]) for field in dtype.fields.values()):return True
+        if dtype.subdtype and contains_reference(dtype.subdtype[0]):return True
+        variable=h5py.check_dtype(vlen=dtype)
+        return isinstance(variable,np.dtype) and contains_reference(variable)
+    def attributes(obj):
+        for name in obj.attrs:
+            identifier=obj.attrs.get_id(name)
+            try:references=contains_reference(identifier.dtype)
+            finally:identifier.close()
+            if references:raise ValueError('HDF5 object-reference attributes are unsupported.')
+    attributes(h5)
     def walk(group):
         for name in group:
             link=group.get(name,getlink=True)
             if isinstance(link,(h5py.ExternalLink,h5py.SoftLink)):raise ValueError('Linked HDF5 layouts require a separate compatibility review.')
             obj=group[name]
-            for value in obj.attrs.values():
-                array=np.asarray(value)
-                if h5py.check_dtype(ref=array.dtype) is not None:raise ValueError('HDF5 object-reference attributes are unsupported.')
+            address=h5py.h5o.get_info(obj.id).addr
+            if address in seen:raise ValueError('Hard-linked aliases and cycles require a separate compatibility review.')
+            seen.add(address);attributes(obj)
             if isinstance(obj,h5py.Group):walk(obj)
-            elif h5py.check_dtype(ref=obj.dtype) is not None:raise ValueError('HDF5 object-reference datasets are unsupported.')
+            elif contains_reference(obj.dtype):raise ValueError('HDF5 object-reference datasets are unsupported.')
+            elif obj.is_virtual or obj.external:raise ValueError('Virtual datasets and external raw storage require a separate compatibility review.')
     walk(h5)
 
 
 def export_native_copy(source_path,destination_path,recipes,*,volumes=None,progress=None):
+    from dataset_io import dataset_lock
+    with dataset_lock(source_path):
+        return _export_native_copy(source_path,destination_path,recipes,volumes=volumes,progress=progress)
+
+
+def _export_native_copy(source_path,destination_path,recipes,*,volumes=None,progress=None):
     from signals import read_signal
     source=Path(source_path).resolve();destination=Path(destination_path)
     if destination.exists():raise FileExistsError('Native output already exists; select a new output path.')
@@ -68,8 +90,10 @@ def export_native_copy(source_path,destination_path,recipes,*,volumes=None,progr
             for key,value in old.attrs.items():new.attrs[key]=value
             if old.chunks:
                 total=old.id.get_num_chunks()
-                for i in range(total):
-                    offset=old.id.get_chunk_info(i).chunk_offset;mask,payload=old.id.read_direct_chunk(offset)
+                for i,selection in enumerate(old.iter_chunks()):
+                    offset=tuple(part.start for part in selection)
+                    if old.id.get_chunk_info_by_coord(offset).size==0:continue
+                    mask,payload=old.id.read_direct_chunk(offset)
                     new.id.write_direct_chunk(offset,payload,filter_mask=mask)
                     if progress and i%5000==0:progress('Copying native peaks',i,total)
             else:
