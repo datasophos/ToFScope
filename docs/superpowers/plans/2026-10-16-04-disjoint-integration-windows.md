@@ -36,11 +36,11 @@ No other roadmap feature is required. `signals.py` owns identity/serialization/d
 
 **Interfaces:** `SignalRecipe` has the exact fields in the design brief and `to_dict() -> dict`, `from_dict(value: dict) -> SignalRecipe`. Add `canonical_intervals(intervals: Iterable[tuple[float,float]], axis_limits: tuple[float,float]) -> tuple[tuple[float,float], ...]` and `integrate_event_windows(events, mass_axis, clock_ratio: int, normalization: float, intervals) -> np.ndarray` in `integration.py`.
 
-- [ ] Write `test_union_counts_overlap_once`: masses `[0,1,2,3,4,5]`, events at sample bins `[1,2,2,3,4]`, windows `[1,2]` and `[2,4]`, normalization 2; one pixel must yield 2.5. Add `test_gaps_stay_excluded` with windows `[1,2]`, `[4,5]` (result 2.0 for those events).
-- [ ] Add rejection tests for empty/non-finite/reversed/out-of-axis intervals; a valid gap between mass bins must yield zero. Test sorted canonical output, touching endpoints, recipe JSON round-trip and conversion of schema-2 `lower_Th`/`upper_Th` into one interval.
-- [ ] Run `uv run python -m unittest discover -s tests -p 'test_window_sets.py' -v`; verify new-feature tests fail before implementation.
-- [ ] Implement the interfaces. Build one boolean membership mask over the calibrated mass axis; map each event once, then use the existing ragged per-pixel accumulation. Delegate existing `integrate_events` to a one-interval union without altering normalization.
-- [ ] Run the new tests plus `test_data.py`; require identical existing one-window results. Commit: `Add reproducible union-based mass-window recipes.`
+- [x] Write `test_union_counts_overlap_once`: masses `[0,1,2,3,4,5]`, events at sample bins `[1,2,2,3,4]`, windows `[1,2]` and `[2,4]`, normalization 2; one pixel must yield 2.5. Add `test_gaps_stay_excluded` with windows `[1,2]`, `[4,5]` (result 2.0 for those events).
+- [x] Add rejection tests for empty/non-finite/reversed/out-of-axis intervals; a valid gap between mass bins must yield zero. Test sorted canonical output, touching endpoints, recipe JSON round-trip and conversion of schema-2 `lower_Th`/`upper_Th` into one interval.
+- [x] Run `uv run python -m unittest discover -s tests -p 'test_window_sets.py' -v`; verify new-feature tests fail before implementation.
+- [x] Implement the interfaces. Build one boolean membership mask over the calibrated mass axis; map each event once, then use the existing ragged per-pixel accumulation. Delegate existing `integrate_events` to a one-interval union without altering normalization.
+- [x] Run the new tests plus `test_data.py`; require identical existing one-window results. Commit: `Add reproducible union-based mass-window recipes.`
 
 ### Task 2: Reconstruct composite signals and preserve coverage
 
