@@ -197,7 +197,7 @@ def front_projection(volume, frames, roi, fov, log):
     return layout(fig,f'Front projection · sum Y {y0}–{y1} px',330)
 
 
-def _layer_volume_plot(previews,layer_styles,*,tiled=False,scale_mode='independent',stretch=1.2,log=True):
+def _layer_volume_plot(previews,layer_styles,*,tiled=False,scale_mode='independent',stretch=1.2,log=True,shared_range=None):
     """Plot aligned previews; colors transform display values only."""
     from plotly.subplots import make_subplots
     from signals import interval_label
@@ -213,6 +213,7 @@ def _layer_volume_plot(previews,layer_styles,*,tiled=False,scale_mode='independe
     all_values=np.concatenate(nonempty) if nonempty else np.array([])
     common_hi=float(np.percentile(transform(all_values),99.7)) if all_values.size else 1.
     common_lo=0.
+    if shared_range is not None:common_lo,common_hi=shared_range
     layer_meta=[]
     for i,(preview,nonzero) in enumerate(zip(previews,positive)):
         style=styles[preview.layer_id];scene='scene' if i==0 or not tiled else f'scene{i+1}'
@@ -224,7 +225,9 @@ def _layer_volume_plot(previews,layer_styles,*,tiled=False,scale_mode='independe
             upper=max(upper,lower+max(abs(lower)*.01,1e-6))
             cmin,cmax=(common_lo,common_hi) if scale_mode=='shared' else (0.,upper)
             finite=np.isfinite(values)
-            if min(values.shape)<2 or np.ptp(values[finite])==0:
+            covered_indices=np.where(finite)
+            thin=any(np.unique(axis).size<2 for axis in covered_indices)
+            if thin or np.ptp(values[finite])==0:
                 shown=finite&(values>=lower)
                 trace=go.Scatter3d(x=xx[shown],y=yy[shown],z=zz[shown],name=label,scene=scene,mode='markers',
                     marker=dict(size=3,color=values[shown],cmin=cmin,cmax=cmax,colorscale=style.colorscale,opacity=style.opacity),hoverinfo='skip')
@@ -250,9 +253,9 @@ def _layer_volume_plot(previews,layer_styles,*,tiled=False,scale_mode='independe
     return layout(fig,title,550,dark=True)
 
 
-def overlay_volume_plot(previews,layer_styles,*,scale_mode='independent',stretch=1.2,log=True):
-    return _layer_volume_plot(previews,layer_styles,scale_mode=scale_mode,stretch=stretch,log=log)
+def overlay_volume_plot(previews,layer_styles,*,scale_mode='independent',stretch=1.2,log=True,shared_range=None):
+    return _layer_volume_plot(previews,layer_styles,scale_mode=scale_mode,stretch=stretch,log=log,shared_range=shared_range)
 
 
-def tiled_volume_plot(previews,layer_styles,*,scale_mode='independent',stretch=1.2,log=True):
-    return _layer_volume_plot(previews,layer_styles,tiled=True,scale_mode=scale_mode,stretch=stretch,log=log)
+def tiled_volume_plot(previews,layer_styles,*,scale_mode='independent',stretch=1.2,log=True,shared_range=None):
+    return _layer_volume_plot(previews,layer_styles,tiled=True,scale_mode=scale_mode,stretch=stretch,log=log,shared_range=shared_range)

@@ -205,10 +205,17 @@ class ExplorerWorkspace(anywidget.AnyWidget):
         enabled=[l for l in self.volume_layers if l.visible]
         pages=max(1,(len(enabled)+3)//4)
         self.volume_page=min(self.volume_page,pages-1)
+        all_previews=build_layer_previews(self.meta['path'],enabled,self.roi,tuple(frames),quality=self.quality,reader=self.layer_reader)
+        previews=all_previews[self.volume_page*4:self.volume_page*4+4] if self.volume_mode=='tiles' else all_previews
         layers=enabled[self.volume_page*4:self.volume_page*4+4] if self.volume_mode=='tiles' else enabled
-        previews=build_layer_previews(self.meta['path'],layers,self.roi,tuple(frames),quality=self.quality,reader=self.layer_reader)
+        shared_range=None
+        if self.volume_scale=='shared':
+            positive=[p.values[p.values>0] for p in all_previews]
+            values=np.concatenate(positive) if positive else np.array([])
+            if self.logarithmic:values=np.log1p(values)
+            shared_range=(0.,float(np.percentile(values,99.7)) if values.size else 1.)
         constructor=tiled_volume_plot if self.volume_mode=='tiles' else overlay_volume_plot
-        fig=constructor(previews,layers,scale_mode=self.volume_scale,stretch=self.stretch,log=self.logarithmic)
+        fig=constructor(previews,layers,scale_mode=self.volume_scale,stretch=self.stretch,log=self.logarithmic,shared_range=shared_range)
         self.volume_details=dict(preview_shape=list(previews[0].values.shape) if previews else [0,0,0],threshold=None,
             layers=fig.layout.meta['layers'],page=self.volume_page,pages=pages,mode=self.volume_mode,voxel_budget=500_000,
             encoded_bytes=len(fig.to_json().encode()),preparation_seconds=perf_counter()-started)
