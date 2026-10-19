@@ -1,7 +1,7 @@
 # Explore signal workspace redesign
 
 Date: 2026-10-19
-Status: Proposed for written-spec review; conversational direction approved.
+Status: Written spec approved by Josh on 2026-10-19; implementation plan pending review.
 
 ## Purpose and approved direction
 
