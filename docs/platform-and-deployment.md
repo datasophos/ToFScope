@@ -1,3 +1,8 @@
+> Implementation update (2026-10-18): the packaged React/FastAPI Explore pilot
+> now replaces the Marimo application. Use [current deployment instructions](deployment.md)
+> and [qualification evidence](validation/pilot-qualification.md). The prototype
+> observations below are historical context, not current launch instructions.
+
 # Platform and deployment recommendations
 
 Recorded 2026-10-17. This is a proposed direction for the next stage, not an

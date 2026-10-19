@@ -10,6 +10,22 @@
 
 **Spec:** [Replacement proposal](../../react-fastapi-migration.md); prerequisite [packaged Explore plan](2026-10-18-react-fastapi-pilot.md). Read both before execution.
 
+## Pilot handoff context
+
+The packaged pilot uses direct h5py behind `AcquisitionRepository`, ECharts for
+Explore and renderer-neutral typed panel payloads. See the reader/renderer
+reports in `docs/validation/`. The exact prototype assertions retained as text
+under `docs/validation/prototype-tests/` are part of this plan's acceptance
+inventory: restore the relevant cases per task, replacing widget/Plotly calls
+with application/presenter assertions. In particular carry calibrated profile
+sample visibility and unknown-depth CSV (Task 1), identification annotations and
+uncertainty exports (Task 2), calibrated section values (Tasks 1/3), single-plane
+fallback and calibrated pooling across anchor slope changes (Task 4), and
+post-replacement save outcomes (Task 5). No legacy runtime belongs in the package.
+The pilot adds a configurable comparison metadata quota alongside byte admission;
+spatial/private preview preparation must use the same reservations. The response
+contract now reserves transport buffers until send completion.
+
 ## Global constraints
 
 - “Original-resolution arrays drive profiles, spatial selection and exports.”

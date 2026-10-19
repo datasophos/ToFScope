@@ -60,3 +60,11 @@ class CacheTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.cache.acquire("a", "a", self.dataset, self.r, bad, 24)
         self.assertEqual(self.budget.physical_bytes, 0)
+    def test_byte_lru_keeps_unleased_arrays_until_pressure(self):
+        from dataclasses import replace
+        recipes=[self.r,replace(self.r,stored_index=1),replace(self.r,frames=(1,2)),replace(self.r,frames=(0,0))]
+        for r in recipes[:3]:
+            self.cache.load('a','a',self.dataset,r).release()
+        self.assertEqual(len(self.cache.entries),3);self.assertEqual(self.budget.physical_bytes,64)
+        self.cache.load('a','a',self.dataset,recipes[3]).release()
+        self.assertEqual(len(self.cache.entries),3);self.assertEqual(self.budget.physical_bytes,48)

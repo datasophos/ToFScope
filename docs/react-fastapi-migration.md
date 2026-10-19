@@ -1,7 +1,8 @@
 # React/FastAPI replacement proposal
 
-Recorded 2026-10-18. Planning only; no replacement launcher or package exists
-yet. Read alongside [platform and deployment](platform-and-deployment.md).
+Recorded 2026-10-18; packaged Explore implementation completed on the isolated
+implementation branch. See [qualification evidence](validation/pilot-qualification.md)
+and [deployment](deployment.md) for current commands and measured limits. Read alongside [platform and deployment](platform-and-deployment.md).
 
 ## Outcome and approach
 

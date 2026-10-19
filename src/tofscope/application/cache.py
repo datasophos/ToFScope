@@ -62,8 +62,9 @@ class ArrayCache:
             recipe.frames,
         )
 
-    def _evict(self):
+    def _evict(self,needed=None):
         for key, entry in list(self.entries.items()):
+            if needed is not None and self.budget.physical_bytes+needed<=self.budget.settings.global_bytes:break
             if not entry.consumers:
                 entry.physical.release()
                 del self.entries[key]
@@ -81,8 +82,10 @@ class ArrayCache:
                 self.condition.wait()
             if key in self.entries:
                 return self._lease(owner, analysis_id, dataset, key, consumer)
-            self._evict()
-            physical = self.budget.reserve(None, None, estimated_bytes)
+            try:physical = self.budget.reserve(None,None,estimated_bytes)
+            except CapacityError:
+                self._evict(estimated_bytes)
+                physical=self.budget.reserve(None,None,estimated_bytes)
             try:
                 logical = self.budget.reserve(
                     owner, analysis_id, estimated_bytes, physical=False

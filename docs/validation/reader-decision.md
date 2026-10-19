@@ -57,3 +57,11 @@ and retained arrays; it does not isolate a per-library peak. Acquisition stat
 identity remained unchanged. The fixture runner comparison gave threads
 14.3 ms total versus processes 110.4 ms (four selected frames, includes process
 startup); retain bounded threads, with service health separately measured.
+
+Fresh isolated real-file subset processes (first four nominal-27 frames, same
+native chunks; includes imports/startup): h5py peak RSS 47.9 MB / 14.5 ms;
+RosettaSciIO eager 57.9 MB / 139.5 ms, lazy 437.0 MB / 3545.8 ms; HyperSpy eager
+74.8 MB / 126.1 ms, lazy 453.0 MB / 3664.2 ms. Each matched the direct stored
+values exactly and left no acquisition file open after cleanup. The lazy graphs
+have overhead even for a selective result. These are process peak measurements,
+not RSS deltas, and strengthen the direct-reader maintenance/resource decision.
