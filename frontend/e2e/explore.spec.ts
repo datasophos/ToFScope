@@ -74,6 +74,25 @@ test("independent files, exact Explore state, custom Apply and offline downloads
 });
 
 test("Explore layout, signal picker and chart wheel behavior", async ({ page }) => {
+  await page.addInitScript(() => {
+    const state = window as Window & { imageStageFlash?: boolean };
+    state.imageStageFlash = false;
+    const check = () => {
+      if (
+        Array.from(document.querySelectorAll<HTMLElement>(".plot-stage.image")).some(
+          (stage) =>
+            stage.dataset.stageReady !== "true" && stage.querySelector("canvas"),
+        )
+      )
+        state.imageStageFlash = true;
+    };
+    new MutationObserver(check).observe(document, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-stage-ready"],
+    });
+  });
   await page.setExtraHTTPHeaders({ "x-tofscope-user": "browser-b" });
   await page.goto("/");
   await page.getByRole("button", { name: "Choose an HDF5 acquisition" }).click();
@@ -86,8 +105,15 @@ test("Explore layout, signal picker and chart wheel behavior", async ({ page }) 
   expect(boxes[1]!.y).toBeLessThan(boxes[3]!.y);
   expect(Math.abs(boxes[0]!.x - boxes[2]!.x)).toBeLessThan(2);
   expect(Math.abs(boxes[1]!.x - boxes[3]!.x)).toBeLessThan(2);
+  expect(boxes[0]!.width).toBeLessThan(boxes[1]!.width * 0.8);
   const imageStage = page.getByTestId("plot-stage-ion");
   await expect(imageStage).toBeVisible();
+  await expect(imageStage).toHaveAttribute("data-stage-ready", "true");
+  expect(
+    await page.evaluate(
+      () => (window as Window & { imageStageFlash?: boolean }).imageStageFlash,
+    ),
+  ).toBe(false);
   const imageBox = (await imageStage.boundingBox())!;
   expect(Math.abs(imageBox.width - imageBox.height)).toBeLessThan(2);
   const picker = page.getByRole("button", { name: "Select stored signal" });
