@@ -9,6 +9,8 @@ import {
 } from "../api/client";
 import { FilePicker } from "./FilePicker";
 import { ExploreScreen } from "../explore/ExploreScreen";
+import { HelpButton } from "../components/HelpButton";
+import { help } from "../explore/help";
 export function App() {
   const [session, setSession] = useState<Session | null>(null),
     [owned, setOwned] = useState<Workspace[]>([]),
@@ -114,9 +116,15 @@ export function App() {
   return (
     <>
       <header className="masthead">
-        <div>
-          <span className="mark">◫</span>
-          <strong>ToFScope</strong>
+        <div className="brand">
+          <svg className="mark" viewBox="0 0 36 36" aria-hidden="true">
+            <path d="M3 5h23v5h-9v21h-5V10H3z" fill="currentColor" />
+            <circle cx="30" cy="28" r="3" fill="#44bdac" />
+          </svg>
+          <div className="brand-name">
+            <strong>ToFScope</strong>
+            <small>FIB–SEM / TOF–SIMS</small>
+          </div>
           <span className="badge">Explore pilot · read only</span>
         </div>
         <span>{session?.owner || "Local instrument workspace"}</span>
@@ -194,6 +202,7 @@ export function App() {
         >
           ＋ Open acquisition
         </button>
+        <HelpButton label="Workspaces and files" content={help.workspace} />
         <div className="tabs" role="tablist">
           {analyses.map((a, i) => (
             <div key={a.id} className={a.id === active ? "tab active" : "tab"}>
