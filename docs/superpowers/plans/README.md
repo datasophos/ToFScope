@@ -1,5 +1,23 @@
 # ToFScope implementation roadmap
 
+## React/FastAPI replacement — 2026-10-18
+
+The unreleased app may be replaced wholesale; the Marimo prototype is preserved
+in a frozen reference checkout. These plans implement the
+[replacement proposal](../../react-fastapi-migration.md):
+
+1. [Packaged Explore application and multi-user foundation](2026-10-18-react-fastapi-pilot.md):
+   scientific reference, package boundaries, independent analyses, resource/job
+   management, renderer evaluation, API, React Explore, distribution and deployment.
+2. [Complete workspace](2026-10-18-react-fastapi-completion.md): depth calibration,
+   identification/isotopes, sections, spatial renderer selection, multi-layer 3D,
+   controlled saves and full parity qualification.
+
+These are execution plans awaiting review, not implemented capabilities. The
+older plans below describe prototype feature work and remain historical context.
+
+## Prototype roadmap — 2026-10-16
+
 These are proposed implementation plans for the six items in [TODO.md](../../../TODO.md), grounded in the current Python/AnyWidget/Plotly prototype. No feature implementation or HDF5 mutation is part of this planning change.
 
 Read the [shared design brief](../specs/2026-10-16-roadmap-design.md) first. Each plan includes file boundaries, concrete interfaces, test-first tasks, validation commands, acceptance criteria and proposed commit boundaries.
