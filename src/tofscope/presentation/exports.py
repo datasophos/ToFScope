@@ -4,6 +4,8 @@ import csv
 import io
 import json
 from tofscope.presentation.explore import selected_frames
+from dataclasses import asdict
+from tofscope.application.signals import visible_signals
 
 
 @dataclass(frozen=True)
@@ -24,7 +26,11 @@ class ExportService:
             s = e.snapshot
             p.repository.assert_current(owner, s.dataset)
             if format == "json":
-                value = s.active_recipe.to_dict() | dict(
+                value = dict(
+                    schema_version=4,
+                    signals=[asdict(row) for row in s.signals if row.recipe is not None],
+                    image_signal_id=s.image_signal_id,
+                    profile_signal_ids=list(s.profile_signal_ids),
                     scope="Explore-only",
                     relative_path=s.dataset.relative_path,
                     dataset_generation=s.dataset.generation,
@@ -32,7 +38,6 @@ class ExportService:
                     selected_frames=list(selected_frames(s)),
                     depth=s.depth.model_dump(),
                     roi=list(s.roi),
-                    comparisons=[r.to_dict() for r in s.comparisons],
                     calibration={
                         "anchors_nm": [[0, 0]],
                         "policy": "interpolate only between anchors",
@@ -49,7 +54,7 @@ class ExportService:
             elif format == "csv":
                 with ExitStack() as stack:
                     estimate = (s.loaded_frames[1] - s.loaded_frames[0] + 1) * (
-                        1 + len(s.comparisons)
+                        len(visible_signals(s))
                     ) * 128 + 4096
                     if estimate > p.settings.response_bytes:
                         raise ValueError("Export too large; narrow loaded frames.")

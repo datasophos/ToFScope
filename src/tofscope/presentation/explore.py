@@ -5,6 +5,7 @@ import json
 import numpy as np
 from tofscope.presentation.data import Axis, Curve, Panel, ExploreData
 from tofscope.application.workspaces import CapacityError
+from tofscope.application.signals import image_signal, visible_signals, image_frames, signal_label
 from tofscope.storage.explorer import _se_mean, file_key
 
 PANELS = {"ion", "front", "spectrum", "profile"}
@@ -38,12 +39,7 @@ def axis(name, unit, values, step=1):
 
 
 def selected_frames(s):
-    if s.depth.mode == "frame":
-        return (s.depth.index, s.depth.index)
-    if s.depth.mode == "window":
-        return (s.depth.first, s.depth.last)
-    return s.loaded_frames
-
+    return image_frames(s)
 
 class ExplorePresenter:
     def __init__(self, workspaces, repository, cache, settings):
@@ -56,7 +52,8 @@ class ExplorePresenter:
         x0, x1, y0, y1 = s.roi
         start, stop = s.loaded_frames
         result = []
-        for r in (s.active_recipe, *s.comparisons):
+        for signal in visible_signals(s):
+            r = signal.recipe
             lease = stack.enter_context(self.cache.load(s.owner, s.id, s.dataset, r))
             a = lease.array
             v = np.full(stop - start + 1, np.nan)
@@ -66,7 +63,7 @@ class ExplorePresenter:
                 v[low - start : high - start + 1] = a[
                     low - r.frames[0] : high - r.frames[0] + 1, y0 : y1 + 1, x0 : x1 + 1
                 ].mean(axis=(1, 2), dtype=np.float64)
-            result.append(Curve(r.id, r.label, finite(v), np.isfinite(v).tolist()))
+            result.append(Curve(signal.id, signal.style_index, signal_label(s, signal), finite(v), np.isfinite(v).tolist()))
         return result
 
     def snapshot(self, owner, analysis_id, panels=None):
@@ -94,7 +91,7 @@ class ExplorePresenter:
                 (se_shape[0] * se_shape[1] if "ion" in panels else 0)
                 + ((last - first + 1) * nx if "front" in panels else 0)
                 + (
-                    (last - first + 1) * (1 + len(s.comparisons))
+                    (last - first + 1) * len(visible_signals(s))
                     if "profile" in panels
                     else 0
                 )
@@ -124,9 +121,9 @@ class ExplorePresenter:
                 )
                 if panels & {"ion", "front"}:
                     a = stack.enter_context(
-                        self.cache.load(owner, s.id, s.dataset, s.active_recipe)
+                        self.cache.load(owner, s.id, s.dataset, image_signal(s).recipe)
                     ).array
-                    r = s.active_recipe
+                    r = image_signal(s).recipe
                     lo, hi = selected_frames(s)
                     low = max(lo, r.frames[0])
                     high = min(hi, r.frames[1])
@@ -184,6 +181,10 @@ class ExplorePresenter:
                             intensity_range=bounds,
                             palette="gray" if s.display.image == "se" else "ion",
                             log=s.display.log,
+                            signal_id=s.image_signal_id,
+                            signal_name=image_signal(s).name,
+                            signal_version=image_signal(s).recipe_version,
+                            frame_range=selected_frames(s),
                         )
                     if "front" in panels:
                         front = np.full((last - first + 1, nx), np.nan)
@@ -204,6 +205,9 @@ class ExplorePresenter:
                                 finite_max(front),
                             ),
                             log=s.display.log,
+                            signal_id=s.image_signal_id,
+                            signal_name=image_signal(s).name,
+                            signal_version=image_signal(s).recipe_version,
                         )
                 if "profile" in panels:
                     result["profile"] = self.panel(
@@ -220,6 +224,7 @@ class ExplorePresenter:
                         series=[
                             Curve(
                                 "sum-spectrum",
+                                0,
                                 "Sum spectrum",
                                 finite(meta.sum_spectrum),
                                 np.isfinite(meta.sum_spectrum).tolist(),

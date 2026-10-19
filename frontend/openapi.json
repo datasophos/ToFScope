@@ -1,15 +1,20 @@
 {
   "components": {
     "schemas": {
-      "AddStoredComparison": {
+      "AddStoredSignal": {
         "additionalProperties": false,
         "properties": {
+          "duplicate": {
+            "default": false,
+            "title": "Duplicate",
+            "type": "boolean"
+          },
           "index": {
             "title": "Index",
             "type": "integer"
           },
           "type": {
-            "const": "add_stored_comparison",
+            "const": "add_stored_signal",
             "title": "Type",
             "type": "string"
           }
@@ -18,7 +23,7 @@
           "type",
           "index"
         ],
-        "title": "AddStoredComparison",
+        "title": "AddStoredSignal",
         "type": "object"
       },
       "AllDepth": {
@@ -36,16 +41,6 @@
       },
       "AnalysisSnapshot": {
         "properties": {
-          "active_recipe": {
-            "$ref": "#/components/schemas/SignalRecipe"
-          },
-          "comparisons": {
-            "items": {
-              "$ref": "#/components/schemas/SignalRecipe"
-            },
-            "title": "Comparisons",
-            "type": "array"
-          },
           "dataset": {
             "$ref": "#/components/schemas/DatasetRef"
           },
@@ -89,6 +84,10 @@
             "title": "Id",
             "type": "string"
           },
+          "image_signal_id": {
+            "title": "Image Signal Id",
+            "type": "string"
+          },
           "loaded_frames": {
             "maxItems": 2,
             "minItems": 2,
@@ -117,6 +116,10 @@
             "title": "Mass Limits",
             "type": "array"
           },
+          "next_style_index": {
+            "title": "Next Style Index",
+            "type": "integer"
+          },
           "owner": {
             "title": "Owner",
             "type": "string"
@@ -126,6 +129,13 @@
               "$ref": "#/components/schemas/Peak"
             },
             "title": "Peaks",
+            "type": "array"
+          },
+          "profile_signal_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Profile Signal Ids",
             "type": "array"
           },
           "revision": {
@@ -172,6 +182,13 @@
             "title": "Shape",
             "type": "array"
           },
+          "signals": {
+            "items": {
+              "$ref": "#/components/schemas/SignalSnapshot"
+            },
+            "title": "Signals",
+            "type": "array"
+          },
           "stale": {
             "default": false,
             "title": "Stale",
@@ -191,8 +208,10 @@
           "loaded_frames",
           "roi",
           "depth",
-          "active_recipe",
-          "comparisons",
+          "signals",
+          "image_signal_id",
+          "profile_signal_ids",
+          "next_style_index",
           "display",
           "shape",
           "peaks",
@@ -257,19 +276,37 @@
           "command": {
             "discriminator": {
               "mapping": {
-                "add_stored_comparison": "#/components/schemas/AddStoredComparison",
-                "remove_comparison": "#/components/schemas/RemoveComparison",
-                "select_stored": "#/components/schemas/SelectStored",
+                "add_stored_signal": "#/components/schemas/AddStoredSignal",
+                "remove_signal": "#/components/schemas/RemoveSignal",
+                "rename_signal": "#/components/schemas/RenameSignal",
+                "select_image_signal": "#/components/schemas/SelectImageSignal",
+                "set_analysis_frames": "#/components/schemas/SetAnalysisFrames",
                 "set_depth": "#/components/schemas/SetDepth",
                 "set_display": "#/components/schemas/SetDisplay",
-                "set_loaded_frames": "#/components/schemas/SetLoadedFrames",
-                "set_roi": "#/components/schemas/SetROI"
+                "set_profile_visible": "#/components/schemas/SetProfileVisible",
+                "set_roi": "#/components/schemas/SetROI",
+                "set_stored_coverage": "#/components/schemas/SetStoredCoverage"
               },
               "propertyName": "type"
             },
             "oneOf": [
               {
-                "$ref": "#/components/schemas/SelectStored"
+                "$ref": "#/components/schemas/AddStoredSignal"
+              },
+              {
+                "$ref": "#/components/schemas/RenameSignal"
+              },
+              {
+                "$ref": "#/components/schemas/SelectImageSignal"
+              },
+              {
+                "$ref": "#/components/schemas/SetProfileVisible"
+              },
+              {
+                "$ref": "#/components/schemas/RemoveSignal"
+              },
+              {
+                "$ref": "#/components/schemas/SetStoredCoverage"
               },
               {
                 "$ref": "#/components/schemas/SetROI"
@@ -278,13 +315,7 @@
                 "$ref": "#/components/schemas/SetDepth"
               },
               {
-                "$ref": "#/components/schemas/SetLoadedFrames"
-              },
-              {
-                "$ref": "#/components/schemas/AddStoredComparison"
-              },
-              {
-                "$ref": "#/components/schemas/RemoveComparison"
+                "$ref": "#/components/schemas/SetAnalysisFrames"
               },
               {
                 "$ref": "#/components/schemas/SetDisplay"
@@ -332,9 +363,13 @@
             "title": "Label",
             "type": "string"
           },
-          "recipe_id": {
-            "title": "Recipe Id",
+          "signal_id": {
+            "title": "Signal Id",
             "type": "string"
+          },
+          "style_index": {
+            "title": "Style Index",
+            "type": "integer"
           },
           "values": {
             "items": {
@@ -352,7 +387,8 @@
           }
         },
         "required": [
-          "recipe_id",
+          "signal_id",
+          "style_index",
           "label",
           "values",
           "coverage"
@@ -416,12 +452,12 @@
             "type": "string"
           },
           "log": {
-            "default": false,
+            "default": true,
             "title": "Log",
             "type": "boolean"
           },
           "relative": {
-            "default": false,
+            "default": true,
             "title": "Relative",
             "type": "boolean"
           }
@@ -476,6 +512,18 @@
       "IntegrationInput": {
         "additionalProperties": false,
         "properties": {
+          "expected_recipe_version": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Recipe Version"
+          },
           "frames": {
             "maxItems": 2,
             "minItems": 2,
@@ -509,19 +557,28 @@
             "title": "Intervals",
             "type": "array"
           },
-          "target": {
-            "enum": [
-              "active",
-              "comparison"
-            ],
-            "title": "Target",
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
             "type": "string"
+          },
+          "signal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signal Id"
           }
         },
         "required": [
           "intervals",
           "frames",
-          "target"
+          "name"
         ],
         "title": "IntegrationInput",
         "type": "object"
@@ -541,6 +598,11 @@
             "title": "Id",
             "type": "string"
           },
+          "recipe_version": {
+            "default": 0,
+            "title": "Recipe Version",
+            "type": "integer"
+          },
           "safe_error": {
             "anyOf": [
               {
@@ -551,6 +613,11 @@
               }
             ],
             "title": "Safe Error"
+          },
+          "signal_id": {
+            "default": "",
+            "title": "Signal Id",
+            "type": "string"
           },
           "status": {
             "title": "Status",
@@ -614,6 +681,27 @@
             "title": "Coverage",
             "type": "array"
           },
+          "frame_range": {
+            "anyOf": [
+              {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frame Range"
+          },
           "intensity_range": {
             "default": [
               0,
@@ -665,6 +753,39 @@
             },
             "title": "Series",
             "type": "array"
+          },
+          "signal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signal Id"
+          },
+          "signal_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signal Name"
+          },
+          "signal_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signal Version"
           },
           "units": {
             "default": "intensity",
@@ -730,24 +851,49 @@
         "title": "Peak",
         "type": "object"
       },
-      "RemoveComparison": {
+      "RemoveSignal": {
         "additionalProperties": false,
         "properties": {
-          "recipe_id": {
-            "title": "Recipe Id",
+          "signal_id": {
+            "title": "Signal Id",
             "type": "string"
           },
           "type": {
-            "const": "remove_comparison",
+            "const": "remove_signal",
             "title": "Type",
             "type": "string"
           }
         },
         "required": [
-          "type",
-          "recipe_id"
+          "signal_id",
+          "type"
         ],
-        "title": "RemoveComparison",
+        "title": "RemoveSignal",
+        "type": "object"
+      },
+      "RenameSignal": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "signal_id": {
+            "title": "Signal Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "rename_signal",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "signal_id",
+          "type",
+          "name"
+        ],
+        "title": "RenameSignal",
         "type": "object"
       },
       "ReplaceAcquisition": {
@@ -786,24 +932,24 @@
         "title": "ReplaceAcquisition",
         "type": "object"
       },
-      "SelectStored": {
+      "SelectImageSignal": {
         "additionalProperties": false,
         "properties": {
-          "index": {
-            "title": "Index",
-            "type": "integer"
+          "signal_id": {
+            "title": "Signal Id",
+            "type": "string"
           },
           "type": {
-            "const": "select_stored",
+            "const": "select_image_signal",
             "title": "Type",
             "type": "string"
           }
         },
         "required": [
-          "type",
-          "index"
+          "signal_id",
+          "type"
         ],
-        "title": "SelectStored",
+        "title": "SelectImageSignal",
         "type": "object"
       },
       "SessionInfo": {
@@ -834,6 +980,36 @@
           "csrf"
         ],
         "title": "SessionInfo",
+        "type": "object"
+      },
+      "SetAnalysisFrames": {
+        "additionalProperties": false,
+        "properties": {
+          "frames": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Frames",
+            "type": "array"
+          },
+          "type": {
+            "const": "set_analysis_frames",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "frames"
+        ],
+        "title": "SetAnalysisFrames",
         "type": "object"
       },
       "SetDepth": {
@@ -908,34 +1084,29 @@
         "title": "SetDisplay",
         "type": "object"
       },
-      "SetLoadedFrames": {
+      "SetProfileVisible": {
         "additionalProperties": false,
         "properties": {
-          "frames": {
-            "maxItems": 2,
-            "minItems": 2,
-            "prefixItems": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "integer"
-              }
-            ],
-            "title": "Frames",
-            "type": "array"
+          "signal_id": {
+            "title": "Signal Id",
+            "type": "string"
           },
           "type": {
-            "const": "set_loaded_frames",
+            "const": "set_profile_visible",
             "title": "Type",
             "type": "string"
+          },
+          "visible": {
+            "title": "Visible",
+            "type": "boolean"
           }
         },
         "required": [
+          "signal_id",
           "type",
-          "frames"
+          "visible"
         ],
-        "title": "SetLoadedFrames",
+        "title": "SetProfileVisible",
         "type": "object"
       },
       "SetROI": {
@@ -972,6 +1143,41 @@
           "roi"
         ],
         "title": "SetROI",
+        "type": "object"
+      },
+      "SetStoredCoverage": {
+        "additionalProperties": false,
+        "properties": {
+          "frames": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Frames",
+            "type": "array"
+          },
+          "signal_id": {
+            "title": "Signal Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "set_stored_coverage",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "signal_id",
+          "type",
+          "frames"
+        ],
+        "title": "SetStoredCoverage",
         "type": "object"
       },
       "SignalRecipe": {
@@ -1050,6 +1256,61 @@
           }
         },
         "title": "SignalRecipe",
+        "type": "object"
+      },
+      "SignalSnapshot": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "name_revision": {
+            "default": 0,
+            "title": "Name Revision",
+            "type": "integer"
+          },
+          "recipe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignalRecipe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recipe_version": {
+            "default": 1,
+            "title": "Recipe Version",
+            "type": "integer"
+          },
+          "style_index": {
+            "title": "Style Index",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "style_index",
+          "recipe"
+        ],
+        "title": "SignalSnapshot",
         "type": "object"
       },
       "SingleFrame": {

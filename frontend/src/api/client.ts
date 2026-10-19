@@ -1,4 +1,5 @@
 import type { components } from "./generated";
+export type Signal = components["schemas"]["SignalSnapshot"];
 export type Analysis = components["schemas"]["AnalysisSnapshot"];
 export type Workspace = components["schemas"]["WorkspaceSnapshot"];
 export type Command = components["schemas"]["CommandEnvelope"]["command"];

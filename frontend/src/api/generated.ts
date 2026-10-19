@@ -334,15 +334,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
-    /** AddStoredComparison */
-    AddStoredComparison: {
+    /** AddStoredSignal */
+    AddStoredSignal: {
+      /**
+       * Duplicate
+       * @default false
+       */
+      duplicate: boolean;
       /** Index */
       index: number;
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      type: "add_stored_comparison";
+      type: "add_stored_signal";
     };
     /** AllDepth */
     AllDepth: {
@@ -354,9 +359,6 @@ export interface components {
     };
     /** AnalysisSnapshot */
     AnalysisSnapshot: {
-      active_recipe: components["schemas"]["SignalRecipe"];
-      /** Comparisons */
-      comparisons: components["schemas"]["SignalRecipe"][];
       dataset: components["schemas"]["DatasetRef"];
       /** Depth */
       depth:
@@ -368,20 +370,28 @@ export interface components {
       fov_um: number | null;
       /** Id */
       id: string;
+      /** Image Signal Id */
+      image_signal_id: string;
       /** Loaded Frames */
       loaded_frames: [number, number];
       /** Mass Limits */
       mass_limits: [number, number];
+      /** Next Style Index */
+      next_style_index: number;
       /** Owner */
       owner: string;
       /** Peaks */
       peaks: components["schemas"]["Peak"][];
+      /** Profile Signal Ids */
+      profile_signal_ids: string[];
       /** Revision */
       revision: number;
       /** Roi */
       roi: [number, number, number, number];
       /** Shape */
       shape: [number, number, number, number];
+      /** Signals */
+      signals: components["schemas"]["SignalSnapshot"][];
       /**
        * Stale
        * @default false
@@ -410,12 +420,15 @@ export interface components {
     CommandEnvelope: {
       /** Command */
       command:
-        | components["schemas"]["SelectStored"]
+        | components["schemas"]["AddStoredSignal"]
+        | components["schemas"]["RenameSignal"]
+        | components["schemas"]["SelectImageSignal"]
+        | components["schemas"]["SetProfileVisible"]
+        | components["schemas"]["RemoveSignal"]
+        | components["schemas"]["SetStoredCoverage"]
         | components["schemas"]["SetROI"]
         | components["schemas"]["SetDepth"]
-        | components["schemas"]["SetLoadedFrames"]
-        | components["schemas"]["AddStoredComparison"]
-        | components["schemas"]["RemoveComparison"]
+        | components["schemas"]["SetAnalysisFrames"]
         | components["schemas"]["SetDisplay"];
       /** Dataset Generation */
       dataset_generation: string;
@@ -430,8 +443,10 @@ export interface components {
       coverage: boolean[];
       /** Label */
       label: string;
-      /** Recipe Id */
-      recipe_id: string;
+      /** Signal Id */
+      signal_id: string;
+      /** Style Index */
+      style_index: number;
       /** Values */
       values: (number | null)[];
     };
@@ -465,12 +480,12 @@ export interface components {
       image: string;
       /**
        * Log
-       * @default false
+       * @default true
        */
       log: boolean;
       /**
        * Relative
-       * @default false
+       * @default true
        */
       relative: boolean;
     };
@@ -494,15 +509,16 @@ export interface components {
     };
     /** IntegrationInput */
     IntegrationInput: {
+      /** Expected Recipe Version */
+      expected_recipe_version?: number | null;
       /** Frames */
       frames: [number, number];
       /** Intervals */
       intervals: [number, number][];
-      /**
-       * Target
-       * @enum {string}
-       */
-      target: "active" | "comparison";
+      /** Name */
+      name: string;
+      /** Signal Id */
+      signal_id?: string | null;
     };
     /** JobSnapshot */
     JobSnapshot: {
@@ -515,8 +531,18 @@ export interface components {
       done: number;
       /** Id */
       id: string;
+      /**
+       * Recipe Version
+       * @default 0
+       */
+      recipe_version: number;
       /** Safe Error */
       safe_error?: string | null;
+      /**
+       * Signal Id
+       * @default
+       */
+      signal_id: string;
       /** Status */
       status: string;
       /**
@@ -543,6 +569,8 @@ export interface components {
       content_version: string;
       /** Coverage */
       coverage?: boolean[][];
+      /** Frame Range */
+      frame_range?: [number, number] | null;
       /**
        * Intensity Range
        * @default [
@@ -574,6 +602,12 @@ export interface components {
       relative: boolean;
       /** Series */
       series?: components["schemas"]["Curve"][];
+      /** Signal Id */
+      signal_id?: string | null;
+      /** Signal Name */
+      signal_name?: string | null;
+      /** Signal Version */
+      signal_version?: number | null;
       /**
        * Units
        * @default intensity
@@ -595,15 +629,27 @@ export interface components {
       /** Mass */
       mass: number;
     };
-    /** RemoveComparison */
-    RemoveComparison: {
-      /** Recipe Id */
-      recipe_id: string;
+    /** RemoveSignal */
+    RemoveSignal: {
+      /** Signal Id */
+      signal_id: string;
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      type: "remove_comparison";
+      type: "remove_signal";
+    };
+    /** RenameSignal */
+    RenameSignal: {
+      /** Name */
+      name: string;
+      /** Signal Id */
+      signal_id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "rename_signal";
     };
     /** ReplaceAcquisition */
     ReplaceAcquisition: {
@@ -616,15 +662,15 @@ export interface components {
       /** Request Id */
       request_id: string;
     };
-    /** SelectStored */
-    SelectStored: {
-      /** Index */
-      index: number;
+    /** SelectImageSignal */
+    SelectImageSignal: {
+      /** Signal Id */
+      signal_id: string;
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      type: "select_stored";
+      type: "select_image_signal";
     };
     /** SessionInfo */
     SessionInfo: {
@@ -634,6 +680,16 @@ export interface components {
       initial_file?: string | null;
       /** Owner */
       owner: string;
+    };
+    /** SetAnalysisFrames */
+    SetAnalysisFrames: {
+      /** Frames */
+      frames: [number, number];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "set_analysis_frames";
     };
     /** SetDepth */
     SetDepth: {
@@ -666,15 +722,17 @@ export interface components {
        */
       type: "set_display";
     };
-    /** SetLoadedFrames */
-    SetLoadedFrames: {
-      /** Frames */
-      frames: [number, number];
+    /** SetProfileVisible */
+    SetProfileVisible: {
+      /** Signal Id */
+      signal_id: string;
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      type: "set_loaded_frames";
+      type: "set_profile_visible";
+      /** Visible */
+      visible: boolean;
     };
     /** SetROI */
     SetROI: {
@@ -685,6 +743,18 @@ export interface components {
        * @enum {string}
        */
       type: "set_roi";
+    };
+    /** SetStoredCoverage */
+    SetStoredCoverage: {
+      /** Frames */
+      frames: [number, number];
+      /** Signal Id */
+      signal_id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "set_stored_coverage";
     };
     /** SignalRecipe */
     SignalRecipe: {
@@ -717,6 +787,28 @@ export interface components {
       source: string;
       /** Stored Index */
       stored_index?: number | null;
+    };
+    /** SignalSnapshot */
+    SignalSnapshot: {
+      /** Id */
+      id: string;
+      /** Job Id */
+      job_id?: string | null;
+      /** Name */
+      name: string;
+      /**
+       * Name Revision
+       * @default 0
+       */
+      name_revision: number;
+      recipe: components["schemas"]["SignalRecipe"] | null;
+      /**
+       * Recipe Version
+       * @default 1
+       */
+      recipe_version: number;
+      /** Style Index */
+      style_index: number;
     };
     /** SingleFrame */
     SingleFrame: {

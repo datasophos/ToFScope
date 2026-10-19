@@ -61,3 +61,14 @@ def normalize_view(snapshot):
         depth = DepthWindow(mode='window', first=low, last=high)
     ids = tuple(dict.fromkeys((*snapshot.profile_signal_ids, snapshot.image_signal_id)))
     return replace(snapshot, depth=depth, profile_signal_ids=ids)
+
+
+def signal_label(snapshot, signal):
+    recipe = signal.recipe
+    name = signal.name
+    if sum(r.name == name for r in snapshot.signals) > 1:
+        name += f' [{signal.id[:8]}]'
+    if recipe is None:
+        return name
+    source = 'stored' if recipe.source == 'stored' else 'raw'
+    return f'{name} · {source} · frames {recipe.frames[0]}–{recipe.frames[1]}'
