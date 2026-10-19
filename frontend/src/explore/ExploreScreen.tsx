@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAnalysis } from "../app/useAnalysis";
 import {
   post,
@@ -13,6 +13,8 @@ import { PlotPanel } from "../plots/PlotPanel";
 import { SignalPicker } from "./SignalPicker";
 import { HelpButton, HelpHeading } from "../components/HelpButton";
 import { help } from "./help";
+import { curveStyle, type CurveStyle } from "../plots/curveStyle";
+import { CurveMarker } from "../components/CurveMarker";
 import { roiFromBounds, roiBounds, frameWindow, type ROI } from "./selection";
 function ExactForm({
   labels,
@@ -70,6 +72,14 @@ export function ExploreScreen({
     refresh,
     setError,
   } = useAnalysis(initial);
+  const comparisonStyles = useRef(new Map<string, CurveStyle>());
+  for (const recipe of a.comparisons) {
+    if (!comparisonStyles.current.has(recipe.id!))
+      comparisonStyles.current.set(
+        recipe.id!,
+        curveStyle(comparisonStyles.current.size + 1),
+      );
+  }
   const [search, setSearch] = useState(""),
     [recent, setRecent] = useState<number[]>([]),
     [draft, setDraft] = useState<[string, string][]>(
@@ -248,9 +258,16 @@ export function ExploreScreen({
                 command({ type: "select_stored", index: i });
               }}
             />
-            <p data-testid="active-source">
-              <strong>{a.active_recipe.label}</strong> ·{" "}
-              {a.active_recipe.source}
+            <p
+              className="curve-description"
+              data-testid="active-source"
+              data-curve-id={a.active_recipe.id}
+            >
+              <CurveMarker style={curveStyle(0)} />
+              <span>
+                <strong>Active · {a.active_recipe.label}</strong> ·{" "}
+                {a.active_recipe.source}
+              </span>
             </p>
             {recent.length > 0 && (
               <div className="recent">
@@ -281,7 +298,12 @@ export function ExploreScreen({
               />
             </div>
             {a.comparisons.map((r) => (
-              <p className="row" key={r.id}>
+              <p
+                className="row curve-description"
+                key={r.id}
+                data-curve-id={r.id}
+              >
+                <CurveMarker style={comparisonStyles.current.get(r.id!)!} />
                 <span>{r.label}</span>
                 <button
                   aria-label={`Remove ${r.label}`}
@@ -668,6 +690,7 @@ export function ExploreScreen({
               name="profile"
               title="Depth profile"
               help={help.profile}
+              curveStyles={comparisonStyles.current}
               panel={data?.panels.profile}
               maximized={max === "profile"}
               onMaximize={() => setMax(max === "profile" ? null : "profile")}

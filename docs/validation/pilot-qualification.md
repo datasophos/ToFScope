@@ -195,3 +195,25 @@ integer byte orders. Both rebuilt wheel and source distribution passed the
 installed-package offline plot/integration/export checks with no runtime Node.js.
 The frozen prototype checkout remained clean. Existing unavailable NFS/hardware
 checks were not promoted to passes by this local performance qualification.
+
+### Profile identification (2026-10-19)
+
+Depth profiles now have a wrapping legend and matching line markers beside the
+active signal and each comparison. Labels retain mass windows, integration
+frames and comparison identifiers. A single client-side mapping supplies the
+renderer, sidebar and exported PNG; removing a comparison preserves surviving
+colors during the open analysis. Colors are reassigned on a page reload.
+Additional curves cycle through eight colors and then dashed/dotted styles.
+The legend scrolls when necessary to preserve chart space, while PNG exports
+include all labels. This changes presentation only; numerical data, APIs and
+reader behavior are unchanged.
+
+The new browser regression failed before implementation because the legend was
+absent. After implementation all 13 browser tests and 9 frontend unit tests
+passed. The regression checks actual curve pixels against sidebar/legend colors,
+color stability after removal, the maximized legend, and PNG legend swatch/text
+pixels. Existing full-size image maximize/restore checks remained below 28 ms in
+this local run. TypeScript checking and the bundled production build passed.
+No new real-acquisition or unavailable hardware/service qualification was claimed
+for this presentation change. The completion plan and architectural decisions
+remain unchanged.

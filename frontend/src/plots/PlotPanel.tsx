@@ -7,6 +7,13 @@ import {
 } from "./selectedRenderer";
 import { SelectionOverlay, type Range } from "./SelectionOverlay";
 import { HelpHeading } from "../components/HelpButton";
+import { CurveMarker } from "../components/CurveMarker";
+import {
+  curveStyle,
+  imageWithLegend,
+  type CurveStyle,
+  type LegendEntry,
+} from "./curveStyle";
 export function PlotPanel({
   name,
   title,
@@ -22,6 +29,7 @@ export function PlotPanel({
   mode = "x",
   onAllDepths,
   zoomWindow,
+  curveStyles,
 }: {
   name: string;
   title: string;
@@ -37,6 +45,7 @@ export function PlotPanel({
   mode?: "x" | "xy";
   onAllDepths?: () => void;
   zoomWindow?: Range;
+  curveStyles?: ReadonlyMap<string, CurveStyle>;
 }) {
   const body = useRef<HTMLDivElement>(null),
     element = useRef<HTMLDivElement>(null),
@@ -44,6 +53,20 @@ export function PlotPanel({
   const [stageSize, setStageSize] = useState(0);
   const [zoom, setZoom] = useState<Range | null>(null);
   const [yScale, setYScale] = useState<"log" | "linear">("log");
+  const [exportError, setExportError] = useState<string | null>(null);
+  const legend: LegendEntry[] =
+    name === "profile"
+      ? (panel?.series || []).map((series, index) => ({
+          id: series.recipe_id,
+          label: index === 0 ? `Active · ${series.label}` : series.label,
+          ...(index === 0
+            ? curveStyle(0)
+            : curveStyles?.get(series.recipe_id) || curveStyle(index)),
+        }))
+      : [];
+  const series = legend.length
+    ? panel!.series!.map((series, index) => ({ ...series, ...legend[index] }))
+    : panel?.series;
   const axis = panel?.axes[0];
   const range: Range =
     axis && axis.boundaries.length
@@ -64,7 +87,7 @@ export function PlotPanel({
         x: panel.axes[0].values,
         y: ya?.values,
         values: panel.values,
-        series: panel.series,
+        series,
         xRange,
         yRange,
         range: panel.intensity_range,
@@ -131,13 +154,20 @@ export function PlotPanel({
             Reset zoom
           </button>
           <button
-            onClick={() => {
-              const href = chart.current?.exportImage();
-              if (href) {
-                const a = document.createElement("a");
-                a.href = href;
-                a.download = `tofscope-${name}.png`;
-                a.click();
+            onClick={async () => {
+              setExportError(null);
+              try {
+                const href = chart.current?.exportImage();
+                if (href) {
+                  const a = document.createElement("a");
+                  a.href = legend.length
+                    ? await imageWithLegend(href, legend)
+                    : href;
+                  a.download = `tofscope-${name}.png`;
+                  a.click();
+                }
+              } catch {
+                setExportError("PNG export failed. Please try again.");
               }
             }}
             aria-label={`Export ${title} PNG`}
@@ -152,6 +182,17 @@ export function PlotPanel({
           </button>
         </div>
       </header>
+      {legend.length > 0 && (
+        <ul className="profile-legend" aria-label="Depth profile legend">
+          {legend.map((entry) => (
+            <li key={entry.id} data-curve-id={entry.id}>
+              <CurveMarker style={entry} />
+              <span>{entry.label}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {exportError && <p role="alert">{exportError}</p>}
       <div className="plot-body" ref={body}>
         {image && (loading || !stageReady) && (
           <div

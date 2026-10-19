@@ -565,3 +565,48 @@ small {
     margin: 40px auto;
   }
 }
+
+.curve-marker {
+  display: inline-block;
+  flex: none;
+  width: 22px;
+  border-top-width: 3px;
+  margin-top: 8px;
+}
+.curve-description {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.curve-description > span:last-of-type {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.curve-description > button {
+  margin-left: auto;
+  flex: none;
+}
+.profile-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  list-style: none;
+  margin: 8px 14px 0;
+  padding: 0;
+  max-height: 72px;
+  overflow-y: auto;
+  flex: none;
+  font-size: 12px;
+}
+.profile-legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.profile-legend li > span:last-child {
+  overflow-wrap: anywhere;
+}
+.profile-legend .curve-marker {
+  margin-top: 0;
+}
