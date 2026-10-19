@@ -83,3 +83,64 @@ metadata category lists and raw measurements are in
 [scientific-reader-comparison.json](scientific-reader-comparison.json).
 The RSS and timing numbers are specific to this Apple Silicon host and include
 interpreter/import overhead.
+
+## Full raw-integration performance follow-up, 2026-10-19
+
+The final pilot's per-pixel admission wrapper introduced a real regression that
+the earlier four-frame reader evaluation did not cover. Profiling found one
+budget reservation, malloc, NumPy view construction and free per spatial pixel:
+21,316,887 reservations for a full 1301×128×128 reconstruction, including scratch
+and output admission. The frozen prototype uses h5py's native VLEN object-array
+read and does not perform these admission callbacks.
+
+The reader now hands HDF5 slices of geometrically growing, prepaid NumPy arenas.
+It still uses the public
+[VLEN memory-manager API](https://support.hdfgroup.org/documentation/hdf5/latest/_h5_t__u_g.html).
+Payload and conservative numerical scratch are reserved before each arena is
+allocated. Per-pixel callbacks perform pointer arithmetic; reservations and
+NumPy allocations occur per arena. Packed samples plus per-cell offsets and
+lengths feed the same inclusive-union calculation. Cumulative-count differences
+retain each cell's exact samples even when allocation order differs from spatial
+order. HDF5 descriptors and all arenas are released on exit or failure. No native
+extension, new dependency, on-disk parser or external API change was added.
+
+A separate sizing read was considered and rejected: HDF5's
+[size-query implementation](https://raw.githubusercontent.com/HDFGroup/hdf5/hdf5_1_14_6/src/H5Dint.c)
+itself reads variable-length data into temporary allocation, so it is not a
+replacement for enforcing admission in the allocator.
+
+Read-only sequential reconstruction of **26.5–27.5 Th, frames 0–1300 inclusive**
+on the supplied 2.2 GB `pfib_1301x128x128_AlTiPt.h5`:
+
+| Path | Local elapsed time |
+| --- | ---: |
+| Frozen Marimo prototype integration | 15.80 s |
+| Previous pilot (967e5cb reader) | 69.50 s |
+| Pooled pilot reader | 12.69 s |
+| Fresh job submission through successful state commit | 11.17 s |
+
+All 21,315,584 float32 values agreed exactly in all four paths. The job reached
+1301/1301 and revision 1. Source inode, size and mtime were unchanged. These are
+single local observations in the same Python/h5py/NumPy environment; the
+prototype measurement executes its frozen integration source without Marimo's UI.
+The pilot runs benefit from warm OS caches, and job
+timing excludes browser polling and final plot fetch/rendering. They establish
+this regression's removal, not a general speed ranking across readers or hosts.
+
+Admission calls fell to 6,514. Managed peak reservations including the 81.3 MiB
+output rose from 106.8 to 122.6 MiB because unused arena capacity is prepaid.
+These counters are not RSS; prototype scratch was unmanaged and is not comparable.
+No memory limit was raised. Tests reject oversized cells before allocating their
+payload, release partially allocated reads and caller failures, confirm arena
+lifetimes and concurrent independent consumers, and preserve empty/signed and
+nonnative integer data. Existing cancellation, fairness and numerical tests pass.
+
+Raw observations are in [integration-performance.json](integration-performance.json).
+Reproduce from the implementation checkout using its Python environment:
+
+```sh
+python scripts/check_integration_performance.py \
+  --file /path/to/pfib_1301x128x128_AlTiPt.h5 \
+  --prototype /path/to/frozen-prototype \
+  --baseline-ref 967e5cb --frames 1301 --output /tmp/integration-performance.json
+```

@@ -168,3 +168,30 @@ external asset or CDN. Pane subtitles remain removed.
 The production frontend build, nine unit tests and twelve browser tests pass.
 The full-size resize regression still paints in 19–29 ms in this local run.
 No backend, scientific reader or future-feature plan changed.
+
+## Full-volume raw integration follow-up (2026-10-19)
+
+The reported Apply slowdown was reproduced against the frozen prototype using
+26.5–27.5 Th over all 1301 stored 128×128 frames. The previous pilot took 69.50 s;
+the prototype took 15.80 s. Pooling the admitted raw-event allocations reduced
+the pilot to 12.69 s. A new integration through the actual job service completed
+and committed in 11.17 s. All 21.3 million output values match the frozen
+prototype exactly; checksums and scope are recorded in
+[integration-performance.json](integration-performance.json) and the
+[reader decision](reader-decision.md).
+
+Memory admission, cancellation, per-user scheduling and source checks remain
+enabled. Reservation calls fell from 21.3 million to 6,514; prepaid arena space
+increases the conservative managed reservation peak by 15.8 MiB, without raising
+any configured limit. This is managed admission accounting, not process RSS.
+The real acquisition's inode, size and modification time were unchanged.
+No reader framework, public API, deployment architecture or completion-plan
+feature scope changed.
+
+After the change, all 89 Python tests and 12 browser tests passed. The seven new
+raw-read regressions cover batched admission, exact cell counts, scratch and
+arena lifetime, partial-read/caller failures, concurrent consumers and supported
+integer byte orders. Both rebuilt wheel and source distribution passed the
+installed-package offline plot/integration/export checks with no runtime Node.js.
+The frozen prototype checkout remained clean. Existing unavailable NFS/hardware
+checks were not promoted to passes by this local performance qualification.
