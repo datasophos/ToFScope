@@ -28,6 +28,17 @@ class WorkspaceSnapshot:
 
 
 @dataclass(frozen=True)
+class SignalSnapshot:
+    id: str
+    name: str
+    style_index: int
+    recipe: SignalRecipe | None
+    recipe_version: int = 1
+    name_revision: int = 0
+    job_id: str | None = None
+
+
+@dataclass(frozen=True)
 class AnalysisSnapshot:
     id: str
     owner: str
@@ -37,8 +48,10 @@ class AnalysisSnapshot:
     loaded_frames: tuple[int, int]
     roi: tuple[int, int, int, int]
     depth: DepthSelection
-    active_recipe: SignalRecipe
-    comparisons: tuple[SignalRecipe, ...]
+    signals: tuple[SignalSnapshot, ...]
+    image_signal_id: str
+    profile_signal_ids: tuple[str, ...]
+    next_style_index: int
     display: DisplaySettings
     shape: tuple[int, int, int, int]
     peaks: tuple[Peak, ...]

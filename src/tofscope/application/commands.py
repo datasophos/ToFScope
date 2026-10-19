@@ -26,9 +26,37 @@ DepthSelection = Annotated[
 ]
 
 
-class SelectStored(StrictModel):
-    type: Literal["select_stored"]
+class AddStoredSignal(StrictModel):
+    type: Literal['add_stored_signal']
     index: StrictInt
+    duplicate: StrictBool = False
+
+
+class SignalId(StrictModel):
+    signal_id: str
+
+
+class RenameSignal(SignalId):
+    type: Literal['rename_signal']
+    name: str
+
+
+class SelectImageSignal(SignalId):
+    type: Literal['select_image_signal']
+
+
+class SetProfileVisible(SignalId):
+    type: Literal['set_profile_visible']
+    visible: StrictBool
+
+
+class RemoveSignal(SignalId):
+    type: Literal['remove_signal']
+
+
+class SetStoredCoverage(SignalId):
+    type: Literal['set_stored_coverage']
+    frames: tuple[StrictInt, StrictInt]
 
 
 class SetROI(StrictModel):
@@ -41,19 +69,9 @@ class SetDepth(StrictModel):
     depth: DepthSelection
 
 
-class SetLoadedFrames(StrictModel):
-    type: Literal["set_loaded_frames"]
+class SetAnalysisFrames(StrictModel):
+    type: Literal['set_analysis_frames']
     frames: tuple[StrictInt, StrictInt]
-
-
-class AddStoredComparison(StrictModel):
-    type: Literal["add_stored_comparison"]
-    index: StrictInt
-
-
-class RemoveComparison(StrictModel):
-    type: Literal["remove_comparison"]
-    recipe_id: str
 
 
 class SetDisplay(StrictModel):
@@ -65,12 +83,15 @@ class SetDisplay(StrictModel):
 
 Command = Annotated[
     Union[
-        SelectStored,
+        AddStoredSignal,
+        RenameSignal,
+        SelectImageSignal,
+        SetProfileVisible,
+        RemoveSignal,
+        SetStoredCoverage,
         SetROI,
         SetDepth,
-        SetLoadedFrames,
-        AddStoredComparison,
-        RemoveComparison,
+        SetAnalysisFrames,
         SetDisplay,
     ],
     Field(discriminator="type"),

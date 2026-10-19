@@ -8,6 +8,7 @@ from tofscope.application.models import (
     WorkspaceSnapshot,
     AnalysisSnapshot,
     DisplaySettings,
+    SignalSnapshot,
     Peak,
 )
 from tofscope.application.commands import AllDepth
@@ -57,7 +58,7 @@ class AnalysisEntry:
     snapshot: AnalysisSnapshot
     lock: RLock = field(default_factory=RLock)
     receipts: OrderedDict = field(default_factory=OrderedDict)
-    tokens: dict = field(default_factory=lambda: {"active": 0, "comparison": 0})
+    tokens: dict = field(default_factory=dict)
     leases: dict = field(default_factory=dict)
     closed: bool = False
 
@@ -69,6 +70,7 @@ class WorkspaceService:
         self.store = store or MemoryWorkspaceStore()
         self.entries = {}
         self.lock = RLock()
+        self.signal_lock = RLock()
         self.on_close = []
         self.prepare = lambda s: None
 
@@ -141,8 +143,10 @@ class WorkspaceService:
                 frames,
                 (0, nx - 1, 0, ny - 1),
                 AllDepth(),
-                recipe,
-                (),
+                (SignalSnapshot(recipe.id, recipe.label, 0, recipe),),
+                recipe.id,
+                (recipe.id,),
+                1,
                 DisplaySettings(),
                 m.shape,
                 tuple(Peak(**p) for p in m.peaks),
@@ -150,9 +154,19 @@ class WorkspaceService:
                 (float(m.mass_axis.min()), float(m.mass_axis.max())),
             )
 
+    def admit_signal(self, owner, analysis_count):
+        # Called under signal_lock by every insertion, including pending jobs.
+        with self.lock:
+            entries = [e for e in self.entries.values() if not e.closed]
+            user_count = sum(len(e.snapshot.signals) for e in entries if e.snapshot.owner == owner)
+            global_count = sum(len(e.snapshot.signals) for e in entries)
+        if (analysis_count >= self.settings.signals_per_analysis or
+                user_count >= self.settings.signals_per_user or global_count >= self.settings.signals_global):
+            raise CapacityError('Signal limit reached; remove an unused signal first.')
+
     def create_analysis(self, owner, workspace_id, dataset):
         s = self.initial(owner, workspace_id, dataset)
-        with self.lock:
+        with self.signal_lock, self.lock:
             w = self.store.get(owner, workspace_id)
             if (
                 len(self.entries) >= self.settings.analyses_global
@@ -160,6 +174,7 @@ class WorkspaceService:
                 >= self.settings.analyses_per_user
             ):
                 raise CapacityError("Open analysis limit reached; close an analysis.")
+            self.admit_signal(owner, 0)
             self.prepare(s)
             self.entries[s.id] = AnalysisEntry(s)
             self.store.put(replace(w, analysis_ids=w.analysis_ids + (s.id,)))
@@ -167,7 +182,7 @@ class WorkspaceService:
 
     def replace(self, owner, aid, dataset, expected_revision):
         e = self.entry(owner, aid)
-        with e.lock:
+        with self.signal_lock, e.lock:
             if e.closed:
                 raise KeyError("Analysis unavailable.")
             if e.snapshot.revision != expected_revision:
@@ -188,7 +203,7 @@ class WorkspaceService:
 
     def close(self, owner, aid):
         e = self.entry(owner, aid)
-        with e.lock:
+        with self.signal_lock, e.lock:
             e.closed = True
             self._release(e)
         for callback in self.on_close:
