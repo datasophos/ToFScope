@@ -804,6 +804,17 @@
             "title": "Csrf",
             "type": "string"
           },
+          "initial_file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial File"
+          },
           "owner": {
             "title": "Owner",
             "type": "string"
