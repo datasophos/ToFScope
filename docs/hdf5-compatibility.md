@@ -1,8 +1,29 @@
 # HDF5 write-back status
 
-Commercial TOFexplorer compatibility is **unverified**. The application and this
-document deliberately retain that status. RosettaSciIO validation is not a
-commercial-software validation.
+Commercial TOFexplorer **reading and visualization passed for one representative
+native addition**, as reported by Josh on 2026-10-18 in Viewer mode,
+version **2.9.7+3484e0dd**. This is limited evidence, not general compatibility
+certification. Exact numerical agreement and an end-to-end save through the
+ToFScope UI remain unverified. The application's experimental write gates and
+conservative “unverified” status remain in place pending those checks.
+
+## Commercial observations (2026-10-18)
+
+Test artifact: `tofscope-native-validation.h5`, prepared as described below.
+The source acquisition was not modified.
+
+- The file opens and the added `ToFScope_Al_26p8_27p2` channel is selectable.
+- Its peak-table bounds display as 26.799999–27.200001 Th, consistent with
+  native float32 representation of 26.8–27.2 Th.
+- The added channel renders top/front projections and a structured depth
+  profile. An original `[194Pt]` channel also renders.
+- Josh confirms FIB SE images work and closing/reopening appears normal.
+
+The initial empty depth-profile panel subsequently displayed the added
+channel's curve; no write-back defect was established by that initial state.
+Screenshots and user observations establish display behavior, not an exact
+cross-application numerical comparison. Commercial editing/resaving has not
+been tested. RosettaSciIO round-trip checks below are separate evidence.
 
 ## What has been checked
 
@@ -47,7 +68,7 @@ layouts are rejected. The full multi-ion cube is never expanded in memory.
 The default is read only. Experimental saves require **both**
 `TOFSCOPE_ALLOW_WRITES=true` and `TOFSCOPE_ALLOW_UNVERIFIED_NATIVE=true`.
 Enabling the latter acknowledges experimental access; it does not change the
-reported commercial validation status. Use disposable acquisitions first.
+scope of commercial validation. Use disposable acquisitions first.
 
 Use a trusted, administrator-owned POSIX data root. Read and write operations
 use adjacent hidden `.filename.tofscope.lock` files, so the service needs
@@ -86,12 +107,18 @@ Settings JSON can be exported first to retain the old analysis recipe. These
 checks cannot guarantee safety against a non-cooperating writer racing the
 final identity check, or administrator changes to the trusted directory tree.
 
-## Remaining commercial check
+## Remaining commercial checks
 
-Open the disposable copy in commercial TOFexplorer, verify the new label appears
-and its images and profile agree, and check that original channels and metadata
-still behave normally. Until an observed round trip is recorded, commercial
-compatibility remains unverified. eXSpy itself has not been exercised here.
+- Compare numerical values for matching frames, ROIs and aggregation between
+  ToFScope and TOFexplorer. Visual structure alone is not numerical agreement.
+- Save a fresh contiguous, full-acquisition integration through the ToFScope UI
+  on a separate disposable acquisition, then open it in commercial TOFexplorer.
+  Check the new channel, original channels, SE images, and reopening. This tests
+  the UI publication workflow in addition to the native-copy exporter already
+  exercised by the representative artifact.
+- Broader metadata behavior and commercial editing/resaving remain untested.
+
+eXSpy itself has not been exercised here.
 
 ## Review follow-up
 
