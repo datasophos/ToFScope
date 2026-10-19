@@ -89,6 +89,7 @@ def main():
                         "old=>document.querySelector('[data-testid=panel-ion]').dataset.contentVersion!==old",
                         arg=version,
                     )
+                    page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
                     timings.append((time.perf_counter() - t) * 1000)
                 page.screenshot(path=str(a.output / "real-explore.png"), full_page=True)
                 assert not errors, errors

@@ -139,12 +139,13 @@ one user, with independent selections. Different users may read the same dataset
 without sharing mutable analysis state. Shared cache entries must not bypass
 acquisition authorization.
 
-New browser tabs create independent analyses by default. Reattaching to an
-existing analysis is explicit and owner-checked. Multiple client views attached
-to that analysis receive canonical revision updates; stale commands reconcile
-against the latest state. Client-local zoom and focus remain independent. This
-supports reconnecting without making collaborative multi-user editing a pilot
-requirement.
+New browser tabs restore the owner’s in-memory workspace and open analyses;
+each acquisition opened from the picker still creates an independent analysis.
+Explicit analysis-ID reattachment remains available when a link or another
+client provides the ID. Multiple client views attached to an analysis receive
+canonical revision updates; stale commands reconcile against the latest state.
+Client-local zoom and focus remain independent. Workspace state resets when the
+service restarts.
 
 Closing an analysis cancels queued work, requests cancellation of running jobs,
 suppresses late results and releases its retained arrays. Reference-count shared

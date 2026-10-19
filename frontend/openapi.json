@@ -645,6 +645,15 @@
             "title": "Log",
             "type": "boolean"
           },
+          "palette": {
+            "default": "ion",
+            "enum": [
+              "ion",
+              "gray"
+            ],
+            "title": "Palette",
+            "type": "string"
+          },
           "relative": {
             "default": false,
             "title": "Relative",

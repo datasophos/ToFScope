@@ -58,6 +58,7 @@ export function PlotPanel({
         xRange,
         yRange,
         range: panel.intensity_range,
+        palette: panel.palette,
         log: panel.log,
         relative: panel.relative,
         yReverse: panel.kind === "image",

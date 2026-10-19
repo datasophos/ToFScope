@@ -63,7 +63,6 @@ export function SelectionOverlay({
           start: coords(e),
           action:
             (e.target as Element).getAttribute("data-action") === "move" &&
-            mode === "x" &&
             !e.shiftKey
               ? "draw"
               : (e.target as Element).getAttribute("data-action") || "draw",

@@ -52,9 +52,11 @@ function ExactForm({
 }
 export function ExploreScreen({
   initial,
+  active,
   onReplace,
 }: {
   initial: Analysis;
+  active: boolean;
   onReplace: (a: Analysis) => void;
 }) {
   const {
@@ -83,6 +85,7 @@ export function ExploreScreen({
     a.depth.mode === "frame" ? a.depth.index : a.loaded_frames[0];
   useEffect(() => setSlider(currentFrame), [currentFrame]);
   useEffect(() => {
+    if (!active) return;
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") setMax(null);
       if ((e.target as HTMLElement).matches("input,select,textarea")) return;
@@ -105,7 +108,7 @@ export function ExploreScreen({
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [a.revision]);
+  }, [a.revision, active]);
   useEffect(() => {
     if (
       !job ||

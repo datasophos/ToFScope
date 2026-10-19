@@ -562,6 +562,12 @@ export interface components {
        */
       log: boolean;
       /**
+       * Palette
+       * @default ion
+       * @enum {string}
+       */
+      palette: "ion" | "gray";
+      /**
        * Relative
        * @default false
        */

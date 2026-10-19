@@ -66,3 +66,41 @@ scaling, durable workspace restoration and deferred completion-plan screens.
 Neither local POSIX nor the read-only container check establishes NFS locking or
 atomic replacement on the eventual deployment mount. These are explicit
 qualification limits, not passed or silently skipped checks.
+
+## Final review fixes and packaged rerun (2026-10-19)
+
+A fresh read-only review identified ten Important issues and no Critical issues.
+All ten were fixed and covered before completion. Browser regressions now check
+single-active-tab keyboard handling, drawing a replacement ROI over the initial
+full-field selection, rejecting a late partial response assembled for an older
+revision, reusing/recovering workspaces through ten reloads, and reattaching an
+expired view lease. Python regressions check that metadata admission precedes
+array reads and is released, raw variable-length allocation is refused before
+exceeding the configured memory budget, infinity becomes a missing value with a
+coverage mask, SE contrast does not change with the selected ion channel, and a
+missing source becomes stale and can be replaced.
+
+Final local checks after these changes: 82 Python tests, 6 Vitest tests, 8
+Playwright tests, TypeScript typecheck, and generated OpenAPI client checks passed.
+Wheel and sdist clean-install checks passed without Node.js in runtime PATH or
+Marimo, AnyWidget, or RosettaSciIO installed. Both installed builds served plots,
+ran a synthetic custom integration, and exported data with browser network
+requests limited to the app origin. The local container passed with UID 10001,
+read-only root filesystem and acquisition mount, writable runtime mount, one
+port, and successful readiness and plotting checks. The frozen 37ecacf prototype
+still passes its separate launch smoke and has an unchanged, clean checkout.
+
+A final read-only custom integration job against the provided AlTiPt acquisition
+completed one 128×128 frame through the admitted HDF5 variable-length reader.
+The source file's size, modification time, and inode were unchanged. Existing
+full stored-channel and framework comparisons remain exact; see the acquisition
+and isolated reader reports. The final real-browser run loaded four panels in
+1.62 s, had no browser errors or external requests, and measured frame updates
+at p50 215 ms / p95 217 ms. This is local workload evidence; the previous run
+was faster, so these numbers should not be treated as a stable latency promise.
+
+The service restores owner-scoped in-memory workspaces across browser reloads
+and new tabs. State still resets when the service restarts. Actual NFS lock and
+replacement behavior, acquisition hardware timing/SE registration, commercial
+format save/readback, and multi-host service scaling were unavailable and were
+not verified. No release, external deployment, or acquisition write occurred.

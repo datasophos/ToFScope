@@ -29,6 +29,7 @@ class Panel:
     units: str = "intensity"
     aggregation: str = "original"
     intensity_range: tuple[float, float] = (0, 1)
+    palette: Literal["ion", "gray"] = "ion"
     log: bool = False
     relative: bool = False
 

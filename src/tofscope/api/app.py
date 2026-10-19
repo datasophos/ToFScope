@@ -50,10 +50,11 @@ class Services:
 
 
 def build_services(settings):
-    repo = AcquisitionRepository(settings)
+    budget = ResourceBudget(settings)
+    repo = AcquisitionRepository(settings, budget=budget)
     ws = WorkspaceService(repo, settings)
     explore = ExploreService(ws, repo)
-    cache = ArrayCache(repo, ResourceBudget(settings))
+    cache = ArrayCache(repo, budget)
 
     def prepare(snapshot):
         with cache.load(

@@ -121,34 +121,34 @@ class WorkspaceService:
                     self._release(entry)
 
     def initial(self, owner, wid, dataset, aid=None, revision=0):
-        m = self.repository.metadata(owner, dataset)
-        nz, ny, nx, _ = m.shape
-        default = min(m.peaks, key=lambda p: abs(p["mass"] - 27))
-        frames = (0, nz - 1)
-        recipe = SignalRecipe(
-            label=f"{default['label']} · {default['mass']:g} Th",
-            source="stored",
-            stored_index=default["index"],
-            intervals=((default["low"], default["high"]),),
-            frames=frames,
-        )
-        return AnalysisSnapshot(
-            aid or str(uuid4()),
-            owner,
-            wid,
-            dataset,
-            revision,
-            frames,
-            (0, nx - 1, 0, ny - 1),
-            AllDepth(),
-            recipe,
-            (),
-            DisplaySettings(),
-            m.shape,
-            tuple(Peak(**p) for p in m.peaks),
-            m.fov_um,
-            (float(m.mass_axis.min()), float(m.mass_axis.max())),
-        )
+        with self.repository.metadata(owner, dataset, aid) as m:
+            nz, ny, nx, _ = m.shape
+            default = min(m.peaks, key=lambda p: abs(p["mass"] - 27))
+            frames = (0, nz - 1)
+            recipe = SignalRecipe(
+                label=f"{default['label']} · {default['mass']:g} Th",
+                source="stored",
+                stored_index=default["index"],
+                intervals=((default["low"], default["high"]),),
+                frames=frames,
+            )
+            return AnalysisSnapshot(
+                aid or str(uuid4()),
+                owner,
+                wid,
+                dataset,
+                revision,
+                frames,
+                (0, nx - 1, 0, ny - 1),
+                AllDepth(),
+                recipe,
+                (),
+                DisplaySettings(),
+                m.shape,
+                tuple(Peak(**p) for p in m.peaks),
+                m.fov_um,
+                (float(m.mass_axis.min()), float(m.mass_axis.max())),
+            )
 
     def create_analysis(self, owner, workspace_id, dataset):
         s = self.initial(owner, workspace_id, dataset)

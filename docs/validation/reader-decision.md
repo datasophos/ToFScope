@@ -65,3 +65,21 @@ RosettaSciIO eager 57.9 MB / 139.5 ms, lazy 437.0 MB / 3545.8 ms; HyperSpy eager
 values exactly and left no acquisition file open after cleanup. The lazy graphs
 have overhead even for a selective result. These are process peak measurements,
 not RSS deltas, and strengthen the direct-reader maintenance/resource decision.
+
+Reproduce the isolated process measurements with
+`python scripts/evaluate_reader_subset.py --file FILE --channel 26 --compare --output DIR`
+in the disposable reader environment. This script selects one mass-table channel,
+uses the file's native chunks, captures original metadata categories and explicitly
+closes lazy handles. `evaluate_readers.py` is specifically the tiny synthetic
+fixture/concurrent probe; `qualify_acquisition.py` checks raw numerical behavior.
+
+
+Reproduced on 2026-10-19 with the committed runner against the real acquisition
+(first four frames, channel 26, isolated processes): h5py 49.4 MB / 25.6 ms,
+RosettaSciIO eager 57.7 MB / 127.7 ms and lazy 423.7 MB / 2981 ms, HyperSpy
+eager 72.8 MB / 102.9 ms and lazy 433.0 MB / 3421 ms. All five reads matched
+the selected stored values exactly and left no HDF5 handle open. The resulting
+metadata category lists and raw measurements are in
+[scientific-reader-comparison.json](scientific-reader-comparison.json).
+The RSS and timing numbers are specific to this Apple Silicon host and include
+interpreter/import overhead.

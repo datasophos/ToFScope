@@ -19,6 +19,11 @@ def finite(values):
     return [finite(row) for row in a]
 
 
+def finite_max(values):
+    a = np.asarray(values)
+    return float(np.max(a, where=np.isfinite(a), initial=0)) or 1.0
+
+
 def axis(name, unit, values, step=1):
     v = np.asarray(values, dtype=float)
     if len(v) > 1:
@@ -70,11 +75,13 @@ class ExplorePresenter:
             raise ValueError("Unknown display panel.")
         self.workspaces.get(owner, analysis_id)
         e = self.workspaces.entry(owner, analysis_id)
-        with e.lock:
+        with e.lock, ExitStack() as metadata_stack:
             if e.closed:
                 raise KeyError("Analysis unavailable.")
             s = e.snapshot
-            meta = self.repository.metadata(owner, s.dataset)
+            meta = metadata_stack.enter_context(
+                self.repository.metadata(owner, s.dataset, s.id)
+            )
             nz, ny, nx, _ = s.shape
             first, last = s.loaded_frames
             # Bound all Python numeric/JSON intermediates before constructing lists.
@@ -153,19 +160,29 @@ class ExplorePresenter:
                                 if lo != hi
                                 else "single stored-domain frame"
                             )
-                        maximum = (
-                            float(np.nanmax(a, initial=0))
-                            if s.depth.mode == "frame"
-                            else float(
-                                np.nanmax(a.sum(axis=0, dtype=np.float64), initial=0)
+                        if s.display.image == "se":
+                            valid = image[np.isfinite(image)]
+                            bounds = (
+                                tuple(map(float, np.percentile(valid, [2, 98])))
+                                if valid.size
+                                else (0.0, 1.0)
                             )
-                        )
+                            if bounds[0] == bounds[1]:
+                                bounds = (bounds[0], bounds[0] + 1)
+                        else:
+                            maximum = (
+                                max(finite_max(frame) for frame in a)
+                                if s.depth.mode == "frame"
+                                else finite_max(a.sum(axis=0, dtype=np.float64))
+                            )
+                            bounds = (0.0, maximum)
                         result["ion"] = self.panel(
                             "image",
                             axes,
                             values=image,
                             aggregation=aggregation,
-                            intensity_range=(0, maximum or 1),
+                            intensity_range=bounds,
+                            palette="gray" if s.display.image == "se" else "ion",
                             log=s.display.log,
                         )
                     if "front" in panels:
@@ -184,7 +201,7 @@ class ExplorePresenter:
                             aggregation="exact sum along ROI y",
                             intensity_range=(
                                 0,
-                                float(np.nanmax(front, initial=0)) or 1,
+                                finite_max(front),
                             ),
                             log=s.display.log,
                         )

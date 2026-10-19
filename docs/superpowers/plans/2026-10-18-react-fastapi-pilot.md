@@ -214,7 +214,7 @@ Workspace deletion closes its analyses. Add `DELETE /workspaces/{wid}` and `GET 
 
 **Interfaces:** Generate `generated.ts` from Task 6 OpenAPI using a locked generator. `useAnalysis(analysisId)` owns canonical snapshots/polling/view lease; client-local renderer/draft state is keyed by analysis and client view. `commandQueue.send(analysisId, command)` serializes commits, retains request ID on retry and coalesces intermediate gestures without dropping the final action.
 
-- [ ] Write queue tests asserting retries preserve ID, conflicts refresh revision without blindly replaying an obsolete drag, and a newer analysis response cannot replace another tab. Component/browser tests open A/B/A in one workspace plus A for a second user; selections remain independent. New browser tabs start independently; explicit reattach uses the existing analysis. Repeated React mount/unmount leaves one live lease/poll loop.
+- [ ] Write queue tests asserting retries preserve ID, conflicts refresh revision without blindly replaying an obsolete drag, and a newer analysis response cannot replace another tab. Component/browser tests open A/B/A in one workspace plus A for a second user; selections remain independent. New tabs restore the owner’s in-memory workspace; explicit reattach uses an existing analysis ID. Repeated React mount/unmount leaves one live lease/poll loop.
 - [ ] Run `npm --prefix frontend test -- commandQueue` and `npm --prefix frontend run test:e2e -- workspaces.spec.ts` to fail. Implement the app, exact file-picker pagination/search, explicit replace/close and empty/error states. Persist only owner-safe workspace identifiers as appropriate; do not use a single globally shared “current analysis” cookie.
 - [ ] Handle restart/expired IDs with a clear recovery screen and reopen action. A failed file open leaves existing analyses available. Stop polling and release view leases on cleanup; do not treat a browser unload as guaranteed delivery.
 - [ ] Run `npm --prefix frontend run generate:api`, `npm --prefix frontend run typecheck`, unit/browser tests to PASS. Commit as `feat: add multi-analysis React workspace`.
@@ -276,7 +276,7 @@ and [coverage disposition](../../validation/coverage-map.md) for executed checks
 and the exact deferred prototype assertions. The original task checklists remain
 as the acceptance inventory; unavailable real NFS/hardware/commercial-save checks
 are deliberately not marked passed. The final local artifact/container/browser
-runs and fresh review are recorded with the implementation commits.
+runs and fresh review are recorded in the qualification report.
 
 Implementation rulings: external canonical-path locks wait up to 30 s; direct
 h5py remains the reader; a configurable 128-comparison metadata quota complements
@@ -288,6 +288,9 @@ assets and hashes ship in wheel/sdist and source builds reject stale inputs.
 
 ## Plan review and handoff
 
-Coverage: A → Task 1; boundaries → 2–4; concurrent users/analyses, API/jobs → 3–6/9/12; renderer evaluation → 7; scientific presentation/exports → 8/10; packaged local/server operation → 11–13. Deferred dialogs, calibrated UI, sections, volumes and native saves have executable tasks in the completion plan; durable workspace restoration remains explicitly deferred in the design.
+Coverage: A → Task 1; boundaries → 2–4; concurrent users/analyses, API/jobs → 3–6/9/12; renderer evaluation → 7; scientific presentation/exports → 8/10; packaged local/server operation → 11–13. Deferred dialogs, calibrated UI, sections, volumes and native saves have executable tasks in the completion plan; Persistence across service restarts remains deferred; owner-scoped in-memory workspaces restore across browser reloads and tabs.
 
 Review the plan and renderer evaluation scope before execution. Choose inline execution or delegated implementation/review. Inline execution is the default recommendation because storage, budgets and ownership interfaces are tightly coupled; this plan alone does not authorize publishing, enabling acquisition writes, or changing external services.
+
+
+Final review disposition (2026-10-19): fixed all ten Important findings from the fresh review. Added RED→GREEN browser coverage for hidden-tab keyboard actions, replacement ROI drag, partial-response races, repeated reloads, and expired view leases; Python coverage for budgeted metadata, variable-length raw-event admission, non-finite samples, SE scaling, and missing-source replacement. No Critical findings were reported. The current qualification records the exact results and remaining environment limits.

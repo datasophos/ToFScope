@@ -3,7 +3,6 @@
 from contextlib import contextmanager
 from dataclasses import dataclass
 import hashlib
-from threading import RLock
 import secrets
 import h5py
 import numpy as np
@@ -41,15 +40,23 @@ class AcquisitionMetadata:
 
 
 class AcquisitionRepository:
-    def __init__(self, settings, authorize=None):
+    def __init__(self, settings, authorize=None, budget=None):
         self.settings = settings
         self.authorize = authorize or (lambda owner, path: bool(owner))
         self.salt = secrets.token_hex(32)
-        self._metadata = {}
-        self._mutex = RLock()
+        self.budget = budget
 
     def path(self, owner, dataset):
-        p = resolve_data_path(self.settings, dataset.relative_path, require_file=True)
+        try:
+            p = resolve_data_path(
+                self.settings, dataset.relative_path, require_file=True
+            )
+        except ValueError:
+            if dataset.generation:
+                raise SourceChanged(
+                    "Acquisition changed or unavailable; explicitly replace it."
+                ) from None
+            raise
         if not self.authorize(owner, p):
             raise PermissionError("Acquisition access denied.")
         return p
@@ -86,51 +93,10 @@ class AcquisitionRepository:
                 with h5py.File(p, "r") as handle:
                     if handle["PeakData/PeakData"].dtype.kind not in "iuf":
                         raise ValueError("Unsupported stored intensity dtype.")
-                m = inspect_file(p)
-                if any(
-                    not np.isfinite([peak["mass"], peak["low"], peak["high"]]).all()
-                    or peak["low"] >= peak["high"]
-                    for peak in m["peaks"]
-                ):
-                    raise ValueError("Invalid stored integration metadata.")
-                with h5py.File(p, "r") as handle:
-                    for name in m["image_names"]:
-                        group = handle[f"FIBImages/{name}"]
-                        if (
-                            "Data" not in group
-                            or group["Data"].ndim != 2
-                            or any(n <= 0 for n in group["Data"].shape)
-                        ):
-                            raise ValueError("Invalid SE image layout.")
-                if (
-                    any(n <= 0 for n in m["shape"])
-                    or not len(m["masses"])
-                    or len(m["masses"]) != len(m["spectrum"])
-                ):
-                    raise ValueError("Invalid acquisition shape.")
-                if (
-                    m["masses"].ndim != 1
-                    or m["spectrum"].ndim != 1
-                    or not np.isfinite(m["masses"]).all()
-                ):
-                    raise ValueError("Invalid mass calibration.")
-                if generation != self.identity(p):
-                    raise SourceChanged("Acquisition changed; reopen it.")
                 key = hashlib.sha256((self.salt + str(p)).encode()).hexdigest()
                 d = DatasetRef(key, generation, relative_path)
-                for a in (m["masses"], m["spectrum"]):
-                    a.setflags(write=False)
-                meta = AcquisitionMetadata(
-                    tuple(m["shape"]),
-                    tuple(m["peaks"]),
-                    m["masses"],
-                    m["spectrum"],
-                    m["fov_um"],
-                    m["raw_shape"],
-                    tuple(m["image_names"]),
-                )
-                with self._mutex:
-                    self._metadata[(key, generation)] = meta
+                with self._inspect(owner, d, p):
+                    pass
                 return d
         except Timeout:
             raise DatasetBusy("Acquisition busy; retry in a moment.") from None
@@ -167,14 +133,82 @@ class AcquisitionRepository:
         if self.identity(p) != dataset.generation:
             raise SourceChanged("Acquisition changed; explicitly reopen it.")
 
-    def metadata(self, owner, dataset):
-        self.assert_current(owner, dataset)
-        with self._mutex:
-            return self._metadata[(dataset.key, dataset.generation)]
+    @contextmanager
+    def _inspect(self, owner, dataset, path, analysis_id=None):
+        # Preflight all numerical metadata and conservative decoded record overhead.
+        # No metadata arrays survive their consumer's context or enter a hidden cache.
+        from contextlib import nullcontext
+
+        with h5py.File(path, "r") as f:
+            arrays = [
+                f[name]
+                for name in (
+                    "FullSpectra/MassAxis",
+                    "FullSpectra/SumSpectrum",
+                    "PeakData/PeakTable",
+                )
+            ]
+            if any(a.dtype.hasobject for a in arrays):
+                raise ValueError("Variable-length acquisition metadata is unsupported.")
+            estimate = sum(a.size * a.dtype.itemsize * 4 for a in arrays)
+            estimate += f["PeakData/PeakData"].shape[-1] * 1024
+            estimate += len(f.get("FIBImages", {})) * 512 + 4096
+        reservation = (
+            self.budget.reserve(owner, analysis_id or dataset.key, int(estimate))
+            if self.budget
+            else nullcontext()
+        )
+        with reservation:
+            m = inspect_file(path)
+            if (
+                any(n <= 0 for n in m["shape"])
+                or not len(m["masses"])
+                or m["masses"].ndim != 1
+                or m["spectrum"].ndim != 1
+                or len(m["masses"]) != len(m["spectrum"])
+                or not np.isfinite(m["masses"]).all()
+            ):
+                raise ValueError("Invalid acquisition shape or mass calibration.")
+            if any(
+                not np.isfinite([p["mass"], p["low"], p["high"]]).all()
+                or p["low"] >= p["high"]
+                for p in m["peaks"]
+            ):
+                raise ValueError("Invalid stored integration metadata.")
+            with h5py.File(path, "r") as f:
+                for name in m["image_names"]:
+                    group = f[f"FIBImages/{name}"]
+                    if (
+                        "Data" not in group
+                        or group["Data"].ndim != 2
+                        or any(n <= 0 for n in group["Data"].shape)
+                    ):
+                        raise ValueError("Invalid SE image layout.")
+            self.assert_current(owner, dataset)
+            for a in (m["masses"], m["spectrum"]):
+                a.setflags(write=False)
+            yield AcquisitionMetadata(
+                tuple(m["shape"]),
+                tuple(m["peaks"]),
+                m["masses"],
+                m["spectrum"],
+                m["fov_um"],
+                m["raw_shape"],
+                tuple(m["image_names"]),
+            )
+
+    @contextmanager
+    def metadata(self, owner, dataset, analysis_id=None):
+        with self.access(owner, dataset) as path:
+            with self._inspect(owner, dataset, path, analysis_id) as metadata:
+                yield metadata
 
     def se_shape(self, owner, dataset, first, last):
-        m = self.metadata(owner, dataset)
-        with self.access(owner, dataset) as p, h5py.File(p, "r") as f:
+        with (
+            self.metadata(owner, dataset) as m,
+            self.access(owner, dataset) as p,
+            h5py.File(p, "r") as f,
+        ):
             shapes = [
                 f[f"FIBImages/{name}/Data"].shape
                 for name in m.image_names[max(0, first) : last + 1]
@@ -187,11 +221,11 @@ class AcquisitionRepository:
                 else m.shape[1:3]
             )
 
-    def read(self, owner, dataset, recipe, progress=None, cancel=None):
+    def read(self, owner, dataset, recipe, progress=None, cancel=None, reserve=None):
         with self.access(owner, dataset) as p:
             if recipe.source == "custom":
                 return custom_peak_windows(
-                    p, recipe.intervals, *recipe.frames, progress, cancel
+                    p, recipe.intervals, *recipe.frames, progress, cancel, reserve
                 )
             if recipe.source != "stored":
                 raise ValueError("Unsupported signal source in Explore pilot.")

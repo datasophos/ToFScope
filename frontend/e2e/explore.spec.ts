@@ -20,8 +20,20 @@ test("independent files, exact Explore state, custom Apply and offline downloads
   await expect(page.getByLabel("Stored signal")).toBeVisible();
   await page.getByLabel("Stored signal").selectOption("0");
   await expect(page.getByTestId("analysis-revision")).toHaveText("1");
-  await page.getByLabel("ROI x first").fill("1");
-  await page.getByRole("button", { name: "Apply ROI" }).click();
+  const ion = page.getByTestId("panel-ion").getByTestId("selection-overlay");
+  const bounds = (await ion.boundingBox())!;
+  await page.mouse.move(
+    bounds.x + bounds.width * 0.6,
+    bounds.y + bounds.height * 0.2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    bounds.x + bounds.width * 0.9,
+    bounds.y + bounds.height * 0.8,
+    { steps: 5 },
+  );
+  await page.mouse.up();
+  await expect(page.getByLabel("ROI x first")).toHaveValue("1");
   await expect(page.getByTestId("analysis-revision")).toHaveText("2");
   await page.getByRole("button", { name: "＋ Open acquisition" }).click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
