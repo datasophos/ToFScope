@@ -19,6 +19,7 @@ class Settings:
     initial_file: Path | None = None
     trusted_proxies: tuple[str,...] = ()
     identity_header: str = 'x-tofscope-user'
+    public_origin: str | None = None
     global_bytes: int = 4*1024**3
     user_bytes: int = 2*1024**3
     analysis_bytes: int = 1024**3
