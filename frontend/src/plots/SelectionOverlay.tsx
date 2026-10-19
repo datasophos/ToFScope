@@ -13,6 +13,44 @@ type Props = {
   reverseY?: boolean;
   image?: boolean;
 };
+function SelectionEdge({
+  action,
+  x1,
+  x2,
+  y1,
+  y2,
+}: {
+  action: string;
+  x1: number;
+  x2: number;
+  y1: number;
+  y2: number;
+}) {
+  const endpoints = { x1, x2, y1, y2 };
+  return (
+    <>
+      <line
+        {...endpoints}
+        stroke="#b78322"
+        strokeWidth="1"
+        vectorEffect="non-scaling-stroke"
+        pointerEvents="none"
+      />
+      <line
+        {...endpoints}
+        data-action={action}
+        stroke="transparent"
+        strokeWidth="12"
+        vectorEffect="non-scaling-stroke"
+        pointerEvents="stroke"
+        style={{
+          cursor:
+            action === "top" || action === "bottom" ? "ns-resize" : "ew-resize",
+        }}
+      />
+    </>
+  );
+}
 export function SelectionOverlay({
   xRange,
   yRange,
@@ -110,7 +148,7 @@ export function SelectionOverlay({
     >
       <rect width="100" height="100" fill="transparent" />
       {shown && (
-        <g stroke="#b78322" strokeWidth=".6">
+        <g>
           <rect
             data-action="move"
             x={px(shown[0])}
@@ -121,42 +159,41 @@ export function SelectionOverlay({
                 ? Math.max(0.2, Math.abs(py(shown[2]) - py(shown[3])))
                 : 100
             }
-            fill="#e4ad3822"
+            fill="#e4ad3810"
+            stroke="#b78322"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
             style={{ cursor: "move" }}
           />
-          <line
-            data-action="low"
+          <SelectionEdge
+            action="low"
             x1={px(shown[0])}
             x2={px(shown[0])}
             y1={0}
             y2={100}
-            strokeWidth="2"
           />
-          <line
-            data-action="high"
+          <SelectionEdge
+            action="high"
             x1={px(shown[1])}
             x2={px(shown[1])}
             y1={0}
             y2={100}
-            strokeWidth="2"
           />
           {mode === "xy" && (
             <>
-              <line
-                data-action="bottom"
+              <SelectionEdge
+                action="bottom"
                 x1={px(shown[0])}
                 x2={px(shown[1])}
                 y1={py(shown[2])}
                 y2={py(shown[2])}
-                strokeWidth="2"
               />
-              <line
-                data-action="top"
+              <SelectionEdge
+                action="top"
                 x1={px(shown[0])}
                 x2={px(shown[1])}
                 y1={py(shown[3])}
                 y2={py(shown[3])}
-                strokeWidth="2"
               />
             </>
           )}
