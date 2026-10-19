@@ -66,6 +66,8 @@ export function PlotPanel({
         yReverse: panel.kind === "image",
       }
     : undefined;
+  const image = panel?.kind === "image";
+  const stageReady = !image || stageSize > 0;
   useEffect(() => {
     if (!element.current || !body.current) return;
     const observer = new ResizeObserver(() => {
@@ -85,14 +87,16 @@ export function PlotPanel({
     };
   }, [panel?.kind]);
   useEffect(() => {
-    if (!data || !element.current) return;
+    if (!data || !element.current || (data.kind === "image" && !stageSize))
+      return;
     if (!chart.current) chart.current = mountChart(element.current, data);
     else chart.current.update(data);
-  }, [panel?.content_version, zoom]);
+  }, [panel?.content_version, zoom, stageSize]);
   return (
     <section
       className={`plot-panel ${maximized ? "maximized" : ""}`}
       data-testid={`panel-${name}`}
+      data-kind={panel?.kind}
       data-content-version={panel?.content_version}
     >
       <header>
@@ -134,27 +138,28 @@ export function PlotPanel({
         <div
           className={`plot-stage ${panel?.kind === "image" ? "image" : ""}`}
           data-testid={`plot-stage-${name}`}
+          data-stage-ready={stageReady ? "true" : "false"}
           style={
-            panel?.kind === "image" && stageSize
+            image && stageSize
               ? { width: stageSize, height: stageSize }
               : undefined
           }
         >
-        <div className="chart" ref={element} />
-        {panel && (
-          <SelectionOverlay
-            label={`${title} selection`}
-            xRange={xRange}
-            yRange={yRange}
-            reverseY={panel.kind === "image"}
-            selection={selection}
-            onSelect={onSelect}
-            onClick={onClick}
-            onZoom={setZoom}
-            mode={mode}
-          image={panel.kind === "image"}
-          />
-        )}
+          <div className="chart" ref={element} />
+          {panel && (
+            <SelectionOverlay
+              label={`${title} selection`}
+              xRange={xRange}
+              yRange={yRange}
+              reverseY={image}
+              selection={selection}
+              onSelect={onSelect}
+              onClick={onClick}
+              onZoom={setZoom}
+              mode={mode}
+              image={image}
+            />
+          )}
         </div>
       </div>
       <footer>
