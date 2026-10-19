@@ -11,6 +11,7 @@ type Props = {
   mode?: "x" | "xy";
   label?: string;
   reverseY?: boolean;
+  image?: boolean;
 };
 export function SelectionOverlay({
   xRange,
@@ -22,6 +23,7 @@ export function SelectionOverlay({
   mode = "x",
   label = "Plot selection",
   reverseY = false,
+  image = false,
 }: Props) {
   const drag = useRef<{
     start: number[];
@@ -52,8 +54,9 @@ export function SelectionOverlay({
   return (
     <svg
       data-testid="selection-overlay"
+      data-x-range={xRange.join(",")}
       aria-label={label}
-      className="selection-overlay"
+      className={`selection-overlay ${image ? "image" : ""}`}
       viewBox="0 0 100 100"
       preserveAspectRatio="none"
       onPointerDown={(e) => {
@@ -96,7 +99,8 @@ export function SelectionOverlay({
         onSelect(b);
       }}
       onWheel={(e) => {
-        if (!onZoom) return;
+        if (!onZoom || !(e.ctrlKey || e.metaKey)) return;
+        e.preventDefault();
         const b = e.currentTarget.getBoundingClientRect(),
           c =
             xRange[0] + ((e.clientX - b.x) / b.width) * (xRange[1] - xRange[0]),

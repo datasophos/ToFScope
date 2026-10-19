@@ -26,7 +26,9 @@ for (const candidate of ["echarts", "plotly"])
       "1.00000001,4.00000000",
     );
     await svg.hover();
+    await page.keyboard.down("Control");
     await page.mouse.wheel(0, -200);
+    await page.keyboard.up("Control");
     await expect(page.getByTestId("zoom")).not.toHaveText("0,5");
     const zoom = await page.getByTestId("zoom").textContent();
     await page.getByRole("button", { name: "Async update + maximize" }).click();

@@ -10,6 +10,7 @@ import {
   type JobInput,
 } from "../api/client";
 import { PlotPanel } from "../plots/PlotPanel";
+import { SignalPicker } from "./SignalPicker";
 import { roiFromBounds, roiBounds, frameWindow, type ROI } from "./selection";
 function ExactForm({
   labels,
@@ -227,30 +228,23 @@ export function ExploreScreen({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <select
-              aria-label="Stored signal"
+            <SignalPicker
+              buttonLabel="Select stored signal"
+              listboxLabel="Stored signals"
+              placeholder="Choose a stored signal"
+              options={filtered}
               value={
                 a.active_recipe.source === "stored"
-                  ? (a.active_recipe.stored_index ?? "")
-                  : ""
+                  ? (a.active_recipe.stored_index ?? undefined)
+                  : undefined
               }
-              onChange={(e) => {
-                const i = Number(e.target.value);
+              onChoose={(i) => {
                 setRecent((old) =>
                   [i, ...old.filter((v) => v !== i)].slice(0, 5),
                 );
                 command({ type: "select_stored", index: i });
               }}
-            >
-              <option value="" disabled>
-                Custom signal
-              </option>
-              {filtered.map((p) => (
-                <option key={p.index} value={p.index}>
-                  {p.label} · {p.mass} Th
-                </option>
-              ))}
-            </select>
+            />
             <p data-testid="active-source">
               <strong>{a.active_recipe.label}</strong> ·{" "}
               {a.active_recipe.source}
@@ -268,25 +262,15 @@ export function ExploreScreen({
                 ))}
               </div>
             )}
-            <select
-              aria-label="Add stored comparison"
-              value=""
-              onChange={(e) =>
-                command({
-                  type: "add_stored_comparison",
-                  index: Number(e.target.value),
-                })
+            <SignalPicker
+              buttonLabel="Add stored comparison"
+              listboxLabel="Stored comparison signals"
+              placeholder="Add stored comparison…"
+              options={filtered}
+              onChoose={(index) =>
+                command({ type: "add_stored_comparison", index })
               }
-            >
-              <option value="" disabled>
-                Add stored comparison…
-              </option>
-              {filtered.map((p) => (
-                <option key={p.index} value={p.index}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
+            />
             {a.comparisons.map((r) => (
               <p className="row" key={r.id}>
                 <span>{r.label}</span>
@@ -619,26 +603,6 @@ export function ExploreScreen({
               }}
             />
             <PlotPanel
-              name="front"
-              title="Front projection"
-              panel={data?.panels.front}
-              maximized={max === "front"}
-              onMaximize={() => setMax(max === "front" ? null : "front")}
-              onClick={(_x, y) =>
-                command({
-                  type: "set_depth",
-                  depth: {
-                    mode: "frame",
-                    index: Math.max(
-                      a.loaded_frames[0],
-                      Math.min(a.loaded_frames[1], Math.round(y)),
-                    ),
-                  },
-                })
-              }
-              onSelect={() => {}}
-            />
-            <PlotPanel
               zoomWindow={draft[draftIndex]?.map(Number) as [number, number]}
               name="spectrum"
               title="Spectrum"
@@ -659,6 +623,26 @@ export function ExploreScreen({
                 );
                 if (!draft.length) setDraftIndex(0);
               }}
+            />
+            <PlotPanel
+              name="front"
+              title="Front projection"
+              panel={data?.panels.front}
+              maximized={max === "front"}
+              onMaximize={() => setMax(max === "front" ? null : "front")}
+              onClick={(_x, y) =>
+                command({
+                  type: "set_depth",
+                  depth: {
+                    mode: "frame",
+                    index: Math.max(
+                      a.loaded_frames[0],
+                      Math.min(a.loaded_frames[1], Math.round(y)),
+                    ),
+                  },
+                })
+              }
+              onSelect={() => {}}
             />
             <PlotPanel
               onAllDepths={() =>
