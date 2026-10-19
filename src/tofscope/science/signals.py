@@ -3,8 +3,8 @@ from dataclasses import dataclass,field
 from operator import index
 from uuid import UUID,uuid4
 
-from integration import canonical_intervals
-from dataset_io import locked_read
+from tofscope.science.integration import canonical_intervals
+from tofscope.storage.dataset_io import locked_read
 
 
 def _integer(value):
@@ -88,7 +88,7 @@ class SignalRecipe:
                    intervals=value['intervals'],frames=value['frames'])
 
     def computation_key(self,path):
-        from explorer import file_key
+        from tofscope.storage.explorer import file_key
         return (file_key(path),self.source,self.stored_index,self.saved_id,self.intervals,self.frames)
 
 
@@ -96,10 +96,10 @@ class SignalRecipe:
 def read_signal(path, recipe, progress=None):
     """Return (depth,y,x), with array index zero at recipe.frames[0]."""
     import h5py
-    from explorer import stored_peak
-    from integration import custom_peak_windows
+    from tofscope.storage.explorer import stored_peak
+    from tofscope.science.integration import custom_peak_windows
     if recipe.source=='saved':
-        from integration_store import read_saved_integration,saved_integration_info
+        from tofscope.storage.integration_store import read_saved_integration,saved_integration_info
         info=saved_integration_info(path,recipe.saved_id)
         first,last=info['derivation']['frames']
         if recipe.frames[0]<first or recipe.frames[1]>last or recipe.intervals!=tuple(tuple(w) for w in info['derivation']['intervals']):

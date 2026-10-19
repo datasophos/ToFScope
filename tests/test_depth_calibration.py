@@ -1,7 +1,7 @@
 """Depth coordinates preserve acquisition frames and never extrapolate."""
 import unittest
 import numpy as np
-from depth_calibration import DepthAnchor,DepthCalibration,validate_anchors,convert_depth
+from tofscope.science.depth_calibration import DepthAnchor,DepthCalibration,validate_anchors,convert_depth
 
 
 class DepthCalibrationTests(unittest.TestCase):

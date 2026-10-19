@@ -7,6 +7,9 @@ from dataclasses import dataclass,asdict
 from functools import wraps
 from pathlib import Path
 from threading import Lock
+from contextvars import ContextVar
+import hashlib
+import tempfile
 from uuid import uuid4
 import os
 import shutil
@@ -16,23 +19,28 @@ import h5py
 import numpy as np
 from filelock import FileLock
 
-from vendor_export import export_native_copy,validate_native_recipe,validate_native_layout
+from tofscope.storage.vendor_export import export_native_copy,validate_native_recipe,validate_native_layout
 
 _LOCKS={}
 _REGISTRY_LOCK=Lock()
 
 
 def write_integration_group(*args,**kwargs):
-    from integration_store import write_integration_group as write
+    from tofscope.storage.integration_store import write_integration_group as write
     return write(*args,**kwargs)
 
 
-def dataset_lock(path,timeout=0):
+LOCK_DIR=ContextVar('tofscope_lock_dir',default=Path(tempfile.gettempdir())/f'tofscope-{os.getuid()}'/'locks')
+
+def dataset_lock(path,timeout=30):
     canonical=Path(path).expanduser().resolve()
+    directory=Path(LOCK_DIR.get());directory.mkdir(parents=True,exist_ok=True)
+    key=(canonical,str(directory))
     with _REGISTRY_LOCK:
-        if canonical not in _LOCKS:
-            _LOCKS[canonical]=FileLock(canonical.with_name('.'+canonical.name+'.tofscope.lock'),timeout=timeout)
-        return _LOCKS[canonical]
+        if key not in _LOCKS:
+            name=hashlib.sha256(str(canonical).encode()).hexdigest()+'.lock'
+            _LOCKS[key]=FileLock(directory/name,timeout=timeout)
+        return _LOCKS[key]
 
 
 def locked_read(function):
@@ -81,7 +89,7 @@ def required_space(identity,record):
 
 def verify_saved_copy(source,prepared,record,frame_data_factory):
     """Verify original peak values plus both representations of the addition."""
-    from integration_store import ROOT
+    from tofscope.storage.integration_store import ROOT
     with h5py.File(source,'r') as old,h5py.File(prepared,'r') as new:
         a=old['PeakData/PeakData'];b=new['PeakData/PeakData'];index=a.shape[-1]
         if b.shape!=(*a.shape[:-1],index+1):raise ValueError('Native shape verification failed.')
@@ -104,14 +112,14 @@ def verify_saved_copy(source,prepared,record,frame_data_factory):
 
 
 def clear_dataset_caches():
-    from explorer import _stored_peak,_se_mean
-    from volume_layers import clear_preview_cache
+    from tofscope.storage.explorer import _stored_peak,_se_mean
+    from tofscope.science.volume_layers import clear_preview_cache
     _stored_peak.cache_clear();_se_mean.cache_clear();clear_preview_cache()
 
 
 def save_to_acquisition(settings,relative_path,record,frame_data_factory,expected_identity):
-    from server_config import resolve_data_path
-    from signals import SignalRecipe
+    from tofscope.config import resolve_data_path
+    from tofscope.science.signals import SignalRecipe
     if not settings.allow_writes:raise ValueError('Acquisition writes are disabled by the server.')
     if not settings.allow_unverified_native:raise ValueError('Commercial compatibility is unverified. Experimental native writes are disabled by the server.')
     target=resolve_data_path(settings,relative_path,require_file=True)

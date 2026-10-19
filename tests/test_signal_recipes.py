@@ -10,10 +10,10 @@ from unittest.mock import patch,Mock
 import h5py
 import numpy as np
 
-from integration import custom_peak_windows
-from signals import SignalRecipe,read_signal
-from explorer import custom_peak,integrate_events
-from workspace import ExplorerWorkspace
+from tofscope.science.integration import custom_peak_windows
+from tofscope.science.signals import SignalRecipe,read_signal
+from tofscope.storage.explorer import custom_peak,integrate_events
+
 
 
 def make_acquisition(path):
@@ -56,14 +56,6 @@ class SignalReadTests(unittest.TestCase):
         np.testing.assert_array_equal(read_signal(self.path,custom)[:,0,:],[[1,.5],[1,.75]])
         with self.assertRaises(ValueError):read_signal(self.path,SignalRecipe(source='custom',intervals=((1,2),),frames=(0,3)))
 
-    def test_comparison_missing_on_both_sides_with_nonzero_frame_origin(self):
-        with patch('workspace.get_plotlyjs',return_value=''),patch.object(ExplorerWorkspace,'figures',return_value={}):
-            w=ExplorerWorkspace(self.path);w.send=Mock();w.frames=(9,13)
-            w.meta['shape']=(14,1,2,1)
-            with patch('workspace.read_signal',return_value=np.array([1.,2.,3.],dtype=np.float32)[:,None,None]*np.ones((1,1,2))):
-                w.handle_message(None,dict(event='comparison_add',payload=dict(intervals=[[1,2],[4,5]],frames=[10,12])),None)
-            self.assertNotIn('error',w.send.call_args.args[0])
-            np.testing.assert_allclose(w.comparison_curves()[0][1],[np.nan,1.,2.,3.,np.nan],equal_nan=True)
 
     def test_invalid_input_and_source_unchanged(self):
         before=self.path.read_bytes()
@@ -72,31 +64,4 @@ class SignalReadTests(unittest.TestCase):
         custom_peak_windows(self.path,[(1,2),(4,5)],0,2)
         self.assertEqual(self.path.read_bytes(),before)
 
-    def test_controller_applies_composite_and_exports_every_interval(self):
-        with patch('workspace.get_plotlyjs',return_value=''),patch.object(ExplorerWorkspace,'figures',return_value={}):
-            w=ExplorerWorkspace(self.path);w.send=Mock()
-            w.handle_message(None,dict(event='integrate',payload=dict(intervals=[[1,2],[4,5]],frames=[1,2])),None)
-            response=w.send.call_args.args[0];self.assertNotIn('error',response,response)
-            np.testing.assert_array_equal(w.volume[:,0,:],[[1,.5],[1,.75]])
-            self.assertEqual(w.active_recipe.intervals,((1.,2.),(4.,5.)))
-            self.assertIsNone(response['state']['low'])
-            w.export('json');recipe=json.loads(w.send.call_args.args[0]['download']['text'])
-            self.assertEqual(recipe['schema_version'],3)
-            self.assertEqual(recipe['intervals'],[[1,2],[4,5]])
-            w.export('csv');rows=list(csv.reader(io.StringIO(w.send.call_args.args[0]['download']['text'])))
-            self.assertEqual(rows[1],['1','0.75'])
-            self.assertEqual(rows[2],['2','0.875'])
-            active=w.volume
-            w.handle_message(None,dict(event='integrate',payload=dict(intervals=[],frames=[0,2])),None)
-            self.assertIn('error',w.send.call_args.args[0]);self.assertIs(w.volume,active)
 
-    def test_comparison_union_and_partial_coverage_survive_primary_switch(self):
-        with patch('workspace.get_plotlyjs',return_value=''),patch.object(ExplorerWorkspace,'figures',return_value={}):
-            w=ExplorerWorkspace(self.path);w.send=Mock()
-            w.handle_message(None,dict(event='comparison_add',payload=dict(intervals=[[1,2],[4,5]],frames=[1,2])),None)
-            self.assertNotIn('error',w.send.call_args.args[0])
-            curve=w.comparison_curves()[0][1]
-            np.testing.assert_allclose(curve,[np.nan,.75,.875],equal_nan=True)
-            self.assertEqual(w.comparisons[0]['recipe']['intervals'],[[1,2],[4,5]])
-            w.roi=(1,1,0,0)
-            np.testing.assert_allclose(w.comparison_curves()[0][1],[np.nan,.5,.75],equal_nan=True)

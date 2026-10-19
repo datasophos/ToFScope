@@ -5,7 +5,7 @@ from uuid import UUID
 import json
 import h5py
 import numpy as np
-from dataset_io import locked_read
+from tofscope.storage.dataset_io import locked_read
 
 ROOT='ToFScope/Integrations'
 
@@ -39,7 +39,7 @@ class IntegrationRecord:
         frames=recipe['frames']
         if len(frames)!=2 or any(type(v) is not int for v in frames) or not 0<=frames[0]<=frames[1]:raise ValueError('Invalid integration frame coverage.')
         if len(self.spatial_shape)!=2 or any(type(v) is not int or v<=0 for v in self.spatial_shape):raise ValueError('Integration shape must be full XY.')
-        from integration import canonical_intervals
+        from tofscope.science.integration import canonical_intervals
         canonical_intervals(recipe['intervals'],(-float('inf'),float('inf')))
 
 

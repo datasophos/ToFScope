@@ -3,9 +3,9 @@ from collections import OrderedDict
 from dataclasses import dataclass,replace
 import math
 import numpy as np
-from explorer import inspect_file,file_key
-from signals import SignalRecipe,read_signal
-from depth_calibration import calibrated_window
+from tofscope.storage.explorer import inspect_file,file_key
+from tofscope.science.signals import SignalRecipe,read_signal
+from tofscope.science.depth_calibration import calibrated_window
 
 COLORSCALES=('Viridis','Magma','Plasma','Cividis','Reds','Blues','Greens','Purples')
 
