@@ -264,7 +264,9 @@ not establish performance for other hardware, larger selections or raw reconstru
 **Save integration…** reviews the active applied custom signal before any write.
 The default server is read only. Experimental native saves require both
 `TOFSCOPE_ALLOW_WRITES=true` and `TOFSCOPE_ALLOW_UNVERIFIED_NATIVE=true`.
-Commercial TOFexplorer compatibility remains **unverified**; see the
+Commercial TOFexplorer reading/display passed for one representative addition
+in v2.9.7+3484e0dd; numerical agreement and the full UI save workflow remain
+unverified. Both experimental opt-ins remain required; see the
 [compatibility and storage notes](docs/hdf5-compatibility.md) before enabling.
 Initially, native saves support contiguous windows covering every frame, with
 an ASCII label. Disjoint or partial-frame native saves are rejected explicitly.
