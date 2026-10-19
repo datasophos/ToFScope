@@ -29,6 +29,60 @@ button:disabled {
   opacity: 0.5;
   cursor: default;
 }
+.heading-help {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 9px;
+  min-width: 0;
+}
+.heading-help h2,
+.plot-panel header .heading-help {
+  margin: 0;
+}
+button.help-button,
+.plot-panel header button.help-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 50%;
+  color: #6d8390;
+  font:
+    italic 12px Georgia,
+    serif;
+  vertical-align: middle;
+}
+.help-button:focus-visible {
+  outline: 2px solid #167d9a;
+  outline-offset: 3px;
+}
+.help-tooltip {
+  position: fixed;
+  z-index: 1000;
+  width: 310px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  padding: 11px 13px;
+  background: #183348;
+  color: #edf5f8;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px #10253630;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.control-with-help {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.control-with-help .signal-picker {
+  min-width: 0;
+}
 input,
 select {
   padding: 5px;
@@ -107,7 +161,7 @@ output {
 }
 .masthead {
   height: 64px;
-  background: #143d50;
+  background: #102536;
   color: white;
   padding: 0 26px;
   display: flex;
@@ -115,13 +169,27 @@ output {
   justify-content: space-between;
 }
 .masthead strong {
-  font-size: 23px;
-  letter-spacing: -0.5px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-name small {
+  display: block;
+  color: #87b8bf;
+  letter-spacing: 1.4px;
+  font-size: 9px;
+  margin-top: 2px;
 }
 .mark {
-  margin-right: 10px;
-  font-size: 30px;
-  color: #6fd5cd;
+  width: 32px;
+  height: 36px;
+  flex: none;
+  color: white;
 }
 .badge {
   font-size: 11px;
@@ -354,10 +422,15 @@ small {
   animation: plot-spin 0.8s linear infinite;
 }
 @keyframes plot-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .plot-spinner { animation: none; border-top-color: #34758b; }
+  .plot-spinner {
+    animation: none;
+    border-top-color: #34758b;
+  }
 }
 .plot-stage {
   position: relative;

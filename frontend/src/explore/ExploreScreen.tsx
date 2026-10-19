@@ -11,6 +11,8 @@ import {
 } from "../api/client";
 import { PlotPanel } from "../plots/PlotPanel";
 import { SignalPicker } from "./SignalPicker";
+import { HelpButton, HelpHeading } from "../components/HelpButton";
+import { help } from "./help";
 import { roiFromBounds, roiBounds, frameWindow, type ROI } from "./selection";
 function ExactForm({
   labels,
@@ -209,6 +211,7 @@ export function ExploreScreen({
           >
             Settings JSON
           </button>
+          <HelpButton label="Exports" content={help.exports} />
         </div>
       </div>
       {error && (
@@ -221,7 +224,7 @@ export function ExploreScreen({
       <div className="analysis-layout">
         <aside className="sidebar">
           <section>
-            <h2>Signal</h2>
+            <HelpHeading title="Signal" content={help.signal} />
             <input
               aria-label="Search signals"
               placeholder="Search mass or label"
@@ -262,15 +265,21 @@ export function ExploreScreen({
                 ))}
               </div>
             )}
-            <SignalPicker
-              buttonLabel="Add stored comparison"
-              listboxLabel="Stored comparison signals"
-              placeholder="Add stored comparison…"
-              options={filtered}
-              onChoose={(index) =>
-                command({ type: "add_stored_comparison", index })
-              }
-            />
+            <div className="control-with-help">
+              <SignalPicker
+                buttonLabel="Add stored comparison"
+                listboxLabel="Stored comparison signals"
+                placeholder="Add stored comparison…"
+                options={filtered}
+                onChoose={(index) =>
+                  command({ type: "add_stored_comparison", index })
+                }
+              />
+              <HelpButton
+                label="Comparison profiles"
+                content={help.comparisons}
+              />
+            </div>
             {a.comparisons.map((r) => (
               <p className="row" key={r.id}>
                 <span>{r.label}</span>
@@ -286,9 +295,9 @@ export function ExploreScreen({
             ))}
           </section>
           <section>
-            <h2>
-              Mass windows <span className="badge">Draft</span>
-            </h2>
+            <HelpHeading title="Mass windows" content={help.windows}>
+              <span className="badge">Draft</span>
+            </HelpHeading>
             <p className="muted">
               Inclusive endpoints in Th. Apply reads raw events; editing does
               not.
@@ -386,7 +395,7 @@ export function ExploreScreen({
             )}
           </section>
           <section>
-            <h2>Spatial ROI</h2>
+            <HelpHeading title="Spatial ROI" content={help.roi} />
             <ExactForm
               labels={[
                 "ROI x first",
@@ -410,7 +419,7 @@ export function ExploreScreen({
             </button>
           </section>
           <section>
-            <h2>Loaded frames</h2>
+            <HelpHeading title="Loaded frames" content={help.loaded} />
             <ExactForm
               labels={["Loaded first", "Loaded last"]}
               values={a.loaded_frames}
@@ -424,7 +433,7 @@ export function ExploreScreen({
             />
           </section>
           <section>
-            <h2>Display</h2>
+            <HelpHeading title="Display" content={help.display} />
             <label>
               <input
                 type="checkbox"
@@ -484,7 +493,8 @@ export function ExploreScreen({
                     ? `Frame ${a.depth.index}`
                     : `Window ${a.depth.first}–${a.depth.last}`}
               </strong>
-              <span className="muted"> · zero based, inclusive</span>
+              <span className="muted"> · zero based, inclusive</span>{" "}
+              <HelpButton label="Depth selection" content={help.depth} />
             </div>
             <div className="row">
               <button
@@ -585,6 +595,7 @@ export function ExploreScreen({
             <PlotPanel
               name="ion"
               title={a.display.image === "se" ? "SE Image" : "Ion map"}
+              help={a.display.image === "se" ? help.se : help.ion}
               panel={data?.panels.ion}
               expectedKind="image"
               loading={!data?.panels.ion && !error}
@@ -608,6 +619,7 @@ export function ExploreScreen({
               zoomWindow={draft[draftIndex]?.map(Number) as [number, number]}
               name="spectrum"
               title="Mass spectrum"
+              help={help.spectrum}
               panel={data?.panels.spectrum}
               maximized={max === "spectrum"}
               onMaximize={() => setMax(max === "spectrum" ? null : "spectrum")}
@@ -629,6 +641,7 @@ export function ExploreScreen({
             <PlotPanel
               name="front"
               title="Front projection"
+              help={help.front}
               panel={data?.panels.front}
               expectedKind="image"
               loading={!data?.panels.front && !error}
@@ -654,6 +667,7 @@ export function ExploreScreen({
               }
               name="profile"
               title="Depth profile"
+              help={help.profile}
               panel={data?.panels.profile}
               maximized={max === "profile"}
               onMaximize={() => setMax(max === "profile" ? null : "profile")}

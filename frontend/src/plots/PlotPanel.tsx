@@ -6,9 +6,11 @@ import {
   type ChartData,
 } from "./selectedRenderer";
 import { SelectionOverlay, type Range } from "./SelectionOverlay";
+import { HelpHeading } from "../components/HelpButton";
 export function PlotPanel({
   name,
   title,
+  help,
   panel,
   expectedKind,
   loading = false,
@@ -23,6 +25,7 @@ export function PlotPanel({
 }: {
   name: string;
   title: string;
+  help: string;
   panel?: Panel;
   expectedKind?: Panel["kind"];
   loading?: boolean;
@@ -107,7 +110,7 @@ export function PlotPanel({
       data-y-scale={name === "spectrum" ? yScale : undefined}
     >
       <header>
-        <h2>{title}</h2>
+        <HelpHeading title={title} content={help} />
         <div className="row">
           {onAllDepths && <button onClick={onAllDepths}>All depths</button>}
           {name === "spectrum" && (

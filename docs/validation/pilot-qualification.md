@@ -149,3 +149,22 @@ and source distribution passed installed-package browser smoke checks with Node
 absent and external browser requests blocked. Optional Python lint was unavailable
 because Ruff is not installed in this environment. No backend, reader,
 acquisition-write capability or future-feature plan changed.
+
+## Contextual help and branding follow-up (2026-10-19)
+
+The frozen prototype's pane help in `web/workspace.js` was restored and adapted
+to the pilot's available controls. Compact info buttons cover all four panes,
+signals, comparison profiles, mass windows, spatial ROI, loaded frames, display,
+depth selection, exports and workspaces/files. Hover and keyboard focus reveal
+help; clicking pins it. Escape or an outside click dismisses it. Tooltips have
+unique accessible descriptions, float outside clipped chart/sidebar containers,
+and stay within the viewport. Escape dismisses help before restoring a maximized
+pane. Opening help does not change analysis state.
+
+The header again uses the prototype's white T with a teal dot and its
+FIB–SEM / TOF–SIMS subtitle. The mark is inline SVG, so it needs no font glyph,
+external asset or CDN. Pane subtitles remain removed.
+
+The production frontend build, nine unit tests and twelve browser tests pass.
+The full-size resize regression still paints in 19–29 ms in this local run.
+No backend, scientific reader or future-feature plan changed.
