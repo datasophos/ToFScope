@@ -1,7 +1,18 @@
 """Inclusive mass-window unions; display transforms never enter this module."""
 
+from dataclasses import dataclass
 import numpy as np
 from tofscope.storage.dataset_io import locked_read
+
+
+@dataclass(frozen=True)
+class EventBatch:
+    """Reader-independent event values and each spatial cell's slice into them."""
+
+    samples: np.ndarray
+    offsets: np.ndarray
+    lengths: np.ndarray
+    shape: tuple[int, ...]
 
 
 def canonical_intervals(intervals, axis_limits):
@@ -51,21 +62,26 @@ def integrate_event_windows(events, mass_axis, clock_ratio, normalization, inter
     included = np.zeros(len(axis), dtype=bool)
     for low, high in windows:
         included |= (axis >= low) & (axis <= high)
-    cells = events.ravel()
-    lengths = np.fromiter(
-        (len(cell) for cell in cells), dtype=np.int64, count=cells.size
-    )
+    if isinstance(events, EventBatch):
+        lengths = events.lengths
+        offsets = events.offsets
+        raw_samples = events.samples
+    else:
+        cells = events.ravel()
+        lengths = np.fromiter(
+            (len(cell) for cell in cells), dtype=np.int64, count=cells.size
+        )
+        offsets = np.concatenate(([0], np.cumsum(lengths[:-1])))
+        raw_samples = np.concatenate(list(cells)) if lengths.sum() else np.empty(0)
     if not lengths.sum():
         return np.zeros(events.shape, dtype=np.float32)
-    samples = np.concatenate(list(cells)).astype(np.int64) // int(clock_ratio)
+    samples = raw_samples.astype(np.int64) // int(clock_ratio)
     valid = (samples >= 0) & (samples < len(axis))
     selected = np.zeros(len(samples), dtype=np.int32)
     selected[valid] = included[samples[valid]]
-    boundaries = np.concatenate(([0], np.cumsum(lengths)))
     counts = np.concatenate(([0], np.cumsum(selected, dtype=np.int64)))
-    return (np.diff(counts[boundaries]).reshape(events.shape) / normalization).astype(
-        np.float32
-    )
+    per_cell = counts[offsets + lengths] - counts[offsets]
+    return (per_cell.reshape(events.shape) / normalization).astype(np.float32)
 
 
 @locked_read
