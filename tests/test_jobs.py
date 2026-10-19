@@ -21,6 +21,7 @@ class JobTests(unittest.TestCase):
         self.a = self.ws.create_analysis("a", self.ws.create("a").id, self.dataset)
 
     def env(self, s, id="job"):
+        s = self.ws.get(s.owner, s.id)
         return CommandEnvelope(
             id,
             s.revision,
@@ -32,7 +33,7 @@ class JobTests(unittest.TestCase):
         return self.jobs.wait("a", id, 5)
 
     def test_integration_retry_progress_and_independent_state(self):
-        spec = IntegrationSpec(((1, 2), (4, 5)), (0, 2), "active")
+        spec = IntegrationSpec(((1, 2), (4, 5)), (0, 2), "Ti")
         e = self.env(self.a)
         j = self.jobs.submit("a", self.a.id, e, spec)
         self.assertEqual(self.jobs.submit("a", self.a.id, e, spec).id, j.id)
@@ -40,7 +41,7 @@ class JobTests(unittest.TestCase):
         self.assertEqual(done.status, "succeeded")
         self.assertEqual(done.done, 3)
         s = self.ws.get("a", self.a.id)
-        self.assertEqual(s.active_recipe.intervals, spec.intervals)
+        self.assertEqual(s.signals[-1].recipe.intervals, spec.intervals)
         with self.assertRaises(KeyError):
             self.jobs.get("b", j.id)
 
@@ -59,20 +60,20 @@ class JobTests(unittest.TestCase):
             "a",
             self.a.id,
             self.env(self.a),
-            IntegrationSpec(((1, 2),), (0, 2), "active"),
+            IntegrationSpec(((1, 2),), (0, 2), "Ti"),
         )
         self.assertTrue(entered.wait(2))
         second = self.jobs.submit(
             "a",
             self.a.id,
             self.env(self.a, "second"),
-            IntegrationSpec(((4, 5),), (0, 2), "active"),
+            IntegrationSpec(((4, 5),), (0, 2), "Ti", first.signal_id, 0),
         )
         release.set()
         self.assertEqual(self.wait(first.id).status, "obsolete")
         self.assertEqual(self.wait(second.id).status, "succeeded")
         s = self.ws.get("a", self.a.id)
-        self.assertEqual(s.active_recipe.intervals, ((4.0, 5.0),))
+        self.assertEqual(s.signals[-1].recipe.intervals, ((4.0, 5.0),))
         self.ws.close("a", s.id)
         self.assertEqual(self.cache.budget.users["a"], 0)
 
@@ -91,7 +92,7 @@ class JobTests(unittest.TestCase):
             "a",
             self.a.id,
             self.env(self.a),
-            IntegrationSpec(((1, 2),), (0, 2), "active"),
+            IntegrationSpec(((1, 2),), (0, 2), "Ti"),
         )
         self.assertTrue(entered.wait(2))
         self.explore.apply(
@@ -99,7 +100,7 @@ class JobTests(unittest.TestCase):
             self.a.id,
             CommandEnvelope(
                 "roi",
-                0,
+                self.ws.get("a", self.a.id).revision,
                 self.dataset.generation,
                 {"type": "set_roi", "roi": [1, 1, 0, 0]},
             ),
@@ -126,14 +127,14 @@ class JobTests(unittest.TestCase):
             "a",
             self.a.id,
             self.env(self.a, "first"),
-            IntegrationSpec(((1, 2),), (0, 2), "active"),
+            IntegrationSpec(((1, 2),), (0, 2), "Ti"),
         )
         self.assertTrue(entered.wait(2))
         self.jobs.submit(
             "a",
             self.a.id,
             self.env(self.a, "backlog"),
-            IntegrationSpec(((3, 4),), (0, 2), "active"),
+            IntegrationSpec(((3, 4),), (0, 2), "Ti"),
         )
         b = self.ws.create_analysis(
             "b", self.ws.create("b").id, self.repo.open("b", "b.h5")
@@ -142,7 +143,7 @@ class JobTests(unittest.TestCase):
             "b",
             b.id,
             self.env(b, "second"),
-            IntegrationSpec(((4, 5),), (0, 2), "active"),
+            IntegrationSpec(((4, 5),), (0, 2), "Ti"),
         )
         self.assertEqual(self.jobs.wait("b", second.id, 2).status, "succeeded")
         self.assertEqual(order[:2], ["a", "b"])

@@ -7,7 +7,8 @@ import json
 import time
 from uuid import uuid4
 from tofscope.application.workspaces import CapacityError
-from tofscope.application.commands import AllDepth
+from tofscope.application.models import SignalSnapshot
+from tofscope.application.signals import get_signal, normalize_view, valid_name
 from tofscope.science.integration import canonical_intervals
 from tofscope.science.signals import SignalRecipe
 
@@ -18,7 +19,9 @@ TERMINAL = {"succeeded", "failed", "cancelled", "obsolete"}
 class IntegrationSpec:
     intervals: tuple[tuple[float, float], ...]
     frames: tuple[int, int]
-    target: str
+    name: str
+    signal_id: str | None = None
+    expected_recipe_version: int | None = None
 
 
 @dataclass(frozen=True)
@@ -26,6 +29,8 @@ class JobSnapshot:
     id: str
     analysis_id: str
     status: str
+    signal_id: str = ""
+    recipe_version: int = 0
     done: int = 0
     total: int = 0
     safe_error: str | None = None
@@ -37,8 +42,9 @@ class Job:
     owner: str
     source: object
     recipe: SignalRecipe
-    target: str
+    signal_id: str
     token: int
+    name_revision: int
     cancelled: Event = field(default_factory=Event)
 
 
@@ -68,21 +74,22 @@ class JobService:
             {"envelope": envelope.model_dump(mode="json"), "spec": spec.__dict__},
             sort_keys=True,
         )
-        with e.lock:
+        with self.workspaces.signal_lock, e.lock:
             old = self.explore.validate_envelope(e, envelope, fingerprint)
             if old is not None:
                 return old
             s = e.snapshot
-            if (
-                spec.target == "comparison"
-                and len(s.comparisons) >= self.settings.comparisons_per_analysis
-            ):
-                raise CapacityError(
-                    "Comparison quota reached; remove a comparison first."
-                )
+            name = valid_name(spec.name)
             windows = canonical_intervals(spec.intervals, s.mass_limits)
-            if spec.target not in ("active", "comparison"):
-                raise ValueError("Unknown integration target.")
+            if spec.signal_id is not None:
+                signal = get_signal(s, spec.signal_id)
+                if signal.recipe is not None and signal.recipe.source != 'custom':
+                    raise ValueError('Stored channels require a custom copy before raw integration.')
+                if spec.expected_recipe_version != signal.recipe_version:
+                    raise ValueError('Signal recipe changed; refresh before calculating.')
+            else:
+                self.workspaces.admit_signal(owner, len(s.signals))
+                signal = SignalSnapshot(str(uuid4()), name, s.next_style_index, None, 0)
             first, last = spec.frames
             if (
                 type(first) is not int
@@ -102,24 +109,18 @@ class JobService:
                     >= self.settings.jobs_per_analysis
                 ):
                     raise CapacityError("Integration queue full; wait or cancel a job.")
-                e.tokens[spec.target] += 1
-                recipe = SignalRecipe(
-                    intervals=windows,
-                    frames=tuple(spec.frames),
-                    label=" ∪ ".join(f"{lo:g}–{hi:g}" for lo, hi in windows) + " Th",
-                )
-                if spec.target == "comparison":
-                    recipe = replace(
-                        recipe,
-                        label=recipe.label
-                        + f" · frames {first}–{last} · #{len(s.comparisons) + 1}",
-                    )
-                snap = JobSnapshot(
-                    str(uuid4()), analysis_id, "queued", total=last - first + 1
-                )
-                self.jobs[snap.id] = Job(
-                    snap, owner, s.dataset, recipe, spec.target, e.tokens[spec.target]
-                )
+                token = e.tokens.get(signal.id, 0) + 1
+                e.tokens[signal.id] = token
+                recipe = SignalRecipe(id=signal.id, intervals=windows, frames=tuple(spec.frames), label=name)
+                snap = JobSnapshot(str(uuid4()), analysis_id, 'queued', signal.id,
+                                   signal.recipe_version+1, total=last-first+1)
+                self.jobs[snap.id] = Job(snap, owner, s.dataset, recipe, signal.id, token, signal.name_revision)
+                updated = replace(signal, job_id=snap.id)
+                signals = tuple(updated if r.id == signal.id else r for r in s.signals)
+                if spec.signal_id is None:
+                    signals = (*signals, updated)
+                e.snapshot = replace(s, signals=signals, revision=s.revision+1,
+                                     next_style_index=s.next_style_index+(spec.signal_id is None))
                 self.pending.setdefault(owner, deque()).append(snap.id)
                 if owner not in self.users:
                     self.users.append(owner)
@@ -198,7 +199,8 @@ class JobService:
                     return (
                         not e.closed
                         and e.snapshot.dataset == j.source
-                        and e.tokens[j.target] == j.token
+                        and e.tokens.get(j.signal_id) == j.token
+                        and any(r.id == j.signal_id for r in e.snapshot.signals)
                     )
 
                 def cancelled():
@@ -224,24 +226,16 @@ class JobService:
                         raise InterruptedError()
                     self.cache.repository.assert_current(j.owner, j.source)
                     s = e.snapshot
-                    if j.target == "active":
-                        previous = e.leases.pop(s.active_recipe.id, None)
-                        if previous:
-                            previous.release()
-                        result = replace(
-                            s,
-                            revision=s.revision + 1,
-                            active_recipe=j.recipe,
-                            loaded_frames=j.recipe.frames,
-                            depth=AllDepth(),
-                        )
-                    else:
-                        result = replace(
-                            s,
-                            revision=s.revision + 1,
-                            comparisons=s.comparisons + (j.recipe,),
-                        )
-                    e.leases[j.recipe.id] = lease
+                    old = get_signal(s, j.signal_id)
+                    name = old.name if old.name_revision != j.name_revision else j.recipe.label
+                    updated = replace(old, name=name, recipe=j.recipe, recipe_version=j.snapshot.recipe_version)
+                    result = normalize_view(replace(s, revision=s.revision+1,
+                        signals=tuple(updated if r.id == old.id else r for r in s.signals),
+                        profile_signal_ids=tuple(dict.fromkeys((*s.profile_signal_ids, old.id)))))
+                    previous = e.leases.pop(old.id, None)
+                    if previous:
+                        previous.release()
+                    e.leases[old.id] = lease
                     lease = None
                     e.snapshot = result
                     with self.condition:
