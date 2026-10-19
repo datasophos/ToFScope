@@ -104,3 +104,20 @@ and new tabs. State still resets when the service restarts. Actual NFS lock and
 replacement behavior, acquisition hardware timing/SE registration, commercial
 format save/readback, and multi-host service scaling were unavailable and were
 not verified. No release, external deployment, or acquisition write occurred.
+
+## Demo interaction follow-up (2026-10-19)
+
+The provided `pfib-tofwerk opened.h5` (10×64×64×259) and
+`fake_fib_sims_opened.h5` (5×16×16×10) were opened as independent analyses in
+one workspace. The 259-signal picker stayed within 200 px, search narrowed its
+options, and Escape dismissed it. Nine frame steps on the ToF-Werk file had
+local p50/p95 latency of 98.9/99.8 ms. The browser made no external requests and
+reported no JavaScript errors. These checks used read-only acquisition access.
+
+The follow-up browser tests also verify square image stages, the ion-map/spectrum
+top row and front-projection/depth-profile bottom row, ordinary wheel scrolling
+without plot zoom, and Ctrl/Cmd-wheel zoom. All nine Playwright tests and six
+Vitest tests passed. Frontend assets were rebuilt; the resulting wheel and sdist
+both passed the installed-package smoke with Node absent and browser requests
+restricted to the local service. No architecture or feature plan changed in
+this UI follow-up.
