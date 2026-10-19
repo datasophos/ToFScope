@@ -99,10 +99,22 @@ class APITests(unittest.TestCase):
                 "spec": {
                     "intervals": [[1, 2], [4, 5]],
                     "frames": [0, 2],
-                    "target": "active",
+                    "name": "Ti",
                 },
             },
         )
         self.assertEqual(j.status_code, 202, j.text)
         id = j.json()["id"]
         self.assertEqual(c.get(f"/api/v1/jobs/{id}", headers=self.b).status_code, 404)
+
+    def test_api_rejects_foreign_signal_and_legacy_target(self):
+        c = self.client
+        workspace = c.post('/api/v1/workspaces', headers=self.a).json()
+        a = c.post(f"/api/v1/workspaces/{workspace['id']}/analyses", headers=self.a, json={'relative_path':'a.h5'}).json()
+        base = {'request_id':'legacy','expected_revision':a['revision'],'dataset_generation':a['dataset']['generation']}
+        bad = c.post(f"/api/v1/analyses/{a['id']}/jobs", headers=self.a, json=base | {'spec':{'intervals':[[1,2]],'frames':[0,2],'target':'active'}})
+        self.assertEqual(bad.status_code, 422)
+        workspace_b = c.post('/api/v1/workspaces', headers=self.b).json()
+        b = c.post(f"/api/v1/workspaces/{workspace_b['id']}/analyses", headers=self.b, json={'relative_path':'a.h5'}).json()
+        response = c.post(f"/api/v1/analyses/{a['id']}/commands", headers=self.a, json=base | {'command':{'type':'select_image_signal','signal_id':b['image_signal_id']}})
+        self.assertEqual(response.status_code, 422)

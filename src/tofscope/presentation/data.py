@@ -12,7 +12,8 @@ class Axis:
 
 @dataclass(frozen=True)
 class Curve:
-    recipe_id: str
+    signal_id: str
+    style_index: int
     label: str
     values: list[float | None]
     coverage: list[bool]
@@ -32,6 +33,10 @@ class Panel:
     palette: Literal["ion", "gray"] = "ion"
     log: bool = False
     relative: bool = False
+    signal_id: str | None = None
+    signal_name: str | None = None
+    signal_version: int | None = None
+    frame_range: tuple[int, int] | None = None
 
 
 @dataclass(frozen=True)

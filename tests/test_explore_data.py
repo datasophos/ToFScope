@@ -30,8 +30,35 @@ class PresentationTests(unittest.TestCase):
             CommandEnvelope(str(a.revision), a.revision, a.dataset.generation, command),
         )
 
+    def select_channel(self, index):
+        before = self.s.workspaces.get('a', self.a.id)
+        added = self.command({'type':'add_stored_signal', 'index':index})
+        row = next(r for r in added.signals if r.recipe and r.recipe.source == 'stored' and r.recipe.stored_index == index)
+        self.command({'type':'select_image_signal', 'signal_id':row.id})
+        if before.image_signal_id != row.id:
+            self.command({'type':'remove_signal', 'signal_id':before.image_signal_id})
+
+    def test_hidden_signal_retained_in_settings_not_csv(self):
+        a = self.command({'type':'add_stored_signal','index':0})
+        row = a.signals[-1]
+        self.command({'type':'rename_signal','signal_id':row.id,'name':'hidden signal'})
+        self.command({'type':'set_profile_visible','signal_id':row.id,'visible':False})
+        settings = json.loads(self.exports.render('a', a.id, 'json').content)
+        self.assertIn(row.id, [r['id'] for r in settings['signals']])
+        self.assertNotIn(b'hidden signal', self.exports.render('a', a.id, 'csv').content)
+
+    def test_partial_coverage_and_image_frame_intersection(self):
+        a = self.command({'type':'add_stored_signal','index':0})
+        row = a.signals[-1]
+        self.command({'type':'set_stored_coverage','signal_id':row.id,'frames':[1,2]})
+        self.command({'type':'select_image_signal','signal_id':row.id})
+        d = self.presenter.snapshot('a',a.id,{'ion','front','profile'})
+        np.testing.assert_array_equal(d.panels['ion'].values, [[6.,8.]])
+        self.assertEqual(d.panels['front'].values, [[None,None],[2.,3.],[4.,5.]])
+        self.assertEqual(d.panels['profile'].series[0].values, [None,2.5,4.5])
+
     def test_original_values_and_coverage(self):
-        self.command({"type": "select_stored", "index": 0})
+        self.select_channel(0)
         d = self.presenter.snapshot(
             "a", self.a.id, {"ion", "front", "profile", "spectrum"}
         )
@@ -65,7 +92,7 @@ class PresentationTests(unittest.TestCase):
         d = self.presenter.snapshot("a", self.a.id, {"ion"})
         np.testing.assert_array_equal(d.panels["ion"].values, [[4.0, 6.0], [8.0, 10.0]])
         recipe = json.loads(self.exports.render("a", self.a.id, "json").content)
-        self.assertEqual(recipe["schema_version"], 3)
+        self.assertEqual(recipe["schema_version"], 4)
         self.assertEqual(recipe["loaded_frames"], [0, 2])
         self.assertNotIn(str(self.settings.data_root), str(recipe))
 
@@ -91,7 +118,7 @@ class PresentationTests(unittest.TestCase):
         a=self.s.workspaces.get('a',self.a.id)
         job=self.s.jobs.submit('a',a.id,CommandEnvelope('comparison',a.revision,a.dataset.generation,{'type':'set_depth','depth':{'mode':'all'}}),IntegrationSpec(((1,2),(4,5)),(1,2),'comparison'))
         self.assertEqual(self.s.jobs.wait('a',job.id,3).status,'succeeded')
-        self.command({'type':'select_stored','index':0})
+        self.select_channel(0)
         panel=self.presenter.snapshot('a',a.id,{'profile'}).panels['profile'];self.assertEqual(panel.series[1].values,[None,.75,.875])
         self.command({'type':'set_roi','roi':[1,1,0,0]})
         self.assertEqual(self.presenter.snapshot('a',a.id,{'profile'}).panels['profile'].series[1].values,[None,.5,.75])

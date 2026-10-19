@@ -45,7 +45,8 @@ class ReviewRegressions(unittest.TestCase):
             a, {"type": "set_display", "image": "se", "log": False, "relative": False}
         )
         before = self.s.presenter.snapshot("a", a.id, {"ion"}).panels["ion"]
-        self.command(a, {"type": "select_stored", "index": 0})
+        a = self.command(a, {"type": "add_stored_signal", "index": 0})
+        self.command(a, {"type": "select_image_signal", "signal_id": a.signals[-1].id})
         after = self.s.presenter.snapshot("a", a.id, {"ion"}).panels["ion"]
         self.assertEqual(before.intensity_range, after.intensity_range)
         self.assertEqual(before.palette, "gray")
