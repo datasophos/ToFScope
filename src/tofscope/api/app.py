@@ -293,7 +293,8 @@ def create_app(settings, services=None, bootstrap_secret=None):
             aid,
             body,
             IntegrationSpec(
-                tuple(body.spec.intervals), tuple(body.spec.frames), body.spec.target
+                tuple(body.spec.intervals), tuple(body.spec.frames), body.spec.name,
+                body.spec.signal_id, body.spec.expected_recipe_version
             ),
         )
 

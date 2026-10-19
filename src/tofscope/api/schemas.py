@@ -25,7 +25,9 @@ class IntegrationInput(StrictModel):
         min_length=1, max_length=128
     )
     frames: tuple[StrictInt, StrictInt]
-    target: Literal["active", "comparison"]
+    name: str = Field(min_length=1, max_length=128)
+    signal_id: str | None = None
+    expected_recipe_version: StrictInt | None = Field(default=None, ge=0)
 
 
 class SubmitJob(RevisionEnvelope):
