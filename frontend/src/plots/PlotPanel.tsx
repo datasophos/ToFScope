@@ -107,10 +107,7 @@ export function PlotPanel({
       data-y-scale={name === "spectrum" ? yScale : undefined}
     >
       <header>
-        <div>
-          <h2>{title}</h2>
-          <small>{panel?.aggregation || "Preparing data…"}</small>
-        </div>
+        <h2>{title}</h2>
         <div className="row">
           {onAllDepths && <button onClick={onAllDepths}>All depths</button>}
           {name === "spectrum" && (

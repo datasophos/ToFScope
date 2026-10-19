@@ -584,7 +584,7 @@ export function ExploreScreen({
           <div className="plot-grid">
             <PlotPanel
               name="ion"
-              title={a.display.image === "se" ? "SE image" : "Ion map"}
+              title={a.display.image === "se" ? "SE Image" : "Ion map"}
               panel={data?.panels.ion}
               expectedKind="image"
               loading={!data?.panels.ion && !error}
@@ -607,7 +607,7 @@ export function ExploreScreen({
             <PlotPanel
               zoomWindow={draft[draftIndex]?.map(Number) as [number, number]}
               name="spectrum"
-              title="Spectrum"
+              title="Mass spectrum"
               panel={data?.panels.spectrum}
               maximized={max === "spectrum"}
               onMaximize={() => setMax(max === "spectrum" ? null : "spectrum")}
