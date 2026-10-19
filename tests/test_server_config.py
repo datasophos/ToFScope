@@ -18,7 +18,8 @@ class ServerConfigTests(unittest.TestCase):
 
     def test_default_and_explicit_startup(self):
         demo=load_server_settings({})
-        self.assertEqual(demo.data_root,DEFAULT_FILE.parent.resolve())
+        expected_root=DEFAULT_FILE.parent if DEFAULT_FILE.parent.is_dir() else Path(__file__).resolve().parents[1]/'data'
+        self.assertEqual(demo.data_root,expected_root.resolve())
         self.assertFalse(demo.allow_writes)
         self.assertEqual(demo.initial_file,DEFAULT_FILE.resolve() if DEFAULT_FILE.exists() else None)
         settings=load_server_settings({'TOFSCOPE_DATA_ROOT':str(self.root)})
@@ -40,6 +41,13 @@ class ServerConfigTests(unittest.TestCase):
             with self.subTest(path=path),self.assertRaises(ValueError):resolve_data_path(self.settings,path)
         with self.assertRaises(ValueError):resolve_data_path(self.settings,'',require_file=True)
         with self.assertRaises(ValueError):resolve_data_path(self.settings,'missing.h5',require_file=True)
+
+    def test_startup_without_adjacent_example_directory(self):
+        with patch('server_config.DEFAULT_FILE',self.base/'missing-examples'/'example.h5'):
+            settings=load_server_settings({})
+        self.assertTrue(settings.data_root.is_dir())
+        self.assertIsNone(settings.initial_file)
+        self.assertFalse(settings.allow_writes)
 
     def test_controller_rejects_forged_open_and_preserves_dataset(self):
         with patch('workspace.get_plotlyjs',return_value=''),patch.object(ExplorerWorkspace,'figures',return_value={}):

@@ -15,8 +15,9 @@ From this directory:
 uv run --no-dev --locked marimo run app.py --host 127.0.0.1 --port 2718
 ```
 
-Open <http://127.0.0.1:2718>. The supplied AlTiPt example is selected by
-default. **Open file** browses the server data directory with breadcrumbs,
+Open <http://127.0.0.1:2718>. If the adjacent AlTiPt example is available, it is
+selected by default. Otherwise the workspace starts without a loaded acquisition.
+**Open file** browses the server data directory with breadcrumbs,
 filtering and paginated results; select a file and press **Open dataset**.
 Files remain on the computer running Python. Keep the server bound to localhost.
 
@@ -28,7 +29,10 @@ TOFSCOPE_DATA_ROOT=/mnt/acquisitions uv run --no-dev --locked marimo run app.py 
 
 An explicit root starts with no acquisition loaded. Optionally set `TOF_FILE`
 to an absolute path inside that root, or a path relative to it. With neither
-setting, the demo root is the supplied example's directory. An empty root
+setting, the demo root is the supplied example's directory if it exists,
+otherwise the repository's `data` directory. Acquisition files are not bundled;
+set `TOFSCOPE_DATA_ROOT` to your data directory when running a standalone checkout.
+An empty root
 remains usable; a failed open preserves the current analysis. The picker
 lists `.h5`/`.hdf5` files without reading acquisition arrays. Paths in browser
 state and exported recipes are root-relative. Symlinks must resolve inside the
