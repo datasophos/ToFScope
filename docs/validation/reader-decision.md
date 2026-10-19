@@ -43,3 +43,17 @@ alongside installed `_api.py` and `_reconstruction.py`. The higher-level API's
 supported lazy reads retain files; custom union recipes, progress/cancellation
 and strict allocation admission would still need direct code. Real acquisition
 results are appended in pilot qualification when hydration completes.
+
+Real AlTiPt acquisition, read-only qualification: shape 1301×128×128×217;
+raw 1302×128×128; nominal 27 channel 26, normalization 4. Direct full-channel
+read/reductions 389.4 ms, 85,262,336 bytes. Four-frame framework eager subset
+115.9 ms; Dask lazy subset 4397.5 ms and two simultaneous lazy subsets ~6.8 s
+each with explicit native chunks. Stored arrays agreed exactly; direct NumPy
+raw versus RosettaSciIO explicit float32 reconstruction agreed exactly. Raw
+integration 17.4 ms for four frames. Vendor maximum discrepancy .25, sum
+reconstruction minus vendor -3.0 (unchanged semantic difference, not tolerance).
+Combined qualification process peak RSS 1,076,740,096 bytes includes all readers
+and retained arrays; it does not isolate a per-library peak. Acquisition stat
+identity remained unchanged. The fixture runner comparison gave threads
+14.3 ms total versus processes 110.4 ms (four selected frames, includes process
+startup); retain bounded threads, with service health separately measured.
