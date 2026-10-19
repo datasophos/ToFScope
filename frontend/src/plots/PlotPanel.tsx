@@ -31,8 +31,10 @@ export function PlotPanel({
   onAllDepths?: () => void;
   zoomWindow?: Range;
 }) {
-  const element = useRef<HTMLDivElement>(null),
+  const body = useRef<HTMLDivElement>(null),
+    element = useRef<HTMLDivElement>(null),
     chart = useRef<ChartHandle | null>(null);
+  const [stageSize, setStageSize] = useState(0);
   const [zoom, setZoom] = useState<Range | null>(null);
   const axis = panel?.axes[0];
   const range: Range =
@@ -65,15 +67,23 @@ export function PlotPanel({
       }
     : undefined;
   useEffect(() => {
-    if (!element.current) return;
-    const observer = new ResizeObserver(() => chart.current?.resize());
+    if (!element.current || !body.current) return;
+    const observer = new ResizeObserver(() => {
+      chart.current?.resize();
+      if (panel?.kind === "image" && body.current) {
+        const { width, height } = body.current.getBoundingClientRect();
+        const side = Math.floor(Math.min(width, height));
+        setStageSize((current) => current === side ? current : side);
+      }
+    });
     observer.observe(element.current);
+    observer.observe(body.current);
     return () => {
       observer.disconnect();
       chart.current?.destroy();
       chart.current = null;
     };
-  }, []);
+  }, [panel?.kind]);
   useEffect(() => {
     if (!data || !element.current) return;
     if (!chart.current) chart.current = mountChart(element.current, data);
@@ -120,7 +130,16 @@ export function PlotPanel({
           </button>
         </div>
       </header>
-      <div className="plot-body">
+      <div className="plot-body" ref={body}>
+        <div
+          className={`plot-stage ${panel?.kind === "image" ? "image" : ""}`}
+          data-testid={`plot-stage-${name}`}
+          style={
+            panel?.kind === "image" && stageSize
+              ? { width: stageSize, height: stageSize }
+              : undefined
+          }
+        >
         <div className="chart" ref={element} />
         {panel && (
           <SelectionOverlay
@@ -133,8 +152,10 @@ export function PlotPanel({
             onClick={onClick}
             onZoom={setZoom}
             mode={mode}
+          image={panel.kind === "image"}
           />
         )}
+        </div>
       </div>
       <footer>
         {axis?.name} · {axis?.unit}

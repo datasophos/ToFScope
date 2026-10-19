@@ -109,7 +109,10 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
     chart.setOption(
       {
         animation: false,
-        grid: { left: 60, right: 20, top: 20, bottom: 40 },
+        grid:
+          d.kind === "image"
+            ? { left: 40, right: 40, top: 40, bottom: 40 }
+            : { left: 60, right: 20, top: 20, bottom: 40 },
         tooltip: { trigger: "item", renderMode: "richText" },
         xAxis: {
           type: "value",
