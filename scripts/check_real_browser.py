@@ -93,6 +93,20 @@ def main():
                 page.get_by_label("Search signals").fill("")
                 page.keyboard.press("Escape")
                 load_ms = (time.perf_counter() - t) * 1000
+                resize_timings = {}
+                for name in ("ion", "front"):
+                    panel = page.get_by_test_id("panel-" + name)
+                    measurements = []
+                    for _ in range(3):
+                        for action in ("maximize", "restore"):
+                            elapsed = panel.evaluate("""async (el) => {
+                                const start = performance.now();
+                                el.querySelector('button[aria-label^="Maximize"],button[aria-label^="Restore"]').click();
+                                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                                return performance.now() - start;
+                            }""")
+                            measurements.append({"action": action, "ms": elapsed})
+                    resize_timings[name] = measurements
                 timings = []
                 first_frame = int(page.get_by_label("Loaded first").input_value())
                 last_frame = int(page.get_by_label("Loaded last").input_value())
@@ -134,6 +148,7 @@ def main():
                 assert not external, external
                 result = {
                     "initial_four_panels_ms": load_ms,
+                    "image_resize_timings": resize_timings,
                     "frame_step_p50_ms": sorted(timings)[len(timings) // 2] if timings else None,
                     "frame_step_p95_ms": sorted(timings)[min(len(timings) - 1, int(len(timings) * 0.9))] if timings else None,
                     "frame_step_samples": len(timings),

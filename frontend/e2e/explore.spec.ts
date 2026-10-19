@@ -20,9 +20,15 @@ test("independent files, exact Explore state, custom Apply and offline downloads
     .getByRole("button", { name: "Choose an HDF5 acquisition" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
-  await expect(page.getByRole("button", { name: "Select stored signal" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Select stored signal" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Select stored signal" }).click();
-  await page.getByRole("listbox", { name: "Stored signals" }).getByRole("option").first().click();
+  await page
+    .getByRole("listbox", { name: "Stored signals" })
+    .getByRole("option")
+    .first()
+    .click();
   await expect(page.getByTestId("analysis-revision")).toHaveText("1");
   const ion = page.getByTestId("panel-ion").getByTestId("selection-overlay");
   const bounds = (await ion.boundingBox())!;
@@ -73,7 +79,9 @@ test("independent files, exact Explore state, custom Apply and offline downloads
   expect(requests).toEqual([]);
 });
 
-test("Explore layout, signal picker and chart wheel behavior", async ({ page }) => {
+test("Explore layout, signal picker and chart wheel behavior", async ({
+  page,
+}) => {
   await page.route("**/analyses/*/data?*", async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 500));
     await route.continue();
@@ -83,9 +91,12 @@ test("Explore layout, signal picker and chart wheel behavior", async ({ page }) 
     state.imageStageFlash = false;
     const check = () => {
       if (
-        Array.from(document.querySelectorAll<HTMLElement>(".plot-stage.image")).some(
+        Array.from(
+          document.querySelectorAll<HTMLElement>(".plot-stage.image"),
+        ).some(
           (stage) =>
-            stage.dataset.stageReady !== "true" && stage.querySelector("canvas"),
+            stage.dataset.stageReady !== "true" &&
+            stage.querySelector("canvas"),
         )
       )
         state.imageStageFlash = true;
@@ -99,7 +110,9 @@ test("Explore layout, signal picker and chart wheel behavior", async ({ page }) 
   });
   await page.setExtraHTTPHeaders({ "x-tofscope-user": "browser-b" });
   await page.goto("/");
-  await page.getByRole("button", { name: "Choose an HDF5 acquisition" }).click();
+  await page
+    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   const ionLoader = page
     .getByTestId("panel-ion")
@@ -108,10 +121,36 @@ test("Explore layout, signal picker and chart wheel behavior", async ({ page }) 
   await expect(ionLoader).toBeHidden();
   const spectrum = page.getByTestId("panel-spectrum");
   await expect(spectrum).toHaveAttribute("data-y-scale", "log");
+  const logSpectrum = await spectrum
+    .locator("canvas")
+    .first()
+    .evaluate((canvas: HTMLCanvasElement) => canvas.toDataURL());
   await spectrum.getByRole("button", { name: "Use linear y scale" }).click();
   await expect(spectrum).toHaveAttribute("data-y-scale", "linear");
-  await spectrum.getByRole("button", { name: "Use logarithmic y scale" }).click();
+  await expect
+    .poll(
+      async () =>
+        (await spectrum
+          .locator("canvas")
+          .first()
+          .evaluate((canvas: HTMLCanvasElement) => canvas.toDataURL())) !==
+        logSpectrum,
+    )
+    .toBe(true);
+  await spectrum
+    .getByRole("button", { name: "Use logarithmic y scale" })
+    .click();
   await expect(spectrum).toHaveAttribute("data-y-scale", "log");
+  await expect
+    .poll(
+      async () =>
+        (await spectrum
+          .locator("canvas")
+          .first()
+          .evaluate((canvas: HTMLCanvasElement) => canvas.toDataURL())) ===
+        logSpectrum,
+    )
+    .toBe(true);
   const panels = ["ion", "spectrum", "front", "profile"].map((name) =>
     page.getByTestId(`panel-${name}`),
   );
@@ -134,7 +173,9 @@ test("Explore layout, signal picker and chart wheel behavior", async ({ page }) 
   const picker = page.getByRole("button", { name: "Select stored signal" });
   await expect(picker).toBeVisible();
   await picker.click();
-  await expect(page.getByRole("listbox", { name: "Stored signals" })).toBeVisible();
+  await expect(
+    page.getByRole("listbox", { name: "Stored signals" }),
+  ).toBeVisible();
   expect(
     await page
       .getByRole("listbox", { name: "Stored signals" })
@@ -144,9 +185,13 @@ test("Explore layout, signal picker and chart wheel behavior", async ({ page }) 
   await expect(
     page.getByRole("listbox", { name: "Stored signals" }).getByRole("option"),
   ).toHaveCount(1);
-  await expect(page.locator("select[aria-label='Stored signal']")).toHaveCount(0);
+  await expect(page.locator("select[aria-label='Stored signal']")).toHaveCount(
+    0,
+  );
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("listbox", { name: "Stored signals" })).toBeHidden();
+  await expect(
+    page.getByRole("listbox", { name: "Stored signals" }),
+  ).toBeHidden();
 
   const overlay = page
     .getByTestId("panel-spectrum")
@@ -155,9 +200,14 @@ test("Explore layout, signal picker and chart wheel behavior", async ({ page }) 
   let range = await overlay.getAttribute("data-x-range");
   const bounds = (await overlay.boundingBox())!;
   const beforeScroll = await page.evaluate(() => window.scrollY);
-  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+  await page.mouse.move(
+    bounds.x + bounds.width / 2,
+    bounds.y + bounds.height / 2,
+  );
   await page.mouse.wheel(0, 140);
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(beforeScroll);
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(beforeScroll);
   await expect(overlay).toHaveAttribute("data-x-range", range!);
   range = await overlay.getAttribute("data-x-range");
   const afterPageScroll = (await overlay.boundingBox())!;
@@ -169,4 +219,75 @@ test("Explore layout, signal picker and chart wheel behavior", async ({ page }) 
   await page.mouse.wheel(0, -140);
   await page.keyboard.up("Control");
   await expect(overlay).not.toHaveAttribute("data-x-range", range!);
+});
+
+test("full-size image maximize and restore stay responsive without fetching data", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({ "x-tofscope-user": `resize-${Date.now()}` });
+  let dataRequests = 0;
+  await page.route("**/analyses/*/data?*", async (route) => {
+    dataRequests++;
+    const response = await route.fetch();
+    const data = await response.json();
+    for (const name of ["ion", "front"]) {
+      const panel = data.panels[name];
+      if (!panel) continue;
+      const rows = name === "ion" ? 128 : 1301;
+      for (const [index, count] of [
+        [0, 128],
+        [1, rows],
+      ]) {
+        const axis = panel.axes[index];
+        const low = axis.boundaries[0],
+          high = axis.boundaries.at(-1);
+        axis.values = Array.from(
+          { length: count },
+          (_, i) => low + ((i + 0.5) * (high - low)) / count,
+        );
+      }
+      panel.values = Array.from({ length: rows }, (_, y) =>
+        Array.from({ length: 128 }, (_, x) => x + y),
+      );
+      panel.intensity_range = [0, rows + 126];
+    }
+    await route.fulfill({ response, json: data });
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await expect(
+    page.getByTestId("panel-front").locator("canvas").first(),
+  ).toBeVisible();
+  const requestsBefore = dataRequests;
+  for (const name of ["ion", "front"]) {
+    const panel = page.getByTestId(`panel-${name}`);
+    const times: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      times.push(
+        await panel.evaluate(async (el) => {
+          const start = performance.now();
+          el.querySelector<HTMLButtonElement>(
+            'button[aria-label^="Maximize"],button[aria-label^="Restore"]',
+          )!.click();
+          await new Promise((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve)),
+          );
+          return performance.now() - start;
+        }),
+      );
+      const canvas = await panel.locator("canvas").first().boundingBox();
+      const stage = await panel.locator(".plot-stage").boundingBox();
+      expect(Math.abs(canvas!.width - stage!.width)).toBeLessThan(2);
+      expect(Math.abs(canvas!.height - stage!.height)).toBeLessThan(2);
+    }
+    console.log(JSON.stringify({ image: name, resize_ms: times }));
+    expect(
+      Math.max(...times),
+      `${name} resize must paint within 200 ms`,
+    ).toBeLessThan(200);
+  }
+  expect(dataRequests).toBe(requestsBefore);
 });

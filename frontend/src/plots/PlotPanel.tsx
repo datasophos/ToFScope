@@ -81,7 +81,7 @@ export function PlotPanel({
       if (image && body.current) {
         const { width, height } = body.current.getBoundingClientRect();
         const side = Math.floor(Math.min(width, height));
-        setStageSize((current) => current === side ? current : side);
+        setStageSize((current) => (current === side ? current : side));
       }
     });
     observer.observe(element.current);
@@ -97,7 +97,7 @@ export function PlotPanel({
       return;
     if (!chart.current) chart.current = mountChart(element.current, data);
     else chart.current.update(data);
-  }, [panel?.content_version, zoom, stageSize]);
+  }, [panel?.content_version, zoom, stageSize, yScale]);
   return (
     <section
       className={`plot-panel ${maximized ? "maximized" : ""}`}
@@ -115,7 +115,9 @@ export function PlotPanel({
           {onAllDepths && <button onClick={onAllDepths}>All depths</button>}
           {name === "spectrum" && (
             <button
-              onClick={() => setYScale((scale) => scale === "log" ? "linear" : "log")}
+              onClick={() =>
+                setYScale((scale) => (scale === "log" ? "linear" : "log"))
+              }
               aria-label={`Use ${yScale === "log" ? "linear" : "logarithmic"} y scale`}
               aria-pressed={yScale === "log"}
             >
@@ -152,7 +154,11 @@ export function PlotPanel({
       </header>
       <div className="plot-body" ref={body}>
         {image && (loading || !stageReady) && (
-          <div className="plot-loading" role="status" aria-label="Loading image plot">
+          <div
+            className="plot-loading"
+            role="status"
+            aria-label="Loading image plot"
+          >
             <span className="plot-spinner" aria-hidden="true" />
             <span>Loading image…</span>
           </div>
