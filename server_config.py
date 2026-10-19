@@ -27,6 +27,8 @@ class ServerSettings:
 def load_server_settings(env: Mapping[str,str]) -> ServerSettings:
     configured='TOFSCOPE_DATA_ROOT' in env
     root=Path(env['TOFSCOPE_DATA_ROOT']) if configured else DEFAULT_FILE.parent
+    if not configured and not root.is_dir():
+        root=Path(__file__).resolve().parent/'data'
     value=env.get('TOFSCOPE_ALLOW_WRITES','false').lower()
     if value not in ('true','false'):
         raise ValueError('TOFSCOPE_ALLOW_WRITES must be true or false.')
