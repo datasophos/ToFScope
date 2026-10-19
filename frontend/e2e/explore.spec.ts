@@ -69,7 +69,7 @@ test("independent files, exact Explore state, custom Apply and offline downloads
     .click();
   await expect(screen.getByTestId("job-status")).toContainText("succeeded");
   await expect(screen.getByTestId("active-source")).toContainText("custom");
-  await screen.getByRole("button", { name: "Maximize Spectrum" }).click();
+  await screen.getByRole("button", { name: "Maximize Mass spectrum" }).click();
   await expect(screen.locator(".plot-panel.maximized")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(screen.locator(".plot-panel.maximized")).toHaveCount(0);

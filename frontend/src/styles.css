@@ -313,7 +313,7 @@ small {
   gap: 5px;
 }
 .plot-panel header h2 {
-  margin: 0 0 2px;
+  margin: 0;
 }
 .plot-panel header button {
   padding: 3px 6px;
