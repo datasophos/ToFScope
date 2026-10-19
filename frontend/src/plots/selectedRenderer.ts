@@ -1,4 +1,5 @@
 import { imageRaster } from "./imageRaster";
+import { curveStyle, type CurveStyle } from "./curveStyle";
 import * as echarts from "echarts/core";
 import { LineChart, CustomChart } from "echarts/charts";
 import { GridComponent, TooltipComponent } from "echarts/components";
@@ -16,7 +17,10 @@ export type ChartData = {
   x: number[];
   y?: number[];
   values?: (number | null)[][];
-  series?: { label: string; values: (number | null)[] }[];
+  series?: ({
+    label: string;
+    values: (number | null)[];
+  } & Partial<CurveStyle>)[];
   xRange: [number, number];
   yRange: [number, number];
   palette?: "ion" | "gray";
@@ -70,7 +74,8 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
               connectNulls: false,
               lineStyle: {
                 width: 1.5,
-                color: ["#167d9a", "#b05e20", "#8560b4", "#337c45"][i % 4],
+                color: s.color || curveStyle(i).color,
+                type: s.dash || curveStyle(i).dash,
               },
               data: d.x.map((x, j) => {
                 const value = s.values[j];
