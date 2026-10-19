@@ -11,9 +11,9 @@ import time
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import h5py
 import numpy as np
-from explorer import DEFAULT_FILE,inspect_file
-from signals import SignalRecipe,read_signal
-from vendor_export import export_native_copy
+from tofscope.storage.explorer import inspect_file
+from tofscope.science.signals import SignalRecipe,read_signal
+from tofscope.storage.vendor_export import export_native_copy
 
 
 def digest(path):
@@ -24,7 +24,7 @@ def digest(path):
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--source',default=str(DEFAULT_FILE));parser.add_argument('--output',default='/private/tmp/tofscope-native-validation.h5')
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--source',required=True);parser.add_argument('--output',default='/private/tmp/tofscope-native-validation.h5')
     args=parser.parse_args();source=Path(args.source);output=Path(args.output)
     if output.exists():raise FileExistsError(output)
     started=time.monotonic();before=digest(source);meta=inspect_file(source)

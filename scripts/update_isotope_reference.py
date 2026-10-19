@@ -13,7 +13,7 @@ from pathlib import Path
 import re
 import sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from isotopes import IsotopeRecord,records_checksum
+from tofscope.science.isotopes import IsotopeRecord,records_checksum
 
 
 class ReferenceHTML(HTMLParser):
