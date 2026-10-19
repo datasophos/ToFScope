@@ -26,7 +26,6 @@ with tempfile.TemporaryDirectory(prefix="tofscope-container-") as d:
     command = [
         "docker",
         "run",
-        "--rm",
         "-d",
         "--read-only",
         "--tmpfs",
@@ -81,4 +80,5 @@ with tempfile.TemporaryDirectory(prefix="tofscope-container-") as d:
             )
         )
     finally:
-        subprocess.run(["docker", "stop", id], check=True, stdout=subprocess.DEVNULL)
+        subprocess.run(["docker", "stop", id], check=False, stdout=subprocess.DEVNULL)
+    subprocess.run(["docker", "rm", id],check=False,stdout=subprocess.DEVNULL)

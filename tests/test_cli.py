@@ -46,3 +46,18 @@ class CLITests(unittest.TestCase):
             )
             run.assert_called_once()
             browser.assert_not_called()
+    def test_browser_opens_only_after_readiness(self):
+        from tofscope.cli import open_after_ready
+        from urllib.error import URLError
+        from threading import Event
+        from unittest.mock import MagicMock
+        response=MagicMock();response.__enter__.return_value.status=200
+        with patch('tofscope.cli.urllib.request.urlopen',side_effect=[URLError('starting'),response]) as fetch,patch('tofscope.cli.webbrowser.open') as browser:
+            open_after_ready('http://127.0.0.1:8765','test-token',Event());self.assertEqual(fetch.call_count,2);browser.assert_called_once()
+    def test_occupied_port_never_opens_browser(self):
+        from tofscope.cli import run_service
+        from tofscope.config import Settings
+        with tempfile.TemporaryDirectory() as d,patch('tofscope.cli.socket.socket') as socket,patch('tofscope.cli.webbrowser.open') as browser:
+            socket.return_value.bind.side_effect=OSError('occupied')
+            with self.assertRaisesRegex(ValueError,'Port'):run_service(Settings(Path(d),runtime_dir=Path(d)/'runtime'),browser=True)
+            browser.assert_not_called()

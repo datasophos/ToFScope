@@ -262,6 +262,30 @@ Workspace deletion closes its analyses. Add `DELETE /workspaces/{wid}` and `GET 
 - [ ] Verify in clean environments that neither Python package nor production JS requires Marimo/AnyWidget or the losing renderer. Keep all scientific/storage tests, including write validation; replace old widget assertions with equivalent services/display assertions or carry their exact cases into the completion plan. Do not silently delete coverage for deferred features.
 - [ ] Run the full CI command set once on the final tree, `git diff --check`, and the immutable prototype's launch smoke independently. Record evidence and outstanding external checks. Commit as `docs: establish the packaged Explore development workflow`.
 
+## Execution record (2026-10-18)
+
+Inline implementation uses the shared contracts above. Task 1a was added before
+implementation at the user's request; [reader evidence](../../validation/reader-decision.md)
+selects direct h5py after synthetic eager/lazy/concurrent and real-data checks.
+Task 7's [renderer evidence](../../validation/renderer-decision.md) selects
+ECharts after actual interaction and last-row canvas checks. No backend-specific
+figure/signal object enters the HTTP contract.
+
+Tasks 1–13 are implemented. See [qualification](../../validation/pilot-qualification.md)
+and [coverage disposition](../../validation/coverage-map.md) for executed checks
+and the exact deferred prototype assertions. The original task checklists remain
+as the acceptance inventory; unavailable real NFS/hardware/commercial-save checks
+are deliberately not marked passed. The final local artifact/container/browser
+runs and fresh review are recorded with the implementation commits.
+
+Implementation rulings: external canonical-path locks wait up to 30 s; direct
+h5py remains the reader; a configurable 128-comparison metadata quota complements
+byte admission; front projection keeps full X and sums ROI Y; whole-image renderer
+updates disable progressive batches; transport reservations last through send
+completion; original widget/figure cases are mapped to services or explicit
+completion tasks. Their scientific core modules/tests remain available. Prebuilt
+assets and hashes ship in wheel/sdist and source builds reject stale inputs.
+
 ## Plan review and handoff
 
 Coverage: A → Task 1; boundaries → 2–4; concurrent users/analyses, API/jobs → 3–6/9/12; renderer evaluation → 7; scientific presentation/exports → 8/10; packaged local/server operation → 11–13. Deferred dialogs, calibrated UI, sections, volumes and native saves have executable tasks in the completion plan; durable workspace restoration remains explicitly deferred in the design.
