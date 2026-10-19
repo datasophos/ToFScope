@@ -33,7 +33,9 @@ class Settings:
     jobs_per_analysis: int = 4
     jobs_per_user: int = 8
     jobs_global: int = 32
-    comparisons_per_analysis: int = 128
+    signals_per_analysis: int = 129
+    signals_per_user: int = 512
+    signals_global: int = 2048
     workers: int = 2
     lease_seconds: int = 45
     reconnect_seconds: int = 120

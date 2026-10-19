@@ -16,6 +16,7 @@ from tofscope.application.cache import ArrayCache
 from tofscope.application.jobs import JobService, JobSnapshot, IntegrationSpec
 from tofscope.application.lifecycle import LifecycleService, ViewLease
 from tofscope.application.models import WorkspaceSnapshot, AnalysisSnapshot
+from tofscope.application.signals import image_signal
 from tofscope.application.commands import CommandEnvelope
 from tofscope.storage.acquisitions import (
     AcquisitionRepository,
@@ -58,7 +59,7 @@ def build_services(settings):
 
     def prepare(snapshot):
         with cache.load(
-            snapshot.owner, snapshot.id, snapshot.dataset, snapshot.active_recipe
+            snapshot.owner, snapshot.id, snapshot.dataset, image_signal(snapshot).recipe
         ):
             pass
 
