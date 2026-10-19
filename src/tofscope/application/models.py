@@ -6,8 +6,8 @@ from tofscope.application.commands import DepthSelection
 
 @dataclass(frozen=True)
 class DisplaySettings:
-    log: bool = False
-    relative: bool = False
+    log: bool = True
+    relative: bool = True
     image: str = "sims"
 
 

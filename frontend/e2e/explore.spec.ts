@@ -20,6 +20,10 @@ test("independent files, exact Explore state, custom Apply and offline downloads
     .getByRole("button", { name: "Choose an HDF5 acquisition" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await expect(page.getByLabel("Log colors", { exact: true })).toBeChecked();
+  await expect(
+    page.getByLabel("Relative profiles", { exact: true }),
+  ).toBeChecked();
   await expect(
     page.getByRole("button", { name: "Select stored signal" }),
   ).toBeVisible();

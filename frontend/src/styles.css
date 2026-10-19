@@ -262,8 +262,9 @@ h2 {
   background: white;
   border: 1px solid #d4dfe4;
   border-radius: 7px;
-  align-self: start;
-  max-height: calc(100vh - 210px);
+  align-self: stretch;
+  min-height: 0;
+  contain: size;
   overflow: auto;
 }
 .sidebar section {
@@ -467,6 +468,8 @@ small {
   align-items: center;
 }
 .scope-note {
+  grid-column: 2;
+  margin: 0;
   line-height: 1.5;
 }
 .welcome {
@@ -547,7 +550,11 @@ small {
     padding: 10px;
   }
   .sidebar {
+    contain: none;
     max-height: none;
+  }
+  .scope-note {
+    grid-column: 1;
   }
   .masthead {
     padding: 10px;

@@ -716,12 +716,12 @@ export function ExploreScreen({
               }}
             />
           </div>
-          <p className="scope-note">
-            Original-resolution values drive profiles and exports. Log colors
-            and relative scaling affect display only. Calibration editors,
-            identification, 3D and acquisition saves are planned separately.
-          </p>
         </div>
+        <p className="scope-note">
+          Original-resolution values drive profiles and exports. Log colors and
+          relative scaling affect display only. Calibration editors,
+          identification, 3D and acquisition saves are planned separately.
+        </p>
       </div>
     </main>
   );
