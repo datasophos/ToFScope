@@ -18,6 +18,7 @@ export type ChartData = {
   series?: { label: string; values: (number | null)[] }[];
   xRange: [number, number];
   yRange: [number, number];
+  palette?: "ion" | "gray";
   log?: boolean;
   relative?: boolean;
   range?: [number, number];
@@ -96,7 +97,10 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
                     height: Math.abs(size[1]) + 0.5,
                   },
                   style: {
-                    fill: `rgb(${Math.round(25 + 220 * t)},${Math.round(30 + 190 * t)},${Math.round(90 - 50 * t)})`,
+                    fill:
+                      d.palette === "gray"
+                        ? `rgb(${Math.round(255 * t)},${Math.round(255 * t)},${Math.round(255 * t)})`
+                        : `rgb(${Math.round(25 + 220 * t)},${Math.round(30 + 190 * t)},${Math.round(90 - 50 * t)})`,
                   },
                 };
               },

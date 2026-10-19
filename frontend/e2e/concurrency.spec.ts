@@ -45,11 +45,14 @@ test("two users, A/B/A tabs, explicit reattach and denied foreign downloads", as
   ).toBe(404);
   const view = await a.newPage();
   await view.goto("/");
-  await expect(view.getByRole("tab")).toHaveCount(0);
-  await view.getByText("Reconnect an existing analysis").click();
-  await view.getByLabel("Analysis ID").fill(id);
-  await view.getByRole("button", { name: "Reattach", exact: true }).click();
-  await expect(view.getByLabel("Stored signal")).toBeVisible();
+  await expect(view.getByRole("tab")).toHaveCount(3);
+  await expect(
+    view.getByLabel("Stored signal").filter({ visible: true }),
+  ).toBeVisible();
+  await view.getByRole("tab", { name: "1 · a.h5" }).click();
+  await expect(
+    view.getByLabel("ROI x first").filter({ visible: true }),
+  ).toHaveValue("0");
   await p.getByRole("button", { name: "Close analysis 1" }).click();
   await expect(view.getByRole("alert")).toContainText("Resource unavailable");
   await a.close();

@@ -27,8 +27,8 @@ class RepositoryTests(unittest.TestCase):
         b = self.repo.open("b", "alias.h5")
         self.assertEqual(a.key, b.key)
         self.assertEqual(a.generation, b.generation)
-        m = self.repo.metadata("a", a)
-        self.assertEqual(m.shape, (3, 1, 2, 2))
+        with self.repo.metadata("a", a) as m:
+            self.assertEqual(m.shape, (3, 1, 2, 2))
         self.assertNotIn(str(self.root), repr(a))
         r = SignalRecipe(source="custom", intervals=((1, 2), (4, 5)), frames=(0, 2))
         v = self.repo.read("a", a, r)
@@ -37,7 +37,8 @@ class RepositoryTests(unittest.TestCase):
         self.assertFalse(list(self.root.glob(".*.lock")))
         self.repo.authorize = lambda owner, path: owner != "denied"
         with self.assertRaises(PermissionError):
-            self.repo.metadata("denied", a)
+            with self.repo.metadata("denied", a):
+                pass
 
     def test_escape_malformed_and_stale(self):
         for path in ["../a.h5", "/etc/passwd", "missing.h5"]:
@@ -50,10 +51,19 @@ class RepositoryTests(unittest.TestCase):
         (self.root / "a.h5").touch()
         with self.assertRaisesRegex(ValueError, "changed"):
             self.repo.assert_current("a", a)
+
     def test_hdf5_external_links_do_not_escape_root(self):
         import h5py
-        root=self.root;outside=root/'outside';outside.mkdir();make_acquisition(outside/'external.h5')
-        make_acquisition(root/'linked.h5')
-        with h5py.File(root/'linked.h5','r+') as f:
-            del f['PeakData/PeakData'];f['PeakData/PeakData']=h5py.ExternalLink(str(outside/'external.h5'),'/PeakData/PeakData')
-        with self.assertRaisesRegex(ValueError,'external'):self.repo.open('a','linked.h5')
+
+        root = self.root
+        outside = root / "outside"
+        outside.mkdir()
+        make_acquisition(outside / "external.h5")
+        make_acquisition(root / "linked.h5")
+        with h5py.File(root / "linked.h5", "r+") as f:
+            del f["PeakData/PeakData"]
+            f["PeakData/PeakData"] = h5py.ExternalLink(
+                str(outside / "external.h5"), "/PeakData/PeakData"
+            )
+        with self.assertRaisesRegex(ValueError, "external"):
+            self.repo.open("a", "linked.h5")

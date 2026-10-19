@@ -62,9 +62,14 @@ class ArrayCache:
             recipe.frames,
         )
 
-    def _evict(self,needed=None):
+    def _evict(self, needed=None):
         for key, entry in list(self.entries.items()):
-            if needed is not None and self.budget.physical_bytes+needed<=self.budget.settings.global_bytes:break
+            if (
+                needed is not None
+                and self.budget.physical_bytes + needed
+                <= self.budget.settings.global_bytes
+            ):
+                break
             if not entry.consumers:
                 entry.physical.release()
                 del self.entries[key]
@@ -82,10 +87,11 @@ class ArrayCache:
                 self.condition.wait()
             if key in self.entries:
                 return self._lease(owner, analysis_id, dataset, key, consumer)
-            try:physical = self.budget.reserve(None,None,estimated_bytes)
+            try:
+                physical = self.budget.reserve(None, None, estimated_bytes)
             except CapacityError:
                 self._evict(estimated_bytes)
-                physical=self.budget.reserve(None,None,estimated_bytes)
+                physical = self.budget.reserve(None, None, estimated_bytes)
             try:
                 logical = self.budget.reserve(
                     owner, analysis_id, estimated_bytes, physical=False
@@ -133,8 +139,14 @@ class ArrayCache:
         return ArrayLease(self, key, consumer, entry.array)
 
     def load(self, owner, aid, dataset, recipe, **kwargs):
-        m = self.repository.metadata(owner, dataset)
-        n = (recipe.frames[1] - recipe.frames[0] + 1) * m.shape[1] * m.shape[2] * 4
+        with self.repository.access(owner, dataset) as path:
+            import h5py
+
+            with h5py.File(path, "r") as f:
+                shape = f["PeakData/PeakData"].shape
+        n = (recipe.frames[1] - recipe.frames[0] + 1) * shape[1] * shape[2] * 4
+        if recipe.source == "custom":
+            kwargs["reserve"] = lambda size: self.budget.reserve(owner, aid, size)
         return self.acquire(
             owner,
             aid,

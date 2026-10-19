@@ -190,7 +190,6 @@ class JobService:
                 if self.stopping and j is None:
                     return
             lease = None
-            scratch = None
             try:
                 aid = j.snapshot.analysis_id
                 e = self.workspaces.entry(j.owner, aid)
@@ -207,15 +206,6 @@ class JobService:
 
                 if cancelled():
                     raise InterruptedError()
-                # Budget NumPy/event conversion workspace separately from retained output.
-                scratch = self.cache.budget.reserve(
-                    j.owner,
-                    aid,
-                    min(
-                        64 * 1024**2,
-                        max(1024, e.snapshot.shape[1] * e.snapshot.shape[2] * 4096),
-                    ),
-                )
 
                 def progress(done, total):
                     with self.condition:
@@ -278,8 +268,6 @@ class JobService:
             finally:
                 if lease:
                     lease.release()
-                if scratch:
-                    scratch.release()
                 with self.condition:
                     self.running.discard(j.owner)
                     self.condition.notify_all()

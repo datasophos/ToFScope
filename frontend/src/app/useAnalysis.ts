@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
   request,
+  ApiError,
   post,
   type Analysis,
   type Data,
@@ -83,6 +84,7 @@ export function useAnalysis(initial: Analysis) {
       if (
         mounted.current &&
         d.dataset_generation === current.current.dataset.generation &&
+        d.revision === a.revision &&
         d.revision === current.current.revision
       ) {
         const merged = {
@@ -104,20 +106,36 @@ export function useAnalysis(initial: Analysis) {
     mounted.current = true;
     let view: string | undefined,
       disposed = false;
-    post<{ id: string }>(`/analyses/${initial.id}/views`)
-      .then((v) => {
+    let attaching = false;
+    const attach = async () => {
+      if (attaching || disposed) return;
+      attaching = true;
+      try {
+        const v = await post<{ id: string }>(`/analyses/${initial.id}/views`);
         if (disposed)
           void request(`/views/${v.id}`, { method: "DELETE" }).catch(() => {});
         else view = v.id;
-      })
-      .catch((e) => setError(e.message));
+      } catch (e) {
+        if (!disposed) setError((e as Error).message);
+      } finally {
+        attaching = false;
+      }
+    };
+    void attach();
     void refresh();
     const poll = setInterval(() => void refresh(), 1000),
       heartbeat = setInterval(() => {
-        if (view)
-          void post(`/views/${view}/heartbeat`).catch((e) =>
-            setError(e.message),
-          );
+        if (!view) {
+          void attach();
+          return;
+        }
+        void post(`/views/${view}/heartbeat`).catch((e) => {
+          if (disposed) return;
+          if (e instanceof ApiError && e.status === 404) {
+            view = undefined;
+            void attach();
+          } else setError(e.message);
+        });
       }, 15000);
     return () => {
       disposed = true;

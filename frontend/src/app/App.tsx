@@ -11,6 +11,7 @@ import { FilePicker } from "./FilePicker";
 import { ExploreScreen } from "../explore/ExploreScreen";
 export function App() {
   const [session, setSession] = useState<Session | null>(null),
+    [owned, setOwned] = useState<Workspace[]>([]),
     [workspace, setWorkspace] = useState<Workspace | null>(null),
     [analyses, setAnalyses] = useState<Analysis[]>([]),
     [active, setActive] = useState(""),
@@ -22,11 +23,27 @@ export function App() {
     let alive = true;
     authenticate()
       .then(async (s) => {
-        const w = await post<Workspace>("/workspaces");
+        const all = await request<Workspace[]>("/workspaces");
+        const saved = sessionStorage.getItem(`tofscope-workspace:${s.owner}`);
+        const w =
+          all.find((w) => w.id === saved) ||
+          all[0] ||
+          (await post<Workspace>("/workspaces"));
+        const restored = (
+          await Promise.all(
+            w.analysis_ids.map((id) =>
+              request<Analysis>(`/analyses/${id}`).catch(() => null),
+            ),
+          )
+        ).filter((a): a is Analysis => a !== null);
+        sessionStorage.setItem(`tofscope-workspace:${s.owner}`, w.id);
         if (alive) {
           setSession(s);
           setWorkspace(w);
-          if (s.initial_file) {
+          setOwned(all.length ? all : [w]);
+          setAnalyses(restored);
+          setActive(restored[0]?.id || "");
+          if (s.initial_file && !restored.length) {
             const a = await post<Analysis>(`/workspaces/${w.id}/analyses`, {
               relative_path: s.initial_file,
             });
@@ -105,6 +122,69 @@ export function App() {
         <span>{session?.owner || "Local instrument workspace"}</span>
       </header>
       <div className="workspace-bar">
+        {workspace && (
+          <>
+            <select
+              aria-label="Workspace"
+              value={workspace.id}
+              onChange={async (e) => {
+                try {
+                  const w = await request<Workspace>(
+                    `/workspaces/${e.target.value}`,
+                  );
+                  const restored = await Promise.all(
+                    w.analysis_ids.map((id) =>
+                      request<Analysis>(`/analyses/${id}`),
+                    ),
+                  );
+                  setWorkspace(w);
+                  setAnalyses(restored);
+                  setActive(restored[0]?.id || "");
+                  sessionStorage.setItem(
+                    `tofscope-workspace:${session!.owner}`,
+                    w.id,
+                  );
+                } catch (e) {
+                  setError((e as Error).message);
+                }
+              }}
+            >
+              {owned.map((w, i) => (
+                <option key={w.id} value={w.id}>
+                  Workspace {i + 1}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={async () => {
+                try {
+                  await request(`/workspaces/${workspace.id}`, {
+                    method: "DELETE",
+                  });
+                  const all = await request<Workspace[]>("/workspaces");
+                  const w = all[0] || (await post<Workspace>("/workspaces"));
+                  const restored = await Promise.all(
+                    w.analysis_ids.map((id) =>
+                      request<Analysis>(`/analyses/${id}`),
+                    ),
+                  );
+                  setOwned(all.length ? all : [w]);
+                  setWorkspace(w);
+                  setAnalyses(restored);
+                  setActive(restored[0]?.id || "");
+                  sessionStorage.setItem(
+                    `tofscope-workspace:${session!.owner}`,
+                    w.id,
+                  );
+                } catch (e) {
+                  setError((e as Error).message);
+                }
+              }}
+            >
+              Close workspace
+            </button>
+          </>
+        )}
         <button
           disabled={!workspace}
           onClick={() => {
@@ -183,6 +263,7 @@ export function App() {
         <div key={`${a.id}:${a.dataset.generation}`} hidden={a.id !== active}>
           <ExploreScreen
             initial={a}
+            active={a.id === active}
             onReplace={(current) => {
               setReplace(current);
               setPicker(true);
