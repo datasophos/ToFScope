@@ -2,7 +2,7 @@
 import os
 from dataclasses import dataclass,asdict
 from pathlib import Path
-from server_config import resolve_data_path
+from tofscope.config import resolve_data_path
 
 
 @dataclass(frozen=True)

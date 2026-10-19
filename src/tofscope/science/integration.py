@@ -1,6 +1,6 @@
 """Inclusive mass-window unions; display transforms never enter this module."""
 import numpy as np
-from dataset_io import locked_read
+from tofscope.storage.dataset_io import locked_read
 
 
 def canonical_intervals(intervals, axis_limits):
@@ -54,11 +54,11 @@ def integrate_event_windows(events, mass_axis, clock_ratio, normalization, inter
 
 
 @locked_read
-def custom_peak_windows(path, intervals, first, last, progress=None):
+def custom_peak_windows(path, intervals, first, last, progress=None, cancel=None):
     """Reconstruct a union in one read per supported acquisition depth slice."""
     import h5py
     from operator import index
-    from explorer import integration_parameters
+    from tofscope.storage.explorer import integration_parameters
     try:
         if isinstance(first,bool) or isinstance(last,bool):
             raise TypeError
@@ -77,6 +77,7 @@ def custom_peak_windows(path, intervals, first, last, progress=None):
         ratio,normalization=integration_parameters(f)
         volume=np.empty((last-first+1,ny,nx),dtype=np.float32)
         for i,z in enumerate(range(first,last+1)):
+            if cancel is not None and cancel():raise InterruptedError('Integration cancelled.')
             volume[i]=integrate_event_windows(raw[z,:,:],axis,ratio,normalization,windows)
             if progress is not None:
                 progress(i+1,len(volume))

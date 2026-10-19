@@ -58,13 +58,13 @@ def validate_native_layout(h5):
 
 
 def export_native_copy(source_path,destination_path,recipes,*,volumes=None,progress=None):
-    from dataset_io import dataset_lock
+    from tofscope.storage.dataset_io import dataset_lock
     with dataset_lock(source_path):
         return _export_native_copy(source_path,destination_path,recipes,volumes=volumes,progress=progress)
 
 
 def _export_native_copy(source_path,destination_path,recipes,*,volumes=None,progress=None):
-    from signals import read_signal
+    from tofscope.science.signals import read_signal
     source=Path(source_path).resolve();destination=Path(destination_path)
     if destination.exists():raise FileExistsError('Native output already exists; select a new output path.')
     recipes=tuple(recipes)

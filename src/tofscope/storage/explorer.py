@@ -10,7 +10,7 @@ import re
 
 import h5py
 import numpy as np
-from dataset_io import locked_read
+from tofscope.storage.dataset_io import locked_read
 
 
 DEFAULT_FILE = (
@@ -76,7 +76,7 @@ def stored_peak(path, index):
 
 def integrate_events(events, mass_axis, clock_ratio, normalization, low, high):
     """Compatibility adapter for one inclusive mass interval."""
-    from integration import integrate_event_windows
+    from tofscope.science.integration import integrate_event_windows
     return integrate_event_windows(events,mass_axis,clock_ratio,normalization,[(low,high)])
 
 
@@ -100,7 +100,7 @@ def integration_parameters(f):
 
 def custom_peak(path, low, high, first, last, progress=None):
     """Compatibility adapter for a single raw integration interval."""
-    from integration import custom_peak_windows
+    from tofscope.science.integration import custom_peak_windows
     return custom_peak_windows(path,[(low,high)],first,last,progress)
 
 

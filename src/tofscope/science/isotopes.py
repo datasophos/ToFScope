@@ -7,7 +7,8 @@ import math
 import re
 
 ELECTRON_MASS_U=0.0005485799090441  # CODATA2022, NIST electron mass in u.
-CATALOG_PATH=Path(__file__).parent/'data/reference/isotopes.json'
+from importlib.resources import files
+CATALOG_PATH=files('tofscope.resources').joinpath('reference/isotopes.json')
 
 
 @dataclass(frozen=True)

@@ -8,8 +8,8 @@ from uuid import uuid4
 
 import numpy as np
 
-from integration import canonical_intervals, integrate_event_windows
-from signals import SignalRecipe
+from tofscope.science.integration import canonical_intervals, integrate_event_windows
+from tofscope.science.signals import SignalRecipe
 
 
 class WindowSetTests(unittest.TestCase):
@@ -48,7 +48,7 @@ class WindowSetTests(unittest.TestCase):
         events[0,1]=np.array([],dtype=np.uint32)
         events[0,2]=np.array([128,256],dtype=np.uint32)
         np.testing.assert_array_equal(integrate_event_windows(events,self.axis,64,2,[(0,.5),(4,5)]),[[1.,0.,.5]])
-        from explorer import integrate_events
+        from tofscope.storage.explorer import integrate_events
         np.testing.assert_array_equal(integrate_events(self.events,self.axis,64,2,1,4),[[2.5]])
 
     def test_recipe_canonical_immutable_and_round_trips_json(self):
