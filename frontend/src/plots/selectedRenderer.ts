@@ -20,6 +20,7 @@ export type ChartData = {
   yRange: [number, number];
   palette?: "ion" | "gray";
   log?: boolean;
+  yScale?: "log" | "linear";
   relative?: boolean;
   range?: [number, number];
 };
@@ -36,6 +37,9 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
       transform = (v: number) => (d.log ? Math.log1p(Math.max(0, v)) : v),
       lo = transform(min),
       hi = transform(max);
+    const positiveValues = (d.series || []).flatMap((s) =>
+      s.values.filter((v): v is number => v !== null && v > 0),
+    );
     const series =
       d.kind === "line"
         ? (d.series || []).map((s, i) => {
@@ -55,10 +59,15 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
                 width: 1.5,
                 color: ["#167d9a", "#b05e20", "#8560b4", "#337c45"][i % 4],
               },
-              data: d.x.map((x, j) => [
-                x,
-                s.values[j] === null ? null : s.values[j]! / scale,
-              ]),
+              data: d.x.map((x, j) => {
+                const value = s.values[j];
+                return [
+                  x,
+                  value === null || (d.yScale === "log" && value <= 0)
+                    ? null
+                    : value / scale,
+                ];
+              }),
             };
           })
         : [
@@ -121,9 +130,12 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
           axisLabel: { fontSize: 10 },
         },
         yAxis: {
-          type: "value",
+          type: d.kind === "line" && d.yScale === "log" ? "log" : "value",
           inverse: !!d.yReverse,
-          min: d.yRange[0],
+          min:
+            d.kind === "line" && d.yScale === "log"
+              ? Math.min(...positiveValues, d.yRange[1])
+              : d.yRange[0],
           max: d.yRange[1],
           axisLabel: { fontSize: 10 },
         },

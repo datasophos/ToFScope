@@ -10,6 +10,8 @@ export function PlotPanel({
   name,
   title,
   panel,
+  expectedKind,
+  loading = false,
   maximized,
   onMaximize,
   onSelect,
@@ -22,6 +24,8 @@ export function PlotPanel({
   name: string;
   title: string;
   panel?: Panel;
+  expectedKind?: Panel["kind"];
+  loading?: boolean;
   maximized: boolean;
   onMaximize: () => void;
   onSelect: (bounds: number[]) => void;
@@ -36,6 +40,7 @@ export function PlotPanel({
     chart = useRef<ChartHandle | null>(null);
   const [stageSize, setStageSize] = useState(0);
   const [zoom, setZoom] = useState<Range | null>(null);
+  const [yScale, setYScale] = useState<"log" | "linear">("log");
   const axis = panel?.axes[0];
   const range: Range =
     axis && axis.boundaries.length
@@ -62,17 +67,18 @@ export function PlotPanel({
         range: panel.intensity_range,
         palette: panel.palette,
         log: panel.log,
+        yScale: name === "spectrum" ? yScale : undefined,
         relative: panel.relative,
         yReverse: panel.kind === "image",
       }
     : undefined;
-  const image = panel?.kind === "image";
+  const image = panel?.kind === "image" || expectedKind === "image";
   const stageReady = !image || stageSize > 0;
   useEffect(() => {
     if (!element.current || !body.current) return;
     const observer = new ResizeObserver(() => {
       chart.current?.resize();
-      if (panel?.kind === "image" && body.current) {
+      if (image && body.current) {
         const { width, height } = body.current.getBoundingClientRect();
         const side = Math.floor(Math.min(width, height));
         setStageSize((current) => current === side ? current : side);
@@ -85,7 +91,7 @@ export function PlotPanel({
       chart.current?.destroy();
       chart.current = null;
     };
-  }, [panel?.kind]);
+  }, [image]);
   useEffect(() => {
     if (!data || !element.current || (data.kind === "image" && !stageSize))
       return;
@@ -98,6 +104,7 @@ export function PlotPanel({
       data-testid={`panel-${name}`}
       data-kind={panel?.kind}
       data-content-version={panel?.content_version}
+      data-y-scale={name === "spectrum" ? yScale : undefined}
     >
       <header>
         <div>
@@ -106,6 +113,15 @@ export function PlotPanel({
         </div>
         <div className="row">
           {onAllDepths && <button onClick={onAllDepths}>All depths</button>}
+          {name === "spectrum" && (
+            <button
+              onClick={() => setYScale((scale) => scale === "log" ? "linear" : "log")}
+              aria-label={`Use ${yScale === "log" ? "linear" : "logarithmic"} y scale`}
+              aria-pressed={yScale === "log"}
+            >
+              {yScale === "log" ? "Log y" : "Linear y"}
+            </button>
+          )}
           {zoomWindow && (
             <button onClick={() => setZoom(zoomWindow)}>Zoom to draft</button>
           )}
@@ -135,8 +151,14 @@ export function PlotPanel({
         </div>
       </header>
       <div className="plot-body" ref={body}>
+        {image && (loading || !stageReady) && (
+          <div className="plot-loading" role="status" aria-label="Loading image plot">
+            <span className="plot-spinner" aria-hidden="true" />
+            <span>Loading image…</span>
+          </div>
+        )}
         <div
-          className={`plot-stage ${panel?.kind === "image" ? "image" : ""}`}
+          className={`plot-stage ${image ? "image" : ""}`}
           data-testid={`plot-stage-${name}`}
           data-stage-ready={stageReady ? "true" : "false"}
           style={

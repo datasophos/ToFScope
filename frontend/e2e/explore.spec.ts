@@ -74,6 +74,10 @@ test("independent files, exact Explore state, custom Apply and offline downloads
 });
 
 test("Explore layout, signal picker and chart wheel behavior", async ({ page }) => {
+  await page.route("**/analyses/*/data?*", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await route.continue();
+  });
   await page.addInitScript(() => {
     const state = window as Window & { imageStageFlash?: boolean };
     state.imageStageFlash = false;
@@ -97,6 +101,17 @@ test("Explore layout, signal picker and chart wheel behavior", async ({ page }) 
   await page.goto("/");
   await page.getByRole("button", { name: "Choose an HDF5 acquisition" }).click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
+  const ionLoader = page
+    .getByTestId("panel-ion")
+    .getByRole("status", { name: "Loading image plot" });
+  await expect(ionLoader).toBeVisible();
+  await expect(ionLoader).toBeHidden();
+  const spectrum = page.getByTestId("panel-spectrum");
+  await expect(spectrum).toHaveAttribute("data-y-scale", "log");
+  await spectrum.getByRole("button", { name: "Use linear y scale" }).click();
+  await expect(spectrum).toHaveAttribute("data-y-scale", "linear");
+  await spectrum.getByRole("button", { name: "Use logarithmic y scale" }).click();
+  await expect(spectrum).toHaveAttribute("data-y-scale", "log");
   const panels = ["ion", "spectrum", "front", "profile"].map((name) =>
     page.getByTestId(`panel-${name}`),
   );

@@ -586,6 +586,8 @@ export function ExploreScreen({
               name="ion"
               title={a.display.image === "se" ? "SE image" : "Ion map"}
               panel={data?.panels.ion}
+              expectedKind="image"
+              loading={!data?.panels.ion && !error}
               maximized={max === "ion"}
               onMaximize={() => setMax(max === "ion" ? null : "ion")}
               mode="xy"
@@ -628,6 +630,8 @@ export function ExploreScreen({
               name="front"
               title="Front projection"
               panel={data?.panels.front}
+              expectedKind="image"
+              loading={!data?.panels.front && !error}
               maximized={max === "front"}
               onMaximize={() => setMax(max === "front" ? null : "front")}
               onClick={(_x, y) =>
