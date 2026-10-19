@@ -23,6 +23,20 @@ class AnalysisTests(unittest.TestCase):
             CommandEnvelope(request, s.revision, s.dataset.generation, command),
         )
 
+    def test_display_defaults_and_independent_overrides(self):
+        a = self.new()
+        self.assertTrue(a.display.log)
+        self.assertTrue(a.display.relative)
+        a = self.command(
+            a, {"type": "set_display", "log": False, "relative": False, "image": "sims"}
+        )
+        self.assertFalse(a.display.log)
+        self.assertFalse(a.display.relative)
+        b = self.new()
+        self.assertTrue(b.display.log)
+        self.assertTrue(b.display.relative)
+        self.assertEqual(self.ws.get("a", a.id).display, a.display)
+
     def test_same_file_analyses_have_independent_selections(self):
         a = self.new()
         b = self.new("b")

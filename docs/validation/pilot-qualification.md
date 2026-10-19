@@ -232,3 +232,25 @@ four pixels away. All 14 browser tests, 9 frontend unit tests, TypeScript checki
 and the production build passed. The running local service served the rebuilt
 assets with matching hashes, without restarting or clearing workspaces. No
 backend, acquisition, architectural or completion-plan changes were required.
+
+### Display defaults and tool-panel height (2026-10-19)
+
+New analyses default to logarithmic image colors and relative profiles. Explicit
+per-analysis overrides remain independent; profile values and CSV data remain
+at original scale. A new service test first failed on the previous false defaults,
+then passed after changing DisplaySettings. The browser also checks that both
+controls are selected on file open.
+
+The desktop tool panel stretches to the bottom of the plot grid, rather than
+using an unrelated viewport-height cap. Its controls scroll within that height;
+the scope note sits below the grid. Size containment lets the plots determine
+the row height. On narrow screens the tools retain their natural height above
+the stacked plots. The browser regression reproduced a 182-pixel height mismatch,
+then verified matching bottoms, resizing, scroll access and the narrow layout.
+
+All 90 Python tests, 15 browser tests, 9 frontend unit tests, TypeScript checking
+and the bundled production build passed. Updated layout assets were verified
+through the running local service. That service was left running to preserve
+active workspaces; the Python display defaults require its next restart.
+No acquisition writes or additional hardware/service qualification were performed.
+The architecture and completion plan remain unchanged.
