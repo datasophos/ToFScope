@@ -21,6 +21,9 @@ from tofscope.storage.acquisitions import AcquisitionRepository,SourceChanged,Da
 from tofscope.storage.file_browser import list_data_files
 from tofscope.api.auth import Auth
 from tofscope.api.schemas import *
+from tofscope.presentation.data import ExploreData
+from tofscope.presentation.explore import ExplorePresenter
+from tofscope.presentation.exports import ExportService
 
 @dataclass
 class Services:
@@ -35,7 +38,8 @@ class Services:
 
 def build_services(settings):
     repo=AcquisitionRepository(settings);ws=WorkspaceService(repo,settings);explore=ExploreService(ws,repo);cache=ArrayCache(repo,ResourceBudget(settings));jobs=JobService(ws,explore,cache,settings);life=LifecycleService(ws,jobs,settings)
-    return Services(repo,ws,explore,cache,jobs,life)
+    presenter=ExplorePresenter(ws,repo,cache,settings)
+    return Services(repo,ws,explore,cache,jobs,life,presenter,ExportService(presenter))
 
 def create_app(settings,services=None,bootstrap_secret=None):
     @asynccontextmanager
@@ -129,6 +133,13 @@ def create_app(settings,services=None,bootstrap_secret=None):
     @app.get('/api/v1/files')
     def files(directory:str='',query:str='',offset:int=Query(0,ge=0),limit:int=Query(100,ge=1,le=100),o=Depends(owner),s=Depends(svc)):
         return list_data_files(settings,directory,query=query,offset=offset,limit=limit)
+    @app.get('/api/v1/analyses/{aid}/data',response_model=ExploreData)
+    def data(aid:str,panels:str='ion,front,spectrum,profile',o=Depends(owner),s=Depends(svc)):
+        return s.presenter.snapshot(o,aid,set(panels.split(',')))
+    @app.get('/api/v1/analyses/{aid}/exports/{format}')
+    def export(aid:str,format:Literal['csv','json'],o=Depends(owner),s=Depends(svc)):
+        d=s.exports.render(o,aid,format)
+        return Response(d.content,media_type=d.media_type,headers={'Content-Disposition':f'attachment; filename="{d.filename}"'})
     @app.get('/api/v1/{unknown:path}',include_in_schema=False)
     def unknown_api(unknown:str):raise HTTPException(404,'API route unavailable.')
     static=Path(__file__).resolve().parents[1]/'static'
