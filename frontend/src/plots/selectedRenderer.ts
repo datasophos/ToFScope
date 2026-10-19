@@ -1,3 +1,4 @@
+import { imageRaster } from "./imageRaster";
 import * as echarts from "echarts/core";
 import { LineChart, CustomChart } from "echarts/charts";
 import { GridComponent, TooltipComponent } from "echarts/components";
@@ -32,11 +33,23 @@ export type ChartHandle = {
 };
 export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
   const chart = echarts.init(element, undefined, { renderer: "canvas" });
+  let rasterData: ChartData | undefined;
+  let source: HTMLCanvasElement | undefined;
+  const scaled = document.createElement("canvas");
   function update(d: ChartData) {
-    const [min, max] = d.range || [0, 1],
-      transform = (v: number) => (d.log ? Math.log1p(Math.max(0, v)) : v),
-      lo = transform(min),
-      hi = transform(max);
+    if (
+      d.kind === "image" &&
+      (!source ||
+        rasterData?.values !== d.values ||
+        rasterData?.log !== d.log ||
+        rasterData?.palette !== d.palette ||
+        rasterData?.yReverse !== d.yReverse ||
+        rasterData?.range?.[0] !== d.range?.[0] ||
+        rasterData?.range?.[1] !== d.range?.[1])
+    ) {
+      source = imageRaster(d);
+      rasterData = d;
+    }
     const positiveValues = (d.series || []).flatMap((s) =>
       s.values.filter((v): v is number => v !== null && v > 0),
     );
@@ -74,43 +87,60 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
             {
               type: "custom",
               progressive: 0,
-              encode: { x: 0, y: 1, tooltip: [0, 1, 2] },
-              dimensions: ["x", "y", "intensity"],
-              data: d.values!.flatMap((row, j) =>
-                row.map((v, i) => [d.x[i], d.y![j], v]),
-              ),
+              // A single cached raster replaces one chart object per acquisition pixel.
+              silent: true,
+              clip: true,
+              data: [0],
               renderItem: (
-                _params: unknown,
-                api: {
-                  value: (i: number) => number;
-                  coord: (xy: number[]) => number[];
-                  size: (xy: number[]) => number[];
+                params: {
+                  coordSys?: {
+                    x: number;
+                    y: number;
+                    width: number;
+                    height: number;
+                  };
                 },
+                api: { coord: (xy: number[]) => number[] },
               ) => {
-                const v = api.value(2);
-                if (!Number.isFinite(v)) return;
-                const point = api.coord([api.value(0), api.value(1)]),
-                  dx = d.x.length > 1 ? d.x[1] - d.x[0] : 1,
-                  dy = d.y!.length > 1 ? d.y![1] - d.y![0] : 1,
-                  size = api.size([dx, dy]),
-                  t = Math.max(
-                    0,
-                    Math.min(1, (transform(v) - lo) / (hi - lo || 1)),
-                  );
+                const grid = params.coordSys!;
+                const dx = d.x.length > 1 ? d.x[1] - d.x[0] : 1;
+                const dy = d.y!.length > 1 ? d.y![1] - d.y![0] : 1;
+                const first = api.coord([d.x[0] - dx / 2, d.y![0] - dy / 2]);
+                const last = api.coord([
+                  d.x.at(-1)! + dx / 2,
+                  d.y!.at(-1)! + dy / 2,
+                ]);
+                const left = Math.min(first[0], last[0]),
+                  top = Math.min(first[1], last[1]);
+                const fullWidth = Math.abs(last[0] - first[0]),
+                  fullHeight = Math.abs(last[1] - first[1]);
+                const x = Math.max(left, grid.x),
+                  y = Math.max(top, grid.y);
+                const width =
+                  Math.min(left + fullWidth, grid.x + grid.width) - x;
+                const height =
+                  Math.min(top + fullHeight, grid.y + grid.height) - y;
+                if (width <= 0 || height <= 0) return;
+                // Crop before scaling so deep zooms cannot allocate an unbounded canvas.
+                const ratio = window.devicePixelRatio || 1;
+                scaled.width = Math.max(1, Math.round(width * ratio));
+                scaled.height = Math.max(1, Math.round(height * ratio));
+                const context = scaled.getContext("2d")!;
+                context.imageSmoothingEnabled = false;
+                context.drawImage(
+                  source!,
+                  ((x - left) / fullWidth) * source!.width,
+                  ((y - top) / fullHeight) * source!.height,
+                  (width / fullWidth) * source!.width,
+                  (height / fullHeight) * source!.height,
+                  0,
+                  0,
+                  scaled.width,
+                  scaled.height,
+                );
                 return {
-                  type: "rect",
-                  shape: {
-                    x: point[0] - Math.abs(size[0]) / 2,
-                    y: point[1] - Math.abs(size[1]) / 2,
-                    width: Math.abs(size[0]) + 0.5,
-                    height: Math.abs(size[1]) + 0.5,
-                  },
-                  style: {
-                    fill:
-                      d.palette === "gray"
-                        ? `rgb(${Math.round(255 * t)},${Math.round(255 * t)},${Math.round(255 * t)})`
-                        : `rgb(${Math.round(25 + 220 * t)},${Math.round(30 + 190 * t)},${Math.round(90 - 50 * t)})`,
-                  },
+                  type: "image",
+                  style: { image: scaled, x, y, width, height },
                 };
               },
             },
@@ -147,7 +177,16 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
   update(data);
   return {
     update,
-    resize: () => chart.resize(),
+    resize: () => {
+      const width = element.clientWidth,
+        height = element.clientHeight;
+      if (
+        width > 0 &&
+        height > 0 &&
+        (chart.getWidth() !== width || chart.getHeight() !== height)
+      )
+        chart.resize();
+    },
     destroy: () => chart.dispose(),
     exportImage: () =>
       chart.getDataURL({ type: "png", pixelRatio: 2, backgroundColor: "#fff" }),

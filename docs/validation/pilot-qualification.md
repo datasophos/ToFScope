@@ -124,3 +124,28 @@ remaining width. All nine Playwright tests and six Vitest tests passed.
 Frontend assets were rebuilt; the resulting wheel and sdist both passed the
 installed-package smoke with Node absent and browser requests restricted to the
 local service. No architecture or feature plan changed in this UI follow-up.
+
+## Large-acquisition interaction follow-up (2026-10-19)
+
+Maximize/restore was reproduced on the read-only 2.2 GB
+`pfib_1301x128x128_AlTiPt.h5`. The per-pixel chart renderer took 443–533 ms in
+the local event-to-two-animation-frame check. Replacing its per-pixel display
+objects with a cached raster reduced the same check to 22–31 ms across twelve
+events (three maximize/restore pairs for each image). The frontend still receives
+the same original-resolution scientific arrays. The renderer decision document
+records the measurement scope and the gap in the initial evaluation.
+
+The spectrum scale toggle also had a missing React effect dependency: its label
+changed without updating the chart. It now triggers a chart update. The browser
+test verifies that the actual canvas changes for linear mode and returns to the
+same rendered image when log mode is restored.
+
+Nine unit tests and eleven browser tests pass, including full-size resize latency
+under 200 ms, no data refetch on resize, canvas/stage size agreement, precise
+pixel colors, orientation, missing-data transparency, zoom cropping and sharp
+pixel boundaries. The real-file browser run made no external requests and
+reported no JavaScript errors. Frontend assets were rebuilt, and both the wheel
+and source distribution passed installed-package browser smoke checks with Node
+absent and external browser requests blocked. Optional Python lint was unavailable
+because Ruff is not installed in this environment. No backend, reader,
+acquisition-write capability or future-feature plan changed.
