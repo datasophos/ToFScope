@@ -1,0 +1,68 @@
+# Packaged Explore qualification, 2026-10-18
+
+Implementation is Explore-only. All acquisition operations in real-data checks
+used HDF5 mode `r`; source size, inode and modification time were unchanged.
+Disposable synthetic/copy tests alone exercise preserved write validators.
+No release was published and no external deployment/service was changed.
+
+Reference: frozen `37ecacf24c32388cd7f84bc11fa509989cc44775`, 87 original tests
+passed; own locked environment and HTTP/widget Ready smoke passed independently.
+See [baseline](prototype-baseline.md) and [coverage disposition](coverage-map.md).
+
+Passed checks (final rerun counts are recorded in the execution ledger and CI):
+
+- Migrated numerical/storage plus repository, canonical state, cache/admission,
+  jobs, lifecycle, API/auth, presentation, CLI and distribution unit suites.
+- TypeScript checks, generated OpenAPI/types, Vitest queue/ROI/gesture checks;
+  Playwright Explore, A/B/A two-user concurrency and both renderer probes.
+- Separate wheel and sdist installs outside the checkout, Node absent from PATH,
+  no Marimo/AnyWidget/RosettaSciIO runtime dependency; same-origin-only browser
+  plots, custom integration and settings download.
+- Deterministic barriers: old Apply cannot overwrite newer Apply; ROI-only edits
+  do not obsolete integration; new user runs before another user's backlog;
+  request retry produces one result/job; close suppresses late commits.
+- Source change invalidates canonical aliases across owners, refuses mixed
+  exports and permits explicit transactional reopen. Tiny injected byte budgets
+  reject allocations before production loaders run; shared leases stay read-only
+  and survive another consumer closing.
+- Read-only file permissions with locks in an external writable directory;
+  traversal/escaping symlinks, HDF5 external/virtual storage and foreign resources
+  denied. Cookie/CSRF/Host/Origin checks and trusted-proxy identity denial pass.
+- Missing SE pixels remain null with coverage masks; short final image averages
+  use actual coverage. Front XZ sums retain full X and sum ROI Y. CSV is unchanged
+  by log/relative display settings and keeps blank comparison gaps.
+
+Real AlTiPt acquisition, Apple Silicon / Python 3.12.3 / headless Google Chrome:
+
+| Check | Observation |
+| --- | --- |
+| Stored / raw shape | 1301×128×128×217 / 1302×128×128 |
+| Nominal 27 channel bytes | 85,262,336 (81.3 MiB) |
+| Direct full-channel read + profile/front | 389.4 ms |
+| Explicit float32 framework raw comparison, four frames | exact equality |
+| Vendor reconstruction difference | max .25, sum -3.0; not a regression tolerance |
+| Two owners / six same-file analyses | foreign access denied; independent revisions |
+| API selection p50 / p95 | .921 / 1.028 ms (12 samples) |
+| Health p95 during 64-frame raw integration | 2.222 ms |
+| Full four-panel JSON | 2,455,692 bytes (under 32 MiB) |
+| Qualification process peak RSS | 259,309,568 bytes |
+| Initial browser four-panel load | 1,344.6 ms |
+| Browser frame update p50 / p95 | 92.2 / 101.2 ms (12 samples) |
+| Offline browser / JS errors | no external requests / no errors |
+
+The browser timings above precede the final whole-image rendering fix; final
+post-fix timings are appended below. Large-image qualification exposed default
+progressive drawing leaving late rows unfinished during rapid updates. The
+1301×128 last-row pixel test failed before disabling those batches and passed
+afterward. This is why canvas inspection accompanies numeric/API checks.
+Measurements are local workload evidence, not universal capacity claims. Runner
+subset comparison favored threads including process startup; HDF5 operations
+serialize on the dataset lock and HDF5's own lock. Managed bytes do not include
+all Python/HDF5/browser allocator overhead.
+
+Not established: actual NFS mount behavior, acquisition hardware/timing/SE
+registration, commercial numerical/save round-trip, multi-host/API-worker
+scaling, durable workspace restoration and deferred completion-plan screens.
+Neither local POSIX nor the read-only container check establishes NFS locking or
+atomic replacement on the eventual deployment mount. These are explicit
+qualification limits, not passed or silently skipped checks.

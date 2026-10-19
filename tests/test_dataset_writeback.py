@@ -11,7 +11,7 @@ import h5py
 import numpy as np
 from filelock import Timeout
 from tofscope.storage.dataset_io import file_identity,dataset_lock,save_to_acquisition
-from tofscope.config import ServerSettings
+from tofscope.config import Settings
 from tofscope.storage.integration_store import IntegrationRecord,read_saved_integration
 from tofscope.science.signals import SignalRecipe,read_signal
 from test_signal_recipes import make_acquisition
@@ -21,7 +21,7 @@ class DatasetWritebackTests(unittest.TestCase):
     def setUp(self):
         temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup)
         self.root=Path(temp.name).resolve();self.path=self.root/'a.h5';make_acquisition(self.path)
-        self.settings=ServerSettings(self.root,allow_writes=True,allow_unverified_native=True)
+        self.settings=Settings(self.root,allow_writes=True,allow_unverified_native=True)
         self.expected=file_identity(self.path)
         self.recipe=SignalRecipe(intervals=((1,2),),frames=(0,2),label='saved_test')
         self.values=read_signal(self.path,self.recipe)
@@ -49,7 +49,7 @@ class DatasetWritebackTests(unittest.TestCase):
         self.assertEqual(self.path.read_bytes(),before)
 
     def test_policy_space_stale_and_postreplace_warning(self):
-        for settings in [ServerSettings(self.root),ServerSettings(self.root,allow_writes=True)]:
+        for settings in [Settings(self.root),Settings(self.root,allow_writes=True)]:
             with self.assertRaises(ValueError):save_to_acquisition(settings,'a.h5',self.record,lambda:iter(self.values),self.expected)
         with patch('tofscope.storage.dataset_io.shutil.disk_usage') as disk:
             disk.return_value.free=0

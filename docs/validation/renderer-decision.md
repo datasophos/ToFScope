@@ -40,3 +40,10 @@ dependency surface favor ECharts without a measured interaction disadvantage.
 An unrelated application occupied Vite's default port. Evaluation now uses a
 dedicated strict port 18763 with no reuse so a foreign application cannot count
 as test evidence. Test selectors name our panels/overlay, not library DOM.
+
+Qualification found that ECharts' default progressive custom rendering could
+leave late image rows unfinished during rapid updates. A 1301×128 probe checking
+actual last-row canvas pixels failed before the fix and passed with progressive
+batches disabled and explicit `encode` dimensions. Image updates now commit the
+whole image; CSV/scientific arrays were unaffected. This follows ECharts' public
+[custom-series dimension contract](https://echarts.apache.org/handbook/en/how-to/custom-series/).
