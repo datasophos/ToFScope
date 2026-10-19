@@ -145,7 +145,7 @@ def _se_mean(key, names, first, last):
             used+=1
     if not used:
         return None,0
-    result=np.divide(total,counts,out=np.zeros_like(total),where=counts>0)
+    result=np.divide(total,counts,out=np.full_like(total,np.nan),where=counts>0)
     result.setflags(write=False)
     return result,used
 
