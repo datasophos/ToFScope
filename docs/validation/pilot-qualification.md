@@ -217,3 +217,18 @@ this local run. TypeScript checking and the bundled production build passed.
 No new real-acquisition or unavailable hardware/service qualification was claimed
 for this presentation change. The completion plan and architectural decisions
 remain unchanged.
+
+### Selection visibility (2026-10-19)
+
+Selection outlines now use one CSS pixel with SVG non-scaling strokes, replacing
+strokes that expanded with the plot dimensions. The fill opacity fell from
+13.3% to 6.3%. Separate transparent 12-pixel edge targets preserve resize gestures
+without covering curves, including in maximized plots. The shared overlay applies
+to spectra, profiles and image ROIs; selected numerical bounds are unchanged.
+
+A browser regression reproduced 12-pixel solid boundaries before the fix. It now
+checks rendered boundary pixels at two viewport sizes and resizes an edge from
+four pixels away. All 14 browser tests, 9 frontend unit tests, TypeScript checking
+and the production build passed. The running local service served the rebuilt
+assets with matching hashes, without restarting or clearing workspaces. No
+backend, acquisition, architectural or completion-plan changes were required.
