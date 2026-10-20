@@ -125,3 +125,22 @@ inspected from browser screenshots. Scientific reading/writing code is unchanged
 Both rebuilt wheel and sdist also passed their independent offline installation,
 new browser file selection, saved-copy restart/source-removal, exact CSV, and
 optional/interrupted download checks.
+
+## Local folder listing correction — 2026-10-20
+
+The local Saved files shortcut previously showed the configured output folder’s
+name while listing only a private owner subfolder. When output and acquisition
+roots matched, this misleadingly showed an empty folder beside existing .h5
+files. Local mode now saves directly into the displayed output folder and lists
+its .h5 files; with equal roots, both shortcuts show the same files. Hosted
+proxy identities retain private owner subfolders and foreign-access denial.
+Empty shared-user output lists now explicitly say no saved files exist in that
+location rather than implying the acquisition directory has no .h5 files.
+
+A failing local authenticated API regression now passes: root/destination match,
+existing inputs appear, a copy lands directly in the output folder, an input-name
+collision is refused, original SHA-256 is unchanged, and the copy reopens.
+Checks passed: 143 Python tests, 37 browser workflows, TypeScript/frontend build
+and independently installed offline wheel/sdist save/restart/export checks.
+Read-only directory inspection confirms the supplied acquisition root has six
+.h5 files. No original acquisitions were modified or saved copies relocated.

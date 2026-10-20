@@ -51,8 +51,9 @@ so a 2.2-GB input needs at least that much output space plus derived results.
 The acquisition folder (`--data-root`) defaults to the current working directory.
 The saved copies folder (`--output-root`) defaults to that acquisition folder;
 set it explicitly when saving elsewhere or using read-only acquisition storage.
-Copies remain separated privately by owner. The file picker shows both folders,
-and Save as shows the exact destination, including the private user subfolder.
+Local saves go directly into the displayed saved copies folder. Hosted
+deployments keep copies in private owner subfolders. The file picker shows
+both folders, and Save as shows the exact destination in its tooltip.
 Finish/discard drafts and finish/cancel calculations before saving. Closing an
 unsaved analysis offers Save as, Discard or Cancel. CSV exports visible ROI
 profiles at original scale/resolution; PNG includes profile labels.

@@ -219,5 +219,37 @@
         "interrupted_download_preserves_saved_file": true
       }
     ]
+  },
+  "local_output_folder_fix": {
+    "python_tests": 143,
+    "browser_tests": 37,
+    "local_saves_directly_in_output_root": true,
+    "same_roots_show_same_h5_files": true,
+    "input_overwrite_refused": true,
+    "proxy_owner_isolation": true,
+    "distributions": [
+      {
+        "artifact": "tofscope-0.2.0-py3-none-any.whl",
+        "installed_without_node": true,
+        "runtime_dependencies_clean": true,
+        "offline_browser": true,
+        "plots_integration_export": true,
+        "saved_copy_restart_source_removed": true,
+        "exact_restored_csv": true,
+        "optional_download": true,
+        "interrupted_download_preserves_saved_file": true
+      },
+      {
+        "artifact": "tofscope-0.2.0.tar.gz",
+        "installed_without_node": true,
+        "runtime_dependencies_clean": true,
+        "offline_browser": true,
+        "plots_integration_export": true,
+        "saved_copy_restart_source_removed": true,
+        "exact_restored_csv": true,
+        "optional_download": true,
+        "interrupted_download_preserves_saved_file": true
+      }
+    ]
   }
 }
