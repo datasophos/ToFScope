@@ -252,3 +252,98 @@ class RawPreparationTests(unittest.TestCase):
             masses = np.arange(6.)[samples[samples < 6]]
             expected = [np.count_nonzero((masses >= lo) & (masses <= hi)) / 4 for lo,hi in windows]
             np.testing.assert_array_equal(actual[idx], expected)
+
+    def test_prepared_copy_reclaims_unused_space_and_uses_channel_chunks(self):
+        with h5py.File(self.path, 'r+') as f:
+            # Keep a live object after the deleted allocation so the source
+            # cannot simply truncate its unused tail on close.
+            f.create_dataset('orphan', data=np.ones(4 * 1024**2, dtype='uint8'))
+            f.create_dataset('tail', data=np.arange(10))
+            del f['orphan']
+            f['MassAlias'] = f['FullSpectra/MassAxis']
+            f['AEventAlias'] = f['FullSpectra/EventList']
+            f['SpectrumLink'] = h5py.SoftLink('/FullSpectra/SumSpectrum')
+        before = self.path.stat().st_size
+        done = self.s.jobs.wait('a', self.submit().id, 5)
+        self.assertEqual(done.status, 'succeeded', done.safe_error)
+        target = self.s.saves.files.path('a', done.saved_file.id)
+        self.assertLess(target.stat().st_size, before / 2)
+        with h5py.File(self.path, 'r') as src, h5py.File(target, 'r') as dst:
+            peak = dst['PeakData/PeakData']
+            self.assertEqual(peak.chunks, (1, 1, 2, 1))
+            self.assertEqual(peak.compression, 'gzip')
+            self.assertEqual(peak.compression_opts, 1)
+            self.assertFalse(peak.shuffle)
+            self.assertEqual(dst['MassAlias'].id, dst['FullSpectra/MassAxis'].id)
+            self.assertEqual(dst['AEventAlias'].id, dst['FullSpectra/EventList'].id)
+            self.assertIsInstance(dst.get('SpectrumLink', getlink=True), h5py.SoftLink)
+            np.testing.assert_array_equal(dst['tail'][:], src['tail'][:])
+            for idx in np.ndindex(src['FullSpectra/EventList'].shape):
+                np.testing.assert_array_equal(dst['FullSpectra/EventList'][idx], src['FullSpectra/EventList'][idx])
+
+    def test_compact_copy_remaps_object_and_region_attributes(self):
+        with h5py.File(self.path, 'r+') as f:
+            tail = f.create_dataset('tail', data=np.arange(10))
+            f.attrs['dataset_ref'] = tail.ref
+            tail.attrs['group_ref'] = f['FullSpectra'].ref
+            tail.attrs['region_ref'] = tail.regionref[2:7:2]
+            compound = np.zeros((), dtype=[('targets', h5py.ref_dtype, (2,)), ('index', 'i4')])
+            compound['targets'][0] = tail.ref
+            compound['targets'][1] = f['FullSpectra'].ref
+            compound['index'] = 7
+            f.attrs['compound_refs'] = compound
+            f.attrs.create('array_refs', np.array([tail.ref, tail.ref], dtype=h5py.ref_dtype),
+                           dtype=np.dtype((h5py.ref_dtype, (2,))))
+            f.attrs.create('array_numbers', np.array([2, 9], dtype='i4'),
+                           dtype=np.dtype(('i4', (2,))))
+        done = self.s.jobs.wait('a', self.submit().id, 5)
+        self.assertEqual(done.status, 'succeeded', done.safe_error)
+        target = self.s.saves.files.path('a', done.saved_file.id)
+        with h5py.File(target, 'r') as f:
+            self.assertEqual(f[f.attrs['dataset_ref']].name, '/tail')
+            refs = f.attrs['compound_refs']
+            self.assertEqual(f[refs['targets'][0]].name, '/tail')
+            self.assertEqual(f[refs['targets'][1]].name, '/FullSpectra')
+            self.assertEqual(refs['index'], 7)
+            self.assertEqual(f[f.attrs['array_refs'][1]].name, '/tail')
+            self.assertEqual(f.attrs.get_id('array_refs').shape, ())
+            np.testing.assert_array_equal(f.attrs['array_numbers'], [2, 9])
+            self.assertEqual(f.attrs.get_id('array_numbers').dtype.subdtype, (np.dtype('i4'), (2,)))
+            self.assertEqual(f[f['tail'].attrs['group_ref']].name, '/FullSpectra')
+            np.testing.assert_array_equal(f['tail'][f['tail'].attrs['region_ref']], [2, 4, 6])
+
+    def test_compact_metadata_string_limit_rejects_without_publishing(self):
+        from tofscope.storage.compact_copy import ATTRIBUTE_STRING_BYTES
+        with h5py.File(self.path, 'r+') as f:
+            f.attrs['oversized_note'] = 'x' * (ATTRIBUTE_STRING_BYTES + 10)
+        done = self.s.jobs.wait('a', self.submit().id, 5)
+        self.assertEqual(done.status, 'failed')
+        self.assertEqual(self.s.saves.files.list('a'), [])
+        self.assertFalse(list(self.s.saves.files.owner_root('a').glob('.tmp-*')))
+        self.assertEqual(self.s.cache.budget.physical_bytes, 0)
+
+    def test_compact_copy_preserves_unicode_metadata(self):
+        with h5py.File(self.path, 'r+') as f:
+            f.attrs['notes'] = 'Platinum α — measurement'
+        done = self.s.jobs.wait('a', self.submit().id, 5)
+        self.assertEqual(done.status, 'succeeded', done.safe_error)
+        with h5py.File(self.s.saves.files.path('a', done.saved_file.id), 'r') as f:
+            self.assertEqual(f.attrs['notes'], 'Platinum α — measurement')
+
+    def test_cancellation_during_compact_copy_leaves_no_result(self):
+        from tofscope.storage import compact_copy
+        original = compact_copy.write_events
+        entered, release = Event(), Event()
+        self.addCleanup(release.set)
+        def pause(*args, **kwargs):
+            entered.set(); release.wait(3)
+            return original(*args, **kwargs)
+        with patch.object(compact_copy, 'write_events', side_effect=pause):
+            job = self.submit()
+            self.assertTrue(entered.wait(2))
+            self.s.jobs.cancel('a', job.id)
+            release.set()
+            self.assertEqual(self.s.jobs.wait('a', job.id, 5).status, 'cancelled')
+        self.assertEqual(self.s.saves.files.list('a'), [])
+        self.assertFalse(list(self.s.saves.files.owner_root('a').glob('.tmp-*')))
+        self.assertEqual(self.s.cache.budget.physical_bytes, 0)
