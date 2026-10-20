@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 import tempfile
 import uvicorn
+import h5py
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))
 from fixtures.acquisition import make_acquisition
@@ -16,6 +17,9 @@ with tempfile.TemporaryDirectory(prefix="tofscope-e2e-") as d:
     make_acquisition(root / "b.h5")
     (root / "nested").mkdir()
     make_acquisition(root / "nested" / "c.h5")
+    make_acquisition(root / "nested" / "raw.h5")
+    with h5py.File(root / "nested" / "raw.h5", "r+") as raw:
+        del raw["PeakData/PeakData"]
     settings = Settings(
         root,
         runtime_dir=root / "runtime",
