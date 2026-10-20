@@ -48,7 +48,7 @@ Panel is excluded from the proposed direction based on the user's preference.
 Build the frontend when publishing a release and bundle its assets with the
 Python package. FastAPI can serve both those static files and the analysis API.
 Node.js and npm would be developer/build dependencies, not user prerequisites.
-Bundle Plotly and other interface assets locally; runtime CDN access should not
+Bundle the selected plotting libraries and other interface assets locally; runtime CDN access should not
 be required. Keep computation and acquisition access on the machine running
 Python.
 
@@ -89,7 +89,10 @@ release testing.
   policy; rolling back application code does not undo a data write.
 - Useful logs, a health endpoint, and a diagnostic command for configuration,
   data access, and storage permissions.
-- Explicit per-user analysis state, bounded memory/computation, progress
+- Explicit user-owned workspaces containing multiple independent open analyses,
+  including multiple analyses of the same acquisition; analysis/user/global
+  resource limits and fair computation scheduling.
+- Explicit per-analysis state, bounded memory/computation, progress
   reporting, and handling of disconnects and obsolete requests. CPU-heavy
   analysis must not block the web event loop.
 - Defined authentication and authorization for shared hosting, with an
@@ -106,25 +109,35 @@ neither a reason to migrate nor a reason to retain it. Large datasets,
 concurrent users, permissions, and safe writes remain responsibilities under
 any framework.
 
-## Incremental migration and acceptance
+## Replacement approach and acceptance
 
-1. Preserve the committed Marimo prototype as the behavioral reference.
-2. Separate scientific operations and session state from AnyWidget transport
-   in the Python controller. Reuse HDF5 handling, signal recipes, depth
-   calibration, atomic identification, and write validation with their tests.
-3. Migrate the Explore screen first, retaining Plotly. Prove linked selections,
+The [replacement proposal](react-fastapi-migration.md) expands this
+direction into architecture boundaries, a packaged Explore-screen pilot,
+scientific contracts, and acceptance milestones. The app is unreleased, so the
+replacement may change structure and interfaces wholesale. Preserve Marimo in a
+frozen reference checkout; no compatibility adapter or dual-runtime release is
+required. This remains planning material; the replacement is not implemented.
+
+1. Preserve the committed Marimo prototype in a runnable, frozen reference
+   checkout before replacing the main application.
+2. Build new application services and explicit session state, replacing the
+   AnyWidget controller. Reorganize and reuse HDF5 handling, signal recipes,
+   depth calibration, atomic identification, and write validation with their
+   tests. No legacy transport or import compatibility is needed.
+3. Compare Plotly.js and ECharts before implementing Explore, using the
+   renderer evaluation in the replacement proposal. Prove linked selections,
    resizing/maximizing, asynchronous updates, and long computation behavior.
 4. At the same time, produce an installable release containing the built
    frontend and a single launcher. Test installation outside the developer
    checkout, without Node.js or a frontend build step.
 5. Demonstrate both localhost startup and a shared server configuration against
-   a representative mounted data directory. Check session isolation and
-   resource use with concurrent users before recommending shared operation.
+   a representative mounted data directory. Check isolation and resource use with two users each opening multiple analyses,
+   including the same acquisition, before recommending shared operation.
 6. Compare the replacement with the prototype before migrating the remaining
    dialogs and 3D tools. Adapt existing browser checks to protect behavior.
 
-Treat the 3D renderer as a separate decision. Retain Plotly initially; evaluate
-VTK.js or Trame against concrete needs such as clipping planes, linked
+Treat the 3D renderer as a separate decision. Evaluate vtk.js alongside the
+Plotly baseline, or Trame if remote rendering is needed, against concrete needs such as clipping planes, linked
 orthogonal slices, larger volumes, and remote rendering. Replacing Marimo alone
 will not improve volume rendering or reduce transferred array sizes.
 

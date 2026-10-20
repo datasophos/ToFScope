@@ -10,8 +10,12 @@
   - Calibrated coordinates also apply to the front projection, XZ/YZ sections, and single/multi-ion 3D, with physical aspect ratios when X/Y dimensions are known.
 - [x] modals are in the top left corner
 - [x] Identify and depth calibration tools should be graphical first
-- [ ] re-evaluate marimo as framework
+- [x] re-evaluate marimo as framework
   - [Platform and deployment recommendations](docs/platform-and-deployment.md) recorded; validate the proposed replacement with a packaged Explore screen before a full migration.
-- [ ] Depth profile along side of 3D render
+  - Additional features after react migration
+    - [ ] 3D rendering
+    - [ ] Depth calibration
+    - [ ] Depth profile along side of 3D render
+    - [ ] Support for "raw" datasets
 
 See the [roadmap index](docs/superpowers/plans/README.md) for dependencies, recommended order, and proposed decisions to review.
