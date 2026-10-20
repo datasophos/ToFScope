@@ -130,7 +130,8 @@ serialize pending drafts/jobs as completed numerical results.
 ### Visual conventions from Explore feedback (2026-10-20)
 
 Preserve the original rounded corners, fills, shadows, typography, control
-shapes and spacing. Remove only the thin rounded rectangular outline accents,
+shapes and spacing. Keep functional button outlines visible. Remove only the
+decorative thin rounded rectangular outline accents on containers,
 including the thin accent shadow under the active file tab. Keep the original
 circular help icons, keyboard focus indicators and scientific selection/axis
 markings. Do not turn border removal into an app-wide flat-style redesign.
