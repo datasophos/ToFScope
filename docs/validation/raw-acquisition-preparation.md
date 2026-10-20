@@ -96,3 +96,12 @@ without Node, RosettaSciIO, HyperSpy or external browser requests. Docker smoke
 checks run as UID 10001 with a read-only root filesystem and acquisition mount,
 separate writable runtime/saved mounts, and one exposed port; raw preparation,
 plots, saved-copy creation and reopening pass.
+
+The user approved activation and the local service was restarted at
+http://127.0.0.1:8765 with the same acquisition/output roots. Readiness, the new
+API routes and exact bundled asset hashes were verified; original writes remain
+disabled. A reported preparation-button mismatch was reproduced (17 px height
+difference), then corrected by keeping actions at natural widths, with no primary
+button top margin and no wrapping. All three raw-preparation browser workflows
+pass, including height checks at 1200 px and 560 px, and the production build and
+bundled assets were rebuilt. This frontend-only correction needs no service restart.

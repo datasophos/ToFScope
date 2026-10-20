@@ -172,7 +172,7 @@ export function RawPreparation({
           </div>
         )}
         {error && <p role="alert">{error}</p>}
-        <div className="row">
+        <div className="row preparation-actions">
           {active ? (
             <button
               disabled={!job || busy}

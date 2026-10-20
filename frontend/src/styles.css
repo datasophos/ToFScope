@@ -1303,3 +1303,11 @@ small {
 .raw-preparation p { line-height: 1.5; overflow-wrap: anywhere; }
 .preparation-filename { display: grid; gap: 8px; }
 .raw-preparation progress { width: 100%; }
+.preparation-actions { justify-content: flex-end; }
+.preparation-actions > button {
+  width: auto;
+  margin-top: 0;
+  min-height: 34px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
