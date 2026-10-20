@@ -86,5 +86,45 @@
     "raw_preparation_readonly_mount": true,
     "saved_copy_reopen": true,
     "one_port": true
+  },
+  "cloud_opening_regressions": [
+    {
+      "file": "pfib-tofwerk raw.h5",
+      "prepared_and_opened": true,
+      "shape": [
+        10,
+        64,
+        64,
+        259
+      ],
+      "assumptions": [],
+      "exact_rosettasciio": true,
+      "original_unchanged": true
+    },
+    {
+      "file": "fake_fib_sims_raw.h5",
+      "prepared_and_opened": true,
+      "shape": [
+        5,
+        16,
+        16,
+        10
+      ],
+      "assumptions": [
+        "Clock period is missing: assume events are sample indices (clock ratio 1).",
+        "Recording-channel settings are missing: assume one active channel."
+      ],
+      "exact_rosettasciio": true,
+      "original_unchanged": true
+    }
+  ],
+  "latest_checks": {
+    "python_tests": 161,
+    "browser_workflows": 44,
+    "frontend_unit_tests": 11,
+    "metadata_only_identity_change": "ignored",
+    "genuine_content_changes": "rejected",
+    "initial_inspection_retry_limit": 3,
+    "incomplete_metadata": "explicit_assumption_acknowledgment_required"
   }
 }

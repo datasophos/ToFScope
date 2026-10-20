@@ -80,19 +80,30 @@ def integrate_events(events, mass_axis, clock_ratio, normalization, low, high):
     return integrate_event_windows(events,mass_axis,clock_ratio,normalization,[(low,high)])
 
 
-def integration_parameters(f):
+def integration_parameters(f, *, reader_defaults=False):
     fs = f['FullSpectra'].attrs
+    root = f.attrs
+    if reader_defaults:
+        fs = {key: fs[key] for key in ('SampleInterval', 'ClockPeriod') if key in fs}
+        root = {key: root[key] for key in ('NbrWaveforms', 'Configuration File Contents') if key in root}
+        if 'ClockPeriod' not in fs:
+            fs.setdefault('SampleInterval', 1.)
+            fs['ClockPeriod'] = fs['SampleInterval']
+        root.setdefault('NbrWaveforms', 1)
+        config = decode(root.get('Configuration File Contents', b''))
+        if not re.findall(r'Ch\d+Record\s*=\s*(\d+)', config):
+            root['Configuration File Contents'] = config + '\nCh1Record=1\n'
     required = ('SampleInterval', 'ClockPeriod')
-    if any(k not in fs for k in required) or 'NbrWaveforms' not in f.attrs:
+    if any(k not in fs for k in required) or 'NbrWaveforms' not in root:
         raise ValueError('Raw reintegration requires timing and NbrWaveforms metadata.')
     ratio = float(scalar(fs['SampleInterval'])) / float(scalar(fs['ClockPeriod']))
     if not np.isfinite(ratio) or ratio < 1 or not np.isclose(ratio, round(ratio), rtol=1e-5):
         raise ValueError('Unsupported noninteger TDC/sample clock ratio.')
-    ini = decode(f.attrs.get('Configuration File Contents', b''))
+    ini = decode(root.get('Configuration File Contents', b''))
     channels = re.findall(r'Ch\d+Record\s*=\s*(\d+)', ini)
     if not channels:
         raise ValueError('Cannot determine active recording channels for normalization.')
-    normalization = int(scalar(f.attrs['NbrWaveforms'])) * sum(int(v) != 0 for v in channels)
+    normalization = int(scalar(root['NbrWaveforms'])) * sum(int(v) != 0 for v in channels)
     if normalization <= 0:
         raise ValueError('No active channels or waveforms recorded.')
     return round(ratio), normalization

@@ -23,13 +23,15 @@ class PreparationService:
     def inspect(self, owner, path, location='acquisition'):
         return inspect_source(self.repository, owner, path, location)[1]
 
-    def submit(self, owner, path, location, generation, name):
+    def submit(self, owner, path, location, generation, name, *, accept_assumptions=False):
         name = filename(name)
         source, preview = inspect_source(self.repository, owner, path, location)
         if preview.generation != generation:
             raise ValueError('Acquisition changed; inspect it again before preparation.')
         if not preview.requires_preparation:
             raise ValueError('This file already contains integrated peak data.')
+        if preview.assumptions and not accept_assumptions:
+            raise ValueError('Missing acquisition metadata requires explicit acceptance of the reconstruction assumptions.')
         if os.path.lexists(self.files.owner_root(owner) / name):
             raise FileExistsError('Output already exists; choose a new name.')
         task = PreparationTask(str(uuid4()), source, name, preview.required_bytes)

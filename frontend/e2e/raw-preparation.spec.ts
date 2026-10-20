@@ -139,3 +139,84 @@ test("launching with a raw filename also asks before preparing", async ({
   ).toBeVisible();
   await expect(page.getByRole("tab")).toHaveCount(0);
 });
+
+test("missing calibration defaults are visible and explicitly accepted before preparation", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `raw-assumptions-${Date.now()}`,
+  });
+  let acknowledged = false;
+  page.on("request", (r) => {
+    if (r.url().endsWith("/acquisitions/prepare"))
+      acknowledged = r.postDataJSON().accept_assumptions === true;
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
+    .click();
+  await page.getByRole("button", { name: "▸ nested", exact: true }).dblclick();
+  await page
+    .getByRole("button", { name: "◫ assumed-raw.h5", exact: true })
+    .dblclick();
+  await expect(
+    page.getByRole("region", { name: "Reconstruction assumptions" }),
+  ).toContainText("clock ratio 1");
+  await expect(
+    page.getByRole("region", { name: "Reconstruction assumptions" }),
+  ).toContainText("one active channel");
+  expect(acknowledged).toBe(false);
+  await page
+    .getByRole("button", { name: "Prepare with assumptions", exact: true })
+    .click();
+  await expect(
+    page.getByRole("tab", { name: "1 · assumed-raw_prepared.h5", exact: true }),
+  ).toBeVisible();
+  expect(acknowledged).toBe(true);
+});
+
+test("a failed automatic open clearly preserves the prepared copy and can be retried", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `raw-retry-${Date.now()}`,
+  });
+  let failed = false;
+  await page.route("**/api/v1/analyses", async (route) => {
+    if (
+      route.request().method() === "POST" &&
+      route.request().postDataJSON().location === "saved" &&
+      !failed
+    ) {
+      failed = true;
+      await route.fulfill({
+        status: 409,
+        json: {
+          code: "source_changed",
+          message: "Acquisition changed; explicitly reopen it.",
+        },
+      });
+    } else await route.continue();
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
+    .click();
+  await page.getByRole("button", { name: "▸ nested", exact: true }).dblclick();
+  await page.getByRole("button", { name: "◫ raw.h5", exact: true }).dblclick();
+  await page
+    .getByRole("button", { name: "Prepare and open", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toContainText(
+    "Your prepared copy is safe",
+  );
+  await expect(page.getByRole("alert")).not.toContainText(
+    "Acquisition changed",
+  );
+  await page
+    .getByRole("button", { name: "Open prepared copy", exact: true })
+    .click();
+  await expect(
+    page.getByRole("tab", { name: "1 · raw_prepared.h5", exact: true }),
+  ).toBeVisible();
+});

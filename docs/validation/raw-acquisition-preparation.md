@@ -105,3 +105,48 @@ difference), then corrected by keeping actions at natural widths, with no primar
 button top margin and no wrapping. All three raw-preparation browser workflows
 pass, including height checks at 1200 px and 560 px, and the production build and
 bundled assets were rebuilt. This frontend-only correction needs no service restart.
+
+## Cloud metadata and incomplete fixtures — 2026-10-20
+
+Source guards previously included ctime, which changes on permissions and cloud
+filesystem metadata updates without changes to the HDF5 data. A metadata-only
+chmod reproduced the user's false SourceChanged rejection. Analysis/preparation
+and saved-copy guards now use device, inode, size and mtime, consistent with the
+existing native dataset identity. Content writes and file replacement remain
+protected. Initial file inspection retries up to three complete fresh snapshots
+if a file changes during opening; a continuously changing file stops with an
+explicit sync/download message. Jobs and already-open analyses do not silently
+rebind to a new content generation.
+
+The actual `fake_fib_sims_raw.h5` has no ClockPeriod or channel-record settings.
+It is different from the real raw file, which has complete timing metadata.
+Inspection reports RosettaSciIO's ratio-one and one-active-channel fallbacks as
+assumptions. The UI displays them, warns that counts depend on their validity,
+and uses an explicit “Prepare with assumptions” action. The server requires a
+strict Boolean acknowledgment before queuing such work. Only the new copy gets
+missing parameters filled for consistent later custom integrations; original
+attributes remain unchanged. The provenance records every assumption as JSON.
+This supersedes the earlier blanket rejection of missing parameters. Present but
+invalid parameters are not replaced with defaults. Ordinary custom integration
+retains strict metadata requirements unless using a previously confirmed copy.
+
+Both user-reported raw files were fully prepared and reopened in temporary
+output directories. All reconstructed values match explicit float32 RosettaSciIO;
+original SHA-256 values are unchanged. The fake fixture's numerical equivalence
+is conditional on the stated assumptions, not proof of its physical calibration.
+The user's existing `pfib-tofwerk raw_prepared.h5` also reopened normally without
+reconstruction once its filesystem metadata settled.
+
+A failed automatic opening now says that the prepared copy was saved, offers
+“Open prepared copy”, and never describes it as a failed integration. Browser
+regression coverage forces the old SourceChanged error after publication, checks
+the user-facing explanation, and verifies successful retry. All 161 Python tests,
+44 browser workflows, 11 frontend unit tests and the production build pass.
+Final review caught broad decoding of unrelated HDF5 attributes in the new defaults
+path; only the required attributes are now read, with a failing/passing regression.
+
+After reboot, isolated checkouts were restored persistently under
+`.worktrees/react-fastapi` and `.worktrees/prototype-37ecacf` in the original
+repository; the previous `/private/tmp` worktrees no longer exist. Launch the app
+from the implementation checkout using `.venv/bin/tofscope --data-root <folder>`.
+The saved-files folder defaults to that same data folder. No runtime Node is needed.
