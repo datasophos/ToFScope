@@ -13,8 +13,18 @@ in a frozen reference checkout. These plans implement the
    identification/isotopes, sections, spatial renderer selection, multi-layer 3D,
    controlled saves and full parity qualification.
 
-These are execution plans awaiting review, not implemented capabilities. The
-older plans below describe prototype feature work and remain historical context.
+The packaged Explore application is implemented and qualified. Its follow-up
+[signal workspace](2026-10-19-explore-signal-workspace.md),
+[file-centered persistence](2026-10-19-file-centered-analysis.md), and
+[raw preparation](2026-10-20-raw-acquisition-preparation.md) plans are also
+implemented. The completion plan remains the next feature backlog: depth
+calibration, identification/isotopes, sections, and 3D. Controlled native vendor
+exports remain separate from the supported Save as workflow, which creates new
+HDF5 copies and restores analysis state.
+
+[TODO.md](../../../TODO.md) tracks current replacement capabilities. The older
+plans below describe prototype work and remain historical context; completed
+prototype features do not imply replacement UI parity.
 
 ## Prototype roadmap — 2026-10-16
 

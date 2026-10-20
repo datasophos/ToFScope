@@ -58,8 +58,15 @@ Finish/discard drafts and finish/cancel calculations before saving. Closing an
 unsaved analysis offers Save as, Discard or Cancel. CSV exports visible ROI
 profiles at original scale/resolution; PNG includes profile labels.
 
-The pilot requires stored `PeakData` metadata; raw-only acquisitions are not yet
-supported.
+TOFWERK TOFexplorer `.h5` acquisitions can contain stored ion maps or raw events.
+For raw files without ion maps, the app previews the required preparation and
+asks for confirmation before integrating peak windows into a new copy. Missing
+timing/channel metadata requires explicit acknowledgment of the assumptions.
+New preparations compact unused HDF5 space and use channel-oriented gzip storage;
+see [raw preparation](docs/validation/raw-acquisition-preparation.md) and
+[storage measurements](docs/validation/compact-raw-preparation.md).
+
+See [TODO.md](TODO.md) for the current feature status and next work.
 
 This is the **Explore pilot**, not full feature parity. Calibration editors,
 atomic identification/isotope dialogs, sections, volume tools and controlled

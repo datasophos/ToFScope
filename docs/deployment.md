@@ -13,8 +13,9 @@ tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 ```
 
 The default address is `http://127.0.0.1:8765`. An empty configured root opens the
-file-picker empty state. Without a data root, the app uses an empty directory in
-its writable runtime directory. There is no adjacent-example fallback. Set
+file-picker empty state. The acquisition folder defaults to the current working directory; the saved
+copies folder defaults to the acquisition folder unless `--output-root` is set.
+There is no adjacent-example fallback. Set
 `TOF_FILE` to a root-relative or confined absolute path for initial open.
 
 Browser-free local service:
