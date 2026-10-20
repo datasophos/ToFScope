@@ -100,10 +100,10 @@ Paths in the file map are relative to `src/tofscope/` unless stated otherwise.
 
 **Interfaces:** `AnalysisService.list(owner) -> list[AnalysisSnapshot]`, `create_analysis(owner, dataset)`, existing `entry/get/replace/close` behavior remains owner-scoped. Use `GET /analyses` and `POST /analyses` for the live owner collection; remove WorkspaceSnapshot, WorkspaceStore and `/workspaces` routes. Existing lease recovery remains automatic and internal. Persist active tab choice in browser session storage, not an exposed workspace ID.
 
-- [ ] Write failing API/browser checks proving an empty screen contains Open acquisition but no workspace selector, Close workspace, analysis-ID field or reconnect form. Verify two users, A/B/A independent tabs, same-file analyses, reload, expired leases, failed open, service restart and initial-file launch. Closing one analysis must never close another.
-- [ ] Run the relevant tests and confirm failures from the old interface.
-- [ ] Replace grouping wholesale with the owner collection, retaining quotas, cancellation callbacks and source-generation checks. Remove manual recovery UI and temporary-workspace copy. Keep open tabs automatically recoverable while their service entries live; a restart gives an empty file collection and saved files remain reopenable.
-- [ ] Update all first-party tests/scripts to the new routes rather than adding compatibility endpoints. Regenerate API types; run lifecycle, owner/concurrency and browser checks to pass. Commit `Replace workspace management with independent file tabs.`
+- [x] Write failing API/browser checks proving an empty screen contains Open acquisition but no workspace selector, Close workspace, analysis-ID field or reconnect form. Verify two users, A/B/A independent tabs, same-file analyses, reload, expired leases, failed open, service restart and initial-file launch. Closing one analysis must never close another.
+- [x] Run the relevant tests and confirm failures from the old interface.
+- [x] Replace grouping wholesale with the owner collection, retaining quotas, cancellation callbacks and source-generation checks. Remove manual recovery UI and temporary-workspace copy. Keep open tabs automatically recoverable while their service entries live; a restart gives an empty file collection and saved files remain reopenable.
+- [x] Update all first-party tests/scripts to the new routes rather than adding compatibility endpoints. Regenerate API types; run lifecycle, owner/concurrency and browser checks to pass. Commit `Replace workspace management with independent file tabs.`
 
 ## Task 6: Add Save as, dirty tracking and explicit downloads
 

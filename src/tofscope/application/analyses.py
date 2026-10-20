@@ -1,11 +1,9 @@
 from collections import OrderedDict
 from dataclasses import dataclass, field, replace
 from threading import RLock
-from typing import Protocol
 from uuid import uuid4
 from tofscope.storage.acquisitions import SourceChanged
 from tofscope.application.models import (
-    WorkspaceSnapshot,
     AnalysisSnapshot,
     DisplaySettings,
     SignalSnapshot,
@@ -25,34 +23,6 @@ class Conflict(ValueError):
         self.revision = revision
 
 
-class WorkspaceStore(Protocol):
-    def list(self, owner: str) -> list[WorkspaceSnapshot]: ...
-    def get(self, owner: str, workspace_id: str) -> WorkspaceSnapshot: ...
-    def put(self, snapshot: WorkspaceSnapshot) -> None: ...
-    def delete(self, owner: str, workspace_id: str) -> None: ...
-
-
-class MemoryWorkspaceStore:
-    def __init__(self):
-        self.items = {}
-
-    def list(self, owner):
-        return [x for x in self.items.values() if x.owner == owner]
-
-    def get(self, owner, workspace_id):
-        w = self.items.get(workspace_id)
-        if w is None or w.owner != owner:
-            raise KeyError("Workspace unavailable.")
-        return w
-
-    def put(self, snapshot):
-        self.items[snapshot.id] = snapshot
-
-    def delete(self, owner, workspace_id):
-        self.get(owner, workspace_id)
-        del self.items[workspace_id]
-
-
 @dataclass
 class AnalysisEntry:
     snapshot: AnalysisSnapshot
@@ -63,11 +33,10 @@ class AnalysisEntry:
     closed: bool = False
 
 
-class WorkspaceService:
-    def __init__(self, repository, settings, store=None):
+class AnalysisService:
+    def __init__(self, repository, settings):
         self.repository = repository
         self.settings = settings
-        self.store = store or MemoryWorkspaceStore()
         self.entries = {}
         self.lock = RLock()
         self.signal_lock = RLock()
@@ -75,21 +44,16 @@ class WorkspaceService:
         self.on_remove = []
         self.prepare = lambda s: None
 
-    def create(self, owner):
-        with self.lock:
-            if len(self.store.list(owner)) >= self.settings.analyses_per_user:
-                raise CapacityError("Close an unused workspace first.")
-            w = WorkspaceSnapshot(str(uuid4()), owner)
-            self.store.put(w)
-            return w
-
     def list(self, owner):
         with self.lock:
-            return self.store.list(owner)
-
-    def workspace(self, owner, wid):
-        with self.lock:
-            return self.store.get(owner, wid)
+            aids = [e.snapshot.id for e in self.entries.values() if not e.closed and e.snapshot.owner == owner]
+        result = []
+        for aid in aids:
+            try:
+                result.append(self.get(owner, aid))
+            except KeyError:
+                pass
+        return result
 
     def entry(self, owner, aid):
         with self.lock:
@@ -123,7 +87,7 @@ class WorkspaceService:
                     entry.tokens = {k: v + 1 for k, v in entry.tokens.items()}
                     self._release(entry)
 
-    def initial(self, owner, wid, dataset, aid=None, revision=0):
+    def initial(self, owner, dataset, aid=None, revision=0):
         with self.repository.metadata(owner, dataset, aid) as m:
             nz, ny, nx, _ = m.shape
             default = min(m.peaks, key=lambda p: abs(p["mass"] - 27))
@@ -138,7 +102,6 @@ class WorkspaceService:
             snapshot = AnalysisSnapshot(
                 aid or str(uuid4()),
                 owner,
-                wid,
                 dataset,
                 revision,
                 frames,
@@ -211,10 +174,9 @@ class WorkspaceService:
                 user_count >= self.settings.signals_per_user or global_count >= self.settings.signals_global):
             raise CapacityError('Signal limit reached; remove an unused signal first.')
 
-    def create_analysis(self, owner, workspace_id, dataset):
-        s = self.initial(owner, workspace_id, dataset)
+    def create_analysis(self, owner, dataset):
+        s = self.initial(owner, dataset)
         with self.signal_lock, self.lock:
-            w = self.store.get(owner, workspace_id)
             if (
                 len(self.entries) >= self.settings.analyses_global
                 or sum(e.snapshot.owner == owner for e in self.entries.values())
@@ -224,7 +186,6 @@ class WorkspaceService:
             self.admit_collection(s)
             self.prepare(s)
             self.entries[s.id] = AnalysisEntry(s)
-            self.store.put(replace(w, analysis_ids=w.analysis_ids + (s.id,)))
             return s
 
     def replace(self, owner, aid, dataset, expected_revision):
@@ -235,7 +196,7 @@ class WorkspaceService:
             if e.snapshot.revision != expected_revision:
                 raise Conflict("Analysis revision changed.", e.snapshot.revision)
             s = self.initial(
-                owner, e.snapshot.workspace_id, dataset, aid, e.snapshot.revision + 1
+                owner, dataset, aid, e.snapshot.revision + 1
             )
             self.admit_collection(s, replacing=aid)
             self.prepare(s)
@@ -258,16 +219,6 @@ class WorkspaceService:
             callback(aid)
         with self.lock:
             self.entries.pop(aid, None)
-            w = self.store.get(owner, e.snapshot.workspace_id)
-            self.store.put(
-                replace(w, analysis_ids=tuple(x for x in w.analysis_ids if x != aid))
-            )
-
-    def delete_workspace(self, owner, wid):
-        for aid in self.workspace(owner, wid).analysis_ids:
-            self.close(owner, aid)
-        with self.lock:
-            self.store.delete(owner, wid)
 
     def close_all(self):
         for e in list(self.entries.values()):

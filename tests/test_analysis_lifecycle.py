@@ -1,6 +1,6 @@
 import unittest
 from service_fixture import setup_case
-from tofscope.application.workspaces import WorkspaceService
+from tofscope.application.analyses import AnalysisService
 from tofscope.application.lifecycle import LifecycleService
 
 
@@ -15,8 +15,8 @@ class FakeJobs:
 class LifecycleTests(unittest.TestCase):
     def test_grace_live_second_view_and_expiry(self):
         setup_case(self)
-        ws = WorkspaceService(self.repo, self.settings)
-        a = ws.create_analysis("a", ws.create("a").id, self.dataset)
+        ws = AnalysisService(self.repo, self.settings)
+        a = ws.create_analysis("a", self.dataset)
         jobs = FakeJobs()
         clock = [0.0]
         life = LifecycleService(ws, jobs, self.settings, lambda: clock[0])

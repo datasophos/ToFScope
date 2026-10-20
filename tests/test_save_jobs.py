@@ -13,11 +13,11 @@ class SaveJobTests(unittest.TestCase):
         self.settings = replace(self.settings, output_root=self.settings.data_root / 'outputs')
         self.s = build_services(self.settings)
         self.addCleanup(self.s.jobs.shutdown)
-        self.addCleanup(self.s.workspaces.close_all)
-        self.a = self.s.workspaces.create_analysis('a', self.s.workspaces.create('a').id, self.s.repository.open('a', 'a.h5'))
+        self.addCleanup(self.s.analyses.close_all)
+        self.a = self.s.analyses.create_analysis('a', self.s.repository.open('a', 'a.h5'))
 
     def submit(self, name='copy.h5', request='save'):
-        a = self.s.workspaces.get('a', self.a.id)
+        a = self.s.analyses.get('a', self.a.id)
         envelope = CommandEnvelope(request, a.revision, a.dataset.generation, {'type': 'set_depth', 'depth': {'mode': 'all'}})
         return self.s.saves.submit('a', a.id, envelope, name)
 
@@ -28,8 +28,8 @@ class SaveJobTests(unittest.TestCase):
         self.assertEqual(done.kind, 'save')
         self.assertEqual(done.saved_revision, self.a.revision)
         self.assertEqual(self.submit().id, job.id)
-        self.assertEqual(self.s.workspaces.get('a', self.a.id).revision, self.a.revision)
-        self.assertEqual(self.s.workspaces.get('a', self.a.id).saved_revision, self.a.revision)
+        self.assertEqual(self.s.analyses.get('a', self.a.id).revision, self.a.revision)
+        self.assertEqual(self.s.analyses.get('a', self.a.id).saved_revision, self.a.revision)
         self.assertEqual(len(self.s.saves.files.list('a')), 1)
         with self.assertRaises(KeyError): self.s.jobs.get('other', job.id)
         ref = self.s.repository.open('a', done.saved_file.id, location='saved')
@@ -40,7 +40,7 @@ class SaveJobTests(unittest.TestCase):
         original = self.s.saves.files._verify
         def edit(*args):
             original(*args)
-            a = self.s.workspaces.get('a', self.a.id)
+            a = self.s.analyses.get('a', self.a.id)
             self.s.explore.apply('a', a.id, CommandEnvelope('edit', a.revision, a.dataset.generation, {'type': 'set_roi', 'roi': [1, 1, 0, 0]}))
         with patch.object(self.s.saves.files, '_verify', side_effect=edit):
             done = self.s.jobs.wait('a', self.submit().id, 4)
@@ -64,7 +64,7 @@ class SaveJobTests(unittest.TestCase):
 
     def test_save_and_integration_share_admission_and_busy_save_rejection(self):
         from tofscope.application.jobs import IntegrationSpec
-        from tofscope.application.workspaces import CapacityError
+        from tofscope.application.analyses import CapacityError
         self.s.jobs.settings = replace(self.settings, jobs_per_analysis=1)
         entered, release = Event(), Event()
         original = self.s.saves.files._verify
@@ -74,7 +74,7 @@ class SaveJobTests(unittest.TestCase):
         with patch.object(self.s.saves.files, '_verify', side_effect=pause):
             save = self.submit()
             self.assertTrue(entered.wait(2))
-            a = self.s.workspaces.get('a', self.a.id)
+            a = self.s.analyses.get('a', self.a.id)
             env = CommandEnvelope('integrate', a.revision, a.dataset.generation, {'type': 'set_depth', 'depth': {'mode': 'all'}})
             with self.assertRaises(CapacityError):
                 self.s.jobs.submit('a', a.id, env, IntegrationSpec(((1., 2.),), (0, 2), 'Raw'))

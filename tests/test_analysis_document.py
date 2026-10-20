@@ -5,7 +5,7 @@ from uuid import uuid4
 import h5py
 import numpy as np
 from service_fixture import setup_case
-from tofscope.application.workspaces import WorkspaceService
+from tofscope.application.analyses import AnalysisService
 from tofscope.application.models import SignalSnapshot, DisplaySettings
 from tofscope.application.commands import DepthWindow
 from tofscope.science.signals import SignalRecipe
@@ -15,8 +15,8 @@ from tofscope.storage.analysis_document import encode_document, read_document, r
 class DocumentTests(unittest.TestCase):
     def setUp(self):
         setup_case(self)
-        ws = WorkspaceService(self.repo, self.settings)
-        self.initial = ws.create_analysis('a', ws.create('a').id, self.dataset)
+        ws = AnalysisService(self.repo, self.settings)
+        self.initial = ws.create_analysis('a', self.dataset)
 
     def write(self, payload, **attrs):
         path = self.settings.data_root / 'a.h5'
@@ -85,8 +85,8 @@ class DocumentTests(unittest.TestCase):
     def test_spectrum_scale_commands_preserve_existing_choice(self):
         from tofscope.application.explore import ExploreService
         from tofscope.application.commands import CommandEnvelope
-        ws = WorkspaceService(self.repo, self.settings)
-        s = ws.create_analysis('a', ws.create('a').id, self.dataset)
+        ws = AnalysisService(self.repo, self.settings)
+        s = ws.create_analysis('a', self.dataset)
         service = ExploreService(ws, self.repo)
         for index, extra in enumerate(({'spectrum_log': False}, {})):
             s = service.apply('a', s.id, CommandEnvelope(str(index), s.revision, s.dataset.generation,

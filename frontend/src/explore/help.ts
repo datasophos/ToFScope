@@ -1,6 +1,6 @@
 export const help = {
-  workspace:
-    "Open several files, or the same file for independent analyses. Each tab owns its signals, drafts, image choice, profiles, ROI and viewing depths. Workspaces reset on service restart. Acquisitions remain read only.",
+  files:
+    "Open several files, or the same file for independent analyses. Each tab owns its signals, drafts, images, profiles, ROI and viewing depths. Save as creates a new HDF5 copy with analysis state; opening it restores that state. Original acquisitions remain read only.",
   signal:
     "Signals are stored channels or calculated raw integrations. Add signal searches vendor channels or opens Create from spectrum for a custom editor. Images chooses one signal for the ion map and front projection. Profiles shows colored chips for visible curves; click a chip for details or × to hide it. Manage signals opens the full collection, including hidden signals and display choices; the image signal is always included. Signal details exposes exact provenance, coverage and edit actions. Switching images never changes a signal’s recipe or color.",
   windows:

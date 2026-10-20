@@ -2,13 +2,13 @@ from dataclasses import replace
 from tofscope.application.commands import CommandEnvelope, AllDepth
 from tofscope.application.models import DisplaySettings, SignalSnapshot
 from tofscope.application.signals import get_signal, normalize_view, usable_frames, valid_name
-from tofscope.application.workspaces import Conflict, CapacityError
+from tofscope.application.analyses import Conflict, CapacityError
 from tofscope.science.signals import SignalRecipe
 
 
 class ExploreService:
     def __init__(self, workspaces, repository):
-        self.workspaces = workspaces
+        self.analyses = workspaces
         self.repository = repository
 
     def stored(self, s, index, frames=None):
@@ -52,8 +52,8 @@ class ExploreService:
         if not isinstance(envelope, CommandEnvelope):
             envelope = CommandEnvelope(**envelope)
         fingerprint = envelope.model_dump_json()
-        e = self.workspaces.entry(owner, analysis_id)
-        with self.workspaces.signal_lock, e.lock:
+        e = self.analyses.entry(owner, analysis_id)
+        with self.analyses.signal_lock, e.lock:
             previous = self.validate_envelope(e, envelope, fingerprint)
             if previous is not None:
                 return previous
@@ -69,7 +69,7 @@ class ExploreService:
                 if old and not c.duplicate:
                     patch['profile_signal_ids'] = tuple(dict.fromkeys((*s.profile_signal_ids, old.id)))
                 else:
-                    self.workspaces.admit_signal(owner, len(s.signals))
+                    self.analyses.admit_signal(owner, len(s.signals))
                     signal = SignalSnapshot(recipe.id, recipe.label, s.next_style_index, recipe)
                     patch = dict(signals=(*s.signals, signal), next_style_index=s.next_style_index+1,
                                  profile_signal_ids=(*s.profile_signal_ids, signal.id))
@@ -134,7 +134,7 @@ class ExploreService:
                     e.leases.pop(sid).release()
             e.snapshot = result
             if kind == "remove_signal":
-                for callback in self.workspaces.on_remove:
+                for callback in self.analyses.on_remove:
                     callback(analysis_id, signal.id)
             self.receipt(e, envelope.request_id, fingerprint, result)
             return result

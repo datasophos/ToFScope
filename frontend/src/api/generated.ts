@@ -4,6 +4,24 @@
  */
 
 export interface paths {
+  "/api/v1/analyses": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Open Files */
+    get: operations["open_files_api_v1_analyses_get"];
+    put?: never;
+    /** Open Analysis */
+    post: operations["open_analysis_api_v1_analyses_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/analyses/{aid}": {
     parameters: {
       query?: never;
@@ -294,59 +312,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/workspaces": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Workspaces */
-    get: operations["workspaces_api_v1_workspaces_get"];
-    put?: never;
-    /** New Workspace */
-    post: operations["new_workspace_api_v1_workspaces_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/workspaces/{wid}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Workspace */
-    get: operations["workspace_api_v1_workspaces__wid__get"];
-    put?: never;
-    post?: never;
-    /** Delete Workspace */
-    delete: operations["delete_workspace_api_v1_workspaces__wid__delete"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/workspaces/{wid}/analyses": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Open Analysis */
-    post: operations["open_analysis_api_v1_workspaces__wid__analyses_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/healthz": {
     parameters: {
       query?: never;
@@ -457,8 +422,6 @@ export interface components {
        * @default false
        */
       stale: boolean;
-      /** Workspace Id */
-      workspace_id: string;
     };
     /** Axis */
     Axis: {
@@ -977,18 +940,6 @@ export interface components {
       /** Id */
       id: string;
     };
-    /** WorkspaceSnapshot */
-    WorkspaceSnapshot: {
-      /**
-       * Analysis Ids
-       * @default []
-       */
-      analysis_ids: string[];
-      /** Id */
-      id: string;
-      /** Owner */
-      owner: string;
-    };
   };
   responses: never;
   parameters: never;
@@ -998,6 +949,59 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  open_files_api_v1_analyses_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnalysisSnapshot"][];
+        };
+      };
+    };
+  };
+  open_analysis_api_v1_analyses_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["OpenAcquisition"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnalysisSnapshot"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   analysis_api_v1_analyses__aid__get: {
     parameters: {
       query?: never;
@@ -1542,141 +1546,6 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ViewLease"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  workspaces_api_v1_workspaces_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WorkspaceSnapshot"][];
-        };
-      };
-    };
-  };
-  new_workspace_api_v1_workspaces_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WorkspaceSnapshot"];
-        };
-      };
-    };
-  };
-  workspace_api_v1_workspaces__wid__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        wid: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WorkspaceSnapshot"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  delete_workspace_api_v1_workspaces__wid__delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        wid: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  open_analysis_api_v1_workspaces__wid__analyses_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        wid: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["OpenAcquisition"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AnalysisSnapshot"];
         };
       };
       /** @description Validation Error */

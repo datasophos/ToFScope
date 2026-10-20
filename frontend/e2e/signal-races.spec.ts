@@ -81,10 +81,10 @@ test("a stale open draft cannot overwrite a newer completed edit from another vi
     "x-tofscope-user": owner,
     Origin: new URL(page.url()).origin,
   };
-  const workspaces = await (
-    await page.request.get("/api/v1/workspaces", { headers })
+  const analyses = await (
+    await page.request.get("/api/v1/analyses", { headers })
   ).json();
-  const id = workspaces[0].analysis_ids[0];
+  const id = analyses[0].id;
   const state = await (
     await page.request.get(`/api/v1/analyses/${id}`, { headers })
   ).json();

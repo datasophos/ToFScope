@@ -2,7 +2,7 @@ import threading
 import time
 import unittest
 from service_fixture import setup_case
-from tofscope.application.workspaces import WorkspaceService
+from tofscope.application.analyses import AnalysisService
 from tofscope.application.explore import ExploreService
 from tofscope.application.resources import ResourceBudget
 from tofscope.application.cache import ArrayCache
@@ -13,12 +13,12 @@ from tofscope.application.commands import CommandEnvelope
 class JobTests(unittest.TestCase):
     def setUp(self):
         setup_case(self)
-        self.ws = WorkspaceService(self.repo, self.settings)
+        self.ws = AnalysisService(self.repo, self.settings)
         self.explore = ExploreService(self.ws, self.repo)
         self.cache = ArrayCache(self.repo, ResourceBudget(self.settings))
         self.jobs = JobService(self.ws, self.explore, self.cache, self.settings)
         self.addCleanup(self.jobs.shutdown)
-        self.a = self.ws.create_analysis("a", self.ws.create("a").id, self.dataset)
+        self.a = self.ws.create_analysis("a", self.dataset)
 
     def env(self, s, id="job"):
         s = self.ws.get(s.owner, s.id)
@@ -136,9 +136,7 @@ class JobTests(unittest.TestCase):
             self.env(self.a, "backlog"),
             IntegrationSpec(((3, 4),), (0, 2), "Ti"),
         )
-        b = self.ws.create_analysis(
-            "b", self.ws.create("b").id, self.repo.open("b", "b.h5")
-        )
+        b = self.ws.create_analysis("b", self.repo.open("b", "b.h5"))
         second = self.jobs.submit(
             "b",
             b.id,

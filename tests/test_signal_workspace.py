@@ -1,7 +1,7 @@
 import unittest
 from uuid import uuid4
 from service_fixture import setup_case
-from tofscope.application.workspaces import WorkspaceService
+from tofscope.application.analyses import AnalysisService
 from tofscope.application.explore import ExploreService
 from tofscope.application.commands import CommandEnvelope
 
@@ -9,9 +9,9 @@ from tofscope.application.commands import CommandEnvelope
 class SignalWorkspaceTests(unittest.TestCase):
     def setUp(self):
         setup_case(self, signals_per_analysis=3)
-        self.ws = WorkspaceService(self.repo, self.settings)
+        self.ws = AnalysisService(self.repo, self.settings)
         self.explore = ExploreService(self.ws, self.repo)
-        self.a = self.ws.create_analysis('a', self.ws.create('a').id, self.dataset)
+        self.a = self.ws.create_analysis('a', self.dataset)
 
     def send(self, **command):
         s = self.ws.get('a', self.a.id)
@@ -75,7 +75,7 @@ class SignalWorkspaceTests(unittest.TestCase):
         self.assertEqual(len(self.ws.get('a', self.a.id).signals), 3)
 
     def test_owner_and_same_file_analysis_isolation(self):
-        other = self.ws.create_analysis('a', self.ws.create('a').id, self.dataset)
+        other = self.ws.create_analysis('a', self.dataset)
         self.add(duplicate=True)
         self.assertEqual(len(self.ws.get('a', other.id).signals), 1)
         with self.assertRaises(KeyError):

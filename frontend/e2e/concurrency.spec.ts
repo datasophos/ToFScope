@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-test("two users, A/B/A tabs, explicit reattach and denied foreign downloads", async ({
+test("two users, A/B/A tabs, automatic tab recovery and denied foreign downloads", async ({
   browser,
 }) => {
   const a = await browser.newContext({
@@ -46,8 +46,8 @@ test("two users, A/B/A tabs, explicit reattach and denied foreign downloads", as
   await expect(
     q.getByRole("button", { name: "ROI: Full field", exact: true }),
   ).toBeVisible();
-  const workspaces = await (await p.request.get("/api/v1/workspaces")).json();
-  const id = workspaces[0].analysis_ids[0];
+  const analyses = await (await p.request.get("/api/v1/analyses")).json();
+  const id = analyses[0].id;
   expect(
     (await q.request.get(`/api/v1/analyses/${id}/exports/csv`)).status(),
   ).toBe(404);

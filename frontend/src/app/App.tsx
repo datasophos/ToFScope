@@ -5,7 +5,6 @@ import {
   post,
   type Analysis,
   type Session,
-  type Workspace,
 } from "../api/client";
 import { FilePicker } from "./FilePicker";
 import { ExploreScreen } from "../explore/ExploreScreen";
@@ -13,46 +12,32 @@ import { HelpButton } from "../components/HelpButton";
 import { help } from "../explore/help";
 export function App() {
   const [session, setSession] = useState<Session | null>(null),
-    [owned, setOwned] = useState<Workspace[]>([]),
-    [workspace, setWorkspace] = useState<Workspace | null>(null),
     [analyses, setAnalyses] = useState<Analysis[]>([]),
     [active, setActive] = useState(""),
     [picker, setPicker] = useState(false),
     [replace, setReplace] = useState<Analysis | null>(null),
-    [error, setError] = useState(""),
-    [reconnect, setReconnect] = useState("");
+    [error, setError] = useState("");
   useEffect(() => {
     let alive = true;
     authenticate()
       .then(async (s) => {
-        const all = await request<Workspace[]>("/workspaces");
-        const saved = sessionStorage.getItem(`tofscope-workspace:${s.owner}`);
-        const w =
-          all.find((w) => w.id === saved) ||
-          all[0] ||
-          (await post<Workspace>("/workspaces"));
-        const restored = (
-          await Promise.all(
-            w.analysis_ids.map((id) =>
-              request<Analysis>(`/analyses/${id}`).catch(() => null),
-            ),
-          )
-        ).filter((a): a is Analysis => a !== null);
-        sessionStorage.setItem(`tofscope-workspace:${s.owner}`, w.id);
-        if (alive) {
-          setSession(s);
-          setWorkspace(w);
-          setOwned(all.length ? all : [w]);
-          setAnalyses(restored);
-          setActive(restored[0]?.id || "");
-          if (s.initial_file && !restored.length) {
-            const a = await post<Analysis>(`/workspaces/${w.id}/analyses`, {
-              relative_path: s.initial_file,
-            });
-            if (alive) {
-              setAnalyses([a]);
-              setActive(a.id);
-            }
+        const restored = await request<Analysis[]>("/analyses");
+        if (!alive) return;
+        setSession(s);
+        setAnalyses(restored);
+        const selected = sessionStorage.getItem(`tofscope-active:${s.owner}`);
+        setActive(
+          restored.some((a) => a.id === selected)
+            ? selected!
+            : restored[0]?.id || "",
+        );
+        if (s.initial_file && !restored.length) {
+          const a = await post<Analysis>("/analyses", {
+            relative_path: s.initial_file,
+          });
+          if (alive) {
+            setAnalyses([a]);
+            setActive(a.id);
           }
         }
       })
@@ -69,9 +54,8 @@ export function App() {
           .then((s) => {
             if (s.owner !== session.owner) {
               setAnalyses([]);
-              setWorkspace(null);
               setSession(null);
-              setError("Identity changed. Reload to start a new workspace.");
+              setError("Identity changed. Reload to open your files.");
             }
           })
           .catch(() => {
@@ -83,6 +67,10 @@ export function App() {
     );
     return () => clearInterval(t);
   }, [session]);
+  useEffect(() => {
+    if (session && active)
+      sessionStorage.setItem(`tofscope-active:${session.owner}`, active);
+  }, [session, active]);
   const open = async (path: string) => {
     let a: Analysis;
     if (replace) {
@@ -95,7 +83,7 @@ export function App() {
       setAnalyses((old) => old.map((x) => (x.id === a.id ? a : x)));
       setReplace(null);
     } else {
-      a = await post<Analysis>(`/workspaces/${workspace!.id}/analyses`, {
+      a = await post<Analysis>("/analyses", {
         relative_path: path,
       });
       setAnalyses((old) => [...old, a]);
@@ -125,76 +113,13 @@ export function App() {
             <strong>ToFScope</strong>
             <small>FIB–SEM / TOF–SIMS</small>
           </div>
-          <span className="badge">Explore pilot · read only</span>
+          <span className="badge">Explore · originals read only</span>
         </div>
-        <span>{session?.owner || "Local instrument workspace"}</span>
+        <span>{session?.owner || "Local instrument"}</span>
       </header>
-      <div className="workspace-bar">
-        {workspace && (
-          <>
-            <select
-              aria-label="Workspace"
-              value={workspace.id}
-              onChange={async (e) => {
-                try {
-                  const w = await request<Workspace>(
-                    `/workspaces/${e.target.value}`,
-                  );
-                  const restored = await Promise.all(
-                    w.analysis_ids.map((id) =>
-                      request<Analysis>(`/analyses/${id}`),
-                    ),
-                  );
-                  setWorkspace(w);
-                  setAnalyses(restored);
-                  setActive(restored[0]?.id || "");
-                  sessionStorage.setItem(
-                    `tofscope-workspace:${session!.owner}`,
-                    w.id,
-                  );
-                } catch (e) {
-                  setError((e as Error).message);
-                }
-              }}
-            >
-              {owned.map((w, i) => (
-                <option key={w.id} value={w.id}>
-                  Workspace {i + 1}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={async () => {
-                try {
-                  await request(`/workspaces/${workspace.id}`, {
-                    method: "DELETE",
-                  });
-                  const all = await request<Workspace[]>("/workspaces");
-                  const w = all[0] || (await post<Workspace>("/workspaces"));
-                  const restored = await Promise.all(
-                    w.analysis_ids.map((id) =>
-                      request<Analysis>(`/analyses/${id}`),
-                    ),
-                  );
-                  setOwned(all.length ? all : [w]);
-                  setWorkspace(w);
-                  setAnalyses(restored);
-                  setActive(restored[0]?.id || "");
-                  sessionStorage.setItem(
-                    `tofscope-workspace:${session!.owner}`,
-                    w.id,
-                  );
-                } catch (e) {
-                  setError((e as Error).message);
-                }
-              }}
-            >
-              Close workspace
-            </button>
-          </>
-        )}
+      <div className="file-bar">
         <button
-          disabled={!workspace}
+          disabled={!session}
           onClick={() => {
             setReplace(null);
             setPicker(true);
@@ -202,7 +127,7 @@ export function App() {
         >
           ＋ Open acquisition
         </button>
-        <HelpButton label="Workspaces and files" content={help.workspace} />
+        <HelpButton label="Files and saved analyses" content={help.files} />
         <div className="tabs" role="tablist">
           {analyses.map((a, i) => (
             <div key={a.id} className={a.id === active ? "tab active" : "tab"}>
@@ -211,7 +136,8 @@ export function App() {
                 aria-selected={a.id === active}
                 onClick={() => setActive(a.id)}
               >
-                {i + 1} · {a.dataset.relative_path.split("/").pop()}
+                {i + 1} ·{" "}
+                {a.dataset.name || a.dataset.relative_path.split("/").pop()}
               </button>
               <button
                 aria-label={`Close analysis ${i + 1}`}
@@ -226,46 +152,24 @@ export function App() {
       {error && (
         <div role="alert" className="error">
           {error}
-          <button onClick={() => location.reload()}>Reconnect service</button>
+          <button onClick={() => location.reload()}>Reload</button>
         </div>
       )}
       {!analyses.length && (
         <main className="welcome">
-          <span className="eyebrow">A scientific workspace</span>
+          <span className="eyebrow">Explore</span>
           <h1>Explore an acquisition.</h1>
           <p>
             Inspect stored signals, define exact mass windows and connect
             spatial selections to depth profiles.
           </p>
-          <button disabled={!workspace} onClick={() => setPicker(true)}>
+          <button disabled={!session} onClick={() => setPicker(true)}>
             Choose an HDF5 acquisition
           </button>
           <p className="muted">
-            Each open file has independent selections. Workspaces are temporary
-            and reset when the service restarts.
+            Each open file has independent selections. Save a copy to keep your
+            analysis with the data.
           </p>
-          <details>
-            <summary>Reconnect an existing analysis</summary>
-            <input
-              aria-label="Analysis ID"
-              value={reconnect}
-              onChange={(e) => setReconnect(e.target.value)}
-            />
-            <button
-              onClick={() =>
-                request<Analysis>(`/analyses/${reconnect}`)
-                  .then((a) => {
-                    setAnalyses([a]);
-                    setActive(a.id);
-                    return request<Workspace>(`/workspaces/${a.workspace_id}`);
-                  })
-                  .then(setWorkspace)
-                  .catch((e) => setError(e.message))
-              }
-            >
-              Reattach
-            </button>
-          </details>
         </main>
       )}
       {analyses.map((a) => (

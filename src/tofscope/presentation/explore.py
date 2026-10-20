@@ -4,7 +4,7 @@ import hashlib
 import json
 import numpy as np
 from tofscope.presentation.data import Axis, Curve, Panel, ExploreData
-from tofscope.application.workspaces import CapacityError
+from tofscope.application.analyses import CapacityError
 from tofscope.application.signals import image_signal, visible_signals, image_frames, signal_label
 from tofscope.storage.explorer import _se_mean, file_key
 
@@ -43,7 +43,7 @@ def selected_frames(s):
 
 class ExplorePresenter:
     def __init__(self, workspaces, repository, cache, settings):
-        self.workspaces = workspaces
+        self.analyses = workspaces
         self.repository = repository
         self.cache = cache
         self.settings = settings
@@ -70,8 +70,8 @@ class ExplorePresenter:
         panels = set(PANELS if panels is None else panels)
         if not panels <= PANELS:
             raise ValueError("Unknown display panel.")
-        self.workspaces.get(owner, analysis_id)
-        e = self.workspaces.entry(owner, analysis_id)
+        self.analyses.get(owner, analysis_id)
+        e = self.analyses.entry(owner, analysis_id)
         with e.lock, ExitStack() as metadata_stack:
             if e.closed:
                 raise KeyError("Analysis unavailable.")

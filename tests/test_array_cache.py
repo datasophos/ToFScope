@@ -5,7 +5,7 @@ import numpy as np
 from service_fixture import setup_case
 from tofscope.application.cache import ArrayCache
 from tofscope.application.resources import ResourceBudget
-from tofscope.application.workspaces import CapacityError
+from tofscope.application.analyses import CapacityError
 from tofscope.science.signals import SignalRecipe
 
 

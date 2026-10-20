@@ -11,8 +11,7 @@ class SaveApiTests(unittest.TestCase):
         setup_case(self, mode='proxy', trusted_proxies=('testclient',), public_origin='http://testserver')
         with TestClient(create_app(self.settings)) as client:
             headers = {'x-tofscope-user': 'a', 'Origin': 'http://testserver'}
-            wid = client.post('/api/v1/workspaces', headers=headers).json()['id']
-            a = client.post(f'/api/v1/workspaces/{wid}/analyses', headers=headers, json={'relative_path': 'a.h5'}).json()
+            a = client.post("/api/v1/analyses", headers=headers, json={'relative_path': 'a.h5'}).json()
             envelope = dict(request_id='save', expected_revision=a['revision'], dataset_generation=a['dataset']['generation'], filename='my copy.h5')
             response = client.post(f"/api/v1/analyses/{a['id']}/saves", headers=headers, json=envelope)
             self.assertEqual(response.status_code, 202, response.text)
@@ -32,7 +31,7 @@ class SaveApiTests(unittest.TestCase):
             self.assertIn('attachment', downloaded.headers['content-disposition'])
             self.assertEqual(client.get(f'/api/v1/saved-files/{file_id}/download', headers=headers | {'x-tofscope-user': 'b'}).status_code, 404)
             self.assertEqual(client.get('/api/v1/saved-files', headers=headers | {'x-tofscope-user': 'b'}).json(), [])
-            opened = client.post(f'/api/v1/workspaces/{wid}/analyses', headers=headers, json={'relative_path': file_id, 'location': 'saved'})
+            opened = client.post("/api/v1/analyses", headers=headers, json={'relative_path': file_id, 'location': 'saved'})
             self.assertEqual(opened.status_code, 200, opened.text)
             self.assertEqual(opened.json()['dataset']['name'], 'my copy.h5')
             self.assertEqual(client.get('/api/v1/files?location=saved', headers=headers).json()['entries'][0]['name'], 'my copy.h5')

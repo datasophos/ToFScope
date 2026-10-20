@@ -22,13 +22,6 @@ class Peak:
 
 
 @dataclass(frozen=True)
-class WorkspaceSnapshot:
-    id: str
-    owner: str
-    analysis_ids: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True)
 class SignalSnapshot:
     id: str
     name: str
@@ -44,7 +37,6 @@ class SignalSnapshot:
 class AnalysisSnapshot:
     id: str
     owner: str
-    workspace_id: str
     dataset: DatasetRef
     revision: int
     loaded_frames: tuple[int, int]
