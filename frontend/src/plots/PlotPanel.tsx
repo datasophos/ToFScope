@@ -29,8 +29,11 @@ function PlotToolbarIcon({ action }: { action: "reset" | "save" }) {
     >
       {action === "reset" ? (
         <>
-          <path d="M4.7 5.1a7 7 0 1 1-1.4 7.1M4.7 1.8v3.3H8" />
-          <path d="m15 15 6 6" />
+          <g strokeOpacity="0.4">
+            <circle cx="10" cy="10" r="7.5" />
+            <path d="m15.5 15.5 6 6" />
+          </g>
+          <path d="M6.5 9a3.6 3.6 0 1 1 .8 3.5M6.5 6v3h3" />
         </>
       ) : (
         <>
