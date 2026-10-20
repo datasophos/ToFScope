@@ -28,7 +28,11 @@ function PlotToolbarIcon({ action }: { action: "reset" | "save" }) {
       aria-hidden="true"
     >
       {action === "reset" ? (
-        <path d="M3 10a9 9 0 1 1 2.6 8.3M3 4v6h6" />
+        <>
+          <circle cx="10" cy="10" r="7.5" />
+          <path d="m15.5 15.5 6 6" />
+          <path d="M6.5 9a3.6 3.6 0 1 1 .8 3.5M6.5 6v3h3" />
+        </>
       ) : (
         <>
           <rect x="3" y="3" width="18" height="14" rx="2" />
