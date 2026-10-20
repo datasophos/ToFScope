@@ -15,6 +15,7 @@ class Settings:
         default_factory=lambda: Path(tempfile.gettempdir()) / f"tofscope-{os.getuid()}"
     )
     lock_dir: Path | None = None
+    output_root: Path | None = None
     mode: str = "local"
     host: str = "127.0.0.1"
     port: int = 8765
@@ -57,6 +58,8 @@ class Settings:
         if not os.access(runtime, os.W_OK) or not os.access(lock, os.W_OK):
             raise ValueError("Runtime and lock directories must be writable.")
         object.__setattr__(self, "runtime_dir", runtime)
+        output = Path(self.output_root).expanduser().resolve() if self.output_root else Path.home() / ".local/share/tofscope/saved-acquisitions"
+        object.__setattr__(self, "output_root", output)
         object.__setattr__(self, "lock_dir", lock)
         if self.mode not in ("local", "proxy"):
             raise ValueError("Mode must be local or proxy.")
