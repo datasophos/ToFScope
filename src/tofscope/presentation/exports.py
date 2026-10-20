@@ -46,6 +46,7 @@ class ExportService:
                         "log": s.display.log,
                         "relative": s.display.relative,
                         "image": s.display.image,
+                        "spectrum_log": s.display.spectrum_log,
                     },
                     recipe_import_available=False,
                 )
