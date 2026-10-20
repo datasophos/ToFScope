@@ -37,11 +37,17 @@ export function SignalPicker({
         aria-expanded={open}
         onClick={() => setOpen((shown) => !shown)}
       >
-        <span>{selected ? `${selected.label} · ${selected.mass} Th` : placeholder}</span>
+        <span>
+          {selected ? `${selected.label} · ${selected.mass} Th` : placeholder}
+        </span>
         <span aria-hidden="true">▾</span>
       </button>
       {open && (
-        <div role="listbox" aria-label={listboxLabel} className="signal-picker-list">
+        <div
+          role="listbox"
+          aria-label={listboxLabel}
+          className="signal-picker-list"
+        >
           {options.length === 0 ? (
             <div className="signal-picker-empty">No matching signals</div>
           ) : (

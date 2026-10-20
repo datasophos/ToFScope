@@ -252,34 +252,6 @@ h2 {
   gap: 8px;
   align-items: center;
 }
-.analysis-layout {
-  display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
-  gap: 16px;
-  padding: 0 22px 20px;
-}
-.sidebar {
-  background: white;
-  border: 1px solid #d4dfe4;
-  border-radius: 7px;
-  align-self: stretch;
-  min-height: 0;
-  contain: size;
-  overflow: auto;
-}
-.sidebar section {
-  padding: 15px;
-  border-bottom: 1px solid #e2e9ed;
-}
-.sidebar select,
-.sidebar > section > input {
-  width: 100%;
-  margin: 5px 0;
-}
-.sidebar label {
-  display: block;
-  margin: 6px 0;
-}
 .muted,
 .scope-note,
 small {
@@ -533,9 +505,6 @@ small {
   display: none !important;
 }
 @media (max-width: 1050px) {
-  .analysis-layout {
-    grid-template-columns: 240px minmax(0, 1fr);
-  }
   .plot-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -545,14 +514,6 @@ small {
   }
 }
 @media (max-width: 650px) {
-  .analysis-layout {
-    grid-template-columns: 1fr;
-    padding: 10px;
-  }
-  .sidebar {
-    contain: none;
-    max-height: none;
-  }
   .scope-note {
     grid-column: 1;
   }
@@ -580,19 +541,6 @@ small {
   border-top-width: 3px;
   margin-top: 8px;
 }
-.curve-description {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-.curve-description > span:last-of-type {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.curve-description > button {
-  margin-left: auto;
-  flex: none;
-}
 .profile-legend {
   display: flex;
   flex-wrap: wrap;
@@ -616,4 +564,327 @@ small {
 }
 .profile-legend .curve-marker {
   margin-top: 0;
+}
+
+/* Signal inventory and contextual tools replace the fixed sidebar. */
+.signal-workspace {
+  padding: 0 22px 20px;
+}
+.signal-tray {
+  position: relative;
+  margin-bottom: 14px;
+  border: 1px solid #d2dfe5;
+  border-radius: 7px;
+  background: white;
+}
+.signal-tray > header {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.signal-tray .heading-help {
+  margin: 0;
+}
+.signal-add {
+  flex-wrap: wrap;
+}
+.signal-add > input {
+  width: 170px;
+}
+.signal-add .signal-picker {
+  width: 190px;
+}
+.signal-add > button {
+  white-space: nowrap;
+}
+.signal-columns,
+.signal-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 80px 80px 120px;
+  gap: 12px;
+  align-items: center;
+  padding: 9px 14px;
+}
+.signal-columns {
+  background: #f3f7f9;
+  font-size: 11px;
+  color: #617582;
+  border-block: 1px solid #e2e9ed;
+}
+.signal-rows {
+  max-height: 264px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+.signal-row {
+  min-height: 66px;
+  border-bottom: 1px solid #e8eef1;
+}
+.signal-row:last-child {
+  border-bottom: 0;
+}
+.signal-name {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+}
+.signal-name > div {
+  min-width: 0;
+}
+.signal-name small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.signal-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.signal-choice span {
+  display: none;
+}
+.signal-choice input {
+  width: 17px;
+  height: 17px;
+  accent-color: #167d9a;
+}
+.text-button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.signal-name .text-button {
+  font-weight: 600;
+  color: #203744;
+}
+.signal-ready {
+  padding: 8px 14px;
+  background: #eef8f6;
+  font-size: 12px;
+  border-radius: 0 0 7px 7px;
+}
+.signal-row progress {
+  display: block;
+  max-width: 200px;
+  height: 5px;
+}
+.tool-popover {
+  position: fixed;
+  z-index: 40;
+  width: 400px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  padding: 16px;
+  background: white;
+  border: 1px solid #b7cbd4;
+  border-radius: 7px;
+  box-shadow: 0 7px 28px #10253630;
+}
+.tool-popover > .row:first-child {
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.tool-popover h2 {
+  margin: 0;
+}
+.tool-popover label {
+  display: block;
+  min-width: 0;
+}
+.tool-popover .row {
+  flex-wrap: wrap;
+}
+.tool-popover input {
+  max-width: 100%;
+}
+.plot-context {
+  padding: 5px 14px 0;
+  font-size: 11px;
+}
+.plot-status {
+  overflow-wrap: anywhere;
+  color: #617582;
+}
+.plot-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 5px;
+}
+.plot-controls button,
+.plot-controls select {
+  font-size: 11px;
+  padding: 3px 5px;
+}
+.plot-controls label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.spectrum-workbench {
+  min-width: 0;
+  display: grid;
+  min-height: 340px;
+}
+.spectrum-workbench.has-editor {
+  grid-template-columns: minmax(220px, 30%) minmax(0, 1fr);
+  gap: 10px;
+  min-height: 420px;
+}
+.spectrum-workbench > .plot-panel {
+  height: auto;
+  min-height: 340px;
+}
+.spectrum-workbench.maximized {
+  position: fixed;
+  inset: 18px;
+  z-index: 25;
+  background: #eef2f4;
+  height: auto;
+}
+.signal-editor {
+  min-width: 0;
+  padding: 14px;
+  background: white;
+  border: 1px solid #c9d9e1;
+  border-radius: 7px;
+  max-height: 620px;
+  overflow-y: auto;
+}
+.spectrum-workbench.maximized .signal-editor {
+  max-height: calc(100vh - 36px);
+}
+.signal-editor fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.signal-editor label {
+  display: block;
+  font-size: 12px;
+  color: #617582;
+  margin-bottom: 8px;
+}
+.signal-editor label > input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
+.signal-editor .mass-row {
+  gap: 3px;
+}
+.signal-editor .mass-row input {
+  flex: 1;
+  width: 0;
+}
+.signal-editor .mass-row button {
+  padding: 4px;
+}
+.signal-editor .frame-label {
+  margin-top: 14px;
+  margin-bottom: 0;
+}
+.signal-editor .draft-status {
+  font-size: 12px;
+  color: #9b6c14;
+}
+.signal-editor .primary {
+  margin: 0;
+}
+.signal-editor progress {
+  width: 100%;
+}
+.signal-editor [role="status"],
+.signal-editor [role="alert"] {
+  margin-top: 10px;
+  font-size: 12px;
+}
+.signal-workspace > .scope-note {
+  grid-column: auto;
+  margin: 14px 0 0;
+}
+.depth-strip {
+  flex-wrap: wrap;
+}
+.depth-strip .heading-help {
+  margin: 0;
+}
+.depth-strip .exact-form {
+  margin: 0;
+}
+.depth-strip input[aria-label="Frame"] {
+  width: 70px;
+}
+.plot-grid > .plot-panel {
+  height: auto;
+  min-height: 340px;
+}
+.profile-legend button {
+  font-size: inherit;
+}
+@media (max-width: 1100px) {
+  .spectrum-workbench.has-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .signal-editor {
+    max-height: 360px;
+  }
+  .spectrum-workbench.maximized {
+    overflow-y: auto;
+  }
+  .spectrum-workbench.maximized > .plot-panel {
+    min-height: 400px;
+  }
+}
+@media (max-width: 650px) {
+  .signal-workspace {
+    padding: 0 10px 14px;
+  }
+  .signal-add {
+    width: 100%;
+  }
+  .signal-add > input,
+  .signal-add .signal-picker {
+    flex: 1;
+    min-width: 120px;
+  }
+  .signal-columns {
+    display: none;
+  }
+  .signal-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .signal-name {
+    grid-column: 1 / -1;
+  }
+  .signal-choice {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .signal-choice span {
+    display: inline;
+  }
+  .signal-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+  .signal-rows {
+    max-height: 380px;
+  }
+  .analysis-heading > .row,
+  .plot-panel header > .row {
+    flex-wrap: wrap;
+  }
+  .plot-panel header {
+    align-items: flex-start;
+  }
 }

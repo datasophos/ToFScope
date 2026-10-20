@@ -123,3 +123,11 @@ class PresentationTests(unittest.TestCase):
         self.command({'type':'set_roi','roi':[1,1,0,0]})
         self.assertEqual(self.presenter.snapshot('a',a.id,{'profile'}).panels['profile'].series[1].values,[None,.5,.75])
         self.assertIn(b'0,1.0,',self.exports.render('a',a.id,'csv').content)
+
+    def test_se_choice_reflects_available_acquisition_data(self):
+        import h5py
+        self.assertTrue(self.a.has_se)
+        with h5py.File(self.settings.data_root / 'b.h5', 'r+') as stream:
+            del stream['FIBImages']
+        b = self.s.workspaces.create_analysis('a', self.a.workspace_id, self.s.repository.open('a','b.h5'))
+        self.assertFalse(b.has_se)

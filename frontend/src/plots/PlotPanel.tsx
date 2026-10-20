@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Panel } from "../api/client";
 import {
   mountChart,
@@ -29,7 +29,11 @@ export function PlotPanel({
   mode = "x",
   onAllDepths,
   zoomWindow,
-  curveStyles,
+  controls,
+  status,
+  legendActions,
+  expanded = false,
+  selectionMode = "select",
 }: {
   name: string;
   title: string;
@@ -45,7 +49,15 @@ export function PlotPanel({
   mode?: "x" | "xy";
   onAllDepths?: () => void;
   zoomWindow?: Range;
-  curveStyles?: ReadonlyMap<string, CurveStyle>;
+  controls?: ReactNode;
+  status?: ReactNode;
+  expanded?: boolean;
+  selectionMode?: "select" | "zoom";
+  legendActions?: {
+    imageSignalId: string;
+    onDetails: (id: string) => void;
+    onVisibility: (id: string, visible: boolean) => void;
+  };
 }) {
   const body = useRef<HTMLDivElement>(null),
     element = useRef<HTMLDivElement>(null),
@@ -57,11 +69,9 @@ export function PlotPanel({
   const legend: LegendEntry[] =
     name === "profile"
       ? (panel?.series || []).map((series, index) => ({
-          id: series.recipe_id,
-          label: index === 0 ? `Active · ${series.label}` : series.label,
-          ...(index === 0
-            ? curveStyle(0)
-            : curveStyles?.get(series.recipe_id) || curveStyle(index)),
+          id: series.signal_id,
+          label: series.label,
+          ...curveStyle(series.style_index),
         }))
       : [];
   const series = legend.length
@@ -175,19 +185,49 @@ export function PlotPanel({
             PNG
           </button>
           <button
-            aria-label={`${maximized ? "Restore" : "Maximize"} ${title}`}
+            aria-label={`${maximized || expanded ? "Restore" : "Maximize"} ${title}`}
             onClick={onMaximize}
           >
-            {maximized ? "↙" : "↗"}
+            {maximized || expanded ? "↙" : "↗"}
           </button>
         </div>
       </header>
+      {(status || controls) && (
+        <div className="plot-context">
+          {status && <div className="plot-status">{status}</div>}
+          {controls && <div className="plot-controls">{controls}</div>}
+        </div>
+      )}
       {legend.length > 0 && (
         <ul className="profile-legend" aria-label="Depth profile legend">
           {legend.map((entry) => (
             <li key={entry.id} data-curve-id={entry.id}>
               <CurveMarker style={entry} />
-              <span>{entry.label}</span>
+              {legendActions ? (
+                <>
+                  <button
+                    className="text-button"
+                    onClick={() => legendActions.onDetails(entry.id)}
+                  >
+                    {entry.label}
+                    {entry.id === legendActions.imageSignalId
+                      ? " · Images"
+                      : ""}
+                  </button>
+                  {entry.id !== legendActions.imageSignalId && (
+                    <button
+                      aria-label={`Hide ${entry.label}`}
+                      onClick={() =>
+                        legendActions.onVisibility(entry.id, false)
+                      }
+                    >
+                      ×
+                    </button>
+                  )}
+                </>
+              ) : (
+                <span>{entry.label}</span>
+              )}
             </li>
           ))}
         </ul>
@@ -227,6 +267,7 @@ export function PlotPanel({
               onZoom={setZoom}
               mode={mode}
               image={image}
+              selectionMode={selectionMode}
             />
           )}
         </div>
