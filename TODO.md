@@ -16,11 +16,12 @@ reference behavior, not evidence that the replacement exposes those features.
 
 ## Next scientific features
 
-- [ ] Depth calibration editor and physical-depth coordinates in views and exports.
+- [x] Graphical depth calibration with exact anchors, partial physical-depth profiles/front projections, nm/µm/mm display, and physical-depth CSV exports.
 - [ ] Peak identification, signal annotations, and explicit isotope measurements.
 - [ ] Linked XZ/YZ cross-sections.
 - [ ] Multi-signal 3D overlays and tiled views, including a depth profile alongside the volume.
-- [ ] Persist and restore the new calibration, identification, and spatial-view state.
+- [x] Persist/restore calibration and coordinate/unit choices in HDF5 copies; read legacy saved analyses.
+- [ ] Persist and restore future identification and spatial-view state.
 
 Implement these through the [replacement completion plan](docs/superpowers/plans/2026-10-18-react-fastapi-completion.md).
 Depth calibration comes first because sections and 3D depend on its coordinates.
@@ -34,7 +35,8 @@ Original-resolution values must continue to drive profiles and exports.
 - [ ] Finish replacement feature-parity checks and release documentation.
 - [ ] Review and merge the migration branch into `main` after GitHub CI passes.
 
-The last local verification passed 167 Python tests, 44 browser workflows, and
-independent wheel/sdist installation checks. Docker verification was blocked by
-a stopped local daemon; shared NFS behavior remains unqualified. See the
-[validation records](docs/validation/) and [roadmap index](docs/superpowers/plans/README.md).
+Depth calibration validation passed 176 Python tests, 14 frontend unit assertions,
+TypeScript checks, all 47 browser workflows, and independent wheel/sdist installation
+checks. GitHub CI results are recorded in the [depth qualification](docs/validation/depth-calibration.md).
+Local Docker rerun was blocked by a stopped daemon; NFS/shared-storage behavior
+and commercial numerical round trips remain unqualified.

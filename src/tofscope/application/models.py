@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from typing import Literal
+from tofscope.science.depth_calibration import DepthAnchor
 from tofscope.storage.acquisitions import DatasetRef
 from tofscope.science.signals import SignalRecipe
 from tofscope.application.commands import DepthSelection
@@ -55,3 +57,6 @@ class AnalysisSnapshot:
     has_se: bool = False
     saved_revision: int | None = None
     opened_revision: int = 0
+    depth_anchors: tuple[DepthAnchor, ...] = (DepthAnchor(0, 0.),)
+    depth_unit: Literal['nm', 'um', 'mm'] = 'nm'
+    depth_coordinates: Literal['frame', 'depth'] = 'frame'

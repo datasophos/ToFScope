@@ -37,6 +37,10 @@ class Panel:
     signal_name: str | None = None
     signal_version: int | None = None
     frame_range: tuple[int, int] | None = None
+    acquisition_frames: list[int] = field(default_factory=list)
+    omitted_frames: int = 0
+    coordinate_kind: Literal['frame', 'depth'] = 'frame'
+
 
 
 @dataclass(frozen=True)

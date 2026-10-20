@@ -83,6 +83,22 @@ class SetDisplay(StrictModel):
     spectrum_log: StrictBool | None = None
 
 
+class AnchorInput(StrictModel):
+    frame: StrictInt
+    depth_nm: Annotated[float, Field(strict=True, allow_inf_nan=False)]
+
+
+class SetDepthAnchors(StrictModel):
+    type: Literal['set_depth_anchors']
+    anchors: tuple[AnchorInput, ...] = Field(max_length=4096)
+
+
+class SetDepthDisplay(StrictModel):
+    type: Literal['set_depth_display']
+    unit: Literal['nm', 'um', 'mm']
+    coordinates: Literal['frame', 'depth']
+
+
 Command = Annotated[
     Union[
         AddStoredSignal,
@@ -95,6 +111,8 @@ Command = Annotated[
         SetDepth,
         SetAnalysisFrames,
         SetDisplay,
+        SetDepthAnchors,
+        SetDepthDisplay,
     ],
     Field(discriminator="type"),
 ]

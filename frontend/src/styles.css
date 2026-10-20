@@ -1313,3 +1313,34 @@ small {
   flex-shrink: 0;
   white-space: nowrap;
 }
+
+.calibration-graph {
+  height: 300px;
+  margin: 0.5rem 0 1rem;
+}
+.calibration-graph .plot-panel {
+  height: 260px;
+  min-height: 0;
+}
+.calibration-graph .plot-panel header .plot-icon-button:last-child {
+  display: none;
+}
+.anchor-summary {
+  font-size: 0.8rem;
+}
+.anchor-table {
+  width: 100%;
+  text-align: left;
+}
+.anchor-table input {
+  width: 10rem;
+}
+.anchor-table td {
+  padding: 0.3rem;
+}
+.tool-popover fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}

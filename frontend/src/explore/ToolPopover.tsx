@@ -5,11 +5,13 @@ export function ToolPopover({
   children,
   onClose,
   width = 400,
+  placement = "anchor",
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   width?: number;
+  placement?: "anchor" | "top";
 }) {
   const root = useRef<HTMLElement>(null);
   const [viewport, setViewport] = useState({
@@ -39,6 +41,10 @@ export function ToolPopover({
       if (previous?.isConnected) previous.focus();
     };
   }, []);
+  const top =
+    placement === "top"
+      ? 12
+      : Math.max(12, Math.min(anchor.top, viewport.height - 360));
   return createPortal(
     <section
       style={{
@@ -49,7 +55,8 @@ export function ToolPopover({
             viewport.width - Math.min(width, viewport.width - 24) - 12,
           ),
         ),
-        top: Math.max(12, Math.min(anchor.top, viewport.height - 360)),
+        top,
+        maxHeight: viewport.height - top - 12,
         width,
       }}
       role="dialog"

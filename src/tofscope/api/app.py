@@ -401,13 +401,14 @@ def create_app(settings, services=None, bootstrap_secret=None):
     def data(
         aid: str,
         panels: str = "ion,front,spectrum,profile",
+        coordinates: Literal["frame"] | None = None,
         o=Depends(owner),
         s=Depends(svc),
     ):
         s.analyses.get(o, aid)
         reservation = s.cache.budget.reserve(o, aid, settings.response_bytes)
         try:
-            snapshot = s.presenter.snapshot(o, aid, set(panels.split(",")))
+            snapshot = s.presenter.snapshot(o, aid, set(panels.split(",")), coordinates=coordinates)
             content = json.dumps(
                 snapshot.to_dict(), allow_nan=False, separators=(",", ":")
             ).encode()

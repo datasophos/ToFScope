@@ -57,6 +57,7 @@ export function PlotPanel({
   onSelect,
   onClick,
   selection,
+  markers,
   mode = "x",
   onAllDepths,
   zoomWindow,
@@ -79,6 +80,7 @@ export function PlotPanel({
   onSelect: (bounds: number[]) => void;
   onClick?: (x: number, y: number) => void;
   selection?: number[];
+  markers?: number[];
   mode?: "x" | "xy";
   onAllDepths?: () => void;
   zoomWindow?: Range;
@@ -105,7 +107,7 @@ export function PlotPanel({
   }, [spectrumLog]);
   const [exportError, setExportError] = useState<string | null>(null);
   const legend: LegendEntry[] =
-    name === "profile"
+    name === "profile" || name === "calibration"
       ? (panel?.series || []).map((series, index) => ({
           id: series.signal_id,
           label: series.label,
@@ -120,20 +122,25 @@ export function PlotPanel({
     axis && axis.boundaries.length
       ? [axis.boundaries[0], axis.boundaries.at(-1)!]
       : [0, 1];
+  const coordinateKey = panel?.axes.map((a) => `${a.name}:${a.unit}`).join("/");
+  useEffect(() => setZoom(null), [coordinateKey]);
   const xRange = zoom || range;
   let high = 1;
   for (const s of panel?.series || [])
     for (const v of s.values) if (v !== null) high = Math.max(high, v);
   if (panel?.relative) high = 1;
   const ya = panel?.axes[1],
-    yRange: Range = ya
-      ? [ya.boundaries[0], ya.boundaries.at(-1)!]
-      : [0, high * 1.08];
+    yRange: Range =
+      ya && ya.boundaries.length
+        ? [ya.boundaries[0], ya.boundaries.at(-1)!]
+        : [0, high * 1.08];
   const data: ChartData | undefined = panel
     ? {
         kind: panel.kind,
         x: panel.axes[0].values,
         y: ya?.values,
+        xBoundaries: panel.axes[0].boundaries,
+        yBoundaries: ya?.boundaries,
         values: panel.values,
         series,
         xRange,
@@ -311,6 +318,7 @@ export function PlotPanel({
               yRange={yRange}
               reverseY={image}
               selection={selection}
+              markers={markers}
               onSelect={onSelect}
               onClick={onClick}
               onZoom={setZoom}

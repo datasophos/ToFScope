@@ -55,14 +55,50 @@ This plan uses the pilot's exact `AnalysisSnapshot`, `CommandEnvelope`, `ArrayCa
 
 ## Task 1: Depth calibration and calibrated views
 
-**Files:** Extend `application/{commands,models,explore}.py`, `presentation/{data,explore,exports}.py`, `api/schemas.py`; create `frontend/src/calibration/{DepthEditor.tsx,coordinates.ts}`, `tests/test_depth_application.py`, `frontend/e2e/calibration.spec.ts`. Preserve/port `tests/test_depth_calibration.py`, `test_calibrated_profiles.py`, `test_calibrated_views.py` and `scripts/check_depth_calibration.py`, `check_calibrated_views.py` behavior.
+Scope: Explore profiles and front projections. Sections and 3D remain Tasks 3/4.
+The user selected inline implementation stacked on the current PR #1 remote head.
 
-**Interfaces:** `CalibrationService.set_anchors(owner, analysis_id, envelope, anchors: tuple[DepthAnchor,...]) -> AnalysisSnapshot`; `set_depth_display(unit: Literal['nm','um','mm'], coordinates: Literal['frame','depth'])` is an analysis command. Frame 0/depth 0 is fixed; canonical values are nm. Editor selection always uses acquisition frames.
+Resolved assumptions (2026-10-20):
 
-- [ ] Write failing tests for fixed origin, monotonic anchors, interpolation between anchors only, later unknown depth, clicks selecting original frames, unit changes without intensity resampling, and removal of positive anchors restoring every view to frames. Example anchors `(0,0),(2,20),(4,60)` give block-mean coordinate 30 nm for frames `[2,3]`, not a uniform-spacing approximation.
-- [ ] Run `uv run python -m unittest discover -s tests -p test_depth_application.py -v` and `npm --prefix frontend run test:e2e -- calibration.spec.ts` to confirm failure.
-- [ ] Implement service, editor with exact frame/table entries, scope/coverage summary and graphical anchor selection, then calibrated profile/front/section payloads and CSV `depth_nm` blanks for unknown values. Keep missing X/Y calibration explicit rather than claiming a physical aspect ratio.
-- [ ] Run new and migrated calibration suites plus API generation/typecheck to PASS, including independent calibration in two analyses of one file. Commit as `feat: restore depth calibration in the React workspace`.
+- Named signals replace active/comparison slots; reuse `ExploreService.apply`
+  commands and its owner/revision/generation/idempotency boundary rather than
+  adding a parallel CalibrationService transport.
+- The compact UI uses a temporary graphical dialog near Viewing depths, based
+  on the frozen prototype's frame-coordinate profiles, exact fields, fixed
+  origin, anchor table, graphical markers and explicit coverage.
+- `set_depth_anchors` accepts canonical nm anchors (at most 4096);
+  `set_depth_display` chooses `nm|um|mm` and `frame|depth`. Calibration belongs
+  to each analysis, including same-file analyses. Display changes launch no jobs.
+- `presentation/coordinates.py` provides original frame IDs, physical sample
+  coordinates, unknown coverage and mean block coordinates across anchor kinks.
+  Panel axes include boundaries and original acquisition-frame IDs. Front
+  rasters respect nonuniform row geometry; no scientific values are resampled.
+- The editor requests frame-coordinate profiles without mutating shared state.
+  Navigation converts displayed coordinates through supplied sample IDs. Ion
+  maps still use the full frame selection, including unknown depths.
+- HDF5 document version 2 stores anchors and unit/coordinate choices; version 1
+  defaults to frame coordinates with origin only. Old applications explicitly
+  reject the new version. Saved numerical arrays and publication protections
+  remain unchanged; original acquisitions are immutable.
+
+- [x] Add failing application and browser assertions for validation, fixed origin,
+  partial calibration, unknown exports, original-frame mapping, units without
+  resampling, and removal restoring frame coordinates.
+- [x] Implement command/schema state, reusable coordinate handling, graphical
+  editor, calibrated profile/front payloads and CSV `depth_nm` blanks. Do not
+  implement sections or 3D screens. Display cell boundaries are footprints,
+  not inferred plane thickness or a claim of physical aspect ratio.
+- [x] Restore archived profile/front numerical assertions through presenter tests,
+  including nonzero domains, one known sample, empty physical domains, exact
+  front values and mean block depth 30 nm for frames `[2,3]` under
+  `(0,0),(2,20),(4,60)`.
+- [x] Verify independent calibration, owner checks, source/revision boundaries,
+  save/reopen and actual legacy document files; preserve unrelated panel admission.
+- [x] Regenerate API/build assets, qualify wheel/sdist and update validation records.
+- [x] Finish final browser regression (47 workflows) and Python regressions (176 tests).
+- [ ] Commit, open the stacked draft PR and verify GitHub CI.
+
+Evidence: [depth calibration qualification](../../validation/depth-calibration.md).
 
 ## Task 2: Atomic identification and explicit isotope measurements
 
@@ -123,8 +159,9 @@ The separately approved file-centered analysis plan replaces user-facing workspa
 groups and manual reattachment. Versioned saved HDF5 copies restore Explore signals,
 custom results and selections. This is new-file output only: Task 5's controlled
 native saves remain deferred, with their original opt-ins and deployment evidence
-requirements. Future calibration/identification/3D features must extend the saved
-document schema and round-trip tests; their state is not yet implemented. Never
+requirements. Calibration now extends the document to version 2 with version 1 read support.
+Future identification/3D features must extend the saved document schema and
+round-trip tests; their state is not yet implemented. Never
 serialize pending drafts/jobs as completed numerical results.
 
 ### Visual conventions from Explore feedback (2026-10-20)
