@@ -29,15 +29,13 @@ function PlotToolbarIcon({ action }: { action: "reset" | "save" }) {
     >
       {action === "reset" ? (
         <>
-          <circle cx="10" cy="10" r="7.5" />
-          <path d="m15.5 15.5 6 6" />
-          <path d="M6.5 9a3.6 3.6 0 1 1 .8 3.5M6.5 6v3h3" />
+          <path d="M4.7 5.1a7 7 0 1 1-1.4 7.1M4.7 1.8v3.3H8" />
+          <path d="m15 15 6 6" />
         </>
       ) : (
         <>
-          <rect x="3" y="3" width="18" height="14" rx="2" />
-          <circle cx="8" cy="8" r="1.4" />
-          <path d="m3 14 5-5 4 4 3-3 6 6M12 17v6m-3-3 3 3 3-3" />
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <path d="m3 17 6-6 4 4 3-3 5 5" />
         </>
       )}
     </svg>
