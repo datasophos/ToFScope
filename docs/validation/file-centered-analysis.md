@@ -158,3 +158,14 @@ All 37 browser workflows and the TypeScript/production frontend build pass.
 Desktop and narrow Explore screenshots were inspected, covering tabs, signal
 chips, controls and chart panels. Backend/API/scientific behavior is unchanged.
 The completion plan records this visual convention for future feature work.
+
+## Styling scope correction — 2026-10-20
+
+The user clarified that only thin outline accents should change. The complete
+stylesheet was restored from pre-flat baseline 74e5d7f, then only rectangular
+outline colors were made transparent and the thin active-tab accent shadow was
+removed. Original rounding, fills, shadows, typography, field styling and spacing
+are restored; transparent border widths preserve layout dimensions. Circular
+help icons keep their original outline. This supersedes the flat-style changes
+above. All 37 browser workflows and the frontend build pass; the restored
+desktop appearance was visually inspected.

@@ -129,10 +129,8 @@ serialize pending drafts/jobs as completed numerical results.
 
 ### Visual conventions from Explore feedback (2026-10-20)
 
-Use borderless surfaces and controls. Rounded buttons are preferred; the
-objection is to thin decorative outlines, not rounded corners. Avoid outline
-borders around tabs, buttons, signal chips, panels or contextual tools. Use
-spacing, subtle fills, typography and a single-edge active-tab indicator to
-communicate grouping and state. Editable fields use a fill and bottom rule.
-Keep keyboard focus indicators and scientific selection/axis markings visible;
-contextual help and progress indicators may retain their functional circles.
+Preserve the original rounded corners, fills, shadows, typography, control
+shapes and spacing. Remove only the thin rounded rectangular outline accents,
+including the thin accent shadow under the active file tab. Keep the original
+circular help icons, keyboard focus indicators and scientific selection/axis
+markings. Do not turn border removal into an app-wide flat-style redesign.

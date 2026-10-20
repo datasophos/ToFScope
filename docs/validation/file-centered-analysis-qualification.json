@@ -257,5 +257,13 @@
     "typecheck_and_frontend_build": true,
     "desktop_and_narrow_visual_inspection": true,
     "decorative_rounded_rectangle_outlines_removed": true
+  },
+  "styling_scope_correction": {
+    "baseline": "74e5d7f",
+    "original_theme_restored": true,
+    "changes_limited_to_thin_outline_accents": true,
+    "browser_tests": 37,
+    "typecheck_and_frontend_build": true,
+    "visual_inspection": true
   }
 }
