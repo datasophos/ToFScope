@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-19-explore-signal-workspace-design.md`
 
-**Execution:** Inline, selected by Josh; retain `/private/tmp/tofscope-react-fastapi` on `implement/react-fastapi-pilot`. Written spec and plan approved; inline execution underway.
+**Execution:** Inline, selected by Josh; retain `/private/tmp/tofscope-react-fastapi` on `implement/react-fastapi-pilot`. Implemented inline; numerical, browser, package and final-review checks pass.
 
 ## Global Constraints
 
@@ -151,17 +151,17 @@ Backend contract work in Tasks 1–3 is one coordinated replacement. Do not reta
 
 **Interfaces:** Keep the existing script CLI arguments where feasible; replace their old UI/API actions with the approved signal flow. The performance comparison still measures the same scientific integration, independent of its display destination. Read script `--help` before invocation to use actual artifact/output arguments.
 
-- [ ] Adapt installed-package smoke assertions to create a signal, switch it to images, show/hide profile curves and download schema-4 settings/CSV/PNG. Require actual offline browser requests and no Node runtime, as in the existing smoke. Retain explicit wheel and sdist checks and denied acquisition writes.
-- [ ] Run the adapted smoke against stale bundled assets to prove it detects the removed contract; do not mistake missing build prerequisites for a functional red test.
-- [ ] Regenerate API types if further contract changes occurred, run `.venv/bin/python -m unittest discover -s tests`, frontend typecheck/unit/browser suites and `python3 scripts/build_frontend.py`. Build fresh wheel/sdist with `.venv/bin/python -m build --outdir /private/tmp/tofscope-signal-artifacts` (use an empty task-specific artifact directory), then run `.venv/bin/python scripts/check_distribution.py --artifacts /private/tmp/tofscope-signal-artifacts --output /private/tmp/tofscope-signal-distribution`. Do not publish artifacts externally.
-- [ ] If the provided acquisition is readable, run updated read-only qualification and the existing frozen-prototype integration comparison; record signal switching/request counts, exact output equality, managed budget behavior, owner isolation and source inode/size/mtime. Never edit the originals. Report unavailable files, hardware, NFS or services as blocked/unverified separately from passing checks. Do not rerun expensive work after a pass unless a new change or unresolved failure justifies it.
-- [ ] Document the new launch/workflow and schema; mark this plan's completed steps with command/result evidence. Update future-feature context without claiming completion of calibration, identification, 3D or acquisition saves. Run `git diff --check`, inspect all changes, verify frozen checkout clean, and commit `Package and qualify the signal workspace redesign.`
+- [x] Adapt installed-package smoke assertions to create a signal, switch it to images, show/hide profile curves and download schema-4 settings/CSV/PNG. Require actual offline browser requests and no Node runtime, as in the existing smoke. Retain explicit wheel and sdist checks and denied acquisition writes.
+- [x] Run the adapted smoke against stale bundled assets to prove it detects the removed contract; do not mistake missing build prerequisites for a functional red test.
+- [x] Regenerate API types if further contract changes occurred, run `.venv/bin/python -m unittest discover -s tests`, frontend typecheck/unit/browser suites and `python3 scripts/build_frontend.py`. Build fresh wheel/sdist with `.venv/bin/python -m build --outdir /private/tmp/tofscope-signal-artifacts` (use an empty task-specific artifact directory), then run `.venv/bin/python scripts/check_distribution.py --artifacts /private/tmp/tofscope-signal-artifacts --output /private/tmp/tofscope-signal-distribution`. Do not publish artifacts externally.
+- [x] If the provided acquisition is readable, run updated read-only qualification and the existing frozen-prototype integration comparison; record signal switching/request counts, exact output equality, managed budget behavior, owner isolation and source inode/size/mtime. Never edit the originals. Report unavailable files, hardware, NFS or services as blocked/unverified separately from passing checks. Do not rerun expensive work after a pass unless a new change or unresolved failure justifies it.
+- [x] Document the new launch/workflow and schema; mark this plan's completed steps with command/result evidence. Update future-feature context without claiming completion of calibration, identification, 3D or acquisition saves. Run `git diff --check`, inspect all changes, verify frozen checkout clean, and commit `Package and qualify the signal workspace redesign.`
 
 ## Final review and handoff
 
-- [ ] Review the complete diff against every acceptance item in the spec; resolve all issues in scope and rerun affected checks.
-- [ ] Obtain the required final branch review using the available reviewer workflow. If a skill authorizes a fresh reviewer, bound it to review; preserve inline implementation.
-- [ ] Report launch instructions, concrete passing/blocked results, remaining limits, commit IDs and plan/spec updates. Keep the user's current service running until implementation is ready; any restart must explicitly communicate the reset of temporary analyses. Do not merge, publish releases or deploy externally without authorization.
+- [x] Review the complete diff against every acceptance item in the spec; resolve all issues in scope and rerun affected checks.
+- [x] Obtain the required final branch review using the available reviewer workflow. If a skill authorizes a fresh reviewer, bound it to review; preserve inline implementation.
+- [x] Report launch instructions, concrete passing/blocked results, remaining limits, commit IDs and plan/spec updates. Keep the user's current service running until implementation is ready; any restart must explicitly communicate the reset of temporary analyses. Do not merge, publish releases or deploy externally without authorization.
 
 ## Plan self-review
 

@@ -43,6 +43,9 @@ Settings JSON includes all committed signals and display choices. PNG includes
 profile labels. Missing signal/SE coverage remains missing. Acquisitions stay
 read only; pending drafts are never exported as committed results.
 
+The pilot requires stored `PeakData` metadata; raw-only acquisitions are not yet
+supported.
+
 This is the **Explore pilot**, not full feature parity. Calibration editors,
 atomic identification/isotope dialogs, sections, volume tools and controlled
 native saves are specified in the [completion plan](docs/superpowers/plans/2026-10-18-react-fastapi-completion.md).

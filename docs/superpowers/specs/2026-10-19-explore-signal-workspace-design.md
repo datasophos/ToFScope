@@ -1,7 +1,7 @@
 # Explore signal workspace redesign
 
 Date: 2026-10-19
-Status: Written spec approved by Josh on 2026-10-19; implementation plan approved; inline execution underway.
+Status: Written spec approved by Josh on 2026-10-19; implemented and verified inline, including final review fixes.
 
 ## Purpose and approved direction
 
