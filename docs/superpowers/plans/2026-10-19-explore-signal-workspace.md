@@ -173,3 +173,29 @@ conditions have named tests in the owning tasks. The quota configuration test is
 `tests/test_config.py` yet). Distribution invocation uses the verified
 `--artifacts` and `--output` arguments. New interfaces are defined once
 and consumed by later tasks; obsolete contracts are replaced rather than adapted.
+
+## Approved compact strip refinement (2026-10-19)
+
+The user's demo showed that the always-visible collection table pushed the plots
+below the viewport. The approved refinement replaces it with one compact toolbar:
+Images selects a named signal; Profiles contains stable colored chips with details
+and hide actions; Add signal contains stored-channel search and Create from
+spectrum. Manage signals opens the full collection in a bounded popover, including
+hidden signals, display choices, provenance, cancellation, duplication and removal.
+This supersedes Task 5's always-visible four-row table. Long chip lists scroll
+horizontally within their allotted space; narrow screens wrap toolbar groups.
+Calculation progress appears on chips without expanding the collection. Image
+signals remain included in profiles, and hiding a chip retains the signal record.
+No scientific, API, export-schema or reader/renderer changes are required.
+
+Validation includes a regression that first failed against the full table, checks
+for strip height and plot position, hide/restore through the collection, image
+selection, details access, narrow-screen overflow, and the existing analysis,
+calculation, curve-identity, concurrency and plot-performance browser checks.
+
+Completed refinement: production TypeScript build, 11 unit tests and 25 browser
+tests pass; rebuilt wheel and source archive both pass offline installation and
+browser integration/export checks without Node. Strip height is 56 px desktop,
+97 px narrow in the regression fixture. File-picker layering and active-analysis
+popover isolation are covered. See the compact-strip follow-up in
+`docs/validation/pilot-qualification.md` for evidence and scope.

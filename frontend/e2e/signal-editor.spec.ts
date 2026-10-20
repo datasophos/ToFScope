@@ -1,3 +1,4 @@
+import { manageSignals, addSignal } from "./signal-controls";
 import { test, expect } from "@playwright/test";
 test("explicit spectrum modes, dirty-draft choice, precise bounds and independent file drafts", async ({
   page,
@@ -22,10 +23,12 @@ test("explicit spectrum modes, dirty-draft choice, precise bounds and independen
   await expect(page.getByRole("region", { name: "Signal editor" })).toHaveCount(
     0,
   );
+  await addSignal(page);
   await page
     .getByRole("button", { name: "Create from spectrum", exact: true })
     .click();
   await page.getByLabel("Mass lower 1", { exact: true }).fill("1.123456789123");
+  await addSignal(page);
   await page
     .getByRole("button", { name: "Create from spectrum", exact: true })
     .click();
@@ -54,6 +57,7 @@ test("explicit spectrum modes, dirty-draft choice, precise bounds and independen
   await expect(
     page.getByLabel("Mass lower 1", { exact: true }).filter({ visible: true }),
   ).toHaveValue("1.123456789123");
+  await addSignal(page);
   await page
     .getByRole("button", { name: "Create from spectrum", exact: true })
     .filter({ visible: true })
@@ -76,6 +80,7 @@ test("invalid calculation keeps its draft for correction and stored copies have 
     .getByRole("button", { name: "Choose an HDF5 acquisition" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await manageSignals(page);
   await page
     .getByTestId("signal-row")
     .first()
@@ -129,6 +134,7 @@ test("removing a submitted signal also closes its frozen editor", async ({
     await route.continue();
   });
   try {
+    await addSignal(page);
     await page
       .getByRole("button", { name: "Create from spectrum", exact: true })
       .click();
@@ -138,12 +144,21 @@ test("removing a submitted signal also closes its frozen editor", async ({
     await page
       .getByRole("button", { name: "Calculate signal", exact: true })
       .click();
+    const pending = page
+      .getByTestId("profile-chip")
+      .filter({ hasText: "Remove me" });
+    await expect(pending.getByRole("status")).toContainText("Calculating");
+    await expect(
+      pending.getByRole("button", { name: "Cancel Remove me calculation" }),
+    ).toBeEnabled();
+    await manageSignals(page);
     const row = page.getByTestId("signal-row").filter({ hasText: "Remove me" });
     await expect(row).toBeVisible();
     await row
       .getByRole("button", { name: "Remove Remove me", exact: true })
       .click();
     await expect(row).toHaveCount(0);
+    await expect(pending).toHaveCount(0);
     await expect(
       page.getByRole("region", { name: "Signal editor" }),
     ).toBeHidden();

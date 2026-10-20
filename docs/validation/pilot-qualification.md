@@ -324,3 +324,28 @@ readiness returned 200; the new signal API schema and all served asset hashes
 matched. This reset temporary analyses/unsaved drafts as communicated before the
 restart. Canonical frontend source digest matches its manifest; the frozen
 prototype remains clean. No external deployment or release was performed.
+
+### Compact signal strip follow-up (2026-10-19)
+
+The approved compact strip replaces the permanently expanded collection table.
+Measured height is 56 px at 1600×900 and 97 px at 600×800 with two profiles;
+long lists scroll inside the profile group. The complete collection is available
+in Manage signals. Pending chips show calculation progress and cancellation.
+File picker overlays remain above management tools, and inactive analyses do not
+leave their signal popovers visible.
+
+Passed: TypeScript production build, 11 frontend unit checks, all 25 browser
+checks, and freshly rebuilt wheel/sdist offline installed-package checks with no
+runtime Node or external browser requests. Browser coverage includes strip height,
+plot position, chip hide/restore, image selection, details, long names, progress,
+file-picker overlap, tab isolation, existing numerical interactions and exports.
+The final 1301×128 image resize regression measured 20.9–26.7 ms with no data
+refetch. Live service asset hashes match the new bundle; no restart was needed.
+Artifacts and smoke evidence are under `/private/tmp/tofscope-compact-strip-artifacts`
+and `/private/tmp/tofscope-compact-strip-distribution`.
+
+Initial regression runs caught the missing compact controls, an outdated test
+locator for the collection's new portal, and popup/file-picker layering. These
+were corrected and the complete browser suite passed. Scientific integration and
+reader code did not change; the earlier real-acquisition numerical qualification
+was not rerun for this layout adjustment. The frozen prototype remains clean.

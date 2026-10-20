@@ -109,6 +109,7 @@ def smoke(artifact, output):
                 page.get_by_role("button", name="◫ a.h5").click()
                 page.get_by_test_id("panel-ion").locator("canvas").first.wait_for()
                 assert page.evaluate("location.hash") == ""
+                page.get_by_role("button", name="Add signal", exact=True).click()
                 page.get_by_role("button", name="Create from spectrum", exact=True).click()
                 page.get_by_label("Signal name", exact=True).fill("Package signal")
                 page.get_by_label("Mass lower 1", exact=True).fill("1")
@@ -119,6 +120,7 @@ def smoke(artifact, output):
                 from playwright.sync_api import expect
                 editor = page.get_by_role('region', name='Signal editor')
                 expect(editor).to_be_hidden(timeout=15000)
+                page.get_by_role("button", name="Manage signals", exact=True).click()
                 row = page.get_by_test_id('signal-row').filter(has_text='Package signal')
                 row.get_by_role('radio').click()
                 expect(row.get_by_role('radio')).to_be_checked()
@@ -128,6 +130,7 @@ def smoke(artifact, output):
                 expect(first.get_by_role('checkbox')).not_to_be_checked()
                 first.get_by_role('checkbox').click()
                 expect(first.get_by_role('checkbox')).to_be_checked()
+                page.get_by_role("button", name="Close Manage signals", exact=True).click()
                 with page.expect_download() as download:
                     page.get_by_role('button', name='Settings JSON', exact=True).click()
                 settings = json.loads(Path(download.value.path()).read_text())

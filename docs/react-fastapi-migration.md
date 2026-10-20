@@ -419,3 +419,9 @@ Jobs target versioned signal IDs and commit atomically; display choices do not
 invalidate scientific work. Hidden signals count toward record quotas without
 pinning every volume. Settings use schema 4. Reader/renderer boundaries, scientific
 calculations, multi-user admission and the one-service offline package remain.
+
+The signal tray now uses a compact strip: Images selects the displayed signal,
+Profiles lists colored chips, and Add signal combines stored-channel search with
+Create from spectrum. Manage signals opens the complete collection on demand.
+This keeps the plots near the top of the viewport while retaining access to hidden
+signals and exact provenance. Calculation progress appears on the relevant chip.

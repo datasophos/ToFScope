@@ -157,6 +157,7 @@ export function ExploreScreen({
       )}
       <div className="signal-workspace">
         <SignalTray
+          active={active}
           analysis={a}
           send={send}
           editor={editor}

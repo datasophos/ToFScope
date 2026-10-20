@@ -1,3 +1,4 @@
+import { manageSignals, addSignal } from "./signal-controls";
 import { test, expect } from "@playwright/test";
 test("old image data keeps its own label during a delayed signal switch", async ({
   page,
@@ -13,14 +14,13 @@ test("old image data keeps its own label during a delayed signal switch", async 
   const ion = page.getByTestId("panel-ion");
   await expect(ion.locator("canvas").first()).toBeVisible();
   const before = await ion.locator(".plot-status").innerText();
-  await page
-    .getByRole("button", { name: "Add stored signal", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Add signal", exact: true }).click();
   await page
     .getByRole("listbox", { name: "Stored signals" })
     .getByRole("option")
     .first()
     .click();
+  await manageSignals(page);
   await expect(page.getByTestId("signal-row")).toHaveCount(2);
   const row = page.getByTestId("signal-row").last();
   let entered!: () => void, release!: () => void;
@@ -58,6 +58,7 @@ test("a stale open draft cannot overwrite a newer completed edit from another vi
     .getByRole("button", { name: "Choose an HDF5 acquisition" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await addSignal(page);
   await page
     .getByRole("button", { name: "Create from spectrum", exact: true })
     .click();
@@ -70,6 +71,7 @@ test("a stale open draft cannot overwrite a newer completed edit from another vi
   await expect(
     page.getByRole("region", { name: "Signal editor" }),
   ).toBeHidden();
+  await manageSignals(page);
   const row = page.getByTestId("signal-row").filter({ hasText: "Ti" });
   const signalId = await row.getAttribute("data-signal-id");
   await row.getByRole("button", { name: "Details", exact: true }).click();

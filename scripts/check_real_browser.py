@@ -81,7 +81,7 @@ def main():
                 page.get_by_test_id("panel-spectrum").locator("canvas").first.wait_for(
                     timeout=30000
                 )
-                page.get_by_role("button", name="Add stored signal").click()
+                page.get_by_role("button", name="Add signal").click()
                 signal_list = page.get_by_role("listbox", name="Stored signals")
                 signal_list.wait_for()
                 signal_count = signal_list.get_by_role("option").count()
@@ -95,9 +95,10 @@ def main():
                 page.get_by_label("Search stored signals").fill("")
                 page.keyboard.press("Escape")
                 load_ms = (time.perf_counter() - t) * 1000
-                page.get_by_role('button', name='Add stored signal', exact=True).click()
+                page.get_by_role('button', name='Add signal', exact=True).click()
                 page.get_by_role('listbox', name='Stored signals').get_by_role('option').first.click()
                 from playwright.sync_api import expect
+                page.get_by_role("button", name="Manage signals", exact=True).click()
                 rows = page.get_by_test_id('signal-row')
                 expect(rows).to_have_count(2)
                 expect(page.get_by_test_id('panel-profile').get_by_role('listitem')).to_have_count(2)
@@ -109,6 +110,7 @@ def main():
                 switch_ms = (time.perf_counter()-switch_start)*1000
                 assert not any(method=='POST' and url.endswith('/jobs') for method,url in requests)
                 assert not any('spectrum' in url for _,url in requests if '/data?' in url)
+                page.get_by_role("button", name="Close Manage signals", exact=True).click()
                 resize_timings = {}
                 for name in ("ion", "front"):
                     panel = page.get_by_test_id("panel-" + name)

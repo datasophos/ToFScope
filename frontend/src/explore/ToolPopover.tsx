@@ -4,16 +4,31 @@ export function ToolPopover({
   title,
   children,
   onClose,
+  width = 400,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
+  width?: number;
 }) {
   const root = useRef<HTMLElement>(null);
+  const [viewport, setViewport] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+  useEffect(() => {
+    const resize = () =>
+      setViewport({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
   const [anchor] = useState(() => {
     const b = document.activeElement?.getBoundingClientRect();
     return {
-      left: Math.max(12, Math.min(b?.left ?? 20, window.innerWidth - 420)),
+      left: Math.max(
+        12,
+        Math.min(b?.left ?? 20, window.innerWidth - width - 20),
+      ),
       top: Math.max(12, Math.min(b?.bottom ?? 80, window.innerHeight - 360)),
     };
   });
@@ -26,7 +41,17 @@ export function ToolPopover({
   }, []);
   return createPortal(
     <section
-      style={anchor}
+      style={{
+        left: Math.max(
+          12,
+          Math.min(
+            anchor.left,
+            viewport.width - Math.min(width, viewport.width - 24) - 12,
+          ),
+        ),
+        top: Math.max(12, Math.min(anchor.top, viewport.height - 360)),
+        width,
+      }}
       role="dialog"
       aria-label={title}
       className="tool-popover"
