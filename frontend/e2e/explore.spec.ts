@@ -170,7 +170,12 @@ test("Explore layout, signal picker and chart wheel behavior", async ({
   expect(Math.abs(imageBox.width - imageBox.height)).toBeLessThan(2);
   const picker = page.getByRole("button", { name: "Add stored signal" });
   await expect(picker).toBeVisible();
+  await expect(page.getByLabel("Search stored signals")).toBeHidden();
   await picker.click();
+  await expect(page.getByLabel("Search stored signals")).toBeFocused();
+  await expect(
+    page.locator(".signal-picker-popover").getByLabel("Search stored signals"),
+  ).toBeVisible();
   await expect(
     page.getByRole("listbox", { name: "Stored signals" }),
   ).toBeVisible();
@@ -186,6 +191,12 @@ test("Explore layout, signal picker and chart wheel behavior", async ({
   await expect(page.locator("select[aria-label='Stored signal']")).toHaveCount(
     0,
   );
+  await page.getByLabel("Search stored signals").fill("no such signal");
+  await expect(page.getByText("No matching signals")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(picker).toBeFocused();
+  await picker.click();
+  await expect(page.getByLabel("Search stored signals")).toHaveValue("");
   await page.keyboard.press("Escape");
   await expect(
     page.getByRole("listbox", { name: "Stored signals" }),

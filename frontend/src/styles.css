@@ -128,19 +128,27 @@ select {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.signal-picker-list {
+.signal-picker-popover {
   position: absolute;
   z-index: 10;
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 4px;
+  width: max(100%, 250px);
+  max-width: calc(100vw - 40px);
+  padding: 6px;
   background: white;
   border: 1px solid #bccbd2;
   border-radius: 5px;
   box-shadow: 0 5px 18px #20374425;
+}
+.signal-picker-popover > input {
+  width: 100%;
+  margin-bottom: 6px;
+}
+.signal-picker-list {
+  max-height: 200px;
+  overflow-y: auto;
 }
 .signal-picker-list button {
   display: block;
@@ -591,9 +599,6 @@ small {
 .signal-add {
   flex-wrap: wrap;
 }
-.signal-add > input {
-  width: 170px;
-}
 .signal-add .signal-picker {
   width: 190px;
 }
@@ -852,7 +857,6 @@ small {
   .signal-add {
     width: 100%;
   }
-  .signal-add > input,
   .signal-add .signal-picker {
     flex: 1;
     min-width: 120px;
