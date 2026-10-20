@@ -55,7 +55,9 @@ test("signal collection scrolls without losing labels and contextual controls fi
   await page
     .getByLabel("Rename signal", { exact: true })
     .fill("Titanium".repeat(16));
-  await page.getByRole("button", { name: "Rename", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Save signal name", exact: true })
+    .click();
   await page.setViewportSize({ width: 600, height: 800 });
   expect(
     await page.evaluate(
