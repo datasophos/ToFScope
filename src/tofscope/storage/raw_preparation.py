@@ -2,6 +2,7 @@
 from contextlib import contextmanager
 from dataclasses import dataclass
 import hashlib
+import json
 import logging
 import os
 from pathlib import Path
@@ -11,9 +12,10 @@ import h5py
 import numpy as np
 
 from tofscope.science.raw_peaks import integrate_peak_table
-from tofscope.storage.acquisitions import DatasetRef
+from tofscope.storage.acquisitions import DatasetRef, SourceChanged
 from tofscope.storage.bounded_events import admitted_events
-from tofscope.storage.explorer import integration_parameters, scalar
+from tofscope.storage.explorer import integration_parameters, scalar, decode
+import re
 from tofscope.storage.saved_files import COPY_BYTES, SavedFile, file_id, filename, reserve_disk
 
 
@@ -24,6 +26,18 @@ class PreparationPreview:
     shape: tuple[int, int, int, int]
     suggested_filename: str
     required_bytes: int
+    assumptions: tuple[str, ...] = ()
+
+
+def parameter_assumptions(f):
+    warnings = []
+    if 'ClockPeriod' not in f['FullSpectra'].attrs:
+        warnings.append('Clock period is missing: assume events are sample indices (clock ratio 1).')
+    if 'NbrWaveforms' not in f.attrs:
+        warnings.append('Waveform count is missing: assume one waveform per pixel.')
+    if not re.findall(r'Ch\d+Record\s*=\s*(\d+)', decode(f.attrs.get('Configuration File Contents', b''))):
+        warnings.append('Recording-channel settings are missing: assume one active channel.')
+    return tuple(warnings)
 
 
 @contextmanager
@@ -63,11 +77,24 @@ def raw_metadata(repository, owner, source, task_id):
             if (not finite or not valid_labels or not np.isfinite(windows).all()
                     or np.any(windows[:, 0] >= windows[:, 1]) or not np.isfinite(masses).all()):
                 raise ValueError('Raw peak windows and mass calibration must be finite.')
-            ratio, normalization = integration_parameters(f)
-            yield f, records, masses, windows, (writes, *raw.shape[1:], len(records)), ratio, normalization
+            assumptions = parameter_assumptions(f)
+            ratio, normalization = integration_parameters(f, reader_defaults=True)
+            yield f, records, masses, windows, (writes, *raw.shape[1:], len(records)), ratio, normalization, assumptions
 
 
 def inspect_source(repository, owner, relative_path, location='acquisition'):
+    # A cloud file can change identity while the first read hydrates it. No
+    # analysis or user-confirmed generation exists yet: inspect a fresh stable
+    # snapshot, without weakening generation checks on jobs or open analyses.
+    for attempt in range(3):
+        try:
+            return _inspect_source_once(repository, owner, relative_path, location)
+        except SourceChanged:
+            if attempt == 2:
+                raise SourceChanged('File is still changing or downloading; wait for sync to finish, then open it again.') from None
+
+
+def _inspect_source_once(repository, owner, relative_path, location):
     provisional = DatasetRef('', '', relative_path, location)
     path = repository.path(owner, provisional)
     source = DatasetRef(hashlib.sha256((repository.salt + str(path)).encode()).hexdigest(),
@@ -79,11 +106,11 @@ def inspect_source(repository, owner, relative_path, location='acquisition'):
             if len(shape) != 4:
                 raise ValueError('Invalid integrated acquisition layout.')
             return source, PreparationPreview(False, source.generation, shape, '', 0)
-    with raw_metadata(repository, owner, source, source.key) as (_, _, _, _, shape, _, _):
+    with raw_metadata(repository, owner, source, source.key) as (_, _, _, _, shape, _, _, assumptions):
         # Admit a source copy and a worst-case frame, then check as compressed
         # output grows instead of reserving an entire uncompressed cube.
         needed = path.stat().st_size + int(np.prod(shape[1:])) * 8 + 64 * 1024**2
-        return source, PreparationPreview(True, source.generation, shape, path.stem + '_prepared.h5', needed)
+        return source, PreparationPreview(True, source.generation, shape, path.stem + '_prepared.h5', needed, assumptions)
 
 
 def prepare_copy(repository, files, owner, source, name, required_bytes, cancelled, progress, task_id):
@@ -116,10 +143,20 @@ def prepare_copy(repository, files, owner, source, name, required_bytes, cancell
                     out.flush()
                     os.fsync(out.fileno())
                     del buffer
-            with raw_metadata(repository, owner, source, task_id) as (f, table, axis, windows, shape, ratio, normalization):
+            with raw_metadata(repository, owner, source, task_id) as (f, table, axis, windows, shape, ratio, normalization, assumptions):
                 scratch = int(np.prod(shape[1:])) * 24 + 4096
                 digest = hashlib.sha256()
                 with repository.budget.reserve(owner, task_id, scratch), h5py.File(temporary, 'r+') as output:
+                    if assumptions:
+                        fs = output['FullSpectra'].attrs
+                        if 'ClockPeriod' not in fs:
+                            fs['SampleInterval'] = fs.get('SampleInterval', 1.)
+                            fs['ClockPeriod'] = fs['SampleInterval']
+                        if 'NbrWaveforms' not in output.attrs:
+                            output.attrs['NbrWaveforms'] = 1
+                        config = decode(output.attrs.get('Configuration File Contents', b''))
+                        if not re.findall(r'Ch\d+Record\s*=\s*(\d+)', config):
+                            output.attrs['Configuration File Contents'] = config + '\n[ToFScope reconstruction assumptions]\nCh1Record=1\n'
                     data = output['PeakData'].create_dataset('PeakData', shape=shape, dtype='float32',
                         chunks=(1, min(32, shape[1]), min(32, shape[2]), min(32, shape[3])),
                         compression='lzf', shuffle=True)
@@ -139,6 +176,7 @@ def prepare_copy(repository, files, owner, source, name, required_bytes, cancell
                         source_name=source.name, source_generation=source.generation,
                         completed_frames=shape[0], clock_ratio=ratio, normalization=normalization,
                         sha256=digest.hexdigest())
+                    group.attrs['assumptions'] = json.dumps(assumptions)
                     output.flush()
                 # Verify the written frame values, not merely the dataset dimensions.
                 with repository.budget.reserve(owner, task_id, scratch), h5py.File(temporary, 'r') as output:

@@ -40,6 +40,75 @@ class RawPreparationTests(unittest.TestCase):
         self.assertEqual(self.s.jobs.jobs, {})
         self.assertEqual(hashlib.sha256(self.path.read_bytes()).hexdigest(), self.digest)
 
+    def test_initial_inspection_retries_a_first_read_identity_change(self):
+        from tofscope.storage import raw_preparation
+        original = raw_preparation.h5py.File
+        changed = False
+        def hydrate(path, *args, **kwargs):
+            nonlocal changed
+            result = original(path, *args, **kwargs)
+            if not changed and str(path) == str(self.path):
+                changed = True
+                st = self.path.stat()
+                os.utime(self.path, ns=(st.st_atime_ns, st.st_mtime_ns + 1000000))
+            return result
+        with patch.object(raw_preparation.h5py, 'File', side_effect=hydrate):
+            p = self.preview()
+        self.assertTrue(p.requires_preparation)
+        self.assertEqual(p.generation, self.s.repository.identity(self.path))
+
+    def test_continuously_changing_initial_inspection_is_bounded(self):
+        from tofscope.storage import raw_preparation
+        from tofscope.storage.acquisitions import SourceChanged
+        original = raw_preparation.h5py.File
+        calls = 0
+        def changing(path, *args, **kwargs):
+            nonlocal calls
+            result = original(path, *args, **kwargs)
+            calls += 1
+            st = self.path.stat()
+            os.utime(self.path, ns=(st.st_atime_ns, st.st_mtime_ns + 1000000))
+            return result
+        with patch.object(raw_preparation.h5py, 'File', side_effect=changing):
+            with self.assertRaises(SourceChanged): self.preview()
+        self.assertEqual(calls, 3)
+
+    def test_reader_defaults_require_acknowledgment_and_are_recorded_in_copy(self):
+        with h5py.File(self.path, 'r+') as f:
+            del f['FullSpectra'].attrs['ClockPeriod']
+            del f.attrs['Configuration File Contents']
+        p = self.preview()
+        self.assertEqual(len(p.assumptions), 2)
+        with self.assertRaises(ValueError): self.submit()
+        job = self.s.preparations.submit('a', 'a.h5', 'acquisition', p.generation, 'assumed.h5', accept_assumptions=True)
+        done = self.s.jobs.wait('a', job.id, 5)
+        self.assertEqual(done.status, 'succeeded', done.safe_error)
+        target = self.s.saves.files.path('a', done.saved_file.id)
+        with h5py.File(target, 'r') as f:
+            import json
+            from tofscope.storage.explorer import integration_parameters
+            self.assertEqual(integration_parameters(f), (1, 2))
+            self.assertEqual(json.loads(f['ToFScope/Preparation'].attrs['assumptions']), list(p.assumptions))
+        with h5py.File(self.path, 'r') as f:
+            self.assertNotIn('ClockPeriod', f['FullSpectra'].attrs)
+            self.assertNotIn('Configuration File Contents', f.attrs)
+
+    def test_reader_defaults_do_not_decode_unrelated_attributes(self):
+        from types import SimpleNamespace
+        from tofscope.storage.explorer import integration_parameters
+        class Attributes:
+            def __init__(self, values): self.values = values
+            def __contains__(self, key): return key in self.values
+            def __getitem__(self, key): return self.values[key]
+            def get(self, key, default=None): return self.values.get(key, default)
+            def __iter__(self): raise AssertionError('Unrelated attributes must not be decoded.')
+        class Source:
+            attrs = Attributes({'NbrWaveforms': 2})
+            def __getitem__(self, key):
+                assert key == 'FullSpectra'
+                return SimpleNamespace(attrs=Attributes({'SampleInterval': 64.}))
+        self.assertEqual(integration_parameters(Source(), reader_defaults=True), (1, 2))
+
     def test_prepare_float_values_completed_frames_and_self_contained_reopen(self):
         j = self.submit()
         done = self.s.jobs.wait('a', j.id, 5)

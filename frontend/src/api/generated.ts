@@ -754,6 +754,11 @@ export interface components {
     };
     /** PreparationPreview */
     PreparationPreview: {
+      /**
+       * Assumptions
+       * @default []
+       */
+      assumptions: string[];
       /** Generation */
       generation: string;
       /** Required Bytes */
@@ -767,6 +772,11 @@ export interface components {
     };
     /** PrepareAcquisition */
     PrepareAcquisition: {
+      /**
+       * Accept Assumptions
+       * @default false
+       */
+      accept_assumptions: boolean;
       /** Filename */
       filename: string;
       /** Generation */

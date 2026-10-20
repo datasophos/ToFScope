@@ -974,6 +974,14 @@
       },
       "PreparationPreview": {
         "properties": {
+          "assumptions": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Assumptions",
+            "type": "array"
+          },
           "generation": {
             "title": "Generation",
             "type": "string"
@@ -1024,6 +1032,11 @@
       "PrepareAcquisition": {
         "additionalProperties": false,
         "properties": {
+          "accept_assumptions": {
+            "default": false,
+            "title": "Accept Assumptions",
+            "type": "boolean"
+          },
           "filename": {
             "maxLength": 240,
             "minLength": 1,

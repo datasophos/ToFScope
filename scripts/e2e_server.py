@@ -20,6 +20,11 @@ with tempfile.TemporaryDirectory(prefix="tofscope-e2e-") as d:
     make_acquisition(root / "nested" / "raw.h5")
     with h5py.File(root / "nested" / "raw.h5", "r+") as raw:
         del raw["PeakData/PeakData"]
+    make_acquisition(root / 'nested' / 'assumed-raw.h5')
+    with h5py.File(root / 'nested' / 'assumed-raw.h5', 'r+') as raw:
+        del raw['PeakData/PeakData']
+        del raw['FullSpectra'].attrs['ClockPeriod']
+        del raw.attrs['Configuration File Contents']
     settings = Settings(
         root,
         runtime_dir=root / "runtime",

@@ -51,7 +51,7 @@ export function RawPreparation({
               await onPrepared(next.saved_file.id);
             } catch (e) {
               setError(
-                `Copy prepared as ${next.saved_file.name}. ${(e as Error).message}`,
+                `Saved ${next.saved_file.name}, but couldn't open it yet. Your prepared copy is safe. Try “Open prepared copy” again.`,
               );
             } finally {
               setBusy(false);
@@ -87,6 +87,7 @@ export function RawPreparation({
           location: selection.location,
           generation: selection.preview.generation,
           filename: name,
+          accept_assumptions: !!selection.preview.assumptions?.length,
         }),
       );
     } catch (e) {
@@ -139,6 +140,24 @@ export function RawPreparation({
           space is required to start. Final size depends on compression;
           preparation stops safely if space runs low.
         </p>
+        {!!selection.preview.assumptions?.length && (
+          <section
+            className="preparation-assumptions"
+            aria-label="Reconstruction assumptions"
+          >
+            <strong>Missing acquisition metadata</strong>
+            <ul>
+              {selection.preview.assumptions.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+            <p>
+              These are RosettaSciIO's fallback assumptions. Counts may be
+              incorrect if they do not match the acquisition. Continue only if
+              these assumptions are appropriate.
+            </p>
+          </section>
+        )}
         <label className="preparation-filename">
           Prepared filename
           <input
@@ -197,7 +216,9 @@ export function RawPreparation({
                     try {
                       await onPrepared(job.saved_file!.id);
                     } catch (e) {
-                      setError((e as Error).message);
+                      setError(
+                        `Your prepared copy is still saved as ${job.saved_file!.name}. Opening is unavailable right now; try again shortly.`,
+                      );
                     } finally {
                       setBusy(false);
                     }
@@ -211,7 +232,9 @@ export function RawPreparation({
                   disabled={!name.trim()}
                   onClick={() => void start()}
                 >
-                  Prepare and open
+                  {selection.preview.assumptions?.length
+                    ? "Prepare with assumptions"
+                    : "Prepare and open"}
                 </button>
               )}
             </>

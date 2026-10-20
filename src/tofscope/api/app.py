@@ -257,7 +257,7 @@ def create_app(settings, services=None, bootstrap_secret=None):
     @app.post('/api/v1/acquisitions/prepare', response_model=JobSnapshot, status_code=202)
     def prepare_acquisition(body: PrepareAcquisition, o=Depends(owner), s=Depends(svc)):
         try:
-            return s.preparations.submit(o, body.relative_path, body.location, body.generation, body.filename)
+            return s.preparations.submit(o, body.relative_path, body.location, body.generation, body.filename, accept_assumptions=body.accept_assumptions)
         except FileExistsError:
             raise HTTPException(409, 'Output already exists; choose a new name.') from None
 

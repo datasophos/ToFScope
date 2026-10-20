@@ -1,5 +1,5 @@
 from typing import Literal, Annotated
-from pydantic import Field, StrictInt
+from pydantic import Field, StrictInt, StrictBool
 from tofscope.application.commands import StrictModel
 
 
@@ -11,6 +11,7 @@ class OpenAcquisition(StrictModel):
 class PrepareAcquisition(OpenAcquisition):
     generation: str = Field(min_length=1, max_length=128)
     filename: str = Field(min_length=1, max_length=240)
+    accept_assumptions: StrictBool = False
 
 
 class RevisionEnvelope(StrictModel):
