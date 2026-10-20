@@ -64,3 +64,33 @@ class SaveApiTests(unittest.TestCase):
             self.assertEqual(bypass.status_code, 404, bypass.text)
             self.assertEqual(client.get('/api/v1/saved-files', headers=h | {'x-tofscope-user':'b'}).json(), [])
             self.assertNotEqual(client.get('/api/v1/locations', headers=h | {'x-tofscope-user':'b'}).json()['save_destination'], locations['save_destination'])
+
+    def test_local_saved_folder_matches_visible_folder_and_never_overwrites_input(self):
+        import hashlib
+        setup_case(self, output_root=None, public_origin='http://testserver')
+        original = self.settings.data_root / 'a.h5'
+        before = hashlib.sha256(original.read_bytes()).hexdigest()
+        with TestClient(create_app(self.settings, bootstrap_secret='local-save-test')) as client:
+            h = {'Origin': 'http://testserver'}
+            auth = client.post('/api/v1/auth/bootstrap', headers=h, json={'secret':'local-save-test'})
+            self.assertEqual(auth.status_code, 200, auth.text)
+            h['x-csrf-token'] = auth.json()['csrf']
+            locations = client.get('/api/v1/locations', headers=h).json()
+            self.assertEqual(locations['save_destination'], locations['saved_copies'])
+            self.assertEqual(locations['saved_copies'], str(self.settings.data_root))
+            existing = client.get('/api/v1/files?location=saved', headers=h).json()['entries']
+            self.assertEqual([e['name'] for e in existing], ['a.h5', 'b.h5'])
+            a = client.post('/api/v1/analyses', headers=h, json={'relative_path':'a.h5'}).json()
+            def save(name, request):
+                response = client.post(f"/api/v1/analyses/{a['id']}/saves", headers=h, json=dict(request_id=request, expected_revision=a['revision'], dataset_generation=a['dataset']['generation'], filename=name))
+                self.assertEqual(response.status_code, 202, response.text)
+                return client.app.state.services.jobs.wait('local', response.json()['id'], 5)
+            saved = save('copy.h5', 'copy')
+            self.assertEqual(saved.status, 'succeeded', saved.safe_error)
+            self.assertTrue((self.settings.data_root / 'copy.h5').is_file())
+            self.assertEqual(save('a.h5', 'collision').status, 'failed')
+            self.assertEqual(hashlib.sha256(original.read_bytes()).hexdigest(), before)
+            listing = client.get('/api/v1/files?location=saved', headers=h).json()['entries']
+            self.assertEqual([e['name'] for e in listing], ['a.h5', 'b.h5', 'copy.h5'])
+            reopened = client.post('/api/v1/analyses', headers=h, json={'location':'saved','relative_path':saved.saved_file.id})
+            self.assertEqual(reopened.status_code, 200, reopened.text)

@@ -353,7 +353,9 @@ export function FilePicker({
                 <p className="file-list-message">
                   {query
                     ? "No matching files."
-                    : "No .h5 files in this folder."}
+                    : location === "saved"
+                      ? "No saved files in this location."
+                      : "No .h5 files in this folder."}
                 </p>
               )}
             </div>

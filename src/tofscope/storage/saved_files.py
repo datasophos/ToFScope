@@ -63,6 +63,10 @@ class SavedFileStore:
     def owner_path(self, owner):
         if not isinstance(owner, str) or not owner:
             raise PermissionError('An authenticated owner is required.')
+        # Local mode authenticates one operating-system user. Its visible save
+        # folder is the physical destination; hosted identities remain isolated.
+        if self.settings.mode == 'local' and owner == 'local':
+            return self.root
         return self.root / hashlib.sha256(owner.encode()).hexdigest()
 
     def owner_root(self, owner):

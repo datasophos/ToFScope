@@ -135,3 +135,24 @@ test("file explorer fits a narrow screen and Escape restores focus", async ({
     }),
   ).toBeFocused();
 });
+
+test("empty saved location does not imply that acquisition files are missing", async ({
+  page,
+}) => {
+  const dialog = await openPicker(page);
+  await expect(
+    dialog.getByRole("button", { name: "◫ a.h5", exact: true }),
+  ).toBeVisible();
+  await dialog
+    .getByRole("button", { name: "Saved files", exact: true })
+    .click();
+  await expect(
+    dialog.getByText("No saved files in this location.", { exact: true }),
+  ).toBeVisible();
+  await dialog
+    .getByRole("button", { name: "Acquisitions", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("button", { name: "◫ a.h5", exact: true }),
+  ).toBeVisible();
+});

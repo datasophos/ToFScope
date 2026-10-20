@@ -65,9 +65,12 @@ Configure persistent output with `--output-root`, `TOFSCOPE_OUTPUT_ROOT`, or
 (`data_root`), which defaults to the process current working directory.
 Configure a separate writable output folder for read-only acquisition mounts.
 The file picker displays both configured folders; Save as also displays the
-complete destination inside the authenticated owner’s private subfolder.
-Runtime cleanup must not remove this directory. Owner hash subdirectories are
-private; the Saved files picker and downloads enforce the authenticated owner.
+complete save destination in a tooltip. In local mode, saved copies go directly
+into the configured output folder and its file list shows that folder’s .h5 files.
+When it equals the acquisition folder, both shortcuts show the same .h5 files.
+Hosted proxy mode uses private owner hash subdirectories; its saved-file picker
+and downloads enforce the authenticated owner. Runtime cleanup must not remove
+saved files in either mode.
 Copies are portable: download or move a completed copy into another installation's
 acquisition root to open it there under fresh service identities. Embedded metadata
 contains no credentials or original server paths.
