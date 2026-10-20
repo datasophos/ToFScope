@@ -18,6 +18,7 @@ test("file shell has independent tabs without workspace or manual reconnect cont
   await page.getByRole("button", { name: "＋ Open acquisition" }).click();
   await page.getByRole("button", { name: "◫ b.h5" }).click();
   await page.getByRole("tab", { name: "1 · a.h5" }).click();
+  page.on("dialog", (dialog) => void dialog.accept());
   await page.reload();
   await expect(page.getByRole("tab")).toHaveCount(2);
   await expect(page.getByRole("tab", { name: "1 · a.h5" })).toHaveAttribute(

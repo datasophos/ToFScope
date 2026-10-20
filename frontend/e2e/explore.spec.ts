@@ -77,9 +77,9 @@ test("independent files, exact Explore state, union calculation and offline down
   await expect(screen.locator(".spectrum-workbench.maximized")).toHaveCount(0);
   const download = page.waitForEvent("download");
   await screen
-    .getByRole("button", { name: "Settings JSON", exact: true })
+    .getByRole("button", { name: "Profile CSV", exact: true })
     .click();
-  expect((await download).suggestedFilename()).toMatch(/\.json$/);
+  expect((await download).suggestedFilename()).toMatch(/\.csv$/);
   expect(external).toEqual([]);
 });
 
