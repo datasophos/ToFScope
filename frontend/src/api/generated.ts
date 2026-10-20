@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+  "/api/v1/acquisitions/inspect": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Inspect Acquisition */
+    post: operations["inspect_acquisition_api_v1_acquisitions_inspect_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/acquisitions/prepare": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Prepare Acquisition */
+    post: operations["prepare_acquisition_api_v1_acquisitions_prepare_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/analyses": {
     parameters: {
       query?: never;
@@ -605,7 +639,7 @@ export interface components {
        * @default integration
        * @enum {string}
        */
-      kind: "integration" | "save";
+      kind: "integration" | "save" | "preparation";
       /**
        * Recipe Version
        * @default 0
@@ -717,6 +751,34 @@ export interface components {
       low: number;
       /** Mass */
       mass: number;
+    };
+    /** PreparationPreview */
+    PreparationPreview: {
+      /** Generation */
+      generation: string;
+      /** Required Bytes */
+      required_bytes: number;
+      /** Requires Preparation */
+      requires_preparation: boolean;
+      /** Shape */
+      shape: [number, number, number, number];
+      /** Suggested Filename */
+      suggested_filename: string;
+    };
+    /** PrepareAcquisition */
+    PrepareAcquisition: {
+      /** Filename */
+      filename: string;
+      /** Generation */
+      generation: string;
+      /**
+       * Location
+       * @default acquisition
+       * @enum {string}
+       */
+      location: "acquisition" | "saved";
+      /** Relative Path */
+      relative_path: string;
     };
     /** RemoveSignal */
     RemoveSignal: {
@@ -980,6 +1042,72 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  inspect_acquisition_api_v1_acquisitions_inspect_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["OpenAcquisition"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PreparationPreview"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  prepare_acquisition_api_v1_acquisitions_prepare_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PrepareAcquisition"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["JobSnapshot"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   open_files_api_v1_analyses_get: {
     parameters: {
       query?: never;

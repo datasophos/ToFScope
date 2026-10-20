@@ -678,7 +678,8 @@
             "default": "integration",
             "enum": [
               "integration",
-              "save"
+              "save",
+              "preparation"
             ],
             "title": "Kind",
             "type": "string"
@@ -969,6 +970,94 @@
           "high"
         ],
         "title": "Peak",
+        "type": "object"
+      },
+      "PreparationPreview": {
+        "properties": {
+          "generation": {
+            "title": "Generation",
+            "type": "string"
+          },
+          "required_bytes": {
+            "title": "Required Bytes",
+            "type": "integer"
+          },
+          "requires_preparation": {
+            "title": "Requires Preparation",
+            "type": "boolean"
+          },
+          "shape": {
+            "maxItems": 4,
+            "minItems": 4,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Shape",
+            "type": "array"
+          },
+          "suggested_filename": {
+            "title": "Suggested Filename",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requires_preparation",
+          "generation",
+          "shape",
+          "suggested_filename",
+          "required_bytes"
+        ],
+        "title": "PreparationPreview",
+        "type": "object"
+      },
+      "PrepareAcquisition": {
+        "additionalProperties": false,
+        "properties": {
+          "filename": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Filename",
+            "type": "string"
+          },
+          "generation": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Generation",
+            "type": "string"
+          },
+          "location": {
+            "default": "acquisition",
+            "enum": [
+              "acquisition",
+              "saved"
+            ],
+            "title": "Location",
+            "type": "string"
+          },
+          "relative_path": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Relative Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "relative_path",
+          "generation",
+          "filename"
+        ],
+        "title": "PrepareAcquisition",
         "type": "object"
       },
       "RemoveSignal": {
@@ -1647,6 +1736,82 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/acquisitions/inspect": {
+      "post": {
+        "operationId": "inspect_acquisition_api_v1_acquisitions_inspect_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenAcquisition"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparationPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Inspect Acquisition"
+      }
+    },
+    "/api/v1/acquisitions/prepare": {
+      "post": {
+        "operationId": "prepare_acquisition_api_v1_acquisitions_prepare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepareAcquisition"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Prepare Acquisition"
+      }
+    },
     "/api/v1/analyses": {
       "get": {
         "operationId": "open_files_api_v1_analyses_get",

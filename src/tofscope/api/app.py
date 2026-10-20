@@ -10,6 +10,7 @@ from starlette.staticfiles import StaticFiles
 import json
 from tofscope import __version__
 from tofscope.storage.saved_files import SavedFile
+from tofscope.storage.raw_preparation import PreparationPreview
 from urllib.parse import quote
 import os
 from tofscope.application.saves import SaveService
@@ -33,6 +34,7 @@ from tofscope.api.schemas import (
     Bootstrap,
     SessionInfo,
     OpenAcquisition,
+    PrepareAcquisition,
     ReplaceAcquisition,
     SubmitJob,
     SaveCopy,
@@ -55,6 +57,7 @@ class Services:
     presenter: object = None
     exports: object = None
     saves: object = None
+    preparations: object = None
 
 
 def build_services(settings):
@@ -74,9 +77,12 @@ def build_services(settings):
     jobs = JobService(ws, explore, cache, settings)
     life = LifecycleService(ws, jobs, settings)
     presenter = ExplorePresenter(ws, repo, cache, settings)
-    return Services(
+    services = Services(
         repo, ws, explore, cache, jobs, life, presenter, ExportService(presenter), SaveService(ws, jobs, cache, repo, settings)
     )
+    from tofscope.application.preparations import PreparationService
+    services.preparations = PreparationService(repo, jobs, services.saves.files)
+    return services
 
 
 class ManagedResponse(Response):
@@ -243,6 +249,17 @@ def create_app(settings, services=None, bootstrap_secret=None):
         return FolderLocations(acquisitions=str(settings.data_root),
                                saved_copies=str(settings.output_root),
                                save_destination=str(s.saves.files.owner_path(o)))
+
+    @app.post('/api/v1/acquisitions/inspect', response_model=PreparationPreview)
+    def inspect_acquisition(body: OpenAcquisition, o=Depends(owner), s=Depends(svc)):
+        return s.preparations.inspect(o, body.relative_path, body.location)
+
+    @app.post('/api/v1/acquisitions/prepare', response_model=JobSnapshot, status_code=202)
+    def prepare_acquisition(body: PrepareAcquisition, o=Depends(owner), s=Depends(svc)):
+        try:
+            return s.preparations.submit(o, body.relative_path, body.location, body.generation, body.filename)
+        except FileExistsError:
+            raise HTTPException(409, 'Output already exists; choose a new name.') from None
 
     @app.get('/api/v1/analyses', response_model=list[AnalysisSnapshot])
     def open_files(o=Depends(owner), s=Depends(svc)):
