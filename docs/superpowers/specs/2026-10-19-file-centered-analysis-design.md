@@ -1,6 +1,7 @@
 # File-centered analysis and saved HDF5 copies
 
-Status: proposed for user review. This supersedes user-facing workspace grouping
+Status: approved by the user’s “continue” after incorporating the optional
+browser-download feedback. This supersedes user-facing workspace grouping
 and manual analysis-ID reattachment. It expands the Explore pilot to writing new
 output files; original acquisitions remain immutable.
 
