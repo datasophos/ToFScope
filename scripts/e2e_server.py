@@ -18,6 +18,7 @@ with tempfile.TemporaryDirectory(prefix="tofscope-e2e-") as d:
         root,
         runtime_dir=root / "runtime",
         output_root=root / "saved",
+        analyses_global=128,
         mode="proxy",
         trusted_proxies=("127.0.0.1",),
         host="127.0.0.1",

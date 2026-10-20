@@ -4,6 +4,7 @@ import { download, type Analysis, type Command } from "../api/client";
 import { PlotPanel } from "../plots/PlotPanel";
 import { HelpButton } from "../components/HelpButton";
 import { help } from "./help";
+import { SaveCopy } from "./SaveCopy";
 import { SignalTray } from "./SignalTray";
 import { SignalEditor } from "./SignalEditor";
 import { useSignalEditor } from "./useSignalEditor";
@@ -15,10 +16,18 @@ export function ExploreScreen({
   initial,
   active,
   onReplace,
+  onStatus,
+  onSaved,
+  onSaveDismiss,
+  saveRequest = 0,
 }: {
   initial: Analysis;
   active: boolean;
   onReplace: (a: Analysis) => void;
+  onStatus: (a: Analysis, draft: boolean, busy: boolean) => void;
+  onSaved: (a: Analysis) => void;
+  onSaveDismiss: () => void;
+  saveRequest?: number;
 }) {
   const {
     state: a,
@@ -27,10 +36,28 @@ export function ExploreScreen({
     send,
     refresh,
     setError,
+    accept,
     pendingPanels,
     panelStates,
   } = useAnalysis(initial);
   const editor = useSignalEditor(a, refresh);
+  const busy =
+    editor.submitting ||
+    a.signals.some(
+      (row) =>
+        row.job_id &&
+        (!editor.jobs[row.job_id] ||
+          ["queued", "running"].includes(editor.jobs[row.job_id].status)),
+    );
+  const blockedSave = editor.draft
+    ? "Finish or discard the signal draft before saving."
+    : busy
+      ? "Finish or cancel calculations before saving."
+      : "";
+  useEffect(
+    () => onStatus(a, !!editor.draft, busy),
+    [a, !!editor.draft, busy, onStatus],
+  );
   const [max, setMax] = useState<string | null>(null),
     [details, setDetails] = useState<string>();
   const act = (c: Command) => void send(c).catch(() => {});
@@ -108,7 +135,7 @@ export function ExploreScreen({
       <div className="analysis-heading">
         <div>
           <span className="eyebrow">Independent analysis</span>
-          <h1>{a.dataset.relative_path.split("/").pop()}</h1>
+          <h1>{a.dataset.name || a.dataset.relative_path.split("/").pop()}</h1>
           <span>
             {a.shape[0].toLocaleString()} frames · {a.shape[2]} × {a.shape[1]}{" "}
             pixels · {a.peaks.length} stored signals
@@ -133,13 +160,22 @@ export function ExploreScreen({
           >
             Profile CSV
           </button>
-          <button
-            onClick={() =>
-              void download(a.id, "json").catch((e) => setError(e.message))
-            }
-          >
-            Settings JSON
-          </button>
+          <SaveCopy
+            analysis={a}
+            active={active}
+            blocked={blockedSave}
+            saveRequest={saveRequest}
+            onSaved={(latest) => {
+              accept(latest);
+              onSaved(latest);
+            }}
+            onDismiss={onSaveDismiss}
+          />
+          <small data-testid="save-state">
+            {a.saved_revision === a.revision && !editor.draft
+              ? "Saved"
+              : "Unsaved changes"}
+          </small>
           <HelpButton label="Exports" content={help.exports} />
         </div>
       </div>
@@ -225,6 +261,8 @@ export function ExploreScreen({
             <SignalEditor editor={editor} analysis={a} />
             <PlotPanel
               {...common("spectrum")}
+              spectrumLog={a.display.spectrum_log}
+              onSpectrumLogChange={(log) => display({ spectrum_log: log })}
               maximized={false}
               expanded={max === "spectrum"}
               title="Mass spectrum"

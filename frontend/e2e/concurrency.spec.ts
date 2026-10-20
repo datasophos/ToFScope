@@ -66,6 +66,10 @@ test("two users, A/B/A tabs, automatic tab recovery and denied foreign downloads
       .filter({ visible: true }),
   ).toBeVisible();
   await p.getByRole("button", { name: "Close analysis 1" }).click();
+  await p
+    .getByRole("dialog", { name: "Unsaved changes" })
+    .getByRole("button", { name: "Discard", exact: true })
+    .click();
   await expect(view.getByRole("alert")).toContainText("Resource unavailable");
   await a.close();
   await b.close();

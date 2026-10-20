@@ -10,9 +10,12 @@ export function FilePicker({
   onOpen,
   onClose,
 }: {
-  onOpen: (path: string) => Promise<void>;
+  onOpen: (path: string, location: "acquisition" | "saved") => Promise<void>;
   onClose: () => void;
 }) {
+  const [location, setLocation] = useState<"acquisition" | "saved">(
+    "acquisition",
+  );
   const [dir, setDir] = useState(""),
     [query, setQuery] = useState(""),
     [offset, setOffset] = useState(0),
@@ -22,7 +25,7 @@ export function FilePicker({
   useEffect(() => {
     let alive = true;
     request<Page>(
-      `/files?directory=${encodeURIComponent(dir)}&query=${encodeURIComponent(query)}&offset=${offset}`,
+      `/files?location=${location}&directory=${encodeURIComponent(dir)}&query=${encodeURIComponent(query)}&offset=${offset}`,
     )
       .then((p) => {
         if (alive) setPage(p);
@@ -31,7 +34,7 @@ export function FilePicker({
     return () => {
       alive = false;
     };
-  }, [dir, query, offset]);
+  }, [dir, query, offset, location]);
   return (
     <div className="scrim">
       <section className="dialog" role="dialog" aria-label="Open acquisition">
@@ -42,8 +45,35 @@ export function FilePicker({
         <p>
           Files remain on this server. Opening creates an independent analysis.
         </p>
+        <div className="row file-locations">
+          <button
+            aria-pressed={location === "acquisition"}
+            onClick={() => {
+              setLocation("acquisition");
+              setDir("");
+              setQuery("");
+              setOffset(0);
+              setPage(null);
+            }}
+          >
+            Acquisitions
+          </button>
+          <button
+            aria-pressed={location === "saved"}
+            onClick={() => {
+              setLocation("saved");
+              setDir("");
+              setQuery("");
+              setOffset(0);
+              setPage(null);
+            }}
+          >
+            Saved files
+          </button>
+        </div>
         <div className="row">
           <button
+            disabled={location === "saved"}
             onClick={() => {
               setDir(dir.split("/").slice(0, -1).join("/"));
               setOffset(0);
@@ -51,7 +81,9 @@ export function FilePicker({
           >
             Parent folder
           </button>
-          <code>{dir || "Data root"}</code>
+          <code>
+            {location === "saved" ? "Your saved files" : dir || "Data root"}
+          </code>
           <input
             aria-label="Search files"
             placeholder="Search this folder"
@@ -76,7 +108,7 @@ export function FilePicker({
                   } else {
                     setBusy(true);
                     try {
-                      await onOpen(e.path);
+                      await onOpen(e.path, location);
                     } catch (e) {
                       setError((e as Error).message);
                     } finally {

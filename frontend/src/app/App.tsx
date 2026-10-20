@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   authenticate,
   request,
@@ -6,6 +6,7 @@ import {
   type Analysis,
   type Session,
 } from "../api/client";
+import { UnsavedChanges } from "./UnsavedChanges";
 import { FilePicker } from "./FilePicker";
 import { ExploreScreen } from "../explore/ExploreScreen";
 import { HelpButton } from "../components/HelpButton";
@@ -17,6 +18,49 @@ export function App() {
     [picker, setPicker] = useState(false),
     [replace, setReplace] = useState<Analysis | null>(null),
     [error, setError] = useState("");
+  const [statuses, setStatuses] = useState<
+    Record<string, { analysis: Analysis; draft: boolean; busy: boolean }>
+  >({});
+  const [pendingAction, setPendingAction] = useState<{
+    id: string;
+    kind: "close" | "replace";
+  } | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [saveRequest, setSaveRequest] = useState<{
+    id: string;
+    serial: number;
+  } | null>(null);
+  const reportStatus = useCallback(
+    (a: Analysis, draft: boolean, busy: boolean) => {
+      setStatuses((old) => {
+        const previous = old[a.id];
+        if (
+          previous?.analysis.revision === a.revision &&
+          previous.analysis.saved_revision === a.saved_revision &&
+          previous.analysis.dataset.generation === a.dataset.generation &&
+          previous.draft === draft &&
+          previous.busy === busy
+        )
+          return old;
+        return { ...old, [a.id]: { analysis: a, draft, busy } };
+      });
+    },
+    [],
+  );
+  const unsaved = analyses.some((a) => {
+    const info = statuses[a.id];
+    const latest = info?.analysis || a;
+    return info?.draft || latest.saved_revision !== latest.revision;
+  });
+  useEffect(() => {
+    if (!unsaved) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [unsaved]);
   useEffect(() => {
     let alive = true;
     authenticate()
@@ -71,7 +115,7 @@ export function App() {
     if (session && active)
       sessionStorage.setItem(`tofscope-active:${session.owner}`, active);
   }, [session, active]);
-  const open = async (path: string) => {
+  const open = async (path: string, location: "acquisition" | "saved") => {
     let a: Analysis;
     if (replace) {
       a = await post<Analysis>(`/analyses/${replace.id}/replace`, {
@@ -79,12 +123,19 @@ export function App() {
         expected_revision: replace.revision,
         dataset_generation: replace.dataset.generation,
         relative_path: path,
+        location,
       });
       setAnalyses((old) => old.map((x) => (x.id === a.id ? a : x)));
+      setStatuses((old) => {
+        const next = { ...old };
+        delete next[a.id];
+        return next;
+      });
       setReplace(null);
     } else {
       a = await post<Analysis>("/analyses", {
         relative_path: path,
+        location,
       });
       setAnalyses((old) => [...old, a]);
     }
@@ -95,12 +146,50 @@ export function App() {
     try {
       await request(`/analyses/${a.id}`, { method: "DELETE" });
       setAnalyses((old) => old.filter((x) => x.id !== a.id));
+      setStatuses((old) => {
+        const next = { ...old };
+        delete next[a.id];
+        return next;
+      });
       if (active === a.id)
         setActive(analyses.find((x) => x.id !== a.id)?.id || "");
     } catch (e) {
       setError((e as Error).message);
     }
   };
+  const perform = async (
+    action: { id: string; kind: "close" | "replace" },
+    latest?: Analysis,
+  ) => {
+    const a =
+      latest ||
+      statuses[action.id]?.analysis ||
+      analyses.find((a) => a.id === action.id);
+    if (!a) return;
+    setPendingAction(null);
+    setConfirming(false);
+    setSaveRequest(null);
+    if (action.kind === "close") await close(a);
+    else {
+      setReplace(a);
+      setPicker(true);
+    }
+  };
+  const requestAction = (a: Analysis, kind: "close" | "replace") => {
+    const info = statuses[a.id];
+    const latest = info?.analysis || a;
+    const action = { id: a.id, kind };
+    if (info?.draft || latest.saved_revision !== latest.revision) {
+      setPendingAction(action);
+      setConfirming(true);
+    } else void perform(action, latest);
+  };
+  const pendingStatus = pendingAction ? statuses[pendingAction.id] : undefined;
+  const pendingBlocked = pendingStatus?.draft
+    ? "Finish or discard the signal draft before saving."
+    : pendingStatus?.busy
+      ? "Finish or cancel calculations before saving."
+      : "";
   return (
     <>
       <header className="masthead">
@@ -141,7 +230,7 @@ export function App() {
               </button>
               <button
                 aria-label={`Close analysis ${i + 1}`}
-                onClick={() => void close(a)}
+                onClick={() => requestAction(a, "close")}
               >
                 ×
               </button>
@@ -177,13 +266,51 @@ export function App() {
           <ExploreScreen
             initial={a}
             active={a.id === active}
-            onReplace={(current) => {
-              setReplace(current);
-              setPicker(true);
+            onReplace={(current) => requestAction(current, "replace")}
+            onStatus={reportStatus}
+            saveRequest={saveRequest?.id === a.id ? saveRequest.serial : 0}
+            onSaved={(latest) => {
+              reportStatus(latest, statuses[latest.id]?.draft || false, false);
+              if (
+                pendingAction?.id === latest.id &&
+                latest.saved_revision === latest.revision &&
+                !statuses[latest.id]?.draft
+              )
+                void perform(pendingAction, latest);
+            }}
+            onSaveDismiss={() => {
+              if (pendingAction?.id === a.id) {
+                setPendingAction(null);
+                setConfirming(false);
+                setSaveRequest(null);
+              }
             }}
           />
         </div>
       ))}
+      {confirming && pendingAction && (
+        <UnsavedChanges
+          name={
+            pendingStatus?.analysis.dataset.name ||
+            analyses.find((a) => a.id === pendingAction.id)?.dataset.name ||
+            "this file"
+          }
+          blocked={pendingBlocked}
+          onSave={() => {
+            setActive(pendingAction.id);
+            setConfirming(false);
+            setSaveRequest((old) => ({
+              id: pendingAction.id,
+              serial: (old?.serial || 0) + 1,
+            }));
+          }}
+          onDiscard={() => void perform(pendingAction)}
+          onCancel={() => {
+            setPendingAction(null);
+            setConfirming(false);
+          }}
+        />
+      )}
       {picker && (
         <FilePicker
           onOpen={open}

@@ -34,6 +34,8 @@ export function PlotPanel({
   legendActions,
   expanded = false,
   selectionMode = "select",
+  spectrumLog,
+  onSpectrumLogChange,
 }: {
   name: string;
   title: string;
@@ -53,6 +55,8 @@ export function PlotPanel({
   status?: ReactNode;
   expanded?: boolean;
   selectionMode?: "select" | "zoom";
+  spectrumLog?: boolean;
+  onSpectrumLogChange?: (log: boolean) => void;
   legendActions?: {
     imageSignalId: string;
     onDetails: (id: string) => void;
@@ -65,6 +69,9 @@ export function PlotPanel({
   const [stageSize, setStageSize] = useState(0);
   const [zoom, setZoom] = useState<Range | null>(null);
   const [yScale, setYScale] = useState<"log" | "linear">("log");
+  useEffect(() => {
+    if (spectrumLog !== undefined) setYScale(spectrumLog ? "log" : "linear");
+  }, [spectrumLog]);
   const [exportError, setExportError] = useState<string | null>(null);
   const legend: LegendEntry[] =
     name === "profile"
@@ -148,9 +155,11 @@ export function PlotPanel({
           {onAllDepths && <button onClick={onAllDepths}>All depths</button>}
           {name === "spectrum" && (
             <button
-              onClick={() =>
-                setYScale((scale) => (scale === "log" ? "linear" : "log"))
-              }
+              onClick={() => {
+                const log = yScale !== "log";
+                setYScale(log ? "log" : "linear");
+                onSpectrumLogChange?.(log);
+              }}
               aria-label={`Use ${yScale === "log" ? "linear" : "logarithmic"} y scale`}
               aria-pressed={yScale === "log"}
             >
