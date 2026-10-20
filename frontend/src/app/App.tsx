@@ -144,7 +144,9 @@ export function App() {
   };
   const close = async (a: Analysis) => {
     try {
-      await request(`/analyses/${a.id}`, { method: "DELETE" });
+      await request(`/analyses/${a.id}?expected_revision=${a.revision}`, {
+        method: "DELETE",
+      });
       setAnalyses((old) => old.filter((x) => x.id !== a.id));
       setStatuses((old) => {
         const next = { ...old };

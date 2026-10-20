@@ -119,7 +119,8 @@ Use `/data:ro`, a writable `/runtime` owned by that UID, one mapped port, and th
 proxy settings above. The check uses a disposable acquisition, read-only rootfs,
 read-only data bind and writable private tmpfs. It never mounts the real data
 root writable. Pin the wheel/container digest when upgrading; preserve the prior
-artifact for rollback. Restarting either version discards ephemeral workspaces.
+artifact for rollback. Restarting discards unsaved analyses; saved HDF5 copies
+restore committed state when reopened.
 
 Actual NFS qualification remains required on the intended mount: mount it read
 only, use the real service UID and external shared lock directory, run simultaneous

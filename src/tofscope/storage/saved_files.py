@@ -3,6 +3,7 @@ import base64
 from contextlib import contextmanager
 from dataclasses import dataclass
 import hashlib
+import logging
 import os
 from pathlib import Path
 import shutil
@@ -117,13 +118,14 @@ class SavedFileStore:
                 copied = 0
                 with source.open('rb') as src, temporary.open('xb') as out:
                     os.chmod(temporary, 0o600)
+                    buffer = bytearray(COPY_BYTES)
                     while True:
                         check()
-                        chunk = src.read(COPY_BYTES)
-                        if not chunk:
+                        count = src.readinto(buffer)
+                        if not count:
                             break
-                        out.write(chunk)
-                        copied += len(chunk)
+                        out.write(memoryview(buffer)[:count])
+                        copied += count
                         progress('Copying acquisition', copied, initial.st_size)
                     out.flush()
                     os.fsync(out.fileno())
@@ -164,15 +166,18 @@ class SavedFileStore:
                 # The caller holds its revision lock across validation and publication.
                 # A callback may return a context manager to make that interval explicit.
                 from contextlib import nullcontext
+                result = SavedFile(file_id(name), name, temporary.stat().st_size)
                 guard = before_publish()
                 with guard if guard is not None else nullcontext():
                     check()
                     os.link(temporary, destination)
-                temporary.unlink()
-                # Publication is committed. Do not undo it for later UI/progress failures.
-                return SavedFile(file_id(name), name, destination.stat().st_size)
+                # Publication is committed; cleanup cannot turn a completed copy into failure.
+                return result
             finally:
-                temporary.unlink(missing_ok=True)
+                try:
+                    temporary.unlink(missing_ok=True)
+                except OSError:
+                    logging.getLogger(__name__).warning('Could not remove a private save temporary file.')
 
     def _verify(self, path, document, checksums, check):
         if read_document(path, self.settings) != document:
