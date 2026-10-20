@@ -140,15 +140,15 @@ def main():
                 owner, analysis.id,
                 CommandEnvelope("full-job", analysis.revision, dataset.generation,
                                 {"type": "set_depth", "depth": {"mode": "all"}}),
-                IntegrationSpec(tuple(windows), (0, args.frames - 1), "active"),
+                IntegrationSpec(tuple(windows), (0, args.frames - 1), "Performance signal"),
             )
             result = services.jobs.wait(owner, job.id, timeout=180)
             elapsed = time.perf_counter() - start
             assert result.status == "succeeded", result
             state = services.workspaces.get(owner, analysis.id)
-            assert state.revision == 1 and result.done == args.frames
+            assert state.revision == analysis.revision + 2 and result.done == args.frames
             with services.cache.load(
-                owner, analysis.id, state.dataset, state.active_recipe
+                owner, analysis.id, state.dataset, next(row.recipe for row in state.signals if row.id == job.signal_id)
             ) as lease:
                 np.testing.assert_array_equal(lease.array, expected)
             results["service_job"] = dict(

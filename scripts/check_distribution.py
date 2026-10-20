@@ -91,6 +91,7 @@ def smoke(artifact, output):
             with sync_playwright() as pw:
                 browser = pw.chromium.launch(channel="chrome", headless=True)
                 page = browser.new_page(viewport={"width": 1500, "height": 1000})
+                page.set_default_timeout(10000)
                 external = []
 
                 def route(r):
@@ -108,17 +109,34 @@ def smoke(artifact, output):
                 page.get_by_role("button", name="◫ a.h5").click()
                 page.get_by_test_id("panel-ion").locator("canvas").first.wait_for()
                 assert page.evaluate("location.hash") == ""
+                page.get_by_role("button", name="Create from spectrum", exact=True).click()
+                page.get_by_label("Signal name", exact=True).fill("Package signal")
                 page.get_by_label("Mass lower 1", exact=True).fill("1")
                 page.get_by_label("Mass upper 1", exact=True).fill("2")
                 page.get_by_role(
-                    "button", name="Apply custom window", exact=True
+                    "button", name="Calculate signal", exact=True
                 ).click()
-                page.get_by_test_id("job-status").filter(has_text="succeeded").wait_for(
-                    timeout=15000
-                )
+                from playwright.sync_api import expect
+                editor = page.get_by_role('region', name='Signal editor')
+                expect(editor).to_be_hidden(timeout=15000)
+                row = page.get_by_test_id('signal-row').filter(has_text='Package signal')
+                row.get_by_role('radio').click()
+                expect(row.get_by_role('radio')).to_be_checked()
+                expect(page.get_by_test_id('panel-ion')).to_contain_text('Package signal')
+                first = page.get_by_test_id('signal-row').first
+                first.get_by_role('checkbox').click()
+                expect(first.get_by_role('checkbox')).not_to_be_checked()
+                first.get_by_role('checkbox').click()
+                expect(first.get_by_role('checkbox')).to_be_checked()
                 with page.expect_download() as download:
-                    page.get_by_role("button", name="Settings JSON").click()
-                assert download.value.suggested_filename.endswith(".json")
+                    page.get_by_role('button', name='Settings JSON', exact=True).click()
+                settings = json.loads(Path(download.value.path()).read_text())
+                assert settings['schema_version'] == 4
+                assert len(settings['signals']) == 2
+                for button in ('Profile CSV', 'Export Depth profile PNG'):
+                    with page.expect_download() as exported:
+                        page.get_by_role('button', name=button, exact=True).click()
+                    assert Path(exported.value.path()).stat().st_size > 0
                 page.screenshot(
                     path=str(output / (artifact.name + ".png")), full_page=True
                 )

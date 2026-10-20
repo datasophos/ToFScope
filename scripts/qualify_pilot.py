@@ -102,9 +102,9 @@ def main():
                     "expected_revision": 12,
                     "dataset_generation": generation,
                     "spec": {
-                        "intervals": active["active_recipe"]["intervals"],
+                        "intervals": next(row["recipe"]["intervals"] for row in active["signals"] if row["id"] == active["image_signal_id"]),
                         "frames": [0, last],
-                        "target": "active",
+                        "name": "Qualification signal",
                     },
                 },
             )

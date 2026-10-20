@@ -17,15 +17,31 @@ configuration/assets. See [deployment](docs/deployment.md) for configuration,
 proxy authentication, resource limits, container use and restart behavior.
 
 Open multiple files, including the same file repeatedly, in workspace tabs.
-Each analysis independently owns its stored/custom signals, disjoint inclusive
-mass windows, ROI, loaded frames, depth mode, comparisons and display settings.
-Draw/edit the ion-map ROI; click/drag the depth profile or enter exact frame/window
-limits. Mass edits remain drafts until **Apply custom window**. Raw integration
-runs in a bounded fair queue with progress/cancel and obsolete-result suppression.
-The four linked panels support resize, maximize/Escape, preserved horizontal zoom,
-SIMS/SE display, log colors and relative profiles. Download original-resolution
-ROI mean profiles as CSV and exact applied recipes/settings as JSON. Scientific
-values remain unscaled; missing comparison/SE coverage remains missing.
+Each analysis owns independent named signals, ROI, frame coverage and viewing
+choices. The **Signals** tray lists stored channels and raw integrations: choose
+one with **Images** and show or hide additional **Profile** curves. Names and
+colors stay with each signal when you switch views.
+
+Use **Add stored signal** to search vendor channels, or **Create from spectrum**
+to name a raw integration and draw/enter exact inclusive mass intervals. Multiple
+intervals form a union. **Calculate signal** adds a result to the tray/profile;
+**Show in images** switches the ion map and front projection explicitly. **Details**
+exposes provenance, coverage, rename, duplicate, and custom **Edit signal** actions.
+Edits stay separate until **Update signal** succeeds; progress, cancellation and
+errors remain visible beside the signal. Failed calculations preserve old results.
+
+**Calculate over frames** defines a signal's coverage. **Viewing depths** chooses
+which available frames to show without recalculating the signal. **Analysis
+settings** controls the profile/navigation range without rewriting recipes.
+ROI and color controls live beside the image, relative scaling beside profiles,
+and log Y beside the spectrum. Spectrum drag zooms normally and edits intervals
+only while a signal editor is open. Images stay square; maximize/Escape and
+Ctrl/Cmd-wheel zoom preserve the view. Ordinary wheel scrolls the page.
+
+CSV exports visible ROI profiles at original scale and resolution. Schema-4
+Settings JSON includes all committed signals and display choices. PNG includes
+profile labels. Missing signal/SE coverage remains missing. Acquisitions stay
+read only; pending drafts are never exported as committed results.
 
 This is the **Explore pilot**, not full feature parity. Calibration editors,
 atomic identification/isotope dialogs, sections, volume tools and controlled
