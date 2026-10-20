@@ -9,6 +9,7 @@ import {
 import { UnsavedChanges } from "./UnsavedChanges";
 import { hasChanges } from "./changes";
 import { FilePicker } from "./FilePicker";
+import type { RawSelection, PreparationPreview } from "./RawPreparation";
 import { ExploreScreen } from "../explore/ExploreScreen";
 import { HelpButton } from "../components/HelpButton";
 import { help } from "../explore/help";
@@ -27,6 +28,7 @@ export function App() {
     kind: "close" | "replace";
   } | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [startupRaw, setStartupRaw] = useState<RawSelection | null>(null);
   const [saveRequest, setSaveRequest] = useState<{
     id: string;
     serial: number;
@@ -77,6 +79,23 @@ export function App() {
             : restored[0]?.id || "",
         );
         if (s.initial_file && !restored.length) {
+          const preview = await post<PreparationPreview>(
+            "/acquisitions/inspect",
+            {
+              relative_path: s.initial_file,
+            },
+          );
+          if (!alive) return;
+          if (preview.requires_preparation) {
+            setStartupRaw({
+              path: s.initial_file,
+              name: s.initial_file.split("/").pop()!,
+              location: "acquisition",
+              preview,
+            });
+            setPicker(true);
+            return;
+          }
           const a = await post<Analysis>("/analyses", {
             relative_path: s.initial_file,
           });
@@ -142,6 +161,7 @@ export function App() {
     }
     setActive(a.id);
     setPicker(false);
+    setStartupRaw(null);
   };
   const close = async (a: Analysis) => {
     try {
@@ -312,10 +332,12 @@ export function App() {
       )}
       {picker && (
         <FilePicker
+          initialRawSelection={startupRaw}
           onOpen={open}
           onClose={() => {
             setPicker(false);
             setReplace(null);
+            setStartupRaw(null);
           }}
         />
       )}

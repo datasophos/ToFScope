@@ -1299,3 +1299,7 @@ small {
     padding: 10px 14px;
   }
 }
+.raw-preparation { max-width: 660px; }
+.raw-preparation p { line-height: 1.5; overflow-wrap: anywhere; }
+.preparation-filename { display: grid; gap: 8px; }
+.raw-preparation progress { width: 100%; }

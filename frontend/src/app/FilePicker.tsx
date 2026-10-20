@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { folderName, useFolderLocations } from "./FolderLocations";
-import { request } from "../api/client";
+import { request, post } from "../api/client";
+import {
+  RawPreparation,
+  type RawSelection,
+  type PreparationPreview,
+} from "./RawPreparation";
 
 type Entry = { name: string; path: string; kind: string; size: number };
 type Page = {
@@ -42,9 +47,11 @@ function fileSize(bytes: number) {
 export function FilePicker({
   onOpen,
   onClose,
+  initialRawSelection = null,
 }: {
   onOpen: (path: string, location: Location) => Promise<void>;
   onClose: () => void;
+  initialRawSelection?: RawSelection | null;
 }) {
   const { folders, error: folderError } = useFolderLocations();
   const [location, setLocation] = useState<Location>("acquisition");
@@ -56,6 +63,9 @@ export function FilePicker({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [rawSelection, setRawSelection] = useState<RawSelection | null>(
+    initialRawSelection,
+  );
   const dialog = useRef<HTMLElement>(null);
   const search = useRef<HTMLInputElement>(null);
   const files = useRef<HTMLTableElement>(null);
@@ -107,6 +117,19 @@ export function FilePicker({
     setBusy(true);
     setError("");
     try {
+      const preview = await post<PreparationPreview>("/acquisitions/inspect", {
+        relative_path: entry.path,
+        location,
+      });
+      if (preview.requires_preparation) {
+        setRawSelection({
+          name: entry.name,
+          path: entry.path,
+          location,
+          preview,
+        });
+        return;
+      }
       await onOpen(entry.path, location);
     } catch (e) {
       setError((e as Error).message);
@@ -173,6 +196,18 @@ export function FilePicker({
     button?.focus({ preventScroll: true });
     button?.scrollIntoView({ block: "nearest" });
   };
+
+  if (rawSelection)
+    return (
+      <RawPreparation
+        selection={rawSelection}
+        onCancel={() => {
+          setRawSelection(null);
+          setTimeout(() => search.current?.focus(), 0);
+        }}
+        onPrepared={(path) => onOpen(path, "saved")}
+      />
+    );
 
   return (
     <div className="scrim">
