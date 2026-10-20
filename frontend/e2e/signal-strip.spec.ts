@@ -144,6 +144,14 @@ test("signal markers align with labels and Add signal never clips at larger text
         );
       expect(offsets.length).toBeGreaterThan(1);
       expect(Math.max(...offsets)).toBeLessThan(1);
+      const add = (await strip
+        .getByRole("button", { name: "Add signal", exact: true })
+        .boundingBox())!;
+      const manage = (await strip
+        .getByRole("button", { name: "Manage signals", exact: true })
+        .boundingBox())!;
+      expect(Math.abs(add.height - manage.height)).toBeLessThan(0.5);
+      expect(Math.abs(add.y - manage.y)).toBeLessThan(0.5);
       const label = strip.locator(".signal-picker-trigger > span").first();
       expect(
         await label.evaluate((el) => el.scrollWidth <= el.clientWidth),

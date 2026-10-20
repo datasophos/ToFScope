@@ -369,6 +369,19 @@ small {
   padding: 3px 6px;
   font-size: 11px;
 }
+.plot-panel header > .row > button {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.plot-panel header button.plot-icon-button {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  padding: 0;
+}
 .plot-panel footer {
   padding: 0 15px 8px;
   font-size: 11px;
@@ -641,6 +654,11 @@ small {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+.signal-strip-actions > button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
 }
 .signal-strip-actions .signal-picker {
   width: auto;

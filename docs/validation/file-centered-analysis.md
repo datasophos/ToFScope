@@ -169,3 +169,17 @@ are restored; transparent border widths preserve layout dimensions. Circular
 help icons keep their original outline. This supersedes the flat-style changes
 above. All 37 browser workflows and the frontend build pass; the restored
 desktop appearance was visually inspected.
+
+## Consistent signal and plot actions — 2026-10-20
+
+Add signal and Manage signals now share a height and alignment at normal and
+enlarged text sizes. The shared plot toolbar uses compact SVG Reset zoom and
+PNG export buttons. Every reset action has a Reset zoom tooltip; export actions
+have Save plot/image as PNG tooltips; maximize/restore actions have pane-specific
+tooltips matching their accessible names. All plot toolbar actions align in height.
+
+The prior three-pixel signal-action mismatch and missing icon/tooltips were
+observed failing in browser checks before correction. All 38 browser workflows,
+11 frontend unit tests and the TypeScript/production build pass. Per-pane checks
+cover all four panes and both maximize/restore states. Export logic is unchanged.
+The desktop toolbar was visually inspected after the update.
