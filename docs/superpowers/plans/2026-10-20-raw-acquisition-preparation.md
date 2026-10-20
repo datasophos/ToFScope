@@ -58,3 +58,6 @@ and regression-checked. Validation includes 156 Python tests, 42 browser workflo
 11 frontend unit tests, wheel/sdist offline installs and non-root Docker checks.
 Activation of the local service requires a restart; open unsaved analyses must
 be saved/discarded before that restart. No acquisition writes or external deploys.
+
+Local activation completed after explicit restart approval. The subsequent
+preparation action-height correction is live via refreshed bundled frontend assets.

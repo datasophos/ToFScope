@@ -25,6 +25,17 @@ test("raw opening requires confirmation, prepares a copy and opens working plots
     page.getByLabel("Prepared filename", { exact: true }),
   ).toHaveValue("raw_prepared.h5");
   expect(preparations).toBe(0);
+  for (const width of [1200, 560]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const back = await confirmation
+      .getByRole("button", { name: "Back to files", exact: true })
+      .boundingBox();
+    const prepare = await confirmation
+      .getByRole("button", { name: "Prepare and open", exact: true })
+      .boundingBox();
+    expect(Math.abs(back!.height - prepare!.height)).toBeLessThan(0.5);
+    expect(back!.height).toBeLessThan(46);
+  }
   await page
     .getByRole("button", { name: "Back to files", exact: true })
     .click();
