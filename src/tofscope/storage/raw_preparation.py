@@ -98,9 +98,9 @@ def prepare_copy(repository, files, owner, source, name, required_bytes, cancell
             raise InterruptedError('Preparation cancelled.')
         repository.assert_current(owner, source)
     try:
-        with repository.access(owner, source) as path, reserve_disk(directory, required_bytes):
+        with repository.access(owner, source) as path:
             check()
-            with repository.budget.reserve(owner, task_id, COPY_BYTES):
+            with reserve_disk(directory, required_bytes), repository.budget.reserve(owner, task_id, COPY_BYTES):
                 with path.open('rb') as src, temporary.open('xb') as out:
                     os.chmod(temporary, 0o600)
                     buffer = bytearray(COPY_BYTES)
@@ -115,6 +115,7 @@ def prepare_copy(repository, files, owner, source, name, required_bytes, cancell
                         progress('Copying raw acquisition', copied, total)
                     out.flush()
                     os.fsync(out.fileno())
+                    del buffer
             with raw_metadata(repository, owner, source, task_id) as (f, table, axis, windows, shape, ratio, normalization):
                 scratch = int(np.prod(shape[1:])) * 24 + 4096
                 digest = hashlib.sha256()
