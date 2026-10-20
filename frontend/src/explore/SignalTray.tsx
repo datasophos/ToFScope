@@ -96,6 +96,10 @@ export function SignalTray({
                       onClick={() => onDetails(row.id)}
                     >
                       {row.name}
+                      {a.signals.filter((other) => other.name === row.name)
+                        .length > 1
+                        ? ` [${row.id.slice(0, 8)}]`
+                        : ""}
                     </button>
                     <small>
                       {row.recipe?.source === "stored"

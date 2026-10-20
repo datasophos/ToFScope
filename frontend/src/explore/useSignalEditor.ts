@@ -26,6 +26,17 @@ export function useSignalEditor(
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [lastCreatedId, setLastCreatedId] = useState<string>();
+  const seenDraftId = useRef<string | undefined>(undefined);
+  const draftId = state.draft?.signalId;
+  const draftExists = analysis.signals.some((row) => row.id === draftId);
+  useEffect(() => {
+    if (!draftId) seenDraftId.current = undefined;
+    else if (draftExists) seenDraftId.current = draftId;
+    else if (seenDraftId.current === draftId) {
+      setState({ draft: null });
+      setError("");
+    }
+  }, [draftId, draftExists]);
   const ids = analysis.signals
     .map((s) => s.job_id)
     .filter((id): id is string => Boolean(id))

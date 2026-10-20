@@ -13,13 +13,7 @@ test("contextual help works with mouse, keyboard and maximized panes", async ({
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   for (const label of [
     "Workspaces and files",
-    "Signal",
-    "Comparison profiles",
-    "Mass windows",
-    "Spatial ROI",
-    "Loaded frames",
-    "Display",
-    "Depth selection",
+    "Signals",
     "Exports",
     "Ion map",
     "Mass spectrum",
@@ -61,11 +55,11 @@ test("contextual help works with mouse, keyboard and maximized panes", async ({
   await expect(tooltip).toBeHidden();
 
   const massHelp = page.getByRole("button", {
-    name: "Mass windows help",
+    name: "Mass spectrum help",
     exact: true,
   });
   await massHelp.focus();
-  await expect(tooltip).toContainText("Apply custom window");
+  await expect(tooltip).toContainText("vendor-summed");
   await page.keyboard.press("Escape");
   await expect(tooltip).toBeHidden();
   await expect(massHelp).toBeFocused();
@@ -90,7 +84,7 @@ test("contextual help works with mouse, keyboard and maximized panes", async ({
   await page.keyboard.press("Escape");
   await expect(page.locator(".plot-panel.maximized")).toHaveCount(0);
 
-  await page.getByLabel("Image signal", { exact: true }).selectOption("se");
+  await page.getByLabel("Image", { exact: true }).selectOption("se");
   await page
     .getByRole("button", { name: "SE Image help", exact: true })
     .click();

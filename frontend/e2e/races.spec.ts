@@ -52,6 +52,7 @@ test("a newer partial response cannot hide an omitted profile update", async ({
   });
   await page.getByRole("button", { name: "Next frame", exact: true }).click();
   await waiting;
+  await page.getByRole("button", { name: /^ROI:/ }).click();
   await page.getByLabel("ROI x first").fill("1");
   await page.getByRole("button", { name: "Apply ROI", exact: true }).click();
   await expect(page.getByTestId("analysis-revision")).toHaveText("2");
