@@ -368,6 +368,11 @@ export interface components {
       display: components["schemas"]["DisplaySettings"];
       /** Fov Um */
       fov_um: number | null;
+      /**
+       * Has Se
+       * @default false
+       */
+      has_se: boolean;
       /** Id */
       id: string;
       /** Image Signal Id */

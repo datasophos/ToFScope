@@ -152,6 +152,7 @@ class WorkspaceService:
                 tuple(Peak(**p) for p in m.peaks),
                 m.fov_um,
                 (float(m.mass_axis.min()), float(m.mass_axis.max())),
+                has_se=bool(m.image_names),
             )
 
     def admit_signal(self, owner, analysis_count):

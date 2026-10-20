@@ -58,3 +58,4 @@ class AnalysisSnapshot:
     fov_um: float | None
     mass_limits: tuple[float, float]
     stale: bool = False
+    has_se: bool = False

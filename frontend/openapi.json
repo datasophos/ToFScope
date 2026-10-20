@@ -80,6 +80,11 @@
             ],
             "title": "Fov Um"
           },
+          "has_se": {
+            "default": false,
+            "title": "Has Se",
+            "type": "boolean"
+          },
           "id": {
             "title": "Id",
             "type": "string"

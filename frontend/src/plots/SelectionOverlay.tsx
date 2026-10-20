@@ -12,6 +12,7 @@ type Props = {
   label?: string;
   reverseY?: boolean;
   image?: boolean;
+  selectionMode?: "select" | "zoom";
 };
 function SelectionEdge({
   action,
@@ -62,6 +63,7 @@ export function SelectionOverlay({
   label = "Plot selection",
   reverseY = false,
   image = false,
+  selectionMode = "select",
 }: Props) {
   const drag = useRef<{
     start: number[];
@@ -134,7 +136,8 @@ export function SelectionOverlay({
           return;
         }
         const b = gestureBounds(d, end, mode, xRange, yRange);
-        onSelect(b);
+        if (selectionMode === "zoom") onZoom?.([b[0], b[1]]);
+        else onSelect(b);
       }}
       onWheel={(e) => {
         if (!onZoom || !(e.ctrlKey || e.metaKey)) return;
