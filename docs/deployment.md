@@ -101,3 +101,19 @@ verify replacement is detected using a disposable copy. Record mount options,
 latency/RSS, interrupted-client recovery and permission failures. Local POSIX and
 container checks do not establish NFS behavior. Do not enable acquisition writes
 without the separate commercial/native-save and NFS replacement qualification.
+
+
+### Signal workspace UI
+
+The signal tray, contextual editor and plot-local controls require the matching
+Python backend and bundled frontend. Deploy them together and restart once; a
+refresh alone cannot activate a backend contract change. Restart resets temporary
+analyses and unsaved drafts. Export committed settings/profile data before a
+planned restart. New analyses default to log image colors and relative profiles;
+the spectrum defaults to logarithmic Y. These remain per-analysis display choices.
+
+Record limits include pending and hidden signals: `signals_per_analysis=129`,
+`signals_per_user=512`, `signals_global=2048`. Configure them through the existing
+TOML/environment/CLI precedence; environment names use `TOFSCOPE_SIGNALS_*`.
+Memory admission and job limits still apply independently. There is no legacy
+comparison-limit option or old active/comparison API compatibility layer.

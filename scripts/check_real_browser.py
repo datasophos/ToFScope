@@ -55,6 +55,8 @@ def main():
                 browser = pw.chromium.launch(channel="chrome", headless=True)
                 page = browser.new_page(viewport={"width": 1660, "height": 1100})
                 errors = []
+                requests = []
+                page.on("request", lambda request: requests.append((request.method, request.url)))
                 page.on("pageerror", lambda e: errors.append(str(e)))
                 external = []
 
@@ -79,7 +81,7 @@ def main():
                 page.get_by_test_id("panel-spectrum").locator("canvas").first.wait_for(
                     timeout=30000
                 )
-                page.get_by_role("button", name="Select stored signal").click()
+                page.get_by_role("button", name="Add stored signal").click()
                 signal_list = page.get_by_role("listbox", name="Stored signals")
                 signal_list.wait_for()
                 signal_count = signal_list.get_by_role("option").count()
@@ -87,12 +89,26 @@ def main():
                     "element => element.getBoundingClientRect().height"
                 )
                 assert signal_list_height <= 200
-                page.get_by_label("Search signals").fill("27")
+                page.get_by_label("Search stored signals").fill("27")
                 matching_signals = signal_list.get_by_role("option").count()
                 assert 0 < matching_signals < signal_count
-                page.get_by_label("Search signals").fill("")
+                page.get_by_label("Search stored signals").fill("")
                 page.keyboard.press("Escape")
                 load_ms = (time.perf_counter() - t) * 1000
+                page.get_by_role('button', name='Add stored signal', exact=True).click()
+                page.get_by_role('listbox', name='Stored signals').get_by_role('option').first.click()
+                from playwright.sync_api import expect
+                rows = page.get_by_test_id('signal-row')
+                expect(rows).to_have_count(2)
+                expect(page.get_by_test_id('panel-profile').get_by_role('listitem')).to_have_count(2)
+                requests.clear()
+                switch_start = time.perf_counter()
+                image_before = page.get_by_test_id('panel-ion').get_attribute('data-content-version')
+                rows.last.get_by_role('radio').click()
+                page.wait_for_function("old=>document.querySelector('[data-testid=panel-ion]').dataset.contentVersion!==old", arg=image_before)
+                switch_ms = (time.perf_counter()-switch_start)*1000
+                assert not any(method=='POST' and url.endswith('/jobs') for method,url in requests)
+                assert not any('spectrum' in url for _,url in requests if '/data?' in url)
                 resize_timings = {}
                 for name in ("ion", "front"):
                     panel = page.get_by_test_id("panel-" + name)
@@ -108,16 +124,20 @@ def main():
                             measurements.append({"action": action, "ms": elapsed})
                     resize_timings[name] = measurements
                 timings = []
-                first_frame = int(page.get_by_label("Loaded first").input_value())
-                last_frame = int(page.get_by_label("Loaded last").input_value())
+                page.get_by_role('button', name='Analysis settings', exact=True).click()
+                first_frame = int(page.get_by_label('Analysis first', exact=True).input_value())
+                last_frame = int(page.get_by_label('Analysis last', exact=True).input_value())
+                page.keyboard.press('Escape')
                 for _ in range(min(a.frame_samples, last_frame - first_frame)):
                     revision = page.get_by_test_id("analysis-revision").inner_text()
+                    image_before = page.get_by_test_id("panel-ion").get_attribute("data-content-version")
                     t = time.perf_counter()
                     page.get_by_role("button", name="Next frame", exact=True).click()
                     page.wait_for_function(
                         "old=>document.querySelector('[data-testid=analysis-revision]').textContent!==old",
                         arg=revision,
                     )
+                    page.wait_for_function("old=>document.querySelector('[data-testid=panel-ion]').dataset.contentVersion!==old", arg=image_before)
                     page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
                     timings.append((time.perf_counter() - t) * 1000)
                 page.screenshot(path=str(a.output / "real-explore.png"), full_page=True)
@@ -130,7 +150,12 @@ def main():
                     second_tab = page.get_by_role(
                         "tab", name="2 · " + a.also_open.name
                     )
-                    second_tab.wait_for(timeout=30000)
+                    try:
+                        second_tab.wait_for(timeout=30000)
+                    except Exception:
+                        page.screenshot(path=str(a.output / 'multi-open-timeout.png'), full_page=True)
+                        print(json.dumps({'tabs': page.get_by_role('tab').all_text_contents(), 'alerts': page.get_by_role('alert').all_text_contents()}),flush=True)
+                        raise
                     tabs = page.get_by_role("tab").all_text_contents()
                     if len(tabs) != 2:
                         page.screenshot(path=str(a.output / "multi-open-failure.png"), full_page=True)
@@ -148,6 +173,9 @@ def main():
                 assert not external, external
                 result = {
                     "initial_four_panels_ms": load_ms,
+                    "resident_stored_signal_switch_ms": switch_ms,
+                    "resident_switch_reintegration_jobs": 0,
+                    "resident_switch_spectrum_refetches": 0,
                     "image_resize_timings": resize_timings,
                     "frame_step_p50_ms": sorted(timings)[len(timings) // 2] if timings else None,
                     "frame_step_p95_ms": sorted(timings)[min(len(timings) - 1, int(len(timings) * 0.9))] if timings else None,

@@ -405,3 +405,17 @@ removal of legacy code are outside this planning change.
 - [h5py threading](https://docs.h5py.org/en/stable/threads.html): HDF5 API calls
   are serialized by a global lock; benchmark threads versus compute processes
   rather than assuming threaded reads scale across files.
+
+
+## Explore interaction redesign (2026-10-19)
+
+The approved [signal workspace design](superpowers/specs/2026-10-19-explore-signal-workspace-design.md)
+supersedes active/comparison destination controls and snapshots in this proposal.
+Analyses own stable named signal records; image choice and profile visibility
+reference their IDs. A signal tray replaces the permanent sidebar, custom drafts
+use an explicit spectrum editor, and display/ROI controls live beside plots.
+Calculation coverage, analysis range and viewing depths have distinct semantics.
+Jobs target versioned signal IDs and commit atomically; display choices do not
+invalidate scientific work. Hidden signals count toward record quotas without
+pinning every volume. Settings use schema 4. Reader/renderer boundaries, scientific
+calculations, multi-user admission and the one-service offline package remain.

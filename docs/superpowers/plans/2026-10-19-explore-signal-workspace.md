@@ -1,6 +1,6 @@
 # Explore Signal Workspace Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace the Explore sidebar and active/comparison workflow with named signals, explicit display choices, a contextual spectrum editor, and plot-local controls.
 
@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-19-explore-signal-workspace-design.md`
 
-**Execution:** Inline, selected by Josh; retain `/private/tmp/tofscope-react-fastapi` on `implement/react-fastapi-pilot`. Written spec approved; this plan awaits review before execution.
+**Execution:** Inline, selected by Josh; retain `/private/tmp/tofscope-react-fastapi` on `implement/react-fastapi-pilot`. Written spec and plan approved; inline execution underway.
 
 ## Global Constraints
 
@@ -62,12 +62,12 @@ Backend contract work in Tasks 1–3 is one coordinated replacement. Do not reta
 - `ExploreService.apply(owner, analysis_id, CommandEnvelope) -> AnalysisSnapshot` remains the mutation entry point. Add commands `add_stored_signal(index, duplicate=False)`, `rename_signal(signal_id, name)`, `select_image_signal(signal_id)`, `set_profile_visible(signal_id, visible)`, `remove_signal(signal_id)`, `set_stored_coverage(signal_id, frames)`; retain ROI/depth/display commands and rename `set_loaded_frames` to `set_analysis_frames`.
 - Replace comparison count policy with `signals_per_analysis=129`, `signals_per_user=512`, `signals_global=2048`; all include pending and hidden records. These are record quotas, not permission to exceed existing byte budgets. Names trim surrounding whitespace, require 1–128 characters.
 
-- [ ] Write service tests named `test_stored_add_deduplicates_unless_explicit_duplicate`, `test_display_selection_preserves_signal_identity`, `test_disjoint_coverage_and_image_removal`, `test_names_and_styles_survive_selection_and_removal`, `test_hidden_and_pending_signals_count_toward_limits`, `test_owner_and_same_file_analysis_isolation`.
+- [x] Write service tests named `test_stored_add_deduplicates_unless_explicit_duplicate`, `test_display_selection_preserves_signal_identity`, `test_disjoint_coverage_and_image_removal`, `test_names_and_styles_survive_selection_and_removal`, `test_hidden_and_pending_signals_count_toward_limits`, `test_owner_and_same_file_analysis_isolation`.
   Assert duplicate=False reuses an ID and reveals its profile; duplicate=True creates a new ID/style. Two names may be equal. Empty/whitespace/129-character names fail. Selecting a new image preserves the old image's profile visibility. Hiding the current image is rejected. Removing the final eligible image is rejected atomically. Disjoint signals cannot become images. Frame/window selections intersect usable coverage or fall back to the first usable frame, without changing recipes. At exact quota admit once, then reject without allocating another record.
-- [ ] Run `.venv/bin/python -m unittest discover -s tests -p test_signal_workspace.py -v`; verify failures identify the missing signal contract.
-- [ ] Implement the interfaces and commands above. Seed the existing nominal-27 default as one stored signal with style 0 and version 1. Preserve monotonic style allocation and owner-scoped locks/receipts. Count records under a consistent collection lock; release cache leases for hidden/removed entries rather than pinning all volumes. Analysis range changes never rewrite recipes; reject a range with no eligible ready image signal rather than silently selecting invalid coverage.
-- [ ] In `tests/test_config.py`, pin defaults 129/512/2048 and reject nonpositive quota values. Run the new tests plus `test_analysis_state.py`, `test_analysis_lifecycle.py`, `test_config.py`, `test_auth.py` and `test_dataset_invalidation.py`; migrate their actual expectations to the replacement contract and retain scientific/owner assertions.
-- [ ] Commit: `Introduce analysis signals with independent display selections.`
+- [x] Run `.venv/bin/python -m unittest discover -s tests -p test_signal_workspace.py -v`; verify failures identify the missing signal contract.
+- [x] Implement the interfaces and commands above. Seed the existing nominal-27 default as one stored signal with style 0 and version 1. Preserve monotonic style allocation and owner-scoped locks/receipts. Count records under a consistent collection lock; release cache leases for hidden/removed entries rather than pinning all volumes. Analysis range changes never rewrite recipes; reject a range with no eligible ready image signal rather than silently selecting invalid coverage.
+- [x] In `tests/test_config.py`, pin defaults 129/512/2048 and reject nonpositive quota values. Run the new tests plus `test_analysis_state.py`, `test_analysis_lifecycle.py`, `test_config.py`, `test_auth.py` and `test_dataset_invalidation.py`; migrate their actual expectations to the replacement contract and retain scientific/owner assertions.
+- [x] Commit: `Introduce analysis signals with independent display selections.`
 
 ### Task 2: Signal-targeted calculations and atomic publication
 
@@ -78,12 +78,12 @@ Backend contract work in Tasks 1–3 is one coordinated replacement. Do not reta
 - Produce job snapshots with existing status/progress/error plus `signal_id: str`, `recipe_version: int`; `submit(owner, analysis_id, envelope, spec) -> JobSnapshot` retains request idempotency. No active/comparison target survives.
 - Use signal-specific generation tokens in `AnalysisEntry`; a signal's last committed recipe/version remains available during an update. Reserve pending row identity, style and quota atomically with job acceptance.
 
-- [ ] Write event-controlled tests `test_new_signal_calculation_preserves_image_choice`, `test_failed_update_retains_committed_values`, `test_rename_and_roi_during_job_survive_commit`, `test_delete_replace_close_and_supersede_discard_late_results`, `test_retry_reuses_pending_row_and_job`, `test_failed_pending_and_hidden_records_cannot_bypass_quota`.
+- [x] Write event-controlled tests `test_new_signal_calculation_preserves_image_choice`, `test_failed_update_retains_committed_values`, `test_rename_and_roi_during_job_survive_commit`, `test_delete_replace_close_and_supersede_discard_late_results`, `test_retry_reuses_pending_row_and_job`, `test_failed_pending_and_hidden_records_cannot_bypass_quota`.
   Assert queued/running IDs appear in snapshots, new rows have recipe=None until success, successful new rows join profiles only, updates retain IDs/styles and increment committed recipe version once. Rename after submit wins over the submitted name. Display/ROI edits do not obsolete a job. Failure/cancel preserves old recipe/name; no partial array is published. Repeated request ID creates one job/row, and stale expected recipe versions conflict. A failed new signal is retryable using its existing ID and version 0 without adding another row.
-- [ ] Run `.venv/bin/python -m unittest discover -s tests -p test_signal_jobs.py -v`; confirm the missing lifecycle fails.
-- [ ] Implement signal-token admission/publication while retaining fair round-robin scheduling, limits, cancellation, bounded packed-event buffers, source-generation checks and sanitized errors. Keep submitted name revision for conflict-free rename publication. Retain a terminal job reference on failed rows; retries replace it. Unlink/cancel jobs and release leases on removal. Normalize the viewing selection after a successful image-signal update.
-- [ ] Run `test_signal_jobs.py`, migrated `test_jobs.py`, `test_bounded_events.py`, `test_array_cache.py`, `test_dataset_invalidation.py`; assert released reservations after failure/cancel/remove/close and successful equal output for interval unions.
-- [ ] Commit: `Publish calculations atomically to versioned signals.`
+- [x] Run `.venv/bin/python -m unittest discover -s tests -p test_signal_jobs.py -v`; confirm the missing lifecycle fails.
+- [x] Implement signal-token admission/publication while retaining fair round-robin scheduling, limits, cancellation, bounded packed-event buffers, source-generation checks and sanitized errors. Keep submitted name revision for conflict-free rename publication. Retain a terminal job reference on failed rows; retries replace it. Unlink/cancel jobs and release leases on removal. Normalize the viewing selection after a successful image-signal update.
+- [x] Run `test_signal_jobs.py`, migrated `test_jobs.py`, `test_bounded_events.py`, `test_array_cache.py`, `test_dataset_invalidation.py`; assert released reservations after failure/cancel/remove/close and successful equal output for interval unions.
+- [x] Commit: `Publish calculations atomically to versioned signals.`
 
 ### Task 3: Signal-aware data, API and exports
 
@@ -95,12 +95,12 @@ Backend contract work in Tasks 1–3 is one coordinated replacement. Do not reta
 - API routes retain revision envelopes, ownership and error conventions. `build_services.prepare` loads only the initial image signal. Expose the new dataclasses and job schema through existing API routes, with no reader/plot library fields.
 - Settings JSON schema 4 contains `signals`, `image_signal_id`, `profile_signal_ids`, analysis/view frame bounds, ROI and display state. Export committed signals only; include no pending recipe as a successful result. CSV remains raw visible profile values with the existing selected-window scope and null gaps.
 
-- [ ] Write/extend `test_signal_data_and_exports_preserve_numerics`, `test_partial_coverage_and_image_frame_intersection`, `test_api_rejects_foreign_signal_and_legacy_target`, `test_hidden_signal_retained_in_settings_not_csv`.
+- [x] Write/extend `test_signal_data_and_exports_preserve_numerics`, `test_partial_coverage_and_image_frame_intersection`, `test_api_rejects_foreign_signal_and_legacy_target`, `test_hidden_signal_retained_in_settings_not_csv`.
   Assert stored arrays, exact ROI means and front sums equal existing fixtures; null coverage aligns to analysis range; display normalization changes no CSV values. Hidden records appear in JSON, pending uncommitted recipes do not. API rejects active/comparison job payloads and foreign signal IDs. Partial response content versions change only affected panels.
-- [ ] Run `.venv/bin/python -m unittest discover -s tests -p test_explore_data.py -v` and `test_api.py`; confirm the contract/presenter tests fail before implementation.
-- [ ] Implement the interfaces, source checks and budgeted exports. Reuse scientific read/cache keys without incorporating names, visibility or style. Correct front-axis alignment for partial image coverage while retaining the full analysis domain with missing data represented as null. Update all backend test callers without reducing assertions.
-- [ ] Run `.venv/bin/python -m unittest discover -s tests` to a clean pass. Run `npm run generate:api` from `frontend`; verify generated types reflect the replacement snapshots, curves and submit input. Update client aliases for `SignalSnapshot` and the new schema.
-- [ ] Commit: `Expose signal-aware plots and complete analysis exports.`
+- [x] Run `.venv/bin/python -m unittest discover -s tests -p test_explore_data.py -v` and `test_api.py`; confirm the contract/presenter tests fail before implementation.
+- [x] Implement the interfaces, source checks and budgeted exports. Reuse scientific read/cache keys without incorporating names, visibility or style. Correct front-axis alignment for partial image coverage while retaining the full analysis domain with missing data represented as null. Update all backend test callers without reducing assertions.
+- [x] Run `.venv/bin/python -m unittest discover -s tests` to a clean pass. Run `npm run generate:api` from `frontend`; verify generated types reflect the replacement snapshots, curves and submit input. Update client aliases for `SignalSnapshot` and the new schema.
+- [x] Commit: `Expose signal-aware plots and complete analysis exports.`
 
 ### Task 4: Local draft state and version-safe frontend updates
 
@@ -111,11 +111,11 @@ Backend contract work in Tasks 1–3 is one coordinated replacement. Do not reta
 - `useSignalEditor(analysis: Analysis, refresh: () => Promise<void>)` returns draft, pending switch, job, error, `openNew()`, `openEdit(signalId)`, `openCopy(signalId)`, `patchDraft(patch)`, `requestClose()`, `keepEditing()`, `discardAndContinue()`, `submit()`, `cancel()`, and `dismissError()`. Successful completion clears only the submitted draft; terminal failure unlocks it for retry.
 - `useAnalysis` additionally returns `pendingPanels: Set<string>` and panel-associated display metadata so titles/legends refer to the snapshot that produced the displayed arrays. Changed metadata cannot silently relabel an older panel. Poll authoritative jobs for the current analysis even after browser refresh; do not attempt to restore an unsaved draft from server state.
 
-- [ ] Add reducer tests asserting full-precision input preservation, duplicate seeding, dirty-switch keep/discard, job freeze/unlock, and late terminal events for a previously discarded draft leaving a newer draft unchanged. Add browser race tests delaying old panel responses across recipe update, image selection and analysis-tab switching; assert matching data labels or a visible Updating state.
-- [ ] Run `npm test -- signalEditorState.test.ts` and the new browser race test with a minimal current UI fixture; confirm missing state behavior fails.
-- [ ] Implement the interfaces and submit using a stable request ID across a network retry. Compare committed signal recipes and visible IDs when selecting panels to refresh. Rename affects labels without rereading scientific volumes. Only matching analysis/generation/revision responses update current panels; omitted panels remain pending until fetched. Preserve existing leases, stale-source handling and partial-response race protection.
-- [ ] Run `npm test` and browser race tests after Task 5 provides the UI cutover. Keep reduced test fixtures in test code, not production classes.
-- [ ] Commit: `Separate signal drafts from committed plot state.`
+- [x] Add reducer tests asserting full-precision input preservation, duplicate seeding, dirty-switch keep/discard, job freeze/unlock, and late terminal events for a previously discarded draft leaving a newer draft unchanged. Add browser race tests delaying old panel responses across recipe update, image selection and analysis-tab switching; assert matching data labels or a visible Updating state.
+- [x] Run `npm test -- signalEditorState.test.ts` and the new browser race test with a minimal current UI fixture; confirm missing state behavior fails.
+- [x] Implement the interfaces and submit using a stable request ID across a network retry. Compare committed signal recipes and visible IDs when selecting panels to refresh. Rename affects labels without rereading scientific volumes. Only matching analysis/generation/revision responses update current panels; omitted panels remain pending until fetched. Preserve existing leases, stale-source handling and partial-response race protection.
+- [x] Run `npm test` and browser race tests after Task 5 provides the UI cutover. Keep reduced test fixtures in test code, not production classes.
+- [x] Commit: `Separate signal drafts from committed plot state.`
 
 ### Task 5: Tray, contextual spectrum editor and plot-local controls
 
@@ -127,11 +127,11 @@ Backend contract work in Tasks 1–3 is one coordinated replacement. Do not reta
 - `ViewingDepths({analysis, send})`, `ROIControls({analysis, send})`, `AnalysisSettings({analysis, send})`: shared viewing selection, plot-local ROI popover and advanced analysis range respectively. Use Task 1 normalized bounds.
 - `PlotPanel` receives `controls?: ReactNode`, `status?: ReactNode`, `legendActions?: {onDetails(id), onVisibility(id,visible), imageSignalId}` and `selectionMode: 'select' | 'zoom'`; profile markers derive from each curve's stable style_index. `SelectionOverlay` maps draw gestures to onZoom in zoom mode and keeps edge/move selection behavior in select mode.
 
-- [ ] Write browser tests `signal-workspace.spec.ts` for stored add/dedup, custom creation without image replacement, explicit Show in images, hide/restore, rename/details, custom copy/duplicate/edit, stable colors and last-eligible removal. Add `signal-editor.spec.ts` for view-mode drag zoom, explicit editing mode, union intervals, full precision, dirty switching, successful close, failed retry, cancel and independent drafts in two tabs.
-- [ ] Run the tests against the pre-cutover UI to observe missing tray/editor controls. Use actual fixtures and event/response waits, not arbitrary sleeps.
-- [ ] Implement the component interfaces. Remove the target selector, permanent mass form, active/comparison labels and sidebar CSS. Attach ROI/log/SIMS-SE to the image, relative scaling to profile, spectrum controls/editor to the spectrum and infrequent analysis range to Analysis settings. Identify image/front signal and resolved frame bounds; show unregistered SE/native axes explicitly. Keep contextual help and focus-return behavior. Disable pending display choices, explain disabled required profile/Remove controls, and use named accessible inputs.
-- [ ] Run `npm run typecheck`, `npm test`, and all signal browser tests plus Task 4 race tests. Verify existing offline acquisition open/tabs, PNG legends, Ctrl/Cmd-wheel, ordinary page scrolling, Escape and keyboard navigation still work.
-- [ ] Commit: `Replace the sidebar with a signal tray and contextual tools.`
+- [x] Write browser tests `signal-workspace.spec.ts` for stored add/dedup, custom creation without image replacement, explicit Show in images, hide/restore, rename/details, custom copy/duplicate/edit, stable colors and last-eligible removal. Add `signal-editor.spec.ts` for view-mode drag zoom, explicit editing mode, union intervals, full precision, dirty switching, successful close, failed retry, cancel and independent drafts in two tabs.
+- [x] Run the tests against the pre-cutover UI to observe missing tray/editor controls. Use actual fixtures and event/response waits, not arbitrary sleeps.
+- [x] Implement the component interfaces. Remove the target selector, permanent mass form, active/comparison labels and sidebar CSS. Attach ROI/log/SIMS-SE to the image, relative scaling to profile, spectrum controls/editor to the spectrum and infrequent analysis range to Analysis settings. Identify image/front signal and resolved frame bounds; show unregistered SE/native axes explicitly. Keep contextual help and focus-return behavior. Disable pending display choices, explain disabled required profile/Remove controls, and use named accessible inputs.
+- [x] Run `npm run typecheck`, `npm test`, and all signal browser tests plus Task 4 race tests. Verify existing offline acquisition open/tabs, PNG legends, Ctrl/Cmd-wheel, ordinary page scrolling, Escape and keyboard navigation still work.
+- [x] Commit: `Replace the sidebar with a signal tray and contextual tools.`
 
 ### Task 6: Responsive interactions and regression qualification
 
@@ -139,11 +139,11 @@ Backend contract work in Tasks 1–3 is one coordinated replacement. Do not reta
 
 **Interfaces:** Consume the completed API and UI from Tasks 1–5; preserve renderer adapter `mountChart`/`ChartData` independence and imageRaster caches.
 
-- [ ] Write `signal-layout.spec.ts` assertions at 1600×900 and 600×800: four-row tray scroll, visible column labels, card labels, no document horizontal overflow, editor access in maximized spectrum, exact ROI/settings popovers remaining reachable, and focus restoration after close. Test long/duplicate names and partial frame coverage.
-- [ ] Run the new layout tests and adapted regressions; identify actual failures rather than preserving tests for removed sidebar concepts.
-- [ ] Correct layout/focus issues with scoped CSS/components. Preserve square image stages from first render and the image-left/curve-right proportions. Keep one-pixel selection outlines and transparent 12-pixel edge targets. Replace fixed Active prefixes in legends/exports with signal names and explicit image-role indication without recoloring curves.
-- [ ] Run `npm run typecheck`, `npm test`, `npm run test:e2e`. Keep full-size 1301×128 image maximize/restore under the existing 200-ms regression bound and assert no data fetch. Add resident-signal image switching checks asserting zero integration-job submissions and no spectrum refetch; report its measured latency without inventing a cross-machine guarantee.
-- [ ] Commit: `Qualify responsive signal interactions and preserve plot performance.`
+- [x] Write `signal-layout.spec.ts` assertions at 1600×900 and 600×800: four-row tray scroll, visible column labels, card labels, no document horizontal overflow, editor access in maximized spectrum, exact ROI/settings popovers remaining reachable, and focus restoration after close. Test long/duplicate names and partial frame coverage.
+- [x] Run the new layout tests and adapted regressions; identify actual failures rather than preserving tests for removed sidebar concepts.
+- [x] Correct layout/focus issues with scoped CSS/components. Preserve square image stages from first render and the image-left/curve-right proportions. Keep one-pixel selection outlines and transparent 12-pixel edge targets. Replace fixed Active prefixes in legends/exports with signal names and explicit image-role indication without recoloring curves.
+- [x] Run `npm run typecheck`, `npm test`, `npm run test:e2e`. Keep full-size 1301×128 image maximize/restore under the existing 200-ms regression bound and assert no data fetch. Add resident-signal image switching checks asserting zero integration-job submissions and no spectrum refetch; report its measured latency without inventing a cross-machine guarantee.
+- [x] Commit: `Qualify responsive signal interactions and preserve plot performance.`
 
 ### Task 7: Bundled deployment, real-data evidence and documentation
 

@@ -254,3 +254,55 @@ through the running local service. That service was left running to preserve
 active workspaces; the Python display defaults require its next restart.
 No acquisition writes or additional hardware/service qualification were performed.
 The architecture and completion plan remain unchanged.
+
+## Signal workspace redesign (2026-10-19)
+
+The approved design replaces active/comparison destinations with stable named
+signals and independent image/profile choices. A tray replaces the permanent
+sidebar. An explicit spectrum editor owns drafts; plot-local controls own ROI,
+image colors, relative profiles and viewing depths. Jobs publish versioned signal
+results atomically. Failed updates retain committed results, hidden updates stay
+hidden without pinned leases, and removing a submitted signal closes its editor.
+
+Validation: all 109 Python tests, 11 frontend unit tests, 21 browser tests and
+TypeScript checking passed. The browser suite preserves numerical interactions,
+owner isolation, multiple files/independent same-file analyses, precise interval
+inputs, dirty-draft choices, late-data label safety, keyboard/help, square images,
+PNG legends and wheel behavior. Full-size 1301×128 fixture maximize/restore stayed
+under 33 ms in the final suite, without data fetches. A resident fixture switch
+took 58 ms with no integration job and no spectrum refetch.
+
+Both freshly built wheel and sdist passed independent installation and offline
+browser checks without Node or runtime Marimo/RosettaSciIO dependencies. The smoke
+creates a custom signal, switches images, toggles profile visibility and downloads
+schema-4 settings, CSV and PNG. Its earlier run against the old packaged UI failed
+at the missing Create from spectrum control, proving it detects stale assets.
+
+Read-only checks on `pfib_1301x128x128_AlTiPt.h5` passed two-user/six-analysis
+isolation, denied foreign IDs, independent revisions and integration completion.
+The real browser opened that file and `pfib-tofwerk opened.h5` together, with no
+browser errors or external requests. Initial four-panel load measured 1.39 s;
+a resident stored-signal switch measured 312 ms without integration or spectrum
+refetch. Image maximize/restore measured 26–31 ms. Four frame steps measured
+about 182 ms median through replacement image data, rather than command response
+alone. These are local observations, not NFS or cross-machine guarantees.
+
+`pfib_1301x128x128_AlTiPt_raw.h5` is readable HDF5 but lacks PeakData. Its attempted
+open is rejected as an unsupported layout and preserves the existing analysis.
+The raw-only multi-file attempt is not a passing supported-file check. No raw-only
+opening workflow was added by this redesign. NFS/proxy deployment, acquisition
+hardware and controlled writes remain unqualified/unavailable as before.
+
+Packaging uses a separate temporary staging copy while the user's old service
+is active, to avoid serving the new frontend against its old in-memory API. The
+staged frontend source digest matches the implementation source, and all bundled
+asset hashes were verified. Activation and its required workspace-resetting
+restart happen only after final review. Launch commands remain in README and
+deployment.md. Full-volume raw reconstruction took 12.75 s; the signal-targeted service job took
+11.67 s versus 17.18 s for the frozen direct function. All 21,315,584 float32
+values matched exactly (SHA-256
+`2c5b35292c24716b711345128552b05735d6ba178657eb64db34a3e18515523e`).
+The source inode, size and modification time were unchanged. Prototype timing
+uses its direct integration function, not the complete Marimo UI.
+Numerical comparison details and machine-readable outcomes are
+recorded in signal-workspace-qualification.json.

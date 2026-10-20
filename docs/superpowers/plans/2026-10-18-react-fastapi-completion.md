@@ -22,7 +22,14 @@ sample visibility and unknown-depth CSV (Task 1), identification annotations and
 uncertainty exports (Task 2), calibrated section values (Tasks 1/3), single-plane
 fallback and calibrated pooling across anchor slope changes (Task 4), and
 post-replacement save outcomes (Task 5). No legacy runtime belongs in the package.
-The pilot adds a configurable comparison metadata quota alongside byte admission;
+The Explore redesign uses stable named signal records, image_signal_id and
+profile_signal_ids instead of active/comparison slots. Read
+[the signal workspace spec](../specs/2026-10-19-explore-signal-workspace-design.md)
+and [implementation plan](2026-10-19-explore-signal-workspace.md) before extending
+the UI/API. Identification actions should create or annotate signals and then
+choose display roles; avoid reintroducing destination-specific integrations.
+Schema-4 settings export the committed collection. The pilot adds configurable
+signal record quotas (including hidden/pending records) alongside byte admission;
 spatial/private preview preparation must use the same reservations. The response
 contract now reserves transport buffers until send completion.
 
