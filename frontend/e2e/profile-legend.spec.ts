@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
-test("profile legend and sidebar markers identify curves and retain colors after removal", async ({
+test("profile legend and tray markers identify curves and retain colors after removal", async ({
   page,
 }) => {
   await page.setExtraHTTPHeaders({ "x-tofscope-user": `legend-${Date.now()}` });
@@ -11,26 +11,29 @@ test("profile legend and sidebar markers identify curves and retain colors after
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   await page
-    .getByRole("button", { name: "Add stored comparison", exact: true })
+    .getByRole("button", { name: "Add stored signal", exact: true })
     .click();
   await page
-    .getByRole("listbox", { name: "Stored comparison signals" })
+    .getByRole("listbox", { name: "Stored signals" })
     .getByRole("option")
     .first()
+    .click();
+  await expect(page.getByTestId("signal-row")).toHaveCount(2);
+  await page
+    .getByRole("button", { name: "Create from spectrum", exact: true })
     .click();
   await page.getByLabel("Mass lower 1", { exact: true }).fill("1");
   await page.getByLabel("Mass upper 1", { exact: true }).fill("2");
   await page
-    .getByLabel("Integration target", { exact: true })
-    .selectOption("comparison");
-  await page
-    .getByRole("button", { name: "Apply custom window", exact: true })
+    .getByRole("button", { name: "Calculate signal", exact: true })
     .click();
-  await expect(page.getByTestId("job-status")).toContainText("succeeded");
+  await expect(
+    page.getByRole("region", { name: "Signal editor" }),
+  ).toBeHidden();
   const profile = page.getByTestId("panel-profile");
   const legend = profile.getByRole("list", { name: "Depth profile legend" });
   await expect(legend.getByRole("listitem")).toHaveCount(3);
-  await expect(legend.getByRole("listitem").first()).toContainText("Active");
+  await expect(legend.getByRole("listitem").first()).toContainText("Images");
   const entries = await legend.getByRole("listitem").evaluateAll((items) =>
     items.map((item) => ({
       id: item.getAttribute("data-curve-id")!,
@@ -41,15 +44,17 @@ test("profile legend and sidebar markers identify curves and retain colors after
   );
   expect(new Set(entries.map((entry) => entry.color)).size).toBe(3);
   for (const entry of entries) {
-    const row = page.locator(`.sidebar [data-curve-id="${entry.id}"]`);
-    await expect(row).toContainText(entry.label!.replace(/^Active · /, ""));
+    const row = page.locator(
+      `[data-testid="signal-row"][data-signal-id="${entry.id}"]`,
+    );
+    await expect(row.locator(".text-button").first()).not.toBeEmpty();
     await expect(row.locator(".curve-marker")).toHaveCSS(
       "border-top-color",
       entry.color,
     );
   }
   await page
-    .locator(`.sidebar [data-curve-id="${entries[1].id}"]`)
+    .locator(`[data-testid="signal-row"][data-signal-id="${entries[1].id}"]`)
     .getByRole("button", { name: /^Remove / })
     .click();
   await expect(legend.getByRole("listitem")).toHaveCount(2);

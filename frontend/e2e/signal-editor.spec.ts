@@ -110,3 +110,44 @@ test("invalid calculation keeps its draft for correction and stored copies have 
     "Raw integration",
   );
 });
+
+test("removing a submitted signal also closes its frozen editor", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `remove-pending-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  let release!: () => void;
+  const gate = new Promise<void>((r) => (release = r));
+  await page.route("**/api/v1/jobs/*", async (route) => {
+    if (route.request().method() === "GET") await gate;
+    await route.continue();
+  });
+  try {
+    await page
+      .getByRole("button", { name: "Create from spectrum", exact: true })
+      .click();
+    await page.getByLabel("Signal name", { exact: true }).fill("Remove me");
+    await page.getByLabel("Mass lower 1", { exact: true }).fill("1");
+    await page.getByLabel("Mass upper 1", { exact: true }).fill("2");
+    await page
+      .getByRole("button", { name: "Calculate signal", exact: true })
+      .click();
+    const row = page.getByTestId("signal-row").filter({ hasText: "Remove me" });
+    await expect(row).toBeVisible();
+    await row
+      .getByRole("button", { name: "Remove Remove me", exact: true })
+      .click();
+    await expect(row).toHaveCount(0);
+    await expect(
+      page.getByRole("region", { name: "Signal editor" }),
+    ).toBeHidden();
+  } finally {
+    release();
+  }
+});

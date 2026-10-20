@@ -23,6 +23,10 @@ test("two users, A/B/A tabs, explicit reattach and denied foreign downloads", as
   await open(p, "b.h5");
   await open(p, "a.h5");
   await expect(p.getByRole("tab")).toHaveCount(3);
+  await p
+    .getByRole("button", { name: /^ROI:/ })
+    .filter({ visible: true })
+    .click();
   await p.getByLabel("ROI x first").filter({ visible: true }).fill("1");
   await p
     .getByRole("button", { name: "Apply ROI", exact: true })
@@ -33,11 +37,15 @@ test("two users, A/B/A tabs, explicit reattach and denied foreign downloads", as
   ).toHaveText("1");
   await p.getByRole("tab", { name: "1 · a.h5" }).click();
   await expect(
-    p.getByLabel("ROI x first").filter({ visible: true }),
-  ).toHaveValue("0");
+    p
+      .getByRole("button", { name: "ROI: Full field", exact: true })
+      .filter({ visible: true }),
+  ).toBeVisible();
   await q.goto("/");
   await open(q, "a.h5");
-  await expect(q.getByLabel("ROI x first")).toHaveValue("0");
+  await expect(
+    q.getByRole("button", { name: "ROI: Full field", exact: true }),
+  ).toBeVisible();
   const workspaces = await (await p.request.get("/api/v1/workspaces")).json();
   const id = workspaces[0].analysis_ids[0];
   expect(
@@ -47,12 +55,16 @@ test("two users, A/B/A tabs, explicit reattach and denied foreign downloads", as
   await view.goto("/");
   await expect(view.getByRole("tab")).toHaveCount(3);
   await expect(
-    view.getByLabel("Stored signal").filter({ visible: true }),
+    view
+      .getByRole("region", { name: "Signals", exact: true })
+      .filter({ visible: true }),
   ).toBeVisible();
   await view.getByRole("tab", { name: "1 · a.h5" }).click();
   await expect(
-    view.getByLabel("ROI x first").filter({ visible: true }),
-  ).toHaveValue("0");
+    view
+      .getByRole("button", { name: "ROI: Full field", exact: true })
+      .filter({ visible: true }),
+  ).toBeVisible();
   await p.getByRole("button", { name: "Close analysis 1" }).click();
   await expect(view.getByRole("alert")).toContainText("Resource unavailable");
   await a.close();

@@ -30,9 +30,25 @@ test("signals are created independently, chosen for images, and hidden without l
     original!,
   );
   const swatch = await row.locator(".curve-marker").getAttribute("style");
+  const displayRequests: string[] = [];
+  let displayJobs = 0;
+  page.on("request", (r) => {
+    if (r.url().includes("/data?")) displayRequests.push(r.url());
+    if (r.method() === "POST" && r.url().endsWith("/jobs")) displayJobs++;
+  });
+  const started = Date.now();
   await row.getByRole("radio").click();
   await expect(row.getByRole("radio")).toBeChecked();
   await expect(page.getByTestId("panel-ion")).toContainText("Titanium");
+  console.log(
+    JSON.stringify({ resident_signal_switch_ms: Date.now() - started }),
+  );
+  expect(displayJobs).toBe(0);
+  expect(
+    displayRequests.some((url) =>
+      new URL(url).searchParams.get("panels")?.includes("spectrum"),
+    ),
+  ).toBe(false);
   await expect(row.locator(".curve-marker")).toHaveAttribute("style", swatch!);
   const first = page.getByTestId("signal-row").first();
   await first.getByRole("checkbox").click();
@@ -45,14 +61,68 @@ test("signals are created independently, chosen for images, and hidden without l
   await expect(page.getByTestId("panel-ion")).toContainText("Ti renamed");
 });
 
-test('stored adds deduplicate, custom edits retain identity, and duplicate starts a separate draft', async ({page})=>{
-  await page.setExtraHTTPHeaders({'x-tofscope-user':`edit-flow-${Date.now()}`});
-  await page.goto('/');await page.getByRole('button',{name:'Choose an HDF5 acquisition'}).click();await page.getByRole('button',{name:'◫ a.h5'}).click();
-  for(let i=0;i<2;i++){await page.getByRole('button',{name:'Add stored signal',exact:true}).click();await page.getByRole('listbox',{name:'Stored signals'}).getByRole('option').first().click();await expect(page.getByTestId('signal-row')).toHaveCount(2);}
-  await page.getByRole('button',{name:'Create from spectrum',exact:true}).click();await page.getByLabel('Signal name',{exact:true}).fill('Ti');await page.getByLabel('Mass lower 1',{exact:true}).fill('1');await page.getByLabel('Mass upper 1',{exact:true}).fill('2');await page.getByRole('button',{name:'Calculate signal',exact:true}).click();
-  await expect(page.getByRole('region',{name:'Signal editor'})).toBeHidden();
-  const row=page.getByTestId('signal-row').filter({hasText:'Ti'});const id=await row.getAttribute('data-signal-id');const style=await row.locator('.curve-marker').getAttribute('style');
-  await row.getByRole('button',{name:'Details',exact:true}).click();await page.getByRole('button',{name:'Edit signal',exact:true}).click();await expect(page.getByLabel('Mass lower 1',{exact:true})).toHaveValue('1');await page.getByLabel('Signal name',{exact:true}).fill('Ti updated');await page.getByLabel('Mass lower 1',{exact:true}).fill('2');await page.getByLabel('Mass upper 1',{exact:true}).fill('3');await page.getByRole('button',{name:'Update signal',exact:true}).click();
-  await expect(page.getByRole('region',{name:'Signal editor'})).toBeHidden();await expect(row).toContainText('Ti updated');await expect(row).toHaveAttribute('data-signal-id',id!);await expect(row.locator('.curve-marker')).toHaveAttribute('style',style!);
-  await row.getByRole('button',{name:'Details',exact:true}).click();await page.getByRole('button',{name:'Duplicate',exact:true}).click();await expect(page.getByLabel('Signal name',{exact:true})).toHaveValue('Ti updated copy');await expect(page.getByRole('button',{name:'Calculate signal',exact:true})).toBeVisible();await page.getByRole('button',{name:'Discard',exact:true}).click();await expect(page.getByTestId('signal-row')).toHaveCount(3);
+test("stored adds deduplicate, custom edits retain identity, and duplicate starts a separate draft", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `edit-flow-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  for (let i = 0; i < 2; i++) {
+    await page
+      .getByRole("button", { name: "Add stored signal", exact: true })
+      .click();
+    await page
+      .getByRole("listbox", { name: "Stored signals" })
+      .getByRole("option")
+      .first()
+      .click();
+    await expect(page.getByTestId("signal-row")).toHaveCount(2);
+  }
+  await page
+    .getByRole("button", { name: "Create from spectrum", exact: true })
+    .click();
+  await page.getByLabel("Signal name", { exact: true }).fill("Ti");
+  await page.getByLabel("Mass lower 1", { exact: true }).fill("1");
+  await page.getByLabel("Mass upper 1", { exact: true }).fill("2");
+  await page
+    .getByRole("button", { name: "Calculate signal", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Signal editor" }),
+  ).toBeHidden();
+  const row = page.getByTestId("signal-row").filter({ hasText: "Ti" });
+  const id = await row.getAttribute("data-signal-id");
+  const style = await row.locator(".curve-marker").getAttribute("style");
+  await row.getByRole("button", { name: "Details", exact: true }).click();
+  await page.getByRole("button", { name: "Edit signal", exact: true }).click();
+  await expect(page.getByLabel("Mass lower 1", { exact: true })).toHaveValue(
+    "1",
+  );
+  await page.getByLabel("Signal name", { exact: true }).fill("Ti updated");
+  await page.getByLabel("Mass lower 1", { exact: true }).fill("2");
+  await page.getByLabel("Mass upper 1", { exact: true }).fill("3");
+  await page
+    .getByRole("button", { name: "Update signal", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Signal editor" }),
+  ).toBeHidden();
+  await expect(row).toContainText("Ti updated");
+  await expect(row).toHaveAttribute("data-signal-id", id!);
+  await expect(row.locator(".curve-marker")).toHaveAttribute("style", style!);
+  await row.getByRole("button", { name: "Details", exact: true }).click();
+  await page.getByRole("button", { name: "Duplicate", exact: true }).click();
+  await expect(page.getByLabel("Signal name", { exact: true })).toHaveValue(
+    "Ti updated copy",
+  );
+  await expect(
+    page.getByRole("button", { name: "Calculate signal", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Discard", exact: true }).click();
+  await expect(page.getByTestId("signal-row")).toHaveCount(3);
 });
