@@ -136,3 +136,13 @@ class SignalJobTests(unittest.TestCase):
                     self.s.workspaces.close('a', a.id)
                 release.set()
                 self.assertIn(self.wait(job).status, ('cancelled', 'obsolete'))
+
+    def test_hidden_signal_update_preserves_visibility_and_does_not_pin_array(self):
+        first = self.submit()
+        self.assertEqual(self.wait(first).status, 'succeeded')
+        a = self.state()
+        self.s.explore.apply('a', a.id, CommandEnvelope(str(uuid4()),a.revision,a.dataset.generation,{'type':'set_profile_visible','signal_id':first.signal_id,'visible':False}))
+        updated = self.submit(signal_id=first.signal_id, version=1)
+        self.assertEqual(self.wait(updated).status, 'succeeded')
+        self.assertNotIn(first.signal_id, self.state().profile_signal_ids)
+        self.assertNotIn(first.signal_id, self.s.workspaces.entry('a',a.id).leases)

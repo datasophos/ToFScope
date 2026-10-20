@@ -231,12 +231,13 @@ class JobService:
                     updated = replace(old, name=name, recipe=j.recipe, recipe_version=j.snapshot.recipe_version)
                     result = normalize_view(replace(s, revision=s.revision+1,
                         signals=tuple(updated if r.id == old.id else r for r in s.signals),
-                        profile_signal_ids=tuple(dict.fromkeys((*s.profile_signal_ids, old.id)))))
+                        profile_signal_ids=tuple(dict.fromkeys((*s.profile_signal_ids, old.id))) if old.recipe is None else s.profile_signal_ids))
                     previous = e.leases.pop(old.id, None)
                     if previous:
                         previous.release()
-                    e.leases[old.id] = lease
-                    lease = None
+                    if old.id in result.profile_signal_ids or old.id == result.image_signal_id:
+                        e.leases[old.id] = lease
+                        lease = None
                     e.snapshot = result
                     with self.condition:
                         j.snapshot = replace(
