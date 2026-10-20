@@ -993,3 +993,25 @@ small {
   border-radius: 5px;
   color: #203744;
 }
+
+.folder-paths {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.5rem 1rem;
+  font-size: 0.85rem;
+  padding: 0.8rem;
+  background: #f3f7f8;
+  border-radius: 0.4rem;
+}
+.folder-paths dt {
+  font-weight: 600;
+}
+.folder-paths dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .folder-paths {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

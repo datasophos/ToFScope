@@ -10,7 +10,7 @@ from typing import Mapping
 
 @dataclass(frozen=True)
 class Settings:
-    data_root: Path
+    data_root: Path = field(default_factory=lambda: Path.cwd())
     runtime_dir: Path = field(
         default_factory=lambda: Path(tempfile.gettempdir()) / f"tofscope-{os.getuid()}"
     )
@@ -58,7 +58,7 @@ class Settings:
         if not os.access(runtime, os.W_OK) or not os.access(lock, os.W_OK):
             raise ValueError("Runtime and lock directories must be writable.")
         object.__setattr__(self, "runtime_dir", runtime)
-        output = Path(self.output_root).expanduser().resolve() if self.output_root else Path.home() / ".local/share/tofscope/saved-acquisitions"
+        output = Path(self.output_root).expanduser().resolve() if self.output_root else root
         object.__setattr__(self, "output_root", output)
         object.__setattr__(self, "lock_dir", lock)
         if self.mode not in ("local", "proxy"):
@@ -107,15 +107,6 @@ def load_settings(file=None, env: Mapping[str, str] | None = None, cli=None):
     if "TOF_FILE" in env:
         values["initial_file"] = env["TOF_FILE"]
     values.update({k: v for k, v in (cli or {}).items() if v is not None})
-    if "data_root" not in values:
-        runtime = Path(
-            values.get(
-                "runtime_dir", Path(tempfile.gettempdir()) / f"tofscope-{os.getuid()}"
-            )
-        )
-        root = runtime / "data"
-        root.mkdir(parents=True, exist_ok=True)
-        values["data_root"] = root
     return Settings(**values)
 
 
@@ -134,3 +125,15 @@ def resolve_data_path(settings, relative_path, *, require_file=False):
     if require_file and not target.is_file():
         raise ValueError("Select an acquisition file.")
     return target
+
+
+def is_private_output_path(settings, path):
+    """Keep owner output trees private even when acquisition/output roots coincide."""
+    if not path.is_relative_to(settings.output_root):
+        return False
+    if not settings.data_root.is_relative_to(settings.output_root):
+        return True
+    parts = path.relative_to(settings.output_root).parts
+    # Owner directories use the SHA-256 identity namespace. The shared root and
+    # ordinary acquisition folders remain browsable; owner folders never do.
+    return bool(parts and len(parts[0]) == 64 and all(c in '0123456789abcdef' for c in parts[0]))

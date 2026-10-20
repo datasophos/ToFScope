@@ -543,6 +543,30 @@
         "title": "ExploreData",
         "type": "object"
       },
+      "FolderLocations": {
+        "additionalProperties": false,
+        "properties": {
+          "acquisitions": {
+            "title": "Acquisitions",
+            "type": "string"
+          },
+          "save_destination": {
+            "title": "Save Destination",
+            "type": "string"
+          },
+          "saved_copies": {
+            "title": "Saved Copies",
+            "type": "string"
+          }
+        },
+        "required": [
+          "acquisitions",
+          "saved_copies",
+          "save_destination"
+        ],
+        "title": "FolderLocations",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2306,6 +2330,24 @@
           }
         },
         "summary": "Cancel"
+      }
+    },
+    "/api/v1/locations": {
+      "get": {
+        "operationId": "folder_locations_api_v1_locations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FolderLocations"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Folder Locations"
       }
     },
     "/api/v1/saved-files": {

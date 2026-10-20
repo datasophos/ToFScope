@@ -2,7 +2,7 @@
 import os
 from dataclasses import dataclass,asdict
 from pathlib import Path
-from tofscope.config import resolve_data_path
+from tofscope.config import resolve_data_path, is_private_output_path
 
 
 @dataclass(frozen=True)
@@ -20,7 +20,7 @@ def list_data_files(settings, relative_dir: str='', *, query: str='', offset: in
         raise ValueError('Directory offset must be nonnegative and page size between 1 and 200.')
     if not isinstance(query,str) or len(query)>256:raise ValueError('Search must be at most 256 characters.')
     directory=resolve_data_path(settings,relative_dir)
-    if directory.is_relative_to(settings.output_root):raise ValueError("Use the owner-scoped saved file list.")
+    if is_private_output_path(settings, directory):raise ValueError("Use the owner-scoped saved file list.")
     if not directory.is_dir():raise ValueError('Select a directory to browse.')
     entries=[]
     with os.scandir(directory) as scan:
@@ -31,7 +31,7 @@ def list_data_files(settings, relative_dir: str='', *, query: str='', offset: in
             try:
                 stat=entry.stat()
                 target=resolve_data_path(settings,str((directory/name).relative_to(settings.data_root)))
-                if target.is_relative_to(settings.output_root):continue
+                if is_private_output_path(settings, target):continue
                 kind='directory' if target.is_dir() else 'file'
                 if kind=='file' and (target.suffix.lower() not in ('.h5','.hdf5') or not target.is_file()):continue
             except (OSError,ValueError):continue

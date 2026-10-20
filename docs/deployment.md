@@ -61,7 +61,11 @@ Opening that file restores all stored/custom/hidden signals, exact custom
 results, names/colors, ROI, frame/depth selections and display settings.
 
 Configure persistent output with `--output-root`, `TOFSCOPE_OUTPUT_ROOT`, or
-`output_root` in TOML. Default: `~/.local/share/tofscope/saved-acquisitions`.
+`output_root` in TOML. It defaults to the effective acquisition folder
+(`data_root`), which defaults to the process current working directory.
+Configure a separate writable output folder for read-only acquisition mounts.
+The file picker displays both configured folders; Save as also displays the
+complete destination inside the authenticated owner’s private subfolder.
 Runtime cleanup must not remove this directory. Owner hash subdirectories are
 private; the Saved files picker and downloads enforce the authenticated owner.
 Copies are portable: download or move a completed copy into another installation's

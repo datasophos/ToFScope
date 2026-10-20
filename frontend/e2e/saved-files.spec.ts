@@ -223,3 +223,33 @@ test("hidden union results reopen with exact profiles and no new integration", a
   expect(await profiles()).toEqual(before);
   expect(integrations).toBe(1);
 });
+
+test("file picker and save dialog show configured folders and exact save destination", async ({
+  page,
+}) => {
+  const owner = `folders-${Date.now()}`;
+  await page.setExtraHTTPHeaders({ "x-tofscope-user": owner });
+  await page.goto("/");
+  const response = await page.request.get("/api/v1/locations", {
+    headers: { "x-tofscope-user": owner },
+  });
+  expect(response.ok()).toBeTruthy();
+  const folders = await response.json();
+  await page
+    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .click();
+  await expect(page.getByTestId("folder-acquisitions")).toContainText(
+    folders.acquisitions,
+  );
+  await expect(page.getByTestId("folder-saved-copies")).toContainText(
+    folders.saved_copies,
+  );
+  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "Save as…", exact: true }).click();
+  await expect(page.getByTestId("folder-saved-copies")).toContainText(
+    folders.saved_copies,
+  );
+  await expect(page.getByTestId("save-destination")).toContainText(
+    folders.save_destination,
+  );
+});

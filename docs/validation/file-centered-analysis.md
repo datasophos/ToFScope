@@ -84,3 +84,23 @@ The verified implementation was restarted on 2026-10-20 at
 `original_writes=false` and `save_copies=true`; all served assets match the final
 manifest hashes. The implementation branch and isolated worktree are retained;
 no merge, push, release publication or external deployment was performed.
+
+## Folder visibility and defaults — 2026-10-20
+
+The acquisition folder now defaults to the process current working directory;
+the saved copies folder defaults to the effective acquisition folder. Explicit
+CLI/environment/TOML folder settings retain their precedence. The open-file
+picker labels both configured folders, and Save as displays both the saved-copy
+base folder and complete destination including its private owner subfolder.
+This location display does not create directories.
+
+When folders coincide, ordinary acquisitions remain browsable while owner hash
+directories and symlink aliases into them remain unavailable through acquisition
+access. Shared-root tests save a real fixture, check its physical destination,
+and reject another owner’s attempt to open it through the shared acquisition
+root. Existing files in previously configured output folders are not moved.
+
+Checks passed: 142 Python tests, 11 frontend unit tests, TypeScript typecheck,
+33 browser workflows and the production frontend build. Both rebuilt wheel and
+sdist also passed independent offline installation, save/restart/source-removal,
+exact CSV and optional/interrupted download checks.
