@@ -73,7 +73,7 @@ def run_service(settings, browser=False):
             target=open_after_ready, args=(url, secret, stop), daemon=True
         ).start()
     try:
-        print(f"ToFScope Explore {__version__}: {url} (read only)", flush=True)
+        print(f"ToFScope Explore {__version__}: {url} (original acquisitions read only)", flush=True)
         uvicorn.Server(
             uvicorn.Config(
                 create_app(settings, bootstrap_secret=secret),
@@ -93,7 +93,7 @@ def run_service(settings, browser=False):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(description="ToFScope packaged read-only Explore pilot")
+    p = argparse.ArgumentParser(description="ToFScope Explore; original acquisitions are read only")
     p.add_argument(
         "command", nargs="?", choices=["serve", "doctor", "open"], default="serve"
     )
@@ -101,6 +101,7 @@ def main(argv=None):
     p.add_argument("--data-root", type=Path)
     p.add_argument("--runtime-dir", type=Path)
     p.add_argument("--lock-dir", type=Path)
+    p.add_argument("--output-root", type=Path)
     p.add_argument("--host")
     p.add_argument("--port", type=int)
     p.add_argument("--mode", choices=["local", "proxy"])
@@ -116,6 +117,7 @@ def main(argv=None):
                     "data_root",
                     "runtime_dir",
                     "lock_dir",
+                    "output_root",
                     "host",
                     "port",
                     "mode",
@@ -130,6 +132,7 @@ def main(argv=None):
                 asset_version=assets["version"],
                 scope="Explore-only",
                 writes_available=False,
+                save_copies_available=True,
                 notes="Managed array budget excludes Python/HDF5/browser allocator overhead; one API process.",
             )
             print(json.dumps(public, default=str, indent=2))

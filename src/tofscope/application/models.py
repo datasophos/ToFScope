@@ -61,3 +61,4 @@ class AnalysisSnapshot:
     mass_limits: tuple[float, float]
     stale: bool = False
     has_se: bool = False
+    saved_revision: int | None = None

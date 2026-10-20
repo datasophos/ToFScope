@@ -159,4 +159,4 @@ def restore_snapshot(document: SavedAnalysisDocument, initial: AnalysisSnapshot)
     return replace(initial, signals=tuple(rows), image_signal_id=ids[document.image_signal_id],
         profile_signal_ids=tuple(ids[x] for x in document.profile_signal_ids),
         next_style_index=document.next_style_index, loaded_frames=document.loaded_frames,
-        roi=document.roi, depth=document.depth, display=DisplaySettings(**document.display.model_dump()))
+        roi=document.roi, depth=document.depth, display=DisplaySettings(**document.display.model_dump()), saved_revision=initial.revision)

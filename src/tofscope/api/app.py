@@ -4,11 +4,15 @@ import asyncio
 from pathlib import Path
 from fastapi import FastAPI, Request, Response, Depends, HTTPException, Query
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.staticfiles import StaticFiles
 import json
 from tofscope import __version__
+from tofscope.storage.saved_files import SavedFile
+from urllib.parse import quote
+import os
+from tofscope.application.saves import SaveService
 from tofscope.application.workspaces import WorkspaceService, CapacityError, Conflict
 from tofscope.application.explore import ExploreService
 from tofscope.application.resources import ResourceBudget
@@ -31,6 +35,7 @@ from tofscope.api.schemas import (
     OpenAcquisition,
     ReplaceAcquisition,
     SubmitJob,
+    SaveCopy,
 )
 from typing import Literal
 from tofscope.presentation.data import ExploreData
@@ -48,6 +53,7 @@ class Services:
     lifecycle: LifecycleService
     presenter: object = None
     exports: object = None
+    saves: object = None
 
 
 def build_services(settings):
@@ -68,7 +74,7 @@ def build_services(settings):
     life = LifecycleService(ws, jobs, settings)
     presenter = ExplorePresenter(ws, repo, cache, settings)
     return Services(
-        repo, ws, explore, cache, jobs, life, presenter, ExportService(presenter)
+        repo, ws, explore, cache, jobs, life, presenter, ExportService(presenter), SaveService(ws, jobs, cache, repo, settings)
     )
 
 
@@ -210,6 +216,8 @@ def create_app(settings, services=None, bootstrap_secret=None):
             "version": __version__,
             "scope": "Explore-only",
             "writes": False,
+            "original_writes": False,
+            "save_copies": True,
         }
 
     @app.get("/readyz")
@@ -250,7 +258,7 @@ def create_app(settings, services=None, bootstrap_secret=None):
         wid: str, body: OpenAcquisition, o=Depends(owner), s=Depends(svc)
     ):
         s.workspaces.workspace(o, wid)
-        dataset = s.repository.open(o, body.relative_path)
+        dataset = s.repository.open(o, body.relative_path, body.location)
         return s.workspaces.create_analysis(o, wid, dataset)
 
     @app.get("/api/v1/analyses/{aid}", response_model=AnalysisSnapshot)
@@ -275,7 +283,7 @@ def create_app(settings, services=None, bootstrap_secret=None):
             if previous is not None:
                 return previous
             result = s.workspaces.replace(
-                o, aid, s.repository.open(o, body.relative_path), body.expected_revision
+                o, aid, s.repository.open(o, body.relative_path, body.location), body.expected_revision
             )
             s.explore.receipt(e, body.request_id, fingerprint, result)
             return result
@@ -297,6 +305,49 @@ def create_app(settings, services=None, bootstrap_secret=None):
                 body.spec.signal_id, body.spec.expected_recipe_version
             ),
         )
+
+    @app.post('/api/v1/analyses/{aid}/saves', response_model=JobSnapshot, status_code=202)
+    def save_copy(aid: str, body: SaveCopy, o=Depends(owner), s=Depends(svc)):
+        return s.saves.submit(o, aid, body, body.filename)
+
+    @app.get('/api/v1/saved-files', response_model=list[SavedFile])
+    def saved_files(o=Depends(owner), s=Depends(svc)):
+        return s.saves.files.list(o)
+
+    @app.get('/api/v1/saved-files/{fid}/download')
+    def download_saved(fid: str, o=Depends(owner), s=Depends(svc)):
+        try:
+            path = s.saves.files.path(o, fid)
+        except FileNotFoundError:
+            raise KeyError('Saved file unavailable.') from None
+        expected = path.stat()
+        reservation = s.cache.budget.reserve(o, 'download:' + fid, 128 * 1024)
+        stream = None
+        try:
+            descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+            stream = os.fdopen(descriptor, 'rb')
+            actual = os.fstat(descriptor)
+            if (expected.st_dev, expected.st_ino, expected.st_size, expected.st_mtime_ns) != (actual.st_dev, actual.st_ino, actual.st_size, actual.st_mtime_ns):
+                raise SourceChanged('Saved file changed before download.')
+            def chunks():
+                while chunk := stream.read(64 * 1024):
+                    yield chunk
+            class DownloadResponse(StreamingResponse):
+                async def __call__(self, scope, receive, send):
+                    try:
+                        await super().__call__(scope, receive, send)
+                    finally:
+                        stream.close()
+                        reservation.release()
+            return DownloadResponse(chunks(), media_type='application/x-hdf5', headers={
+                'Content-Length': str(actual.st_size),
+                'Content-Disposition': "attachment; filename*=UTF-8''" + quote(path.name),
+            })
+        except BaseException:
+            if stream:
+                stream.close()
+            reservation.release()
+            raise
 
     @app.get("/api/v1/jobs/{jid}", response_model=JobSnapshot)
     def job_status(jid: str, o=Depends(owner), s=Depends(svc)):
@@ -321,12 +372,19 @@ def create_app(settings, services=None, bootstrap_secret=None):
     @app.get("/api/v1/files")
     def files(
         directory: str = "",
+        location: Literal["acquisition", "saved"] = "acquisition",
         query: str = "",
         offset: int = Query(0, ge=0),
         limit: int = Query(100, ge=1, le=100),
         o=Depends(owner),
         s=Depends(svc),
     ):
+        if location == 'saved':
+            if directory:
+                raise ValueError('Saved files have no subdirectories.')
+            values = [f for f in s.saves.files.list(o) if query.lower() in f.name.lower()]
+            entries = [dict(name=f.name, path=f.id, kind='file', size=f.size) for f in values[offset:offset + limit]]
+            return dict(path='', entries=entries, total=len(values), next_offset=offset + limit if offset + limit < len(values) else None)
         return list_data_files(
             settings, directory, query=query, offset=offset, limit=limit
         )

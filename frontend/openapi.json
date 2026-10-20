@@ -188,6 +188,17 @@
             "title": "Roi",
             "type": "array"
           },
+          "saved_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saved Revision"
+          },
           "shape": {
             "maxItems": 4,
             "minItems": 4,
@@ -432,6 +443,16 @@
             "title": "Key",
             "type": "string"
           },
+          "location": {
+            "default": "acquisition",
+            "title": "Location",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
           "relative_path": {
             "title": "Relative Path",
             "type": "string"
@@ -485,6 +506,11 @@
           "relative": {
             "default": true,
             "title": "Relative",
+            "type": "boolean"
+          },
+          "spectrum_log": {
+            "default": true,
+            "title": "Spectrum Log",
             "type": "boolean"
           }
         },
@@ -624,6 +650,15 @@
             "title": "Id",
             "type": "string"
           },
+          "kind": {
+            "default": "integration",
+            "enum": [
+              "integration",
+              "save"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "recipe_version": {
             "default": 0,
             "title": "Recipe Version",
@@ -640,9 +675,35 @@
             ],
             "title": "Safe Error"
           },
+          "saved_file": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavedFile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "saved_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saved Revision"
+          },
           "signal_id": {
             "default": "",
             "title": "Signal Id",
+            "type": "string"
+          },
+          "stage": {
+            "default": "",
+            "title": "Stage",
             "type": "string"
           },
           "status": {
@@ -666,6 +727,15 @@
       "OpenAcquisition": {
         "additionalProperties": false,
         "properties": {
+          "location": {
+            "default": "acquisition",
+            "enum": [
+              "acquisition",
+              "saved"
+            ],
+            "title": "Location",
+            "type": "string"
+          },
           "relative_path": {
             "maxLength": 4096,
             "minLength": 1,
@@ -936,6 +1006,15 @@
             "title": "Expected Revision",
             "type": "integer"
           },
+          "location": {
+            "default": "acquisition",
+            "enum": [
+              "acquisition",
+              "saved"
+            ],
+            "title": "Location",
+            "type": "string"
+          },
           "relative_path": {
             "maxLength": 4096,
             "minLength": 1,
@@ -956,6 +1035,65 @@
           "relative_path"
         ],
         "title": "ReplaceAcquisition",
+        "type": "object"
+      },
+      "SaveCopy": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset_generation": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Dataset Generation",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "filename": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Filename",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_revision",
+          "dataset_generation",
+          "filename"
+        ],
+        "title": "SaveCopy",
+        "type": "object"
+      },
+      "SavedFile": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "size"
+        ],
+        "title": "SavedFile",
         "type": "object"
       },
       "SelectImageSignal": {
@@ -1095,6 +1233,17 @@
           "relative": {
             "title": "Relative",
             "type": "boolean"
+          },
+          "spectrum_log": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spectrum Log"
           },
           "type": {
             "const": "set_display",
@@ -1300,6 +1449,17 @@
               }
             ],
             "title": "Job Id"
+          },
+          "materialization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Materialization Id"
           },
           "name": {
             "title": "Name",
@@ -1804,6 +1964,55 @@
         "summary": "Replace Analysis"
       }
     },
+    "/api/v1/analyses/{aid}/saves": {
+      "post": {
+        "operationId": "save_copy_api_v1_analyses__aid__saves_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "aid",
+            "required": true,
+            "schema": {
+              "title": "Aid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCopy"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Copy"
+      }
+    },
     "/api/v1/analyses/{aid}/views": {
       "post": {
         "operationId": "attach_api_v1_analyses__aid__views_post",
@@ -1910,6 +2119,20 @@
             "schema": {
               "default": "",
               "title": "Directory",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "location",
+            "required": false,
+            "schema": {
+              "default": "acquisition",
+              "enum": [
+                "acquisition",
+                "saved"
+              ],
+              "title": "Location",
               "type": "string"
             }
           },
@@ -2046,6 +2269,65 @@
           }
         },
         "summary": "Cancel"
+      }
+    },
+    "/api/v1/saved-files": {
+      "get": {
+        "operationId": "saved_files_api_v1_saved_files_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SavedFile"
+                  },
+                  "title": "Response Saved Files Api V1 Saved Files Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Saved Files"
+      }
+    },
+    "/api/v1/saved-files/{fid}/download": {
+      "get": {
+        "operationId": "download_saved_api_v1_saved_files__fid__download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fid",
+            "required": true,
+            "schema": {
+              "title": "Fid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Saved"
       }
     },
     "/api/v1/views/{vid}": {
