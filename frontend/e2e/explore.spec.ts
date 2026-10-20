@@ -1,3 +1,4 @@
+import { manageSignals, addSignal } from "./signal-controls";
 import { test, expect } from "@playwright/test";
 test.use({ extraHTTPHeaders: { "x-tofscope-user": "browser-a" } });
 test.setTimeout(60000);
@@ -44,6 +45,7 @@ test("independent files, exact Explore state, union calculation and offline down
     page.getByRole("button", { name: /^ROI:/ }).filter({ visible: true }),
   ).toContainText("x 1–1");
   const screen = page.locator(".explore-screen").filter({ visible: true });
+  await addSignal(page);
   await screen
     .getByRole("button", { name: "Create from spectrum", exact: true })
     .click();
@@ -60,9 +62,13 @@ test("independent files, exact Explore state, union calculation and offline down
   await expect(
     screen.getByRole("region", { name: "Signal editor" }),
   ).toBeHidden();
-  await expect(screen.getByTestId("signal-row").last()).toContainText(
-    "Raw integration",
-  );
+  await manageSignals(page);
+  await expect(
+    page
+      .getByRole("dialog", { name: "Manage signals", exact: true })
+      .getByTestId("signal-row")
+      .last(),
+  ).toContainText("Raw integration");
   await screen
     .getByRole("button", { name: "Maximize Mass spectrum", exact: true })
     .click();
@@ -168,7 +174,7 @@ test("Explore layout, signal picker and chart wheel behavior", async ({
   ).toBe(false);
   const imageBox = (await imageStage.boundingBox())!;
   expect(Math.abs(imageBox.width - imageBox.height)).toBeLessThan(2);
-  const picker = page.getByRole("button", { name: "Add stored signal" });
+  const picker = page.getByRole("button", { name: "Add signal" });
   await expect(picker).toBeVisible();
   await expect(page.getByLabel("Search stored signals")).toBeHidden();
   await picker.click();

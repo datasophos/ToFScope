@@ -471,7 +471,7 @@ small {
   position: fixed;
   inset: 0;
   background: #16334488;
-  z-index: 30;
+  z-index: 50;
   display: grid;
   place-items: center;
 }
@@ -585,25 +585,85 @@ small {
   border-radius: 7px;
   background: white;
 }
-.signal-tray > header {
-  padding: 12px 14px;
+.signal-strip {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 10px 14px;
 }
 .signal-tray .heading-help {
   margin: 0;
 }
-.signal-add {
-  flex-wrap: wrap;
+.image-signal-choice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
 }
-.signal-add .signal-picker {
-  width: 190px;
+.image-signal-choice select {
+  width: 170px;
+  min-width: 0;
+  text-overflow: ellipsis;
 }
-.signal-add > button {
+.signal-profiles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 180px;
+}
+.signal-chips {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 2px 0;
+}
+.signal-chip {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  border: 1px solid #cbd8df;
+  border-radius: 5px;
+  background: #f5f9fb;
+}
+.signal-chip button {
+  border: 0;
+  background: transparent;
+  padding: 5px 7px;
+}
+.signal-chip-details {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.signal-chip-details > span:not(.curve-marker) {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+.signal-chip-details [role="status"] {
+  font-size: 11px;
+}
+.signal-strip-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.signal-strip-actions .signal-picker {
+  width: 145px;
+}
+.signal-strip-actions .signal-picker-popover {
+  left: auto;
+  right: 0;
+}
+.signal-picker-create {
+  width: 100%;
+  margin-bottom: 6px;
+  text-align: left;
 }
 .signal-columns,
 .signal-row {
@@ -667,12 +727,6 @@ small {
 .signal-name .text-button {
   font-weight: 600;
   color: #203744;
-}
-.signal-ready {
-  padding: 8px 14px;
-  background: #eef8f6;
-  font-size: 12px;
-  border-radius: 0 0 7px 7px;
 }
 .signal-row progress {
   display: block;
@@ -853,13 +907,6 @@ small {
 @media (max-width: 650px) {
   .signal-workspace {
     padding: 0 10px 14px;
-  }
-  .signal-add {
-    width: 100%;
-  }
-  .signal-add .signal-picker {
-    flex: 1;
-    min-width: 120px;
   }
   .signal-columns {
     display: none;

@@ -1,5 +1,6 @@
+import { manageSignals, addSignal } from "./signal-controls";
 import { test, expect } from "@playwright/test";
-test("signal tray scrolls without losing labels and contextual controls fit narrow screens", async ({
+test("signal collection scrolls without losing labels and contextual controls fit narrow screens", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1600, height: 900 });
@@ -10,6 +11,7 @@ test("signal tray scrolls without losing labels and contextual controls fit narr
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   for (let i = 0; i < 5; i++) {
+    await manageSignals(page);
     await page
       .getByTestId("signal-row")
       .first()
@@ -29,6 +31,7 @@ test("signal tray scrolls without losing labels and contextual controls fit narr
     .locator(".signal-rows")
     .evaluate((el) => (el.scrollTop = el.scrollHeight));
   await expect(page.locator(".signal-columns")).toBeInViewport();
+  await addSignal(page);
   await page
     .getByRole("button", { name: "Create from spectrum", exact: true })
     .click();
@@ -43,6 +46,7 @@ test("signal tray scrolls without losing labels and contextual controls fit narr
     path: "/private/tmp/tofscope-signal-workspace-desktop.png",
     fullPage: true,
   });
+  await manageSignals(page);
   await page
     .getByTestId("signal-row")
     .last()

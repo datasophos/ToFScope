@@ -1,3 +1,4 @@
+import { manageSignals, addSignal } from "./signal-controls";
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
@@ -10,15 +11,15 @@ test("profile legend and tray markers identify curves and retain colors after re
     .getByRole("button", { name: "Choose an HDF5 acquisition" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
-  await page
-    .getByRole("button", { name: "Add stored signal", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Add signal", exact: true }).click();
   await page
     .getByRole("listbox", { name: "Stored signals" })
     .getByRole("option")
     .first()
     .click();
+  await manageSignals(page);
   await expect(page.getByTestId("signal-row")).toHaveCount(2);
+  await addSignal(page);
   await page
     .getByRole("button", { name: "Create from spectrum", exact: true })
     .click();
@@ -43,6 +44,7 @@ test("profile legend and tray markers identify curves and retain colors after re
     })),
   );
   expect(new Set(entries.map((entry) => entry.color)).size).toBe(3);
+  await manageSignals(page);
   for (const entry of entries) {
     const row = page.locator(
       `[data-testid="signal-row"][data-signal-id="${entry.id}"]`,

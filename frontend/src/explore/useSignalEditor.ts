@@ -25,7 +25,6 @@ export function useSignalEditor(
   const jobsRef = useRef(jobs);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [lastCreatedId, setLastCreatedId] = useState<string>();
   const seenDraftId = useRef<string | undefined>(undefined);
   const draftId = state.draft?.signalId;
   const draftExists = analysis.signals.some((row) => row.id === draftId);
@@ -57,7 +56,6 @@ export function useSignalEditor(
           setJobs(jobsRef.current);
           if (terminal(job.status)) {
             setState((s) => finishDraft(s, id, job.status));
-            if (job.status === "succeeded") setLastCreatedId(job.signal_id);
             if (job.safe_error) setError(job.safe_error);
             await refresh();
           }
@@ -172,7 +170,6 @@ export function useSignalEditor(
     job,
     error,
     submitting,
-    lastCreatedId,
     openNew: () =>
       open(
         createDraft(

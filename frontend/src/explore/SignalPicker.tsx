@@ -9,6 +9,9 @@ export function SignalPicker({
   listboxLabel,
   placeholder,
   onChoose,
+  onCreate,
+  onOpen,
+  createDisabled,
 }: {
   options: SignalOption[];
   value?: number;
@@ -16,6 +19,9 @@ export function SignalPicker({
   listboxLabel: string;
   placeholder: string;
   onChoose: (index: number) => void;
+  onCreate?: () => void;
+  onOpen?: () => void;
+  createDisabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -53,6 +59,7 @@ export function SignalPicker({
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => {
+          if (!open) onOpen?.();
           setSearch("");
           setOpen((shown) => !shown);
         }}
@@ -64,6 +71,18 @@ export function SignalPicker({
       </button>
       {open && (
         <div className="signal-picker-popover">
+          {onCreate && (
+            <button
+              className="signal-picker-create"
+              disabled={createDisabled}
+              onClick={() => {
+                close();
+                onCreate();
+              }}
+            >
+              Create from spectrum
+            </button>
+          )}
           <input
             ref={searchInput}
             type="search"

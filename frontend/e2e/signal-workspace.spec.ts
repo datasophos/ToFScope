@@ -1,3 +1,4 @@
+import { manageSignals, addSignal } from "./signal-controls";
 import { test, expect } from "@playwright/test";
 test("signals are created independently, chosen for images, and hidden without losing identity", async ({
   page,
@@ -11,9 +12,11 @@ test("signals are created independently, chosen for images, and hidden without l
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   await expect(page.getByRole("region", { name: "Signals" })).toBeVisible();
+  await manageSignals(page);
   const original = await page
     .getByRole("radio", { checked: true })
     .getAttribute("data-signal-id");
+  await addSignal(page);
   await page
     .getByRole("button", { name: "Create from spectrum", exact: true })
     .click();
@@ -23,6 +26,7 @@ test("signals are created independently, chosen for images, and hidden without l
   await page
     .getByRole("button", { name: "Calculate signal", exact: true })
     .click();
+  await manageSignals(page);
   const row = page.getByTestId("signal-row").filter({ hasText: "Titanium" });
   await expect(row.getByRole("radio")).toBeEnabled();
   await expect(page.getByRole("radio", { checked: true })).toHaveAttribute(
@@ -73,16 +77,16 @@ test("stored adds deduplicate, custom edits retain identity, and duplicate start
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   for (let i = 0; i < 2; i++) {
-    await page
-      .getByRole("button", { name: "Add stored signal", exact: true })
-      .click();
+    await page.getByRole("button", { name: "Add signal", exact: true }).click();
     await page
       .getByRole("listbox", { name: "Stored signals" })
       .getByRole("option")
       .first()
       .click();
+    await manageSignals(page);
     await expect(page.getByTestId("signal-row")).toHaveCount(2);
   }
+  await addSignal(page);
   await page
     .getByRole("button", { name: "Create from spectrum", exact: true })
     .click();
@@ -95,6 +99,7 @@ test("stored adds deduplicate, custom edits retain identity, and duplicate start
   await expect(
     page.getByRole("region", { name: "Signal editor" }),
   ).toBeHidden();
+  await manageSignals(page);
   const row = page.getByTestId("signal-row").filter({ hasText: "Ti" });
   const id = await row.getAttribute("data-signal-id");
   const style = await row.locator(".curve-marker").getAttribute("style");
@@ -138,6 +143,7 @@ test("duplicating a stored signal preserves its exact frame coverage", async ({
     .getByRole("button", { name: "Choose an HDF5 acquisition" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await manageSignals(page);
   await page
     .getByTestId("signal-row")
     .first()
