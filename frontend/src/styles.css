@@ -592,6 +592,9 @@ small {
   gap: 8px 14px;
   padding: 10px 14px;
 }
+.signal-strip .curve-marker {
+  margin-top: 0;
+}
 .signal-tray .heading-help {
   margin: 0;
 }
@@ -649,12 +652,16 @@ small {
   font-size: 11px;
 }
 .signal-strip-actions {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 .signal-strip-actions .signal-picker {
-  width: 145px;
+  width: auto;
+}
+.signal-strip-actions .signal-picker-trigger {
+  width: max-content;
 }
 .signal-strip-actions .signal-picker-popover {
   left: auto;

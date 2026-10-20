@@ -111,3 +111,48 @@ test("signal collection belongs only to its active analysis tab", async ({
   await page.keyboard.press("Escape");
   await expect(manager).toHaveCount(0);
 });
+
+test("signal markers align with labels and Add signal never clips at larger text sizes", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `strip-alignment-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  const strip = page.locator(".signal-strip");
+  await expect(strip).toBeVisible();
+  for (const fontSize of [14, 20]) {
+    await page.addStyleTag({
+      content: `.signal-strip, .signal-strip button, .signal-strip select { font-size: ${fontSize}px; }`,
+    });
+    for (const width of [1600, 600]) {
+      await page.setViewportSize({ width, height: 900 });
+      const offsets = await strip
+        .locator(".curve-marker")
+        .evaluateAll((markers) =>
+          markers.map((marker) => {
+            const line = marker.getBoundingClientRect();
+            const label = marker.nextElementSibling!.getBoundingClientRect();
+            return Math.abs(
+              line.y + line.height / 2 - label.y - label.height / 2,
+            );
+          }),
+        );
+      expect(offsets.length).toBeGreaterThan(1);
+      expect(Math.max(...offsets)).toBeLessThan(1);
+      const label = strip.locator(".signal-picker-trigger > span").first();
+      expect(
+        await label.evaluate((el) => el.scrollWidth <= el.clientWidth),
+      ).toBe(true);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+    }
+  }
+});
