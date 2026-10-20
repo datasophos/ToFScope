@@ -1,0 +1,128 @@
+{
+  "method": "22 stratified frames, two trials, original arrays checksum-verified after roundtrip; full raw repack and byte-copy measured separately; temporary outputs removed; inputs read only",
+  "frames": [
+    0,
+    1,
+    2,
+    20,
+    80,
+    150,
+    300,
+    399,
+    400,
+    401,
+    402,
+    440,
+    650,
+    790,
+    800,
+    801,
+    850,
+    999,
+    1100,
+    1200,
+    1299,
+    1300
+  ],
+  "trials": [
+    {
+      "trial": 0,
+      "layout": "current_lzf",
+      "frames": 22,
+      "write_seconds": 0.20288304200084895,
+      "verify_seconds": 0.3995415829999729,
+      "channel_read_seconds": 0.046229666999806796,
+      "compressed_bytes": 4576826,
+      "full_write_seconds_extrapolated": 11.99776534741384,
+      "full_verify_seconds_extrapolated": 23.62743634013476
+    },
+    {
+      "trial": 0,
+      "layout": "vendor_gzip1",
+      "frames": 22,
+      "write_seconds": 0.40164145900098447,
+      "verify_seconds": 0.4210045419999915,
+      "channel_read_seconds": 0.002024916000209487,
+      "compressed_bytes": 1711618,
+      "full_write_seconds_extrapolated": 23.751615370921854,
+      "full_verify_seconds_extrapolated": 24.896677688272224
+    },
+    {
+      "trial": 0,
+      "layout": "spatial_gzip1",
+      "frames": 22,
+      "write_seconds": 0.28909732999818516,
+      "verify_seconds": 0.34273274999986825,
+      "channel_read_seconds": 0.037372249999862106,
+      "compressed_bytes": 2210738,
+      "full_write_seconds_extrapolated": 17.096164833074496,
+      "full_verify_seconds_extrapolated": 20.267968534083117
+    },
+    {
+      "trial": 1,
+      "layout": "vendor_gzip1",
+      "frames": 22,
+      "write_seconds": 0.4035394190000261,
+      "verify_seconds": 0.42447349999974904,
+      "channel_read_seconds": 0.0020188749999761058,
+      "compressed_bytes": 1711618,
+      "full_write_seconds_extrapolated": 23.863853823592454,
+      "full_verify_seconds_extrapolated": 25.10181924998516
+    },
+    {
+      "trial": 1,
+      "layout": "spatial_gzip1",
+      "frames": 22,
+      "write_seconds": 0.2990162109999801,
+      "verify_seconds": 0.3460532499998408,
+      "channel_read_seconds": 0.03892791600037526,
+      "compressed_bytes": 2210738,
+      "full_write_seconds_extrapolated": 17.68273138686246,
+      "full_verify_seconds_extrapolated": 20.46433082953604
+    },
+    {
+      "trial": 1,
+      "layout": "current_lzf",
+      "frames": 22,
+      "write_seconds": 0.20389004399839905,
+      "verify_seconds": 0.41376149999996414,
+      "channel_read_seconds": 0.045456290999936755,
+      "compressed_bytes": 4576826,
+      "full_write_seconds_extrapolated": 12.057315783723508,
+      "full_verify_seconds_extrapolated": 24.468350522725153
+    }
+  ],
+  "averages": {
+    "current_lzf": {
+      "full_write_seconds_extrapolated": 12.027540565568675,
+      "full_verify_seconds_extrapolated": 24.047893431429955,
+      "compressed_bytes": 4576826,
+      "channel_read_seconds": 0.045842978999871775
+    },
+    "vendor_gzip1": {
+      "full_write_seconds_extrapolated": 23.807734597257152,
+      "full_verify_seconds_extrapolated": 24.99924846912869,
+      "compressed_bytes": 1711618,
+      "channel_read_seconds": 0.0020218955000927963
+    },
+    "spatial_gzip1": {
+      "full_write_seconds_extrapolated": 17.389448109968477,
+      "full_verify_seconds_extrapolated": 20.366149681809578,
+      "compressed_bytes": 2210738,
+      "channel_read_seconds": 0.038150083000118684
+    }
+  },
+  "full_raw_repack": {
+    "source_bytes": 2207119636,
+    "repacked_bytes": 2088536796,
+    "seconds": 15.1908390829999
+  },
+  "full_raw_byte_copy": {
+    "byte_copy_seconds": 2.517445874999794
+  },
+  "estimated_extra_compression_and_verification_seconds": 12.731549069387214,
+  "estimated_extra_compact_copy_seconds": 12.673393208000107,
+  "previous_full_preparation_seconds": 84.45137245906517,
+  "estimated_total_seconds": 109.85631473645249,
+  "limitation": "Component-based estimate on a warm filesystem cache, not a full end-to-end preparation measurement of the proposed layout. No application implementation changed."
+}
