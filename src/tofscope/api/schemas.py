@@ -5,6 +5,7 @@ from tofscope.application.commands import StrictModel
 
 class OpenAcquisition(StrictModel):
     relative_path: str = Field(min_length=1, max_length=4096)
+    location: Literal["acquisition", "saved"] = "acquisition"
 
 
 class RevisionEnvelope(StrictModel):
@@ -15,6 +16,7 @@ class RevisionEnvelope(StrictModel):
 
 class ReplaceAcquisition(RevisionEnvelope):
     relative_path: str = Field(min_length=1, max_length=4096)
+    location: Literal["acquisition", "saved"] = "acquisition"
 
 
 FiniteStrictFloat = Annotated[float, Field(strict=True, allow_inf_nan=False)]
@@ -49,3 +51,7 @@ class ErrorResponse(StrictModel):
     message: str
     request_id: str | None = None
     current_revision: int | None = None
+
+
+class SaveCopy(RevisionEnvelope):
+    filename: str = Field(min_length=1, max_length=240)

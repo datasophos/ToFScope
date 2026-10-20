@@ -6,6 +6,8 @@ from threading import Condition, Event, RLock, Thread
 import json
 import time
 from uuid import uuid4
+from typing import Literal
+from tofscope.storage.saved_files import SavedFile
 from tofscope.application.workspaces import CapacityError
 from tofscope.application.models import SignalSnapshot
 from tofscope.application.signals import get_signal, normalize_view, valid_name
@@ -34,6 +36,10 @@ class JobSnapshot:
     done: int = 0
     total: int = 0
     safe_error: str | None = None
+    kind: Literal["integration", "save"] = "integration"
+    stage: str = ""
+    saved_file: SavedFile | None = None
+    saved_revision: int | None = None
 
 
 @dataclass
@@ -47,6 +53,7 @@ class Job:
     name_revision: int
     referenced: bool = True
     cancelled: Event = field(default_factory=Event)
+    task: object = None
 
 
 class JobService:
@@ -61,6 +68,7 @@ class JobService:
         self.running = set()
         self.condition = Condition(RLock())
         self.stopping = False
+        self.save_handler = None
         self.threads = [
             Thread(target=self._worker, daemon=True, name=f"tofscope-job-{i}")
             for i in range(settings.workers)
@@ -140,6 +148,25 @@ class JobService:
                     del self.jobs[id]
                 return snap
 
+    def enqueue_save(self, owner, task):
+        with self.condition:
+            active = [j for j in self.jobs.values() if j.snapshot.status not in TERMINAL]
+            aid = task.snapshot.id
+            if (len(active) >= self.settings.jobs_global or
+                    sum(j.owner == owner for j in active) >= self.settings.jobs_per_user or
+                    sum(j.snapshot.analysis_id == aid for j in active) >= self.settings.jobs_per_analysis):
+                raise CapacityError('Work queue full; wait or cancel a job.')
+            snap = JobSnapshot(str(uuid4()), aid, 'queued', kind='save', saved_revision=task.snapshot.revision)
+            self.jobs[snap.id] = Job(snap, owner, task.snapshot.dataset, None, '', 0, 0, referenced=False, task=task)
+            self.pending.setdefault(owner, deque()).append(snap.id)
+            if owner not in self.users:
+                self.users.append(owner)
+            terminal = [id for id, j in self.jobs.items() if j.owner == owner and j.snapshot.status in TERMINAL and not j.referenced]
+            for id in terminal[:-256]:
+                del self.jobs[id]
+            self.condition.notify_all()
+            return snap
+
     def get(self, owner, job_id):
         with self.condition:
             j = self.jobs.get(job_id)
@@ -176,7 +203,7 @@ class JobService:
         for _ in range(len(self.users)):
             owner = self.users.popleft()
             q = self.pending[owner]
-            while q and self.jobs[q[0]].snapshot.status in TERMINAL:
+            while q and (q[0] not in self.jobs or self.jobs[q[0]].snapshot.status in TERMINAL):
                 q.popleft()
             if not q:
                 continue
@@ -201,6 +228,13 @@ class JobService:
                     return
             lease = None
             try:
+                if j.snapshot.kind == 'save':
+                    if j.cancelled.is_set():
+                        raise InterruptedError()
+                    result = self.save_handler(j)
+                    with self.condition:
+                        j.snapshot = replace(j.snapshot, status='succeeded', saved_file=result, done=j.snapshot.total)
+                    continue
                 aid = j.snapshot.analysis_id
                 e = self.workspaces.entry(j.owner, aid)
 
@@ -262,10 +296,10 @@ class JobService:
                 with self.condition:
                     j.snapshot = replace(
                         j.snapshot,
-                        status="obsolete"
+                        status="cancelled" if j.cancelled.is_set() else "obsolete"
                         if "changed" in str(exc).lower()
                         else "failed",
-                        safe_error="Integration failed; check source/calibration or narrow the frame range."
+                        safe_error=("Saving failed; check free space, output name and current analysis revision." if j.snapshot.kind == "save" else "Integration failed; check source/calibration or narrow the frame range.")
                         if not isinstance(exc, CapacityError)
                         else str(exc),
                     )

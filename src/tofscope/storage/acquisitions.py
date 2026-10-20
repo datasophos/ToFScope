@@ -26,6 +26,8 @@ class DatasetRef:
     key: str
     generation: str
     relative_path: str
+    location: str = "acquisition"
+    name: str = ""
 
 
 @dataclass(frozen=True)
@@ -48,9 +50,18 @@ class AcquisitionRepository:
 
     def path(self, owner, dataset):
         try:
-            p = resolve_data_path(
-                self.settings, dataset.relative_path, require_file=True
-            )
+            if dataset.location == 'saved':
+                from tofscope.storage.saved_files import SavedFileStore
+                try:
+                    p = SavedFileStore(self.settings).path(owner, dataset.relative_path)
+                except FileNotFoundError:
+                    raise ValueError('Saved file unavailable.') from None
+            elif dataset.location == 'acquisition':
+                p = resolve_data_path(self.settings, dataset.relative_path, require_file=True)
+                if p.is_relative_to(self.settings.output_root):
+                    raise PermissionError('Open saved files through the owner-scoped saved file list.')
+            else:
+                raise ValueError('Unknown file location.')
         except ValueError:
             if dataset.generation:
                 raise SourceChanged(
@@ -81,8 +92,8 @@ class AcquisitionRepository:
         finally:
             LOCK_DIR.reset(token)
 
-    def open(self, owner, relative_path):
-        provisional = DatasetRef("", "", relative_path)
+    def open(self, owner, relative_path, location="acquisition"):
+        provisional = DatasetRef("", "", relative_path, location)
         p = self.path(owner, provisional)
         token = LOCK_DIR.set(self.settings.lock_dir)
         try:
@@ -94,7 +105,7 @@ class AcquisitionRepository:
                     if handle["PeakData/PeakData"].dtype.kind not in "iuf":
                         raise ValueError("Unsupported stored intensity dtype.")
                 key = hashlib.sha256((self.salt + str(p)).encode()).hexdigest()
-                d = DatasetRef(key, generation, relative_path)
+                d = DatasetRef(key, generation, relative_path, location, p.name)
                 with self._inspect(owner, d, p):
                     pass
                 return d

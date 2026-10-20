@@ -107,6 +107,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/analyses/{aid}/saves": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Save Copy */
+    post: operations["save_copy_api_v1_analyses__aid__saves_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/analyses/{aid}/views": {
     parameters: {
       query?: never;
@@ -203,6 +220,40 @@ export interface paths {
     put?: never;
     /** Cancel */
     post: operations["cancel_api_v1_jobs__jid__cancel_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/saved-files": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Saved Files */
+    get: operations["saved_files_api_v1_saved_files_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/saved-files/{fid}/download": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Download Saved */
+    get: operations["download_saved_api_v1_saved_files__fid__download_get"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -395,6 +446,8 @@ export interface components {
       revision: number;
       /** Roi */
       roi: [number, number, number, number];
+      /** Saved Revision */
+      saved_revision?: number | null;
       /** Shape */
       shape: [number, number, number, number];
       /** Signals */
@@ -463,6 +516,16 @@ export interface components {
       generation: string;
       /** Key */
       key: string;
+      /**
+       * Location
+       * @default acquisition
+       */
+      location: string;
+      /**
+       * Name
+       * @default
+       */
+      name: string;
       /** Relative Path */
       relative_path: string;
     };
@@ -495,6 +558,11 @@ export interface components {
        * @default true
        */
       relative: boolean;
+      /**
+       * Spectrum Log
+       * @default true
+       */
+      spectrum_log: boolean;
     };
     /** ExploreData */
     ExploreData: {
@@ -539,17 +607,31 @@ export interface components {
       /** Id */
       id: string;
       /**
+       * Kind
+       * @default integration
+       * @enum {string}
+       */
+      kind: "integration" | "save";
+      /**
        * Recipe Version
        * @default 0
        */
       recipe_version: number;
       /** Safe Error */
       safe_error?: string | null;
+      saved_file?: components["schemas"]["SavedFile"] | null;
+      /** Saved Revision */
+      saved_revision?: number | null;
       /**
        * Signal Id
        * @default
        */
       signal_id: string;
+      /**
+       * Stage
+       * @default
+       */
+      stage: string;
       /** Status */
       status: string;
       /**
@@ -560,6 +642,12 @@ export interface components {
     };
     /** OpenAcquisition */
     OpenAcquisition: {
+      /**
+       * Location
+       * @default acquisition
+       * @enum {string}
+       */
+      location: "acquisition" | "saved";
       /** Relative Path */
       relative_path: string;
     };
@@ -664,10 +752,36 @@ export interface components {
       dataset_generation: string;
       /** Expected Revision */
       expected_revision: number;
+      /**
+       * Location
+       * @default acquisition
+       * @enum {string}
+       */
+      location: "acquisition" | "saved";
       /** Relative Path */
       relative_path: string;
       /** Request Id */
       request_id: string;
+    };
+    /** SaveCopy */
+    SaveCopy: {
+      /** Dataset Generation */
+      dataset_generation: string;
+      /** Expected Revision */
+      expected_revision: number;
+      /** Filename */
+      filename: string;
+      /** Request Id */
+      request_id: string;
+    };
+    /** SavedFile */
+    SavedFile: {
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /** Size */
+      size: number;
     };
     /** SelectImageSignal */
     SelectImageSignal: {
@@ -723,6 +837,8 @@ export interface components {
       log: boolean;
       /** Relative */
       relative: boolean;
+      /** Spectrum Log */
+      spectrum_log?: boolean | null;
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -801,6 +917,8 @@ export interface components {
       id: string;
       /** Job Id */
       job_id?: string | null;
+      /** Materialization Id */
+      materialization_id?: string | null;
       /** Name */
       name: string;
       /**
@@ -1110,6 +1228,41 @@ export interface operations {
       };
     };
   };
+  save_copy_api_v1_analyses__aid__saves_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        aid: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SaveCopy"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["JobSnapshot"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   attach_api_v1_analyses__aid__views_post: {
     parameters: {
       query?: never;
@@ -1198,6 +1351,7 @@ export interface operations {
     parameters: {
       query?: {
         directory?: string;
+        location?: "acquisition" | "saved";
         query?: string;
         offset?: number;
         limit?: number;
@@ -1277,6 +1431,57 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["JobSnapshot"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  saved_files_api_v1_saved_files_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedFile"][];
+        };
+      };
+    };
+  };
+  download_saved_api_v1_saved_files__fid__download_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        fid: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */

@@ -98,10 +98,10 @@ class SavedFilesTests(unittest.TestCase):
     def test_disk_reservations_prevent_concurrent_overcommit_and_release(self):
         from tofscope.storage.saved_files import reserve_disk
         with patch('tofscope.storage.saved_files.shutil.disk_usage', return_value=type('Usage', (), {'free': 40})()):
-            with reserve_disk(self.store.root, 20):
+            with reserve_disk(self.store.owner_root('a'), 20):
                 with self.assertRaises(OSError):
-                    with reserve_disk(self.store.root, 30): pass
-            with reserve_disk(self.store.root, 30): pass
+                    with reserve_disk(self.store.owner_root('a'), 30): pass
+            with reserve_disk(self.store.owner_root('a'), 30): pass
 
     def test_nonfinite_results_and_external_links_rejected(self):
         self.values[0, 0, 0] = np.nan
