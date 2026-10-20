@@ -4,13 +4,11 @@ import type { components } from "../api/generated";
 
 type Locations = components["schemas"]["FolderLocations"];
 
-export function FolderLocations({
-  save = false,
-  filename = "",
-}: {
-  save?: boolean;
-  filename?: string;
-}) {
+export function folderName(path: string) {
+  return path.split(/[\\/]/).filter(Boolean).at(-1) || path;
+}
+
+export function useFolderLocations() {
   const [folders, setFolders] = useState<Locations | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -26,32 +24,24 @@ export function FolderLocations({
       alive = false;
     };
   }, []);
+  return { folders, error };
+}
+
+export function FolderLocations({ filename = "" }: { filename?: string }) {
+  const { folders, error } = useFolderLocations();
   if (error) return <p role="alert">{error}</p>;
   if (!folders) return <p role="status">Loading folders…</p>;
+  const destination = `${folders.save_destination}/${filename}`;
   return (
     <dl className="folder-paths">
-      {!save && (
-        <>
-          <dt>Acquisition folder</dt>
-          <dd data-testid="folder-acquisitions">
-            <code>{folders.acquisitions}</code>
-          </dd>
-        </>
-      )}
       <dt>Saved copies folder</dt>
-      <dd data-testid="folder-saved-copies">
-        <code>{folders.saved_copies}</code>
+      <dd data-testid="folder-saved-copies" title={folders.saved_copies}>
+        {folderName(folders.saved_copies)}
       </dd>
-      {save && (
-        <>
-          <dt>Save destination</dt>
-          <dd data-testid="save-destination">
-            <code>
-              {folders.save_destination}/{filename}
-            </code>
-          </dd>
-        </>
-      )}
+      <dt>Save destination</dt>
+      <dd data-testid="save-destination" title={destination}>
+        {folderName(destination)}
+      </dd>
     </dl>
   );
 }

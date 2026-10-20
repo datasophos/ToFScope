@@ -9,7 +9,7 @@ test("compact signal strip keeps plots visible and exposes the full collection o
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   const strip = page.getByRole("region", { name: "Signals", exact: true });
   await expect(
     page.getByRole("dialog", { name: "Manage signals", exact: true }),
@@ -90,7 +90,7 @@ test("signal collection belongs only to its active analysis tab", async ({
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await page
     .getByRole("button", { name: "Manage signals", exact: true })
     .click();
@@ -100,7 +100,7 @@ test("signal collection belongs only to its active analysis tab", async ({
   });
   await expect(manager).toBeVisible();
   await page.getByRole("button", { name: "＋ Open TOFexplorer file" }).click();
-  await page.getByRole("button", { name: "◫ b.h5" }).click();
+  await page.getByRole("button", { name: "◫ b.h5" }).dblclick();
   await expect(page.getByRole("tab", { name: "2 · b.h5" })).toHaveAttribute(
     "aria-selected",
     "true",
@@ -122,7 +122,7 @@ test("signal markers align with labels and Add signal never clips at larger text
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   const strip = page.locator(".signal-strip");
   await expect(strip).toBeVisible();
   for (const fontSize of [14, 20]) {

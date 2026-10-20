@@ -13,7 +13,7 @@ test("two users, A/B/A tabs, automatic tab recovery and denied foreign downloads
   await p.goto("/");
   const open = async (page: typeof p, name: string) => {
     await page.getByRole("button", { name: "＋ Open TOFexplorer file" }).click();
-    await page.getByRole("button", { name: "◫ " + name, exact: true }).click();
+    await page.getByRole("button", { name: "◫ " + name, exact: true }).dblclick();
     await expect(page.getByRole("tab").last()).toHaveAttribute(
       "aria-selected",
       "true",

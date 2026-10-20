@@ -74,7 +74,7 @@ def main():
                 page.get_by_role("button", name="Open TOFexplorer (.h5) file").click()
                 page.get_by_label("Search files").fill(a.file.name)
                 t = time.perf_counter()
-                page.get_by_role("button", name="◫ " + a.file.name, exact=True).click()
+                page.get_by_role("button", name="◫ " + a.file.name, exact=True).dblclick()
                 page.get_by_test_id("panel-front").locator("canvas").first.wait_for(
                     timeout=30000
                 )
@@ -148,7 +148,7 @@ def main():
                     page.get_by_label("Search files").fill(a.also_open.name)
                     page.get_by_role(
                         "button", name="◫ " + a.also_open.name, exact=True
-                    ).click()
+                    ).dblclick()
                     second_tab = page.get_by_role(
                         "tab", name="2 · " + a.also_open.name
                     )

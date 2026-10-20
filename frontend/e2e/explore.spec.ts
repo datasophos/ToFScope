@@ -20,7 +20,7 @@ test("independent files, exact Explore state, union calculation and offline down
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await expect(page.getByLabel("Log colors", { exact: true })).toBeChecked();
   await expect(
     page.getByLabel("Relative profiles", { exact: true }),
@@ -37,7 +37,7 @@ test("independent files, exact Explore state, union calculation and offline down
   await expect(page.getByTestId("analysis-revision")).toHaveText("1");
   for (const name of ["b.h5", "a.h5"]) {
     await page.getByRole("button", { name: "＋ Open TOFexplorer file" }).click();
-    await page.getByRole("button", { name: `◫ ${name}` }).click();
+    await page.getByRole("button", { name: `◫ ${name}` }).dblclick();
   }
   await expect(page.getByRole("tab")).toHaveCount(3);
   await page.getByRole("tab", { name: "1 · a.h5" }).click();
@@ -117,7 +117,7 @@ test("Explore layout, signal picker and chart wheel behavior", async ({
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   const ionLoader = page
     .getByTestId("panel-ion")
     .getByRole("status", { name: "Loading image plot" });
@@ -272,7 +272,7 @@ test("full-size image maximize and restore stay responsive without fetching data
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await expect(
     page.getByTestId("panel-front").locator("canvas").first(),
   ).toBeVisible();

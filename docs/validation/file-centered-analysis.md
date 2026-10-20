@@ -104,3 +104,24 @@ Checks passed: 142 Python tests, 11 frontend unit tests, TypeScript typecheck,
 33 browser workflows and the production frontend build. Both rebuilt wheel and
 sdist also passed independent offline installation, save/restart/source-removal,
 exact CSV and optional/interrupted download checks.
+
+## Familiar file explorer — 2026-10-20
+
+The open-file modal now has location shortcuts, breadcrumbs, parent navigation,
+a searchable Name/Size list and compact Cancel/Open actions. A click selects,
+double-click or Open opens, and keyboard focus, arrows, Home/End and Enter
+operate the list. Escape cancels and restores focus; Tab stays inside the modal.
+Long folder paths are replaced by their last segment, with complete paths in
+native hover tooltips, including the Save as destination. Explanatory paragraphs
+and the large folder-path block were removed from the opening flow.
+
+Three new browser cases failed before implementation and now pass. Additional
+regressions caught keyboard focus not selecting a row and a shared primary
+button style stretching Open across the footer; both were corrected and pass.
+All 36 browser workflows, 11 frontend unit tests, TypeScript checks and the
+production frontend build pass. Desktop and 560-pixel layouts were visually
+inspected from browser screenshots. Scientific reading/writing code is unchanged.
+
+Both rebuilt wheel and sdist also passed their independent offline installation,
+new browser file selection, saved-copy restart/source-removal, exact CSV, and
+optional/interrupted download checks.

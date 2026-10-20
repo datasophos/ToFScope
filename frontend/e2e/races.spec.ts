@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }, info) => {
 async function open(page: import("@playwright/test").Page) {
   const count = await page.getByRole("tab").count();
   await page.getByRole("button", { name: "＋ Open TOFexplorer file" }).click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await expect(page.getByRole("tab")).toHaveCount(count + 1);
   await expect(
     page

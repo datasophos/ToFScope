@@ -14,6 +14,8 @@ with tempfile.TemporaryDirectory(prefix="tofscope-e2e-") as d:
     root = Path(d)
     make_acquisition(root / "a.h5")
     make_acquisition(root / "b.h5")
+    (root / "nested").mkdir()
+    make_acquisition(root / "nested" / "c.h5")
     settings = Settings(
         root,
         runtime_dir=root / "runtime",
