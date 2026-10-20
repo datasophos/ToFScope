@@ -75,3 +75,12 @@ these fixes; package and container results below refer to those final artifacts.
 - Final: Ruling: earlier pilot behavior remains outside this feature review — it already had its own review and qualifications — pre-existing defects outside this change may remain.
 - Final: Ruling: NFS/native-commercial compatibility and power-loss guarantees remain unqualified — no matching mount/software/hardware was available and those guarantees are not asserted — deployments need separate qualification.
 - Final: Ruling: extended real-source high-water run remains blocked — CloudStorage timed out, so deterministic owner/cancel/admission tests plus the earlier full data-preservation result are the evidence — complete real-source high-water behavior is not established.
+
+## Local activation
+
+The verified implementation was restarted on 2026-10-20 at
+`http://127.0.0.1:8765`, using the provided acquisition directory read only and
+`~/.local/share/tofscope/saved-acquisitions` for persistent output. Health reports
+`original_writes=false` and `save_copies=true`; all served assets match the final
+manifest hashes. The implementation branch and isolated worktree are retained;
+no merge, push, release publication or external deployment was performed.

@@ -148,5 +148,11 @@
       "tofscope-0.2.0-py3-none-any.whl": "ddd831fc542a2ca52624b5bfef08da47f8b6ae9e3083f696f92a81a80c500baa",
       "tofscope-0.2.0.tar.gz": "3ae86755cbc6d88fcefa1ed17098a48c830138399450b0cc4e4728b24122ef6a"
     }
+  },
+  "local_activation": {
+    "port": 8765,
+    "original_writes": false,
+    "save_copies": true,
+    "served_assets_match_final_build": true
   }
 }
