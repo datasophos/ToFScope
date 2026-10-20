@@ -38,13 +38,18 @@ export function FilePicker({
   }, [dir, query, offset, location]);
   return (
     <div className="scrim">
-      <section className="dialog" role="dialog" aria-label="Open acquisition">
+      <section
+        className="dialog"
+        role="dialog"
+        aria-label="Open TOFexplorer file"
+      >
         <header>
-          <h2>Open acquisition</h2>
+          <h2>Open TOFexplorer file</h2>
           <button onClick={onClose}>Close picker</button>
         </header>
         <p>
-          Files remain on this server. Opening creates an independent analysis.
+          Choose a TOFWERK TOFexplorer .h5 file. Files remain on this server;
+          opening creates an independent analysis.
         </p>
         <FolderLocations />
         <div className="row file-locations">

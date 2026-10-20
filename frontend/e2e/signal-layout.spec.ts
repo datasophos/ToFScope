@@ -7,7 +7,7 @@ test("signal collection scrolls without losing labels and contextual controls fi
   await page.setExtraHTTPHeaders({ "x-tofscope-user": `layout-${Date.now()}` });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   for (let i = 0; i < 5; i++) {

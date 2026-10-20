@@ -7,7 +7,7 @@ test("compact signal strip keeps plots visible and exposes the full collection o
   await page.setExtraHTTPHeaders({ "x-tofscope-user": `strip-${Date.now()}` });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   const strip = page.getByRole("region", { name: "Signals", exact: true });
@@ -88,7 +88,7 @@ test("signal collection belongs only to its active analysis tab", async ({
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   await page
@@ -99,7 +99,7 @@ test("signal collection belongs only to its active analysis tab", async ({
     exact: true,
   });
   await expect(manager).toBeVisible();
-  await page.getByRole("button", { name: "＋ Open acquisition" }).click();
+  await page.getByRole("button", { name: "＋ Open TOFexplorer file" }).click();
   await page.getByRole("button", { name: "◫ b.h5" }).click();
   await expect(page.getByRole("tab", { name: "2 · b.h5" })).toHaveAttribute(
     "aria-selected",
@@ -120,7 +120,7 @@ test("signal markers align with labels and Add signal never clips at larger text
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   const strip = page.locator(".signal-strip");

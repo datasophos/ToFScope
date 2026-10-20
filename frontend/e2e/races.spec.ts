@@ -4,7 +4,7 @@ test.beforeEach(async ({ page }, info) => {
 });
 async function open(page: import("@playwright/test").Page) {
   const count = await page.getByRole("tab").count();
-  await page.getByRole("button", { name: "＋ Open acquisition" }).click();
+  await page.getByRole("button", { name: "＋ Open TOFexplorer file" }).click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   await expect(page.getByRole("tab")).toHaveCount(count + 1);
   await expect(
@@ -65,12 +65,12 @@ test("reloading an empty file collection does not exhaust the owner quota", asyn
   await page.goto("/");
   for (let i = 0; i < 10; i++) {
     await expect(
-      page.getByRole("button", { name: "Choose an HDF5 acquisition" }),
+      page.getByRole("button", { name: "Open TOFexplorer (.h5) file" }),
     ).toBeEnabled();
     await page.reload();
   }
   await expect(
-    page.getByRole("button", { name: "Choose an HDF5 acquisition" }),
+    page.getByRole("button", { name: "Open TOFexplorer (.h5) file" }),
   ).toBeEnabled();
 });
 

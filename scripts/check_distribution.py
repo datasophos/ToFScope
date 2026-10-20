@@ -111,7 +111,7 @@ def smoke(artifact, output):
                         external.append(r.request.url); r.abort()
                 page.route("**/*", route)
                 page.goto(url + "/#bootstrap=" + credential["secret"])
-                page.get_by_role("button", name="Choose an HDF5 acquisition").click()
+                page.get_by_role("button", name="Open TOFexplorer (.h5) file").click()
                 page.get_by_role("button", name="◫ a.h5").click()
                 page.get_by_test_id("panel-ion").locator("canvas").first.wait_for()
                 assert page.evaluate("location.hash") == ""
@@ -151,7 +151,7 @@ def smoke(artifact, output):
                 (acquisition / 'a.h5').unlink()
                 credential = start()
                 page.goto(url + '/#bootstrap=' + credential['secret'])
-                page.get_by_role('button', name='Choose an HDF5 acquisition').click()
+                page.get_by_role('button', name='Open TOFexplorer (.h5) file').click()
                 page.get_by_role('button', name='Saved files', exact=True).click()
                 page.get_by_role('button', name='◫ package_copy.h5', exact=True).click()
                 expect(page.get_by_test_id('panel-ion')).to_contain_text('Package signal')

@@ -6,7 +6,7 @@ test("signal rename uses a spaced label and a confirmation only for edited names
   await page.setExtraHTTPHeaders({ "x-tofscope-user": `rename-${Date.now()}` });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   const chip = page.getByTestId("profile-chip").first();
