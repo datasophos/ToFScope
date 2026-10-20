@@ -9,7 +9,7 @@ from uuid import uuid4
 import h5py
 import numpy as np
 from service_fixture import setup_case
-from tofscope.application.workspaces import WorkspaceService
+from tofscope.application.analyses import AnalysisService
 from tofscope.application.models import SignalSnapshot
 from tofscope.science.signals import SignalRecipe
 from tofscope.storage.analysis_document import encode_document, read_document
@@ -21,8 +21,8 @@ class SavedFilesTests(unittest.TestCase):
         setup_case(self)
         self.settings = replace(self.settings, output_root=self.settings.data_root / 'outputs')
         self.store = SavedFileStore(self.settings)
-        ws = WorkspaceService(self.repo, self.settings)
-        self.analysis = ws.create_analysis('a', ws.create('a').id, self.dataset)
+        ws = AnalysisService(self.repo, self.settings)
+        self.analysis = ws.create_analysis('a', self.dataset)
         custom = SignalSnapshot(str(uuid4()), 'Hidden union', 4, SignalRecipe(intervals=((1., 2.), (3., 4.)), frames=(1, 2)))
         self.analysis = replace(self.analysis, signals=(*self.analysis.signals, custom), next_style_index=5)
         self.document = encode_document(self.analysis)

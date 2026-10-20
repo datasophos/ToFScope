@@ -13,13 +13,13 @@ from tofscope.storage.saved_files import SavedFile
 from urllib.parse import quote
 import os
 from tofscope.application.saves import SaveService
-from tofscope.application.workspaces import WorkspaceService, CapacityError, Conflict
+from tofscope.application.analyses import AnalysisService, CapacityError, Conflict
 from tofscope.application.explore import ExploreService
 from tofscope.application.resources import ResourceBudget
 from tofscope.application.cache import ArrayCache
 from tofscope.application.jobs import JobService, JobSnapshot, IntegrationSpec
 from tofscope.application.lifecycle import LifecycleService, ViewLease
-from tofscope.application.models import WorkspaceSnapshot, AnalysisSnapshot
+from tofscope.application.models import AnalysisSnapshot
 from tofscope.application.signals import image_signal
 from tofscope.application.commands import CommandEnvelope
 from tofscope.storage.acquisitions import (
@@ -46,7 +46,7 @@ from tofscope.presentation.exports import ExportService
 @dataclass
 class Services:
     repository: AcquisitionRepository
-    workspaces: WorkspaceService
+    analyses: AnalysisService
     explore: ExploreService
     cache: ArrayCache
     jobs: JobService
@@ -59,7 +59,7 @@ class Services:
 def build_services(settings):
     budget = ResourceBudget(settings)
     repo = AcquisitionRepository(settings, budget=budget)
-    ws = WorkspaceService(repo, settings)
+    ws = AnalysisService(repo, settings)
     explore = ExploreService(ws, repo)
     cache = ArrayCache(repo, budget)
 
@@ -109,7 +109,7 @@ def create_app(settings, services=None, bootstrap_secret=None):
         finally:
             task.cancel()
             await asyncio.gather(task, return_exceptions=True)
-            app.state.services.workspaces.close_all()
+            app.state.services.analyses.close_all()
             app.state.services.jobs.shutdown()
             app.state.services.cache.clear()
 
@@ -237,44 +237,28 @@ def create_app(settings, services=None, bootstrap_secret=None):
         entry = app.state.auth.sessions.get(request.cookies.get("tofscope_session", ""))
         return {"owner": o, "csrf": entry[1] if entry else ""}
 
-    @app.post("/api/v1/workspaces", response_model=WorkspaceSnapshot)
-    def new_workspace(o=Depends(owner), s=Depends(svc)):
-        return s.workspaces.create(o)
+    @app.get('/api/v1/analyses', response_model=list[AnalysisSnapshot])
+    def open_files(o=Depends(owner), s=Depends(svc)):
+        return s.analyses.list(o)
 
-    @app.get("/api/v1/workspaces", response_model=list[WorkspaceSnapshot])
-    def workspaces(o=Depends(owner), s=Depends(svc)):
-        return s.workspaces.list(o)
-
-    @app.get("/api/v1/workspaces/{wid}", response_model=WorkspaceSnapshot)
-    def workspace(wid: str, o=Depends(owner), s=Depends(svc)):
-        return s.workspaces.workspace(o, wid)
-
-    @app.delete("/api/v1/workspaces/{wid}", status_code=204)
-    def delete_workspace(wid: str, o=Depends(owner), s=Depends(svc)):
-        s.workspaces.delete_workspace(o, wid)
-
-    @app.post("/api/v1/workspaces/{wid}/analyses", response_model=AnalysisSnapshot)
-    def open_analysis(
-        wid: str, body: OpenAcquisition, o=Depends(owner), s=Depends(svc)
-    ):
-        s.workspaces.workspace(o, wid)
-        dataset = s.repository.open(o, body.relative_path, body.location)
-        return s.workspaces.create_analysis(o, wid, dataset)
+    @app.post('/api/v1/analyses', response_model=AnalysisSnapshot)
+    def open_analysis(body: OpenAcquisition, o=Depends(owner), s=Depends(svc)):
+        return s.analyses.create_analysis(o, s.repository.open(o, body.relative_path, body.location))
 
     @app.get("/api/v1/analyses/{aid}", response_model=AnalysisSnapshot)
     def analysis(aid: str, o=Depends(owner), s=Depends(svc)):
-        return s.workspaces.get(o, aid)
+        return s.analyses.get(o, aid)
 
     @app.delete("/api/v1/analyses/{aid}", status_code=204)
     def close(aid: str, o=Depends(owner), s=Depends(svc)):
-        s.workspaces.close(o, aid)
+        s.analyses.close(o, aid)
 
     @app.post("/api/v1/analyses/{aid}/replace", response_model=AnalysisSnapshot)
     def replace_analysis(
         aid: str, body: ReplaceAcquisition, o=Depends(owner), s=Depends(svc)
     ):
-        s.workspaces.get(o, aid)
-        e = s.workspaces.entry(o, aid)
+        s.analyses.get(o, aid)
+        e = s.analyses.entry(o, aid)
         fingerprint = body.model_dump_json()
         with e.lock:
             previous = s.explore.validate_envelope(
@@ -282,7 +266,7 @@ def create_app(settings, services=None, bootstrap_secret=None):
             )
             if previous is not None:
                 return previous
-            result = s.workspaces.replace(
+            result = s.analyses.replace(
                 o, aid, s.repository.open(o, body.relative_path, body.location), body.expected_revision
             )
             s.explore.receipt(e, body.request_id, fingerprint, result)
@@ -396,7 +380,7 @@ def create_app(settings, services=None, bootstrap_secret=None):
         o=Depends(owner),
         s=Depends(svc),
     ):
-        s.workspaces.get(o, aid)
+        s.analyses.get(o, aid)
         reservation = s.cache.budget.reserve(o, aid, settings.response_bytes)
         try:
             snapshot = s.presenter.snapshot(o, aid, set(panels.split(",")))
@@ -416,7 +400,7 @@ def create_app(settings, services=None, bootstrap_secret=None):
     def export(
         aid: str, format: Literal["csv", "json"], o=Depends(owner), s=Depends(svc)
     ):
-        s.workspaces.get(o, aid)
+        s.analyses.get(o, aid)
         reservation = s.cache.budget.reserve(o, aid, settings.response_bytes)
         try:
             d = s.exports.render(o, aid, format)

@@ -208,7 +208,7 @@ output {
   display: inline-block;
   margin-left: 12px;
 }
-.workspace-bar {
+.file-bar {
   display: flex;
   gap: 15px;
   align-items: center;
@@ -534,7 +534,7 @@ small {
   .analysis-heading {
     padding: 15px;
   }
-  .workspace-bar {
+  .file-bar {
     overflow: auto;
   }
   .welcome {

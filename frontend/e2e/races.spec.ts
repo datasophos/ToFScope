@@ -59,7 +59,7 @@ test("a newer partial response cannot hide an omitted profile update", async ({
   release();
   await expect(profile).not.toHaveAttribute("data-content-version", version!);
 });
-test("reloading an empty workspace does not exhaust the owner quota", async ({
+test("reloading an empty file collection does not exhaust the owner quota", async ({
   page,
 }) => {
   await page.goto("/");

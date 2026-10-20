@@ -10,7 +10,7 @@ class AuthTests(unittest.TestCase):
         app = create_app(self.settings, bootstrap_secret="test-secret")
         with TestClient(app) as c:
             h = {"Origin": "http://testserver"}
-            self.assertEqual(c.post("/api/v1/workspaces", headers=h).status_code, 401)
+            self.assertEqual(c.post("/api/v1/analyses", headers=h).status_code, 401)
             r = c.post(
                 "/api/v1/auth/bootstrap", json={"secret": "test-secret"}, headers=h
             )
@@ -23,22 +23,22 @@ class AuthTests(unittest.TestCase):
                 ).status_code,
                 401,
             )
-            self.assertEqual(c.post("/api/v1/workspaces", headers=h).status_code, 403)
+            self.assertEqual(c.post("/api/v1/analyses", headers=h).status_code, 403)
             self.assertEqual(
                 c.post(
-                    "/api/v1/workspaces", headers=h | {"X-CSRF-Token": csrf}
+                    "/api/v1/analyses", headers=h | {"X-CSRF-Token": csrf}, json={"relative_path": "a.h5"}
                 ).status_code,
                 200,
             )
             self.assertEqual(
                 c.get(
-                    "/api/v1/workspaces", headers={"x-tofscope-user": "forged"}
+                    "/api/v1/analyses", headers={"x-tofscope-user": "forged"}
                 ).status_code,
                 401,
             )
             self.assertEqual(
                 c.post(
-                    "/api/v1/workspaces",
+                    "/api/v1/analyses",
                     headers=h | {"X-CSRF-Token": csrf, "Host": "evil.test"},
                 ).status_code,
                 403,
@@ -54,7 +54,7 @@ class AuthTests(unittest.TestCase):
         with TestClient(create_app(self.settings)) as c:
             self.assertEqual(
                 c.get(
-                    "/api/v1/workspaces", headers={"x-tofscope-user": "a"}
+                    "/api/v1/analyses", headers={"x-tofscope-user": "a"}
                 ).status_code,
                 401,
             )

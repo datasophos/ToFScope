@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, replace
 import json
 
-from tofscope.application.workspaces import Conflict
+from tofscope.application.analyses import Conflict
 from tofscope.storage.analysis_document import encode_document
 from tofscope.storage.saved_files import SavedFileStore, COPY_BYTES, filename
 
@@ -17,13 +17,13 @@ class SaveTask:
 
 class SaveService:
     def __init__(self, workspaces, jobs, cache, repository, settings):
-        self.workspaces, self.jobs, self.cache, self.repository = workspaces, jobs, cache, repository
+        self.analyses, self.jobs, self.cache, self.repository = workspaces, jobs, cache, repository
         self.files = SavedFileStore(settings)
         jobs.save_handler = self.run
 
     def submit(self, owner, analysis_id, envelope, name):
         name = filename(name)
-        e = self.workspaces.entry(owner, analysis_id)
+        e = self.analyses.entry(owner, analysis_id)
         fingerprint = json.dumps({'kind': 'save', 'envelope': envelope.model_dump(mode='json'), 'filename': name}, sort_keys=True)
         with e.lock:
             old = self.jobs.explore.validate_envelope(e, envelope, fingerprint)
@@ -40,7 +40,7 @@ class SaveService:
     def run(self, job):
         task = job.task
         snapshot = task.snapshot
-        entry = self.workspaces.entry(job.owner, snapshot.id)
+        entry = self.analyses.entry(job.owner, snapshot.id)
         def progress(stage, done, total):
             from dataclasses import replace
             with self.jobs.condition:

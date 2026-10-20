@@ -132,9 +132,8 @@ def main():
         services = build_services(settings)
         try:
             owner = "qualification"
-            workspace = services.workspaces.create(owner)
             dataset = services.repository.open(owner, source.name)
-            analysis = services.workspaces.create_analysis(owner, workspace.id, dataset)
+            analysis = services.analyses.create_analysis(owner, dataset)
             start = time.perf_counter()
             job = services.jobs.submit(
                 owner, analysis.id,
@@ -145,7 +144,7 @@ def main():
             result = services.jobs.wait(owner, job.id, timeout=180)
             elapsed = time.perf_counter() - start
             assert result.status == "succeeded", result
-            state = services.workspaces.get(owner, analysis.id)
+            state = services.analyses.get(owner, analysis.id)
             assert state.revision == analysis.revision + 2 and result.done == args.frames
             with services.cache.load(
                 owner, analysis.id, state.dataset, next(row.recipe for row in state.signals if row.id == job.signal_id)
@@ -157,7 +156,7 @@ def main():
             )
             print(json.dumps({"mode": "service_job", **results["service_job"]}), flush=True)
         finally:
-            services.workspaces.close_all()
+            services.analyses.close_all()
             services.jobs.shutdown()
         assert services.cache.budget.physical_bytes == 0
 

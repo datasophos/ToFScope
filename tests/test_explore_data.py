@@ -13,17 +13,15 @@ class PresentationTests(unittest.TestCase):
         setup_case(self)
         self.s = build_services(self.settings)
         self.addCleanup(self.s.jobs.shutdown)
-        self.addCleanup(self.s.workspaces.close_all)
-        self.a = self.s.workspaces.create_analysis(
-            "a", self.s.workspaces.create("a").id, self.s.repository.open("a", "a.h5")
-        )
+        self.addCleanup(self.s.analyses.close_all)
+        self.a = self.s.analyses.create_analysis("a", self.s.repository.open("a", "a.h5"))
         self.presenter = ExplorePresenter(
-            self.s.workspaces, self.s.repository, self.s.cache, self.settings
+            self.s.analyses, self.s.repository, self.s.cache, self.settings
         )
         self.exports = ExportService(self.presenter)
 
     def command(self, command):
-        a = self.s.workspaces.get("a", self.a.id)
+        a = self.s.analyses.get("a", self.a.id)
         return self.s.explore.apply(
             "a",
             a.id,
@@ -31,7 +29,7 @@ class PresentationTests(unittest.TestCase):
         )
 
     def select_channel(self, index):
-        before = self.s.workspaces.get('a', self.a.id)
+        before = self.s.analyses.get('a', self.a.id)
         added = self.command({'type':'add_stored_signal', 'index':index})
         row = next(r for r in added.signals if r.recipe and r.recipe.source == 'stored' and r.recipe.stored_index == index)
         self.command({'type':'select_image_signal', 'signal_id':row.id})
@@ -102,8 +100,8 @@ class PresentationTests(unittest.TestCase):
         with h5py.File(self.settings.data_root / "b.h5", "r+") as f:
             f["FIBImages/Image0000/Data"][0, 0] = np.nan
             f["FIBImages/Image0001/Data"][0, 0] = np.nan
-        current = self.s.workspaces.get("a", self.a.id)
-        self.s.workspaces.replace(
+        current = self.s.analyses.get("a", self.a.id)
+        self.s.analyses.replace(
             "a", self.a.id, self.s.repository.open("a", "b.h5"), current.revision
         )
         self.command(
@@ -115,7 +113,7 @@ class PresentationTests(unittest.TestCase):
     def test_partial_comparison_alignment_roi_and_exports(self):
         from tofscope.application.jobs import IntegrationSpec
         from tofscope.application.commands import CommandEnvelope
-        a=self.s.workspaces.get('a',self.a.id)
+        a=self.s.analyses.get('a',self.a.id)
         job=self.s.jobs.submit('a',a.id,CommandEnvelope('comparison',a.revision,a.dataset.generation,{'type':'set_depth','depth':{'mode':'all'}}),IntegrationSpec(((1,2),(4,5)),(1,2),'comparison'))
         self.assertEqual(self.s.jobs.wait('a',job.id,3).status,'succeeded')
         self.select_channel(0)
@@ -129,5 +127,5 @@ class PresentationTests(unittest.TestCase):
         self.assertTrue(self.a.has_se)
         with h5py.File(self.settings.data_root / 'b.h5', 'r+') as stream:
             del stream['FIBImages']
-        b = self.s.workspaces.create_analysis('a', self.a.workspace_id, self.s.repository.open('a','b.h5'))
+        b = self.s.analyses.create_analysis('a', self.s.repository.open('a','b.h5'))
         self.assertFalse(b.has_se)

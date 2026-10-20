@@ -20,10 +20,9 @@ class APITests(unittest.TestCase):
 
     def test_ownership_revisions_and_safe_errors(self):
         c = self.client
-        self.assertEqual(c.get("/api/v1/workspaces").status_code, 401)
-        w = c.post("/api/v1/workspaces", headers=self.a).json()
+        self.assertEqual(c.get("/api/v1/analyses").status_code, 401)
         r = c.post(
-            f"/api/v1/workspaces/{w['id']}/analyses",
+            "/api/v1/analyses",
             headers=self.a,
             json={"relative_path": "a.h5"},
         )
@@ -58,13 +57,13 @@ class APITests(unittest.TestCase):
         self.assertEqual(c.get("/api/v1/unknown", headers=self.a).status_code, 404)
         self.assertEqual(
             c.post(
-                "/api/v1/workspaces", headers=self.a | {"Origin": "http://evil.test"}
+                "/api/v1/analyses", headers=self.a | {"Origin": "http://evil.test"}
             ).status_code,
             403,
         )
         self.assertEqual(
             c.post(
-                f"/api/v1/workspaces/{w['id']}/analyses",
+                "/api/v1/analyses",
                 headers=self.a,
                 json={"relative_path": "a.h5", "owner": "b"},
             ).status_code,
@@ -77,9 +76,8 @@ class APITests(unittest.TestCase):
 
     def test_views_and_jobs_are_owner_scoped(self):
         c = self.client
-        w = c.post("/api/v1/workspaces", headers=self.a).json()
         a = c.post(
-            f"/api/v1/workspaces/{w['id']}/analyses",
+            "/api/v1/analyses",
             headers=self.a,
             json={"relative_path": "a.h5"},
         ).json()
@@ -109,12 +107,10 @@ class APITests(unittest.TestCase):
 
     def test_api_rejects_foreign_signal_and_legacy_target(self):
         c = self.client
-        workspace = c.post('/api/v1/workspaces', headers=self.a).json()
-        a = c.post(f"/api/v1/workspaces/{workspace['id']}/analyses", headers=self.a, json={'relative_path':'a.h5'}).json()
+        a = c.post("/api/v1/analyses", headers=self.a, json={'relative_path':'a.h5'}).json()
         base = {'request_id':'legacy','expected_revision':a['revision'],'dataset_generation':a['dataset']['generation']}
         bad = c.post(f"/api/v1/analyses/{a['id']}/jobs", headers=self.a, json=base | {'spec':{'intervals':[[1,2]],'frames':[0,2],'target':'active'}})
         self.assertEqual(bad.status_code, 422)
-        workspace_b = c.post('/api/v1/workspaces', headers=self.b).json()
-        b = c.post(f"/api/v1/workspaces/{workspace_b['id']}/analyses", headers=self.b, json={'relative_path':'a.h5'}).json()
+        b = c.post("/api/v1/analyses", headers=self.b, json={'relative_path':'a.h5'}).json()
         response = c.post(f"/api/v1/analyses/{a['id']}/commands", headers=self.a, json=base | {'command':{'type':'select_image_signal','signal_id':b['image_signal_id']}})
         self.assertEqual(response.status_code, 422)

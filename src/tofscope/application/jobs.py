@@ -8,7 +8,7 @@ import time
 from uuid import uuid4
 from typing import Literal
 from tofscope.storage.saved_files import SavedFile
-from tofscope.application.workspaces import CapacityError
+from tofscope.application.analyses import CapacityError
 from tofscope.application.models import SignalSnapshot
 from tofscope.application.signals import get_signal, normalize_view, valid_name
 from tofscope.science.integration import canonical_intervals
@@ -58,7 +58,7 @@ class Job:
 
 class JobService:
     def __init__(self, workspaces, explore, cache, settings):
-        self.workspaces = workspaces
+        self.analyses = workspaces
         self.explore = explore
         self.cache = cache
         self.settings = settings
@@ -79,12 +79,12 @@ class JobService:
             thread.start()
 
     def submit(self, owner, analysis_id, envelope, spec):
-        e = self.workspaces.entry(owner, analysis_id)
+        e = self.analyses.entry(owner, analysis_id)
         fingerprint = json.dumps(
             {"envelope": envelope.model_dump(mode="json"), "spec": spec.__dict__},
             sort_keys=True,
         )
-        with self.workspaces.signal_lock, e.lock:
+        with self.analyses.signal_lock, e.lock:
             old = self.explore.validate_envelope(e, envelope, fingerprint)
             if old is not None:
                 return old
@@ -98,7 +98,7 @@ class JobService:
                 if spec.expected_recipe_version != signal.recipe_version:
                     raise ValueError('Signal recipe changed; refresh before calculating.')
             else:
-                self.workspaces.admit_signal(owner, len(s.signals))
+                self.analyses.admit_signal(owner, len(s.signals))
                 signal = SignalSnapshot(str(uuid4()), name, s.next_style_index, None, 0)
             first, last = spec.frames
             if (
@@ -236,7 +236,7 @@ class JobService:
                         j.snapshot = replace(j.snapshot, status='succeeded', saved_file=result, done=j.snapshot.total)
                     continue
                 aid = j.snapshot.analysis_id
-                e = self.workspaces.entry(j.owner, aid)
+                e = self.analyses.entry(j.owner, aid)
 
                 def current():
                     return (

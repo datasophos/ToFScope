@@ -12,7 +12,7 @@ test("contextual help works with mouse, keyboard and maximized panes", async ({
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   for (const label of [
-    "Workspaces and files",
+    "Files and saved analyses",
     "Signals",
     "Exports",
     "Ion map",

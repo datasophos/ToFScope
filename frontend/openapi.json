@@ -230,16 +230,11 @@
             "default": false,
             "title": "Stale",
             "type": "boolean"
-          },
-          "workspace_id": {
-            "title": "Workspace Id",
-            "type": "string"
           }
         },
         "required": [
           "id",
           "owner",
-          "workspace_id",
           "dataset",
           "revision",
           "loaded_frames",
@@ -1614,32 +1609,6 @@
         ],
         "title": "ViewLease",
         "type": "object"
-      },
-      "WorkspaceSnapshot": {
-        "properties": {
-          "analysis_ids": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Analysis Ids",
-            "type": "array"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "owner": {
-            "title": "Owner",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "owner"
-        ],
-        "title": "WorkspaceSnapshot",
-        "type": "object"
       }
     }
   },
@@ -1649,6 +1618,64 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/analyses": {
+      "get": {
+        "operationId": "open_files_api_v1_analyses_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AnalysisSnapshot"
+                  },
+                  "title": "Response Open Files Api V1 Analyses Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Open Files"
+      },
+      "post": {
+        "operationId": "open_analysis_api_v1_analyses_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenAcquisition"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Open Analysis"
+      }
+    },
     "/api/v1/analyses/{aid}": {
       "delete": {
         "operationId": "close_api_v1_analyses__aid__delete",
@@ -2399,162 +2426,6 @@
           }
         },
         "summary": "Heartbeat"
-      }
-    },
-    "/api/v1/workspaces": {
-      "get": {
-        "operationId": "workspaces_api_v1_workspaces_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/WorkspaceSnapshot"
-                  },
-                  "title": "Response Workspaces Api V1 Workspaces Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Workspaces"
-      },
-      "post": {
-        "operationId": "new_workspace_api_v1_workspaces_post",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkspaceSnapshot"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "New Workspace"
-      }
-    },
-    "/api/v1/workspaces/{wid}": {
-      "delete": {
-        "operationId": "delete_workspace_api_v1_workspaces__wid__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "wid",
-            "required": true,
-            "schema": {
-              "title": "Wid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Delete Workspace"
-      },
-      "get": {
-        "operationId": "workspace_api_v1_workspaces__wid__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "wid",
-            "required": true,
-            "schema": {
-              "title": "Wid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkspaceSnapshot"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Workspace"
-      }
-    },
-    "/api/v1/workspaces/{wid}/analyses": {
-      "post": {
-        "operationId": "open_analysis_api_v1_workspaces__wid__analyses_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "wid",
-            "required": true,
-            "schema": {
-              "title": "Wid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OpenAcquisition"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AnalysisSnapshot"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Open Analysis"
       }
     },
     "/healthz": {

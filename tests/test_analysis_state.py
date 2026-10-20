@@ -1,6 +1,6 @@
 import unittest
 from service_fixture import setup_case
-from tofscope.application.workspaces import WorkspaceService
+from tofscope.application.analyses import AnalysisService
 from tofscope.application.explore import ExploreService
 from tofscope.application.commands import CommandEnvelope
 
@@ -8,13 +8,11 @@ from tofscope.application.commands import CommandEnvelope
 class AnalysisTests(unittest.TestCase):
     def setUp(self):
         setup_case(self)
-        self.ws = WorkspaceService(self.repo, self.settings)
+        self.ws = AnalysisService(self.repo, self.settings)
         self.explore = ExploreService(self.ws, self.repo)
 
     def new(self, owner="a"):
-        return self.ws.create_analysis(
-            owner, self.ws.create(owner).id, self.repo.open(owner, "a.h5")
-        )
+        return self.ws.create_analysis(owner, self.repo.open(owner, "a.h5"))
 
     def command(self, s, command, request="one"):
         return self.explore.apply(

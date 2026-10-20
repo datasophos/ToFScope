@@ -62,7 +62,7 @@ with tempfile.TemporaryDirectory(prefix="tofscope-container-") as d:
                         subprocess.check_output(["docker", "logs", id], text=True)
                     )
                 time.sleep(0.1)
-        code = "import os;from pathlib import Path;from tofscope.config import load_settings;from tofscope.api.app import build_services;s=build_services(load_settings());d=s.repository.open('fixture','a.h5');w=s.workspaces.create('fixture');a=s.workspaces.create_analysis('fixture',w.id,d);p=s.presenter.snapshot('fixture',a.id);assert p.panels;assert os.getuid()==10001;assert not os.access('/data/a.h5',os.W_OK);s.workspaces.close_all();s.jobs.shutdown();print('non-root read-only plots passed')"
+        code = "import os;from pathlib import Path;from tofscope.config import load_settings;from tofscope.api.app import build_services;s=build_services(load_settings());d=s.repository.open('fixture','a.h5');a=s.analyses.create_analysis('fixture',d);p=s.presenter.snapshot('fixture',a.id);assert p.panels;assert os.getuid()==10001;assert not os.access('/data/a.h5',os.W_OK);s.analyses.close_all();s.jobs.shutdown();print('non-root read-only plots passed')"
         output = subprocess.check_output(
             ["docker", "exec", id, "python", "-c", code], text=True
         )

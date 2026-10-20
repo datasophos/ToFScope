@@ -8,7 +8,7 @@ from tofscope.api.app import build_services
 from tofscope.application.commands import CommandEnvelope
 from tofscope.application.jobs import IntegrationSpec
 from tofscope.application.resources import ResourceBudget
-from tofscope.application.workspaces import CapacityError
+from tofscope.application.analyses import CapacityError
 
 
 class ReviewRegressions(unittest.TestCase):
@@ -16,12 +16,10 @@ class ReviewRegressions(unittest.TestCase):
         setup_case(self)
         self.s = build_services(self.settings)
         self.addCleanup(self.s.jobs.shutdown)
-        self.addCleanup(self.s.workspaces.close_all)
+        self.addCleanup(self.s.analyses.close_all)
 
     def open(self):
-        return self.s.workspaces.create_analysis(
-            "a", self.s.workspaces.create("a").id, self.s.repository.open("a", "a.h5")
-        )
+        return self.s.analyses.create_analysis("a", self.s.repository.open("a", "a.h5"))
 
     def command(self, a, command):
         return self.s.explore.apply(
@@ -56,9 +54,9 @@ class ReviewRegressions(unittest.TestCase):
         (self.settings.data_root / "a.h5").rename(
             self.settings.data_root / "removed.h5"
         )
-        stale = self.s.workspaces.get("a", a.id)
+        stale = self.s.analyses.get("a", a.id)
         self.assertTrue(stale.stale)
-        replacement = self.s.workspaces.replace(
+        replacement = self.s.analyses.replace(
             "a", a.id, self.s.repository.open("a", "b.h5"), stale.revision
         )
         self.assertFalse(replacement.stale)

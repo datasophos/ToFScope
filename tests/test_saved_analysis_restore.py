@@ -20,8 +20,8 @@ class RestoreTests(unittest.TestCase):
         self.settings = replace(self.settings, output_root=self.settings.data_root / 'outputs')
         services = build_services(self.settings)
         self.addCleanup(services.jobs.shutdown)
-        self.addCleanup(services.workspaces.close_all)
-        a = services.workspaces.create_analysis('a', services.workspaces.create('a').id, services.repository.open('a', 'a.h5'))
+        self.addCleanup(services.analyses.close_all)
+        a = services.analyses.create_analysis('a', services.repository.open('a', 'a.h5'))
         custom = SignalSnapshot(str(uuid4()), 'Raw union', 2, SignalRecipe(intervals=((1., 2.), (3., 4.)), frames=(1, 2)))
         hidden = SignalSnapshot(str(uuid4()), 'Hidden raw', 3, SignalRecipe(intervals=((2., 3.),), frames=(0, 0)))
         a = replace(a, signals=(*a.signals, custom, hidden), image_signal_id=custom.id, next_style_index=4)
@@ -32,21 +32,21 @@ class RestoreTests(unittest.TestCase):
         shutil.copyfile(store.path('a', result.id), self.settings.data_root / 'portable.h5')
         self.original = a
         self.document = document
-        services.workspaces.close_all()
+        services.analyses.close_all()
         services.cache.clear()
         (self.settings.data_root / 'a.h5').unlink()
 
     def restart(self, **changes):
         s = build_services(replace(self.settings, **changes))
         self.addCleanup(s.jobs.shutdown)
-        self.addCleanup(s.workspaces.close_all)
+        self.addCleanup(s.analyses.close_all)
         self.addCleanup(s.cache.clear)
         return s
 
     def test_restart_relocation_fresh_owner_and_eviction_need_no_raw_integration(self):
         s = self.restart()
         with patch('tofscope.storage.acquisitions.custom_peak_windows', side_effect=AssertionError('must not reintegrate')):
-            a = s.workspaces.create_analysis('fresh', s.workspaces.create('fresh').id, s.repository.open('fresh', 'portable.h5'))
+            a = s.analyses.create_analysis('fresh', s.repository.open('fresh', 'portable.h5'))
             self.assertEqual([x.name for x in a.signals], [x.name for x in self.original.signals])
             self.assertTrue(set(x.id for x in a.signals).isdisjoint(x.id for x in self.original.signals))
             panel = s.presenter.snapshot('fresh', a.id, {'ion', 'front', 'profile'})
@@ -64,14 +64,14 @@ class RestoreTests(unittest.TestCase):
             del h[f'ToFScope/Integrations/{self.document.signals[-1].materialization_id}']
         s = self.restart()
         with self.assertRaises(ValueError):
-            s.workspaces.create_analysis('a', s.workspaces.create('a').id, s.repository.open('a', 'portable.h5'))
-        self.assertEqual(len(s.workspaces.entries), 0)
+            s.analyses.create_analysis('a', s.repository.open('a', 'portable.h5'))
+        self.assertEqual(len(s.analyses.entries), 0)
 
     def test_restored_signals_respect_owner_quota(self):
         s = self.restart(signals_per_user=2)
         with self.assertRaises(ValueError):
-            s.workspaces.create_analysis('a', s.workspaces.create('a').id, s.repository.open('a', 'portable.h5'))
-        self.assertEqual(len(s.workspaces.entries), 0)
+            s.analyses.create_analysis('a', s.repository.open('a', 'portable.h5'))
+        self.assertEqual(len(s.analyses.entries), 0)
 
     def test_changed_saved_values_fail_checksum_validation(self):
         path = self.settings.data_root / 'portable.h5'
@@ -79,19 +79,19 @@ class RestoreTests(unittest.TestCase):
             h[f'ToFScope/Integrations/{self.document.signals[-1].materialization_id}/data'][0, 0, 0] = 22.
         s = self.restart()
         with self.assertRaisesRegex(ValueError, 'checksum'):
-            s.workspaces.create_analysis('a', s.workspaces.create('a').id, s.repository.open('a', 'portable.h5'))
+            s.analyses.create_analysis('a', s.repository.open('a', 'portable.h5'))
 
     def test_successful_edit_replaces_materialization_but_rename_retains_it(self):
         from tofscope.application.commands import CommandEnvelope
         from tofscope.application.jobs import IntegrationSpec
         s = self.restart()
-        a = s.workspaces.create_analysis('a', s.workspaces.create('a').id, s.repository.open('a', 'portable.h5'))
+        a = s.analyses.create_analysis('a', s.repository.open('a', 'portable.h5'))
         row = a.signals[1]
         renamed = s.explore.apply('a', a.id, CommandEnvelope('rename', a.revision, a.dataset.generation, {'type': 'rename_signal', 'signal_id': row.id, 'name': 'Renamed'}))
         self.assertEqual(renamed.signals[1].materialization_id, row.materialization_id)
         envelope = CommandEnvelope('edit', renamed.revision, a.dataset.generation, {'type': 'set_depth', 'depth': {'mode': 'all'}})
         job = s.jobs.submit('a', a.id, envelope, IntegrationSpec(((1., 2.),), (1, 2), 'Edited', row.id, row.recipe_version))
         self.assertEqual(s.jobs.wait('a', job.id, 3).status, 'succeeded')
-        changed = s.workspaces.get('a', a.id).signals[1]
+        changed = s.analyses.get('a', a.id).signals[1]
         self.assertIsNone(changed.materialization_id)
         self.assertEqual(changed.id, row.id)

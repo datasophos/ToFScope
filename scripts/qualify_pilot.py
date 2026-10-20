@@ -41,11 +41,10 @@ def main():
             timings = []
             payload = []
             for o in headers:
-                w = c.post("/api/v1/workspaces", headers=headers[o]).json()
                 analyses[o] = []
                 for _ in range(3):
                     response = c.post(
-                        f"/api/v1/workspaces/{w['id']}/analyses",
+                        "/api/v1/analyses",
                         headers=headers[o],
                         json={"relative_path": a.file},
                     )

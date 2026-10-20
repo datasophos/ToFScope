@@ -12,25 +12,23 @@ class InvalidationTests(unittest.TestCase):
         )
         s = build_services(self.settings)
         self.addCleanup(s.jobs.shutdown)
-        self.addCleanup(s.workspaces.close_all)
+        self.addCleanup(s.analyses.close_all)
 
         def new(owner, path):
-            return s.workspaces.create_analysis(
-                owner, s.workspaces.create(owner).id, s.repository.open(owner, path)
-            )
+            return s.analyses.create_analysis(owner, s.repository.open(owner, path))
 
         a = new("a", "a.h5")
         b = new("b", "alias.h5")
         other = new("b", "b.h5")
         s.presenter.snapshot("a", a.id)
         (self.settings.data_root / "a.h5").touch()
-        self.assertTrue(s.workspaces.get("a", a.id).stale)
-        self.assertTrue(s.workspaces.get("b", b.id).stale)
-        self.assertFalse(s.workspaces.get("b", other.id).stale)
+        self.assertTrue(s.analyses.get("a", a.id).stale)
+        self.assertTrue(s.analyses.get("b", b.id).stale)
+        self.assertFalse(s.analyses.get("b", other.id).stale)
         with self.assertRaises(ValueError):
             s.exports.render("a", a.id, "csv")
-        current = s.workspaces.get("a", a.id)
-        fresh = s.workspaces.replace(
+        current = s.analyses.get("a", a.id)
+        fresh = s.analyses.replace(
             "a", a.id, s.repository.open("a", "a.h5"), current.revision
         )
         self.assertFalse(fresh.stale)

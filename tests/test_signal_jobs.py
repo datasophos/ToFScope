@@ -11,12 +11,12 @@ class SignalJobTests(unittest.TestCase):
     def setUp(self):
         setup_case(self)
         self.s = build_services(self.settings)
-        self.addCleanup(self.s.workspaces.close_all)
+        self.addCleanup(self.s.analyses.close_all)
         self.addCleanup(self.s.jobs.shutdown)
-        self.a = self.s.workspaces.create_analysis('a', self.s.workspaces.create('a').id, self.s.repository.open('a', 'a.h5'))
+        self.a = self.s.analyses.create_analysis('a', self.s.repository.open('a', 'a.h5'))
 
     def state(self):
-        return self.s.workspaces.get('a', self.a.id)
+        return self.s.analyses.get('a', self.a.id)
 
     def env(self, request=None):
         a = self.state()
@@ -104,7 +104,7 @@ class SignalJobTests(unittest.TestCase):
 
     def test_failed_pending_and_hidden_records_cannot_bypass_quota(self):
         from dataclasses import replace
-        self.s.workspaces.settings = replace(self.settings, signals_per_analysis=2)
+        self.s.analyses.settings = replace(self.settings, signals_per_analysis=2)
         entered, release = self.block()
         job = self.submit()
         self.assertTrue(entered.wait(2))
@@ -117,13 +117,13 @@ class SignalJobTests(unittest.TestCase):
         retry = self.submit(signal_id=job.signal_id, version=0)
         self.assertEqual(self.wait(retry).status, 'succeeded')
         self.assertEqual(len(self.state().signals), 2)
-        self.s.workspaces.close('a', self.a.id)
+        self.s.analyses.close('a', self.a.id)
         self.assertEqual(self.s.cache.budget.users.get('a', 0), 0)
 
     def test_replacement_and_close_discard_late_results(self):
         for action in ('replace', 'close'):
             with self.subTest(action=action):
-                a = self.s.workspaces.create_analysis('a', self.s.workspaces.create('a').id, self.s.repository.open('a', 'a.h5'))
+                a = self.s.analyses.create_analysis('a', self.s.repository.open('a', 'a.h5'))
                 self.a = a
                 entered, release = self.block()
                 job = self.submit()
@@ -131,9 +131,9 @@ class SignalJobTests(unittest.TestCase):
                 if action == 'replace':
                     # Initial stored channel is already cached, so replacement
                     # need not enter the blocked raw-data reader.
-                    self.s.workspaces.replace('a', a.id, self.s.repository.open('a', 'a.h5'), self.state().revision)
+                    self.s.analyses.replace('a', a.id, self.s.repository.open('a', 'a.h5'), self.state().revision)
                 else:
-                    self.s.workspaces.close('a', a.id)
+                    self.s.analyses.close('a', a.id)
                 release.set()
                 self.assertIn(self.wait(job).status, ('cancelled', 'obsolete'))
 
@@ -145,7 +145,7 @@ class SignalJobTests(unittest.TestCase):
         updated = self.submit(signal_id=first.signal_id, version=1)
         self.assertEqual(self.wait(updated).status, 'succeeded')
         self.assertNotIn(first.signal_id, self.state().profile_signal_ids)
-        self.assertNotIn(first.signal_id, self.s.workspaces.entry('a',a.id).leases)
+        self.assertNotIn(first.signal_id, self.s.analyses.entry('a',a.id).leases)
 
     def test_removal_cancels_queued_jobs_and_frees_admission_immediately(self):
         from dataclasses import replace
@@ -158,7 +158,7 @@ class SignalJobTests(unittest.TestCase):
         a = self.state()
         self.s.explore.apply('a', a.id, CommandEnvelope(str(uuid4()),a.revision,a.dataset.generation,{'type':'remove_signal','signal_id':queued.signal_id}))
         self.assertEqual(self.s.jobs.get('a', queued.id).status, 'cancelled')
-        self.assertNotIn(queued.signal_id, self.s.workspaces.entry('a',a.id).tokens)
+        self.assertNotIn(queued.signal_id, self.s.analyses.entry('a',a.id).tokens)
         third = self.submit(name='Replacement')
         release.set()
         self.assertEqual(self.wait(first).status, 'succeeded')

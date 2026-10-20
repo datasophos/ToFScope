@@ -10,7 +10,7 @@ import h5py
 import numpy as np
 
 from tofscope.application.resources import ResourceBudget
-from tofscope.application.workspaces import CapacityError
+from tofscope.application.analyses import CapacityError
 from tofscope.config import Settings
 from tofscope.science.integration import integrate_event_windows
 from tofscope.storage.bounded_events import admitted_events

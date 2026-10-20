@@ -21,7 +21,7 @@ class ExportService:
 
     def render(self, owner, analysis_id, format):
         p = self.presenter
-        e = p.workspaces.entry(owner, analysis_id)
+        e = p.analyses.entry(owner, analysis_id)
         with e.lock:
             s = e.snapshot
             p.repository.assert_current(owner, s.dataset)
