@@ -183,3 +183,22 @@ observed failing in browser checks before correction. All 38 browser workflows,
 11 frontend unit tests and the TypeScript/production build pass. Per-pane checks
 cover all four panes and both maximize/restore states. Export logic is unchanged.
 The desktop toolbar was visually inspected after the update.
+
+## Clean opening and unsaved-change detection — 2026-10-20
+
+An original acquisition previously had `saved_revision=null`, which was compared
+with revision zero and incorrectly reported as an edit. The analysis now records
+`opened_revision` as its clean baseline, including replacement at a nonzero
+revision. Saved revisions take precedence after a successful save. Frontend close,
+replace, before-unload protection and status text share the same comparison;
+untouched originals say “No changes”, rather than claiming a copy was saved.
+Uncommitted drafts remain protected.
+
+The opening regression failed before correction. All 39 browser workflows,
+144 Python tests, 11 frontend unit tests and the production build pass. Browser
+coverage includes opening, reload, replacing/closing untouched originals, actual
+display edits, saved-copy reopening and uncommitted drafts. Tests that exercised
+save-on-close now make a real edit first. Bundled assets are rebuilt. The existing
+local service was left running to preserve its in-memory analyses; the new backend
+replacement baseline is available on its next restart. The frontend treats absent
+baseline metadata as revision zero for already-running original-file analyses.

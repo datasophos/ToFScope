@@ -117,6 +117,7 @@ class AnalysisService:
                 m.fov_um,
                 (float(m.mass_axis.min()), float(m.mass_axis.max())),
                 has_se=bool(m.image_names),
+                opened_revision=revision,
             )
 
         from tofscope.storage.analysis_document import read_document, restore_snapshot, ROOT, MAX_DOCUMENT_BYTES

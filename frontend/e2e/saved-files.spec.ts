@@ -110,6 +110,10 @@ test("close can save a new copy and filename collisions retain the unsaved analy
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await page
+    .getByTestId("panel-spectrum")
+    .getByRole("button", { name: "Use linear y scale", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: "Close analysis 1", exact: true })
     .click();
   await page
@@ -123,6 +127,10 @@ test("close can save a new copy and filename collisions retain the unsaved analy
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
+  await page
+    .getByTestId("panel-spectrum")
+    .getByRole("button", { name: "Use linear y scale", exact: true })
+    .click();
   await page.getByRole("button", { name: "Save as…", exact: true }).click();
   await page.getByLabel("Saved filename", { exact: true }).fill("closed.h5");
   await page.getByRole("button", { name: "Save copy", exact: true }).click();
@@ -258,4 +266,45 @@ test("file picker and save dialog show configured folders and exact save destina
     "title",
     `${folders.save_destination}/a_analysis.h5`,
   );
+});
+
+test("opening and replacing files stays clean until an edit is made", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `clean-open-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+  await expect(page.getByTestId("save-state")).toHaveText("No changes");
+  await page.reload();
+  await expect(page.getByTestId("save-state")).toHaveText("No changes");
+  await page.getByRole("button", { name: "Replace file", exact: true }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Unsaved changes", exact: true }),
+  ).toBeHidden();
+  await page.getByRole("button", { name: "◫ b.h5", exact: true }).dblclick();
+  await expect(page.getByTestId("save-state")).toHaveText("No changes");
+  await page
+    .getByRole("button", { name: "Close analysis 1", exact: true })
+    .click();
+  await expect(page.getByRole("tab")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+  await page
+    .getByTestId("panel-spectrum")
+    .getByRole("button", { name: "Use linear y scale", exact: true })
+    .click();
+  await expect(page.getByTestId("save-state")).toHaveText("Unsaved changes");
+  await page
+    .getByRole("button", { name: "Close analysis 1", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Unsaved changes", exact: true }),
+  ).toBeVisible();
 });

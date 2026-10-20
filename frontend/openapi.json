@@ -146,6 +146,11 @@
             "title": "Next Style Index",
             "type": "integer"
           },
+          "opened_revision": {
+            "default": 0,
+            "title": "Opened Revision",
+            "type": "integer"
+          },
           "owner": {
             "title": "Owner",
             "type": "string"

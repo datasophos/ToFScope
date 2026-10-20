@@ -7,6 +7,7 @@ import {
   type Session,
 } from "../api/client";
 import { UnsavedChanges } from "./UnsavedChanges";
+import { hasChanges } from "./changes";
 import { FilePicker } from "./FilePicker";
 import { ExploreScreen } from "../explore/ExploreScreen";
 import { HelpButton } from "../components/HelpButton";
@@ -50,7 +51,7 @@ export function App() {
   const unsaved = analyses.some((a) => {
     const info = statuses[a.id];
     const latest = info?.analysis || a;
-    return info?.draft || latest.saved_revision !== latest.revision;
+    return info?.draft || hasChanges(latest);
   });
   useEffect(() => {
     if (!unsaved) return;
@@ -181,7 +182,7 @@ export function App() {
     const info = statuses[a.id];
     const latest = info?.analysis || a;
     const action = { id: a.id, kind };
-    if (info?.draft || latest.saved_revision !== latest.revision) {
+    if (info?.draft || hasChanges(latest)) {
       setPendingAction(action);
       setConfirming(true);
     } else void perform(action, latest);
