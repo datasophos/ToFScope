@@ -2,9 +2,9 @@
   "date": "2026-10-19",
   "scope": "Local signal-workspace redesign; read-only acquisitions",
   "checks": {
-    "python_tests": 109,
+    "python_tests": 111,
     "frontend_unit_tests": 11,
-    "browser_tests": 21,
+    "browser_tests": 23,
     "typescript": true,
     "production_bundle": true,
     "stale_package_smoke": "failed as expected: missing Create from spectrum",
@@ -170,5 +170,13 @@
     ],
     "workspaces": "In-memory; restart resets analyses and unsaved drafts"
   },
-  "activation": "Staged package verified; final review and activation pending"
+  "activation": "Staged package verified; final review and activation pending",
+  "final_review": {
+    "reviewer": "fresh GPT-6.1 fallback after initial model usage limit",
+    "important_findings_fixed": 4,
+    "critical_findings": 0,
+    "red_green_verified": true,
+    "deferred_minor": "Stored deduplication reveals profile but does not focus/scroll existing row",
+    "real_data_metrics_scope": "Qualification before lifecycle/concurrency/coverage review fixes; arithmetic/readers unchanged"
+  }
 }

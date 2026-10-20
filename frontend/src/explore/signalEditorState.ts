@@ -1,5 +1,7 @@
 export type SignalDraft = {
   signalId?: string;
+  recipeVersion?: number;
+  nameRevision?: number;
   name: string;
   intervals: [string, string][];
   selectedInterval: number;
@@ -18,9 +20,11 @@ export function createDraft(
   intervals: number[][],
   frames: number[],
   signalId?: string,
+  base?: { recipeVersion: number; nameRevision: number },
 ): SignalDraft {
   const draft: SignalDraft = {
     signalId,
+    ...base,
     name,
     intervals: intervals.map(([a, b]) => [String(a), String(b)]),
     frames: [String(frames[0]), String(frames[1])],

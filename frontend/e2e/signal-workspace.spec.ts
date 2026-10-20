@@ -126,3 +126,36 @@ test("stored adds deduplicate, custom edits retain identity, and duplicate start
   await page.getByRole("button", { name: "Discard", exact: true }).click();
   await expect(page.getByTestId("signal-row")).toHaveCount(3);
 });
+
+test("duplicating a stored signal preserves its exact frame coverage", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `duplicate-coverage-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page
+    .getByTestId("signal-row")
+    .first()
+    .getByRole("button", { name: "Details", exact: true })
+    .click();
+  await page.getByLabel("Coverage first", { exact: true }).fill("1");
+  await page.getByLabel("Coverage last", { exact: true }).fill("1");
+  await page
+    .getByRole("button", { name: "Update coverage", exact: true })
+    .click();
+  await expect(page.getByTestId("signal-row").first()).toContainText(
+    "frames 1–1",
+  );
+  await page
+    .getByRole("button", { name: "Duplicate stored signal", exact: true })
+    .click();
+  await expect(page.getByTestId("signal-row")).toHaveCount(2);
+  await expect(page.getByTestId("signal-row").last()).toContainText(
+    "frames 1–1",
+  );
+});

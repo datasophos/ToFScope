@@ -341,6 +341,8 @@ export interface components {
        * @default false
        */
       duplicate: boolean;
+      /** Frames */
+      frames?: [number, number] | null;
       /** Index */
       index: number;
       /**

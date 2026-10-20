@@ -306,3 +306,12 @@ The source inode, size and modification time were unchanged. Prototype timing
 uses its direct integration function, not the complete Marimo UI.
 Numerical comparison details and machine-readable outcomes are
 recorded in signal-workspace-qualification.json.
+
+
+Final independent review found three Important issues; a stored-duplicate coverage
+issue was regraded Important by the executor. All four were reproduced with
+failing tests and fixed in one pass. The final suite passes 111 Python, 11 unit
+and 23 browser tests plus TypeScript. See [review details](signal-workspace-review.md)
+for fixes, review limits and the deferred deduplication-focus minor. Real-data
+arithmetic is unchanged; timing/equality results above describe the preceding
+qualification run, not a second full-volume benchmark after metadata-only fixes.

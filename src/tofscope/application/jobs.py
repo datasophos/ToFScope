@@ -45,6 +45,7 @@ class Job:
     signal_id: str
     token: int
     name_revision: int
+    referenced: bool = True
     cancelled: Event = field(default_factory=Event)
 
 
@@ -65,6 +66,7 @@ class JobService:
             for i in range(settings.workers)
         ]
         workspaces.on_close.append(self.close_analysis)
+        workspaces.on_remove.append(self.remove_signal)
         for thread in self.threads:
             thread.start()
 
@@ -115,6 +117,8 @@ class JobService:
                 snap = JobSnapshot(str(uuid4()), analysis_id, 'queued', signal.id,
                                    signal.recipe_version+1, total=last-first+1)
                 self.jobs[snap.id] = Job(snap, owner, s.dataset, recipe, signal.id, token, signal.name_revision)
+                if signal.job_id in self.jobs:
+                    self.jobs[signal.job_id].referenced = False
                 updated = replace(signal, job_id=snap.id)
                 signals = tuple(updated if r.id == signal.id else r for r in s.signals)
                 if spec.signal_id is None:
@@ -130,7 +134,7 @@ class JobService:
                 terminal = [
                     id
                     for id, j in self.jobs.items()
-                    if j.owner == owner and j.snapshot.status in TERMINAL
+                    if j.owner == owner and j.snapshot.status in TERMINAL and not j.referenced
                 ]
                 for id in terminal[:-256]:
                     del self.jobs[id]
@@ -154,14 +158,19 @@ class JobService:
             self.condition.notify_all()
             return j.snapshot
 
+    def remove_signal(self, analysis_id, signal_id):
+        with self.condition:
+            for jid, job in self.jobs.items():
+                if job.snapshot.analysis_id == analysis_id and job.signal_id == signal_id:
+                    job.referenced = False
+                    self.cancel(job.owner, jid)
+
     def close_analysis(self, analysis_id):
         with self.condition:
-            for id, j in self.jobs.items():
-                if (
-                    j.snapshot.analysis_id == analysis_id
-                    and j.snapshot.status not in TERMINAL
-                ):
-                    self.cancel(j.owner, id)
+            for jid, job in self.jobs.items():
+                if job.snapshot.analysis_id == analysis_id:
+                    job.referenced = False
+                    self.cancel(job.owner, jid)
 
     def _next(self):
         for _ in range(len(self.users)):

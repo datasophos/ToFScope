@@ -72,6 +72,7 @@ class WorkspaceService:
         self.lock = RLock()
         self.signal_lock = RLock()
         self.on_close = []
+        self.on_remove = []
         self.prepare = lambda s: None
 
     def create(self, owner):
