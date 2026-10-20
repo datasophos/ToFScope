@@ -40,6 +40,13 @@ def smoke(artifact, output):
         make_acquisition(acquisition / "a.h5")
         # A real multi-chunk transfer makes the early-close download check meaningful.
         import h5py
+        import hashlib
+        import numpy as np
+        make_acquisition(acquisition / 'raw.h5')
+        with h5py.File(acquisition / 'raw.h5', 'r+') as raw:
+            del raw['PeakData/PeakData']
+            raw.attrs['NbrWrites'] = 3
+        original_raw_digest = hashlib.sha256((acquisition / 'raw.h5').read_bytes()).hexdigest()
         with h5py.File(acquisition / "a.h5", 'r+') as handle:
             payload = handle.create_dataset('SmokePayload', (16 * 1024**2,), dtype='uint8', chunks=(1024**2,))
             for start_index in range(0, payload.size, 1024**2):
@@ -111,6 +118,17 @@ def smoke(artifact, output):
                         external.append(r.request.url); r.abort()
                 page.route("**/*", route)
                 page.goto(url + "/#bootstrap=" + credential["secret"])
+                page.get_by_role('button', name='Open TOFexplorer (.h5) file').click()
+                page.get_by_role('button', name='◫ raw.h5', exact=True).dblclick()
+                expect(page.get_by_role('dialog', name='Prepare raw acquisition')).to_be_visible()
+                page.get_by_role('button', name='Prepare and open', exact=True).click()
+                expect(page.get_by_role('tab', name='1 · raw_prepared.h5', exact=True)).to_be_visible()
+                with h5py.File(output_root / 'raw_prepared.h5', 'r') as prepared:
+                    assert prepared['PeakData/PeakData'].shape == (3, 1, 2, 2)
+                    np.testing.assert_array_equal(prepared['PeakData/PeakData'][:, 0, 0, :], [[1., .5]] * 3)
+                assert hashlib.sha256((acquisition / 'raw.h5').read_bytes()).hexdigest() == original_raw_digest
+                page.get_by_role('button', name='Close analysis 1', exact=True).click()
+                expect(page.get_by_role('tab')).to_have_count(0)
                 page.get_by_role("button", name="Open TOFexplorer (.h5) file").click()
                 page.get_by_role("button", name="◫ a.h5").dblclick()
                 page.get_by_test_id("panel-ion").locator("canvas").first.wait_for()
@@ -175,12 +193,13 @@ def smoke(artifact, output):
                 with urllib.request.urlopen(req) as transfer:
                     assert transfer.read(1024)
                 assert saved_path.is_file()
-                assert len(page.request.get(url + '/api/v1/saved-files').json()) == 1
+                assert len(page.request.get(url + '/api/v1/saved-files').json()) == 2
                 page.screenshot(path=str(output / (artifact.name + '.png')), full_page=True)
                 assert not external, external
                 browser.close()
             return dict(artifact=artifact.name, installed_without_node=True,
                 runtime_dependencies_clean=True, offline_browser=True,
+                raw_preparation_without_scientific_runtime=True,
                 plots_integration_export=True, saved_copy_restart_source_removed=True,
                 exact_restored_csv=True, optional_download=True,
                 interrupted_download_preserves_saved_file=True)

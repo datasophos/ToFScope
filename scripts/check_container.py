@@ -7,6 +7,7 @@ import sys
 import tempfile
 import time
 import urllib.request
+import h5py
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))
 from fixtures.acquisition import make_acquisition
@@ -17,6 +18,11 @@ with tempfile.TemporaryDirectory(prefix="tofscope-container-") as d:
     data = root / "data"
     data.mkdir(mode=0o755)
     make_acquisition(data / "a.h5")
+    make_acquisition(data / "raw.h5")
+    with h5py.File(data / 'raw.h5', 'r+') as raw:
+        del raw['PeakData/PeakData']
+        raw.attrs['NbrWrites'] = 3
+    (data / 'raw.h5').chmod(0o444)
     (data / "a.h5").chmod(0o444)
     subprocess.run(
         ["docker", "build", "--tag", "tofscope-pilot:local", "."],
@@ -85,6 +91,13 @@ try:
     restored = s.analyses.create_analysis('fixture', ref)
     assert restored.saved_revision == restored.revision
     assert s.presenter.snapshot('fixture', restored.id).panels
+    preview = s.preparations.inspect('fixture', 'raw.h5')
+    job = s.preparations.submit('fixture', 'raw.h5', 'acquisition', preview.generation, 'prepared.h5')
+    done = s.jobs.wait('fixture', job.id, 20)
+    assert done.status == 'succeeded', done.safe_error
+    prepared = s.analyses.create_analysis('fixture', s.repository.open('fixture', done.saved_file.id, 'saved'))
+    assert prepared.shape == (3, 1, 2, 2)
+    assert s.presenter.snapshot('fixture', prepared.id).panels
     print('non-root read-only plots and saved-copy reopen passed')
 finally:
     s.jobs.shutdown()
@@ -102,6 +115,7 @@ finally:
                     "readonly_acquisitions": True,
                     "writable_runtime": True,
                     "saved_copy_reopen": True,
+                    "raw_preparation_readonly_mount": True,
                     "one_port": True,
                     "health_and_plots": True,
                 }
