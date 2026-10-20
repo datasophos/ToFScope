@@ -30,6 +30,7 @@ class AddStoredSignal(StrictModel):
     type: Literal['add_stored_signal']
     index: StrictInt
     duplicate: StrictBool = False
+    frames: tuple[StrictInt, StrictInt] | None = None
 
 
 class SignalId(StrictModel):

@@ -11,16 +11,19 @@ class ExploreService:
         self.workspaces = workspaces
         self.repository = repository
 
-    def stored(self, s, index):
+    def stored(self, s, index, frames=None):
         if not 0 <= index < len(s.peaks):
             raise ValueError("Unknown stored channel.")
+        coverage = tuple(frames) if frames is not None else s.loaded_frames
+        if not 0 <= coverage[0] <= coverage[1] < s.shape[0]:
+            raise ValueError("Coverage outside acquisition.")
         p = s.peaks[index]
         return SignalRecipe(
             label=f"{p.label} · {p.mass:g} Th",
             source="stored",
             stored_index=index,
             intervals=((p.low, p.high),),
-            frames=s.loaded_frames,
+            frames=coverage,
         )
 
     def validate_envelope(self, e, envelope, fingerprint, check_source=True):
@@ -59,7 +62,7 @@ class ExploreService:
             kind = c.type
             patch = {}
             if kind == 'add_stored_signal':
-                recipe = self.stored(s, c.index)
+                recipe = self.stored(s, c.index, c.frames)
                 old = next((r for r in s.signals if r.recipe is not None and
                             r.recipe.source == 'stored' and r.recipe.stored_index == c.index and
                             r.recipe.frames == recipe.frames), None)
@@ -123,12 +126,15 @@ class ExploreService:
                 patch['display'] = DisplaySettings(c.log, c.relative, c.image)
             result = normalize_view(replace(s, revision=s.revision+1, **patch))
             if kind == 'remove_signal':
-                e.tokens[signal.id] = e.tokens.get(signal.id, 0)+1
+                e.tokens.pop(signal.id, None)
             # Hidden and removed signals retain metadata without pinned volume leases.
             visible = set(result.profile_signal_ids) | {result.image_signal_id}
             for sid in list(e.leases):
                 if sid not in visible or kind == 'set_stored_coverage' and sid == signal.id:
                     e.leases.pop(sid).release()
             e.snapshot = result
+            if kind == "remove_signal":
+                for callback in self.workspaces.on_remove:
+                    callback(analysis_id, signal.id)
             self.receipt(e, envelope.request_id, fingerprint, result)
             return result

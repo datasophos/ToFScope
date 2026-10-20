@@ -146,3 +146,37 @@ class SignalJobTests(unittest.TestCase):
         self.assertEqual(self.wait(updated).status, 'succeeded')
         self.assertNotIn(first.signal_id, self.state().profile_signal_ids)
         self.assertNotIn(first.signal_id, self.s.workspaces.entry('a',a.id).leases)
+
+    def test_removal_cancels_queued_jobs_and_frees_admission_immediately(self):
+        from dataclasses import replace
+        self.s.jobs.settings = replace(self.settings, jobs_per_analysis=2)
+        entered, release = self.block()
+        first = self.submit(name='Running')
+        self.assertTrue(entered.wait(2))
+        queued = self.submit(name='Queued')
+        self.assertEqual(self.s.jobs.get('a', queued.id).status, 'queued')
+        a = self.state()
+        self.s.explore.apply('a', a.id, CommandEnvelope(str(uuid4()),a.revision,a.dataset.generation,{'type':'remove_signal','signal_id':queued.signal_id}))
+        self.assertEqual(self.s.jobs.get('a', queued.id).status, 'cancelled')
+        self.assertNotIn(queued.signal_id, self.s.workspaces.entry('a',a.id).tokens)
+        third = self.submit(name='Replacement')
+        release.set()
+        self.assertEqual(self.wait(first).status, 'succeeded')
+        self.assertEqual(self.wait(third).status, 'succeeded')
+
+    def test_history_pruning_preserves_referenced_terminal_jobs(self):
+        retained = self.submit(name='Retained')
+        self.assertEqual(self.wait(retained).status, 'succeeded')
+        changing = self.submit(name='Changing')
+        self.assertEqual(self.wait(changing).status, 'succeeded')
+        for version in range(1,261):
+            changing = self.submit(name='Changing',signal_id=changing.signal_id,version=version)
+            self.assertEqual(self.wait(changing).status, 'succeeded')
+        self.assertEqual(self.s.jobs.get('a', retained.id).status, 'succeeded')
+        self.assertLessEqual(len(self.s.jobs.jobs), 258)
+        a = self.state()
+        self.s.explore.apply('a',a.id,CommandEnvelope(str(uuid4()),a.revision,a.dataset.generation,{'type':'remove_signal','signal_id':retained.signal_id}))
+        final = self.submit(name='Changing',signal_id=changing.signal_id,version=261)
+        self.assertEqual(self.wait(final).status,'succeeded')
+        with self.assertRaises(KeyError):
+            self.s.jobs.get('a',retained.id)

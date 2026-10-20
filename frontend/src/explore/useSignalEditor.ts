@@ -88,6 +88,12 @@ export function useSignalEditor(
         row.recipe.intervals,
         row.recipe.frames,
         copy ? undefined : id,
+        copy
+          ? undefined
+          : {
+              recipeVersion: row.recipe_version,
+              nameRevision: row.name_revision,
+            },
       ),
     );
   };
@@ -98,6 +104,14 @@ export function useSignalEditor(
     setSubmitting(true);
     try {
       const row = analysis.signals.find((s) => s.id === d.signalId);
+      if (
+        row &&
+        (row.recipe_version !== d.recipeVersion ||
+          row.name_revision !== d.nameRevision)
+      )
+        throw Error(
+          "This signal changed in another view. Reopen it to review the latest result; your draft is unchanged.",
+        );
       const body: JobInput = {
         request_id: crypto.randomUUID(),
         expected_revision: analysis.revision,
@@ -107,7 +121,7 @@ export function useSignalEditor(
           intervals: d.intervals.map(([a, b]) => [Number(a), Number(b)]),
           frames: [Number(d.frames[0]), Number(d.frames[1])],
           signal_id: d.signalId,
-          expected_recipe_version: row?.recipe_version,
+          expected_recipe_version: d.recipeVersion,
         },
       };
       if (
@@ -131,7 +145,13 @@ export function useSignalEditor(
         s.draft === d
           ? {
               ...s,
-              draft: { ...d, signalId: job.signal_id, submittedJobId: job.id },
+              draft: {
+                ...d,
+                signalId: job.signal_id,
+                submittedJobId: job.id,
+                recipeVersion: d.recipeVersion ?? 0,
+                nameRevision: d.nameRevision ?? 0,
+              },
             }
           : s,
       );

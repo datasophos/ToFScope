@@ -91,6 +91,7 @@ export function SignalDetails({
                     type: "add_stored_signal",
                     index: recipe.stored_index!,
                     duplicate: true,
+                    frames: recipe.frames,
                   })
                     .then(onClose)
                     .catch(() => {})
