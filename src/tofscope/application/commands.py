@@ -80,6 +80,7 @@ class SetDisplay(StrictModel):
     log: StrictBool
     relative: StrictBool
     image: Literal["sims", "se"] = "sims"
+    spectrum_log: StrictBool | None = None
 
 
 Command = Annotated[

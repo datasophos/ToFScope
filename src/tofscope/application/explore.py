@@ -123,7 +123,7 @@ class ExploreService:
                     raise ValueError('Analysis range outside acquisition.')
                 patch = dict(loaded_frames=tuple(c.frames), depth=AllDepth())
             elif kind == 'set_display':
-                patch['display'] = DisplaySettings(c.log, c.relative, c.image)
+                patch['display'] = DisplaySettings(c.log, c.relative, c.image, s.display.spectrum_log if c.spectrum_log is None else c.spectrum_log)
             result = normalize_view(replace(s, revision=s.revision+1, **patch))
             if kind == 'remove_signal':
                 e.tokens.pop(signal.id, None)

@@ -9,6 +9,7 @@ class DisplaySettings:
     log: bool = True
     relative: bool = True
     image: str = "sims"
+    spectrum_log: bool = True
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,7 @@ class SignalSnapshot:
     recipe_version: int = 1
     name_revision: int = 0
     job_id: str | None = None
+    materialization_id: str | None = None
 
 
 @dataclass(frozen=True)

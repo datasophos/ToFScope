@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-19-file-centered-analysis-design.md`, including the optional browser download amendment.
 
-**Execution:** Inline execution, as already selected by the user. Status: awaiting plan review; design approved by “continue” after incorporating the download feedback.
+**Execution:** Inline execution, as already selected by the user. Status: approved in Plannotator with zero annotations; design approved by “continue” after incorporating the download feedback.
 
 ## Global constraints
 
@@ -51,10 +51,10 @@ Paths in the file map are relative to `src/tofscope/` unless stated otherwise.
 
 **Interfaces:** `SavedAnalysisDocument` contains a version, document-local signal IDs and recipes, style indices, image/profile references, loaded frames, ROI, depth and display state. `encode_document(snapshot: AnalysisSnapshot) -> SavedAnalysisDocument`; `read_document(path: Path, limits: Settings) -> SavedAnalysisDocument | None`; `restore_snapshot(document, initial: AnalysisSnapshot) -> AnalysisSnapshot`. Add `SignalSnapshot.materialization_id: str | None = None` for immutable persisted custom data; keep the editable underlying recipe intact. Add `DisplaySettings.spectrum_log: bool = True` and the corresponding optional display command field, so spectrum Y scale is also restorable.
 
-- [ ] Write `test_document_round_trip`, `test_fresh_service_ids_preserve_relationships`, `test_invalid_metadata_fails_explicitly`, `test_plain_acquisition_has_no_document`, `test_spectrum_scale_round_trip`. Assert exact names, colors, hidden/visible sets, inclusive bounds and display values; exclude owner, job, lease, source path and cache identity. Validate schema, byte/count limits before allocation, distinct IDs, valid references, finite bounds and stored channel indices against acquisition metadata. Unknown/incomplete/corrupt documents raise a clear error.
-- [ ] Run `.venv/bin/python -m unittest discover -s tests -p test_analysis_document.py`; confirm failures for the missing implementation.
-- [ ] Implement the interfaces. Store document JSON at `/ToFScope/Analysis/state_json`, schema version 1 and a completion marker. Reference existing `/ToFScope/Integrations/<uuid>` records for custom values; document schema is independent of settings JSON schema 4. Reuse strict recipe validation without importing old widget state or adding legacy document support.
-- [ ] Rerun the document tests and existing analysis/export tests to pass. Commit `Define versioned saved analysis documents.`
+- [x] Write `test_document_round_trip`, `test_fresh_service_ids_preserve_relationships`, `test_invalid_metadata_fails_explicitly`, `test_plain_acquisition_has_no_document`, `test_spectrum_scale_round_trip`. Assert exact names, colors, hidden/visible sets, inclusive bounds and display values; exclude owner, job, lease, source path and cache identity. Validate schema, byte/count limits before allocation, distinct IDs, valid references, finite bounds and stored channel indices against acquisition metadata. Unknown/incomplete/corrupt documents raise a clear error.
+- [x] Run `.venv/bin/python -m unittest discover -s tests -p test_analysis_document.py`; confirm failures for the missing implementation.
+- [x] Implement the interfaces. Store document JSON at `/ToFScope/Analysis/state_json`, schema version 1 and a completion marker. Reference existing `/ToFScope/Integrations/<uuid>` records for custom values; document schema is independent of settings JSON schema 4. Reuse strict recipe validation without importing old widget state or adding legacy document support.
+- [x] Rerun the document tests and existing analysis/export tests to pass. Commit `Define versioned saved analysis documents.`
 
 ## Task 2: Write complete, verified, exclusive saved copies
 
