@@ -136,3 +136,20 @@ class APITests(unittest.TestCase):
         collision = self.client.post('/api/v1/acquisitions/prepare', headers=self.a, json=payload)
         self.assertEqual(collision.status_code, 409, collision.text)
         self.assertIn('choose a new name', collision.json()['message'])
+
+    def test_calibration_commands_geometry_override_and_owner_checks(self):
+        c=self.client
+        a=c.post('/api/v1/analyses',headers=self.a,json={'relative_path':'a.h5'}).json()
+        endpoint=f"/api/v1/analyses/{a['id']}"
+        command=dict(request_id='anchors',expected_revision=a['revision'],dataset_generation=a['dataset']['generation'],command=dict(type='set_depth_anchors',anchors=[dict(frame=1,depth_nm=100)]))
+        self.assertEqual(c.post(endpoint+'/commands',headers=self.b,json=command).status_code,404)
+        a=c.post(endpoint+'/commands',headers=self.a,json=command).json()
+        command.update(request_id='physical',expected_revision=a['revision'],command=dict(type='set_depth_display',unit='um',coordinates='depth'))
+        self.assertEqual(c.post(endpoint+'/commands',headers=self.a,json=command).status_code,200)
+        data=c.get(endpoint+'/data?panels=profile',headers=self.a).json()
+        self.assertEqual(data['panels']['profile']['axes'][0]['values'],[0,.1])
+        data=c.get(endpoint+'/data?panels=profile&coordinates=frame',headers=self.a).json()
+        self.assertEqual(data['panels']['profile']['axes'][0]['values'],[0,1,2])
+        self.assertEqual(c.get(endpoint,headers=self.a).json()['depth_coordinates'],'depth')
+        self.assertEqual(c.get(endpoint+'/data?panels=profile&coordinates=frame',headers=self.b).status_code,404)
+        self.assertEqual(c.get(endpoint+'/data?coordinates=bad',headers=self.a).status_code,422)

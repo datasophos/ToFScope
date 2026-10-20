@@ -10,15 +10,15 @@ partial comparison coverage and display-invariant exports.
 
 | Original assertion | Replacement or explicit completion owner |
 | --- | --- |
-| `test_calibrated_profiles.py.txt:test_profile_preserves_intensities_and_absolute_frames` | Completion Tasks 1/3/4; core calibration and pooling remain in test_depth_calibration/test_volume_layers. |
-| `test_calibrated_profiles.py.txt:test_one_calibrated_sample_is_visible` | Completion Tasks 1/3/4; core calibration and pooling remain in test_depth_calibration/test_volume_layers. |
-| `test_calibrated_profiles.py.txt:test_controller_export_partial_depth_and_anchor_validation` | Completion Tasks 1/3/4; core calibration and pooling remain in test_depth_calibration/test_volume_layers. |
-| `test_calibrated_views.py.txt:test_sections_and_front_keep_values_and_original_frames` | Completion Tasks 1/3/4; core calibration and pooling remain in test_depth_calibration/test_volume_layers. |
-| `test_calibrated_views.py.txt:test_volume_pooling_averages_physical_coordinates_across_anchor_kinks` | Completion Tasks 1/3/4; core calibration and pooling remain in test_depth_calibration/test_volume_layers. |
-| `test_calibrated_views.py.txt:test_volume_omits_unknown_frames_before_pooling` | Completion Tasks 1/3/4; core calibration and pooling remain in test_depth_calibration/test_volume_layers. |
-| `test_calibrated_views.py.txt:test_single_calibrated_plane_does_not_claim_known_thickness` | Completion Tasks 1/3/4; core calibration and pooling remain in test_depth_calibration/test_volume_layers. |
-| `test_calibrated_views.py.txt:test_layered_previews_clip_and_use_common_physical_depth` | Completion Tasks 1/3/4; core calibration and pooling remain in test_depth_calibration/test_volume_layers. |
-| `test_calibrated_views.py.txt:test_controller_updates_all_views_and_physical_markers` | Completion Tasks 1/3/4; core calibration and pooling remain in test_depth_calibration/test_volume_layers. |
+| `test_calibrated_profiles.py.txt:test_profile_preserves_intensities_and_absolute_frames` | test_depth_application: partial/nonzero-domain presenter profiles preserve exact means and original frame IDs; calibration.spec.ts covers unit/navigation behavior. |
+| `test_calibrated_profiles.py.txt:test_one_calibrated_sample_is_visible` | test_depth_application single-sample presenter assertions; calibration.spec.ts single/empty domain workflow; renderer shows a marker for one known sample. |
+| `test_calibrated_profiles.py.txt:test_controller_export_partial_depth_and_anchor_validation` | test_depth_application partial CSV blanks, units, fixed-origin validation, removal and saved/legacy documents; test_api calibration command/owner checks. |
+| `test_calibrated_views.py.txt:test_sections_and_front_keep_values_and_original_frames` | test_depth_application nonzero-domain front values/frame IDs restored for Explore; section assertions remain Task 3. |
+| `test_calibrated_views.py.txt:test_volume_pooling_averages_physical_coordinates_across_anchor_kinks` | test_depth_application block means across anchor kinks and test_volume_layers preserve numerical geometry; volume renderer remains Task 4. |
+| `test_calibrated_views.py.txt:test_volume_omits_unknown_frames_before_pooling` | test_volume_layers retains clipping before pooling; volume renderer remains Task 4. |
+| `test_calibrated_views.py.txt:test_single_calibrated_plane_does_not_claim_known_thickness` | Single/empty Explore sample handling covered by test_depth_application/calibration.spec.ts; spatial thickness/aspect assertions remain Task 4. |
+| `test_calibrated_views.py.txt:test_layered_previews_clip_and_use_common_physical_depth` | Core layered-preview assertions remain test_volume_layers; layered renderer assertions remain Task 4. |
+| `test_calibrated_views.py.txt:test_controller_updates_all_views_and_physical_markers` | test_depth_application and calibration.spec.ts cover Explore front/profile updates, original-frame markers, units and removal; sections/volume remain Tasks 3/4. |
 | `test_comparisons.py.txt:test_add_many_remove_individually_and_preserve_primary` | test_explore_data/test_jobs/test_signal_recipes and Explore Playwright; original values, ROI and missing comparison coverage. |
 | `test_comparisons.py.txt:test_custom_partial_frames_align_and_recompute_for_roi` | test_explore_data/test_jobs/test_signal_recipes and Explore Playwright; original values, ROI and missing comparison coverage. |
 | `test_comparisons.py.txt:test_profiles_normalize_independently_without_changing_arrays` | test_explore_data/test_jobs/test_signal_recipes and Explore Playwright; original values, ROI and missing comparison coverage. |

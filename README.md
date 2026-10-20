@@ -39,11 +39,24 @@ and log Y beside the spectrum. Spectrum drag zooms normally and edits intervals
 only while a signal editor is open. Images stay square; maximize/Escape and
 Ctrl/Cmd-wheel zoom preserve the view. Ordinary wheel scrolls the page.
 
+**Depth calibration…** opens a temporary graphical editor beside the viewing
+controls. Click an original-frame profile position or enter an exact frame and
+known depth; frame 0/depth 0 is fixed. Anchors must increase strictly. Choose
+Frames or Physical depth, with nm, µm, or mm display. Physical profiles and front
+projections show only frames between anchors; later depths remain unknown.
+Selection and keyboard navigation still use original acquisition frames, and
+unit changes never resample intensities. Removing positive anchors restores
+frame coordinates. CSV includes canonical `depth_nm`, blank for unknown depths,
+even when viewing in frames. A single plane's display footprint does not imply
+known thickness. Sections and 3D remain future work.
+
 **Save as…** creates a self-contained HDF5 copy with all committed signals,
 full-resolution custom results (including hidden signals), names/colors, ROI,
-frame/depth selections and display settings. Open it from **Saved files** to
+frame/depth selections, calibration anchors and coordinate/unit choices, and display settings. Open it from **Saved files** to
 restore the analysis after a restart or on another machine. Saving does not
-change the input, including when the input is an earlier saved copy.
+change the input, including when the input is an earlier saved copy. New copies
+use analysis document version 2; version 1 copies open in frame coordinates with
+no positive anchors. Older application versions reject version 2 documents.
 
 Saving defaults to the server; **Download copy** is an explicit optional action.
 Large files may take a long time to transfer. A saved copy includes the acquisition,

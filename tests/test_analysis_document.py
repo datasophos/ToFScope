@@ -24,7 +24,7 @@ class DocumentTests(unittest.TestCase):
             if 'ToFScope/Analysis' in h:
                 del h['ToFScope/Analysis']
             group = h.require_group('ToFScope/Analysis')
-            group.attrs.update(schema_version=1, complete=True, **attrs)
+            group.attrs.update(schema_version=payload.get("schema_version", 1), complete=True, **attrs)
             group.create_dataset('state_json', data=np.frombuffer(json.dumps(payload).encode(), dtype='uint8'))
         return path
 

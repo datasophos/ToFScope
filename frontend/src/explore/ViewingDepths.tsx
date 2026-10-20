@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { Analysis } from "../api/client";
 import type { Send } from "./SignalDetails";
 import { HelpHeading } from "../components/HelpButton";
@@ -14,9 +14,11 @@ export function availableFrames(a: Analysis): [number, number] {
 export function ViewingDepths({
   analysis: a,
   send,
+  children,
 }: {
   analysis: Analysis;
   send: Send;
+  children?: ReactNode;
 }) {
   const bounds = availableFrames(a),
     current = a.depth.mode === "frame" ? a.depth.index : bounds[0];
@@ -39,6 +41,7 @@ export function ViewingDepths({
   return (
     <section className="depth-strip" aria-label="Viewing depths">
       <HelpHeading title={`Viewing depths: ${summary}`} content={help.depth} />
+      {children}
       <div className="row">
         <button
           onClick={() =>

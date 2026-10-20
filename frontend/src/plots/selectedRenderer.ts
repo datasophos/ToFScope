@@ -1,3 +1,4 @@
+import { rowSpans } from "../calibration/coordinates";
 import { imageRaster } from "./imageRaster";
 import { curveStyle, type CurveStyle } from "./curveStyle";
 import * as echarts from "echarts/core";
@@ -16,6 +17,8 @@ export type ChartData = {
   yReverse?: boolean;
   x: number[];
   y?: number[];
+  xBoundaries?: number[];
+  yBoundaries?: number[];
   values?: (number | null)[][];
   series?: ({
     label: string;
@@ -43,6 +46,8 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
   function update(d: ChartData) {
     if (
       d.kind === "image" &&
+      d.x.length > 0 &&
+      (d.y?.length ?? 0) > 0 &&
       (!source ||
         rasterData?.values !== d.values ||
         rasterData?.log !== d.log ||
@@ -69,7 +74,9 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
             return {
               type: "line" as const,
               name: s.label,
-              showSymbol: s.values.filter((v) => v !== null).length === 1,
+              showSymbol:
+                s.values.filter((v, j) => v !== null && Number.isFinite(d.x[j]))
+                  .length === 1,
               symbolSize: 6,
               connectNulls: false,
               lineStyle: {
@@ -108,12 +115,18 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
                 api: { coord: (xy: number[]) => number[] },
               ) => {
                 const grid = params.coordSys!;
+                if (!d.x.length || !d.y?.length) return;
                 const dx = d.x.length > 1 ? d.x[1] - d.x[0] : 1;
                 const dy = d.y!.length > 1 ? d.y![1] - d.y![0] : 1;
-                const first = api.coord([d.x[0] - dx / 2, d.y![0] - dy / 2]);
-                const last = api.coord([
+                const xb = d.xBoundaries ?? [
+                  d.x[0] - dx / 2,
                   d.x.at(-1)! + dx / 2,
-                  d.y!.at(-1)! + dy / 2,
+                ];
+                const yb = d.yBoundaries;
+                const first = api.coord([xb[0], yb?.[0] ?? d.y![0] - dy / 2]);
+                const last = api.coord([
+                  xb.at(-1)!,
+                  yb?.at(-1) ?? d.y!.at(-1)! + dy / 2,
                 ]);
                 const left = Math.min(first[0], last[0]),
                   top = Math.min(first[1], last[1]);
@@ -132,17 +145,50 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
                 scaled.height = Math.max(1, Math.round(height * ratio));
                 const context = scaled.getContext("2d")!;
                 context.imageSmoothingEnabled = false;
-                context.drawImage(
-                  source!,
-                  ((x - left) / fullWidth) * source!.width,
-                  ((y - top) / fullHeight) * source!.height,
-                  (width / fullWidth) * source!.width,
-                  (height / fullHeight) * source!.height,
-                  0,
-                  0,
-                  scaled.width,
-                  scaled.height,
+                const spans = rowSpans(d.y!);
+                const uniform = spans.every(
+                  ([a, b], i) =>
+                    i === 0 ||
+                    Math.abs(b - a - (spans[0][1] - spans[0][0])) <
+                      Math.abs(b - a) * 1e-10,
                 );
+                if (uniform) {
+                  context.drawImage(
+                    source!,
+                    ((x - left) / fullWidth) * source!.width,
+                    ((y - top) / fullHeight) * source!.height,
+                    (width / fullWidth) * source!.width,
+                    (height / fullHeight) * source!.height,
+                    0,
+                    0,
+                    scaled.width,
+                    scaled.height,
+                  );
+                } else {
+                  // Map each original row to its own physical footprint. No value resampling.
+                  spans.forEach(([a, b], i) => {
+                    const firstY = api.coord([d.x[0], yb?.[i] ?? a])[1];
+                    const lastY = api.coord([d.x[0], yb?.[i + 1] ?? b])[1];
+                    const rowTop = Math.max(y, Math.min(firstY, lastY));
+                    const rowBottom = Math.min(
+                      y + height,
+                      Math.max(firstY, lastY),
+                    );
+                    if (rowBottom <= rowTop) return;
+                    const sourceRow = d.yReverse ? i : source!.height - i - 1;
+                    context.drawImage(
+                      source!,
+                      ((x - left) / fullWidth) * source!.width,
+                      sourceRow,
+                      (width / fullWidth) * source!.width,
+                      1,
+                      0,
+                      ((rowTop - y) / height) * scaled.height,
+                      scaled.width,
+                      ((rowBottom - rowTop) / height) * scaled.height,
+                    );
+                  });
+                }
                 return {
                   type: "image",
                   style: { image: scaled, x, y, width, height },

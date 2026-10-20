@@ -5,6 +5,7 @@ type Props = {
   xRange: Range;
   yRange: Range;
   selection?: number[];
+  markers?: number[];
   onSelect: (bounds: number[]) => void;
   onClick?: (x: number, y: number) => void;
   onZoom?: (range: Range) => void;
@@ -56,6 +57,7 @@ export function SelectionOverlay({
   xRange,
   yRange,
   selection,
+  markers,
   onSelect,
   onClick,
   onZoom,
@@ -150,6 +152,22 @@ export function SelectionOverlay({
       }}
     >
       <rect width="100" height="100" fill="transparent" />
+      {markers
+        ?.filter((x) => x >= xRange[0] && x <= xRange[1])
+        .map((x) => (
+          <line
+            key={x}
+            x1={px(x)}
+            x2={px(x)}
+            y1={0}
+            y2={100}
+            stroke="#b78322"
+            strokeDasharray="3 3"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+            pointerEvents="none"
+          />
+        ))}
       {shown && (
         <g>
           <rect

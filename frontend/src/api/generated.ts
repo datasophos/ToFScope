@@ -434,6 +434,28 @@ export interface components {
         | components["schemas"]["AllDepth"]
         | components["schemas"]["SingleFrame"]
         | components["schemas"]["DepthWindow"];
+      /**
+       * Depth Anchors
+       * @default [
+       *       {
+       *         "depth_nm": 0,
+       *         "frame": 0
+       *       }
+       *     ]
+       */
+      depth_anchors: components["schemas"]["DepthAnchor"][];
+      /**
+       * Depth Coordinates
+       * @default frame
+       * @enum {string}
+       */
+      depth_coordinates: "frame" | "depth";
+      /**
+       * Depth Unit
+       * @default nm
+       * @enum {string}
+       */
+      depth_unit: "nm" | "um" | "mm";
       display: components["schemas"]["DisplaySettings"];
       /** Fov Um */
       fov_um: number | null;
@@ -479,6 +501,13 @@ export interface components {
        */
       stale: boolean;
     };
+    /** AnchorInput */
+    AnchorInput: {
+      /** Depth Nm */
+      depth_nm: number;
+      /** Frame */
+      frame: number;
+    };
     /** Axis */
     Axis: {
       /** Boundaries */
@@ -508,7 +537,9 @@ export interface components {
         | components["schemas"]["SetROI"]
         | components["schemas"]["SetDepth"]
         | components["schemas"]["SetAnalysisFrames"]
-        | components["schemas"]["SetDisplay"];
+        | components["schemas"]["SetDisplay"]
+        | components["schemas"]["SetDepthAnchors"]
+        | components["schemas"]["SetDepthDisplay"];
       /** Dataset Generation */
       dataset_generation: string;
       /** Expected Revision */
@@ -547,6 +578,13 @@ export interface components {
       name: string;
       /** Relative Path */
       relative_path: string;
+    };
+    /** DepthAnchor */
+    DepthAnchor: {
+      /** Depth Nm */
+      depth_nm: number;
+      /** Frame */
+      frame: number;
     };
     /** DepthWindow */
     DepthWindow: {
@@ -681,6 +719,8 @@ export interface components {
     };
     /** Panel */
     Panel: {
+      /** Acquisition Frames */
+      acquisition_frames?: number[];
       /**
        * Aggregation
        * @default original
@@ -690,6 +730,12 @@ export interface components {
       axes: components["schemas"]["Axis"][];
       /** Content Version */
       content_version: string;
+      /**
+       * Coordinate Kind
+       * @default frame
+       * @enum {string}
+       */
+      coordinate_kind: "frame" | "depth";
       /** Coverage */
       coverage?: boolean[][];
       /** Frame Range */
@@ -712,6 +758,11 @@ export interface components {
        * @default false
        */
       log: boolean;
+      /**
+       * Omitted Frames
+       * @default 0
+       */
+      omitted_frames: number;
       /**
        * Palette
        * @default ion
@@ -890,6 +941,34 @@ export interface components {
        * @enum {string}
        */
       type: "set_depth";
+    };
+    /** SetDepthAnchors */
+    SetDepthAnchors: {
+      /** Anchors */
+      anchors: components["schemas"]["AnchorInput"][];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "set_depth_anchors";
+    };
+    /** SetDepthDisplay */
+    SetDepthDisplay: {
+      /**
+       * Coordinates
+       * @enum {string}
+       */
+      coordinates: "frame" | "depth";
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "set_depth_display";
+      /**
+       * Unit
+       * @enum {string}
+       */
+      unit: "nm" | "um" | "mm";
     };
     /** SetDisplay */
     SetDisplay: {
@@ -1272,6 +1351,7 @@ export interface operations {
     parameters: {
       query?: {
         panels?: string;
+        coordinates?: "frame" | null;
       };
       header?: never;
       path: {
