@@ -489,22 +489,6 @@ small {
   align-items: center;
   justify-content: space-between;
 }
-.files {
-  list-style: none;
-  padding: 0;
-}
-.files li {
-  display: flex;
-  justify-content: space-between;
-  border-bottom: 1px solid #e4ecef;
-  padding: 6px;
-}
-.files button {
-  text-align: left;
-  border: 0;
-  background: transparent;
-  flex: 1;
-}
 .recent button {
   font-size: 11px;
   padding: 3px 6px;
@@ -979,13 +963,7 @@ small {
   width: 100%;
   margin-bottom: 8px;
 }
-.file-locations {
-  margin-bottom: 12px;
-}
-.file-locations [aria-pressed="true"] {
-  background: #e3f0f5;
-  border-color: #167d9a;
-}
+
 .download-copy {
   display: inline-block;
   padding: 7px 12px;
@@ -1013,5 +991,292 @@ small {
 @media (max-width: 600px) {
   .folder-paths {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* File browser: locations, breadcrumb toolbar, details list and native-style actions. */
+.dialog.file-explorer {
+  width: min(960px, calc(100vw - 32px));
+  height: min(640px, calc(100dvh - 48px));
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.file-explorer-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid #dce5e9;
+}
+.file-explorer-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.file-explorer-header button {
+  border: 0;
+  font-size: 1.25rem;
+  padding: 2px 8px;
+}
+.file-explorer-body {
+  display: grid;
+  grid-template-columns: 184px minmax(0, 1fr);
+  min-height: 0;
+}
+.file-sidebar {
+  padding: 12px 8px;
+  background: #f4f7f9;
+  border-right: 1px solid #dce5e9;
+}
+.file-sidebar button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  border: 0;
+  text-align: left;
+  padding: 10px;
+  background: transparent;
+}
+.file-sidebar button[aria-pressed="true"] {
+  background: #e0edf3;
+  color: #21556b;
+}
+.file-sidebar button > span {
+  min-width: 0;
+}
+.file-sidebar strong {
+  font-size: 0.85rem;
+  display: block;
+}
+.file-sidebar small {
+  display: block;
+  font-size: 0.72rem;
+  margin-top: 3px;
+  color: #667f8c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-icon {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  color: #638da0;
+}
+.file-explorer-main {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.file-explorer-toolbar {
+  display: flex;
+  gap: 6px;
+  padding: 12px;
+  align-items: center;
+}
+.file-up {
+  padding: 5px 9px;
+}
+.file-breadcrumbs {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.file-breadcrumbs > span {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex-shrink: 0;
+}
+.file-breadcrumbs button {
+  border: 0;
+  background: transparent;
+  padding: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 360px;
+}
+.file-breadcrumbs button[aria-current] {
+  font-weight: 600;
+}
+.breadcrumb-separator {
+  color: #7e929d;
+  padding: 0 2px;
+}
+.file-explorer-toolbar input {
+  width: min(200px, 35%);
+  min-width: 100px;
+  font-size: 0.82rem;
+}
+.file-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  position: relative;
+  border-top: 1px solid #e2e9ec;
+}
+.file-list table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+.file-list th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f7f9fa;
+  text-align: left;
+  color: #657d8a;
+  font-size: 0.76rem;
+  font-weight: 500;
+  border-bottom: 1px solid #e2e9ec;
+  padding: 9px 14px;
+}
+.file-list th:last-child {
+  width: 90px;
+  text-align: right;
+}
+.file-list td {
+  padding: 0;
+}
+.file-list td:last-child {
+  text-align: right;
+  padding-right: 14px;
+  color: #667f8c;
+  font-size: 0.77rem;
+}
+.file-list tr[aria-selected]:hover {
+  background: #f1f6f9;
+}
+.file-list tr[aria-selected="true"],
+.file-list tr[aria-selected="true"]:hover {
+  background: #dcecf4;
+}
+.file-list td button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 0;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+  background: transparent;
+  color: inherit;
+}
+.file-list td button > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-list td button:focus-visible {
+  outline: 2px solid #50849c;
+  outline-offset: -2px;
+}
+.file-list-message {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  font-size: 0.85rem;
+  color: #637e8c;
+}
+.file-list-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+  padding: 4px 12px;
+  font-size: 0.72rem;
+  color: #728691;
+  border-top: 1px solid #e2e9ec;
+}
+.file-list-status button {
+  padding: 0 8px;
+  margin-left: 4px;
+}
+.file-error {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  color: #923d35;
+}
+.file-explorer-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid #dce5e9;
+}
+.file-explorer-footer > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: #687e8b;
+}
+.file-explorer-footer button {
+  min-width: 80px;
+  width: auto;
+  flex: 0 0 auto;
+  margin: 0;
+}
+.folder-paths dd {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .dialog.file-explorer {
+    width: calc(100vw - 16px);
+    height: min(640px, calc(100dvh - 24px));
+  }
+  .file-explorer-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .file-sidebar {
+    display: flex;
+    gap: 4px;
+    padding: 5px 8px;
+    border-right: 0;
+    border-bottom: 1px solid #dce5e9;
+  }
+  .file-sidebar button {
+    min-width: 0;
+    flex: 1;
+    padding: 7px;
+  }
+  .file-sidebar small {
+    max-width: 170px;
+  }
+  .file-explorer-toolbar {
+    flex-wrap: wrap;
+    padding: 8px;
+  }
+  .file-breadcrumbs {
+    max-width: calc(100% - 42px);
+  }
+  .file-explorer-toolbar input {
+    width: 100%;
+  }
+  .file-explorer-footer {
+    padding: 10px;
+  }
+  .file-explorer-footer > span {
+    font-size: 0.72rem;
+  }
+  .file-explorer-header {
+    padding: 10px 14px;
   }
 }

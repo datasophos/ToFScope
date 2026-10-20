@@ -8,7 +8,7 @@ test("save a copy restores signal and display state and downloads only on reques
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await page
     .getByTestId("panel-spectrum")
     .getByRole("button", { name: "Use linear y scale", exact: true })
@@ -50,7 +50,7 @@ test("save a copy restores signal and display state and downloads only on reques
   await page.getByRole("button", { name: "Saved files", exact: true }).click();
   await page
     .getByRole("button", { name: "◫ aluminium.h5", exact: true })
-    .click();
+    .dblclick();
   await expect(page.getByTestId("profile-chip")).toContainText("Aluminium");
   await expect(page.getByTestId("panel-spectrum")).toHaveAttribute(
     "data-y-scale",
@@ -67,7 +67,7 @@ test("a clean saved analysis still protects an uncommitted draft on close", asyn
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await page.getByRole("button", { name: "Save as…", exact: true }).click();
   await page.getByRole("button", { name: "Save copy", exact: true }).click();
   await expect(page.getByText("Copy saved.", { exact: true })).toBeVisible();
@@ -108,7 +108,7 @@ test("close can save a new copy and filename collisions retain the unsaved analy
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await page
     .getByRole("button", { name: "Close analysis 1", exact: true })
     .click();
@@ -122,7 +122,7 @@ test("close can save a new copy and filename collisions retain the unsaved analy
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await page.getByRole("button", { name: "Save as…", exact: true }).click();
   await page.getByLabel("Saved filename", { exact: true }).fill("closed.h5");
   await page.getByRole("button", { name: "Save copy", exact: true }).click();
@@ -152,7 +152,7 @@ test("hidden union results reopen with exact profiles and no new integration", a
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await page
     .getByTestId("panel-spectrum")
     .getByRole("button", { name: "Create signal", exact: true })
@@ -210,7 +210,9 @@ test("hidden union results reopen with exact profiles and no new integration", a
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "Saved files", exact: true }).click();
-  await page.getByRole("button", { name: "◫ union.h5", exact: true }).click();
+  await page
+    .getByRole("button", { name: "◫ union.h5", exact: true })
+    .dblclick();
   await expect(page.getByTestId("profile-chip")).toHaveCount(1);
   await page
     .getByRole("button", { name: "Manage signals", exact: true })
@@ -238,18 +240,22 @@ test("file picker and save dialog show configured folders and exact save destina
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await expect(page.getByTestId("folder-acquisitions")).toContainText(
+  await expect(page.getByTestId("folder-acquisitions")).toHaveAttribute(
+    "title",
     folders.acquisitions,
   );
-  await expect(page.getByTestId("folder-saved-copies")).toContainText(
+  await expect(page.getByTestId("folder-saved-copies")).toHaveAttribute(
+    "title",
     folders.saved_copies,
   );
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await page.getByRole("button", { name: "Save as…", exact: true }).click();
-  await expect(page.getByTestId("folder-saved-copies")).toContainText(
+  await expect(page.getByTestId("folder-saved-copies")).toHaveAttribute(
+    "title",
     folders.saved_copies,
   );
-  await expect(page.getByTestId("save-destination")).toContainText(
-    folders.save_destination,
+  await expect(page.getByTestId("save-destination")).toHaveAttribute(
+    "title",
+    `${folders.save_destination}/a_analysis.h5`,
   );
 });

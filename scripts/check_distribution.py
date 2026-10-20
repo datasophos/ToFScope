@@ -112,7 +112,7 @@ def smoke(artifact, output):
                 page.route("**/*", route)
                 page.goto(url + "/#bootstrap=" + credential["secret"])
                 page.get_by_role("button", name="Open TOFexplorer (.h5) file").click()
-                page.get_by_role("button", name="◫ a.h5").click()
+                page.get_by_role("button", name="◫ a.h5").dblclick()
                 page.get_by_test_id("panel-ion").locator("canvas").first.wait_for()
                 assert page.evaluate("location.hash") == ""
                 page.get_by_role("button", name="Add signal", exact=True).click()
@@ -153,7 +153,7 @@ def smoke(artifact, output):
                 page.goto(url + '/#bootstrap=' + credential['secret'])
                 page.get_by_role('button', name='Open TOFexplorer (.h5) file').click()
                 page.get_by_role('button', name='Saved files', exact=True).click()
-                page.get_by_role('button', name='◫ package_copy.h5', exact=True).click()
+                page.get_by_role('button', name='◫ package_copy.h5', exact=True).dblclick()
                 expect(page.get_by_test_id('panel-ion')).to_contain_text('Package signal')
                 expect(page.get_by_test_id('panel-spectrum')).to_have_attribute('data-y-scale', 'linear')
                 expect(page.get_by_test_id('save-state')).to_have_text('Saved')

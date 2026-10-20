@@ -10,7 +10,7 @@ test("old image data keeps its own label during a delayed signal switch", async 
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   const ion = page.getByTestId("panel-ion");
   await expect(ion.locator("canvas").first()).toBeVisible();
   const before = await ion.locator(".plot-status").innerText();
@@ -57,7 +57,7 @@ test("a stale open draft cannot overwrite a newer completed edit from another vi
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await addSignal(page);
   await page
     .getByRole("button", { name: "Create from spectrum", exact: true })

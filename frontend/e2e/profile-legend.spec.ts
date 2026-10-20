@@ -10,7 +10,7 @@ test("profile legend and tray markers identify curves and retain colors after re
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await page.getByRole("button", { name: "Add signal", exact: true }).click();
   await page
     .getByRole("listbox", { name: "Stored signals" })

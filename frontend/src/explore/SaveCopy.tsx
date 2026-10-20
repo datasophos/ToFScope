@@ -104,7 +104,6 @@ export function SaveCopy({
               analysis settings. The original stays unchanged.
             </p>
             <FolderLocations
-              save
               filename={
                 job?.status === "succeeded"
                   ? job.saved_file?.name || name

@@ -8,7 +8,7 @@ test("explicit spectrum modes, dirty-draft choice, precise bounds and independen
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   const spectrum = page.getByTestId("panel-spectrum");
   await expect(spectrum).toContainText("Viewing spectrum");
   const overlay = spectrum.getByTestId("selection-overlay");
@@ -49,7 +49,7 @@ test("explicit spectrum modes, dirty-draft choice, precise bounds and independen
     .getByRole("button", { name: "Restore Mass spectrum", exact: true })
     .click();
   await page.getByRole("button", { name: "＋ Open TOFexplorer file" }).click();
-  await page.getByRole("button", { name: "◫ b.h5" }).click();
+  await page.getByRole("button", { name: "◫ b.h5" }).dblclick();
   await expect(
     page.getByRole("region", { name: "Signal editor" }),
   ).toBeHidden();
@@ -79,7 +79,7 @@ test("invalid calculation keeps its draft for correction and stored copies have 
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await manageSignals(page);
   await page
     .getByTestId("signal-row")
@@ -126,7 +126,7 @@ test("removing a submitted signal also closes its frozen editor", async ({
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   let release!: () => void;
   const gate = new Promise<void>((r) => (release = r));
   await page.route("**/api/v1/jobs/*", async (route) => {

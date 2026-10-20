@@ -8,7 +8,7 @@ test("signal rename uses a spaced label and a confirmation only for edited names
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   const chip = page.getByTestId("profile-chip").first();
   await chip.getByRole("button").first().click();
   const input = page.getByLabel("Rename signal", { exact: true });

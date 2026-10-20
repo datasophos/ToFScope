@@ -10,7 +10,7 @@ test("signals are created independently, chosen for images, and hidden without l
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await expect(page.getByRole("region", { name: "Signals" })).toBeVisible();
   await manageSignals(page);
   const original = await page
@@ -77,7 +77,7 @@ test("stored adds deduplicate, custom edits retain identity, and duplicate start
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   for (let i = 0; i < 2; i++) {
     await page.getByRole("button", { name: "Add signal", exact: true }).click();
     await page
@@ -144,7 +144,7 @@ test("duplicating a stored signal preserves its exact frame coverage", async ({
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   await manageSignals(page);
   await page
     .getByTestId("signal-row")

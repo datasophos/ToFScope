@@ -10,7 +10,7 @@ test("contextual help works with mouse, keyboard and maximized panes", async ({
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   for (const label of [
     "Files and saved analyses",
     "Signals",
