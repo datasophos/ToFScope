@@ -248,19 +248,15 @@ export function App() {
       )}
       {!analyses.length && (
         <main className="welcome">
-          <span className="eyebrow">Explore</span>
-          <h1>Explore an acquisition.</h1>
+          <h1>ToFScope Data Explorer</h1>
           <p>
-            Inspect stored signals, define exact mass windows and connect
-            spatial selections to depth profiles.
+            View ion maps, secondary electron images and mass spectra from
+            TOFWERK TOFexplorer files. Compare stored signals, integrate custom
+            mass ranges and calculate depth profiles for selected image regions.
           </p>
           <button disabled={!session} onClick={() => setPicker(true)}>
             Open TOFexplorer (.h5) file
           </button>
-          <p className="muted">
-            Each open file has independent selections. Save a copy to keep your
-            analysis with the data.
-          </p>
         </main>
       )}
       {analyses.map((a) => (
