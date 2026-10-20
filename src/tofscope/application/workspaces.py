@@ -135,7 +135,7 @@ class WorkspaceService:
                 intervals=((default["low"], default["high"]),),
                 frames=frames,
             )
-            return AnalysisSnapshot(
+            snapshot = AnalysisSnapshot(
                 aid or str(uuid4()),
                 owner,
                 wid,
@@ -155,6 +155,51 @@ class WorkspaceService:
                 (float(m.mass_axis.min()), float(m.mass_axis.max())),
                 has_se=bool(m.image_names),
             )
+
+        from tofscope.storage.analysis_document import read_document, restore_snapshot, ROOT, MAX_DOCUMENT_BYTES
+        from tofscope.storage.integration_store import saved_result_info, iter_saved_frames
+        from contextlib import nullcontext
+        import hashlib
+        import h5py
+        with self.repository.access(owner, dataset) as path:
+            # Plain acquisitions need no document allocation. Reject oversized metadata first.
+            with h5py.File(path, 'r') as h:
+                if ROOT not in h:
+                    return snapshot
+                try:
+                    stored = h[f'{ROOT}/state_json']
+                    if stored.ndim != 1 or stored.size > MAX_DOCUMENT_BYTES:
+                        raise ValueError('Saved analysis metadata exceeds limits.')
+                    estimated = stored.size * 16 + snapshot.shape[1] * snapshot.shape[2] * 8
+                except (KeyError, TypeError, AttributeError) as exc:
+                    raise ValueError('Saved analysis metadata is invalid.') from exc
+            budget = self.repository.budget
+            with budget.reserve(owner, snapshot.id, estimated) if budget else nullcontext():
+                document = read_document(path, self.settings)
+                if document is None:
+                    return snapshot
+                for row in document.signals:
+                    if row.materialization_id:
+                        info = saved_result_info(path, row.materialization_id)
+                        if tuple(info['spatial_shape']) != snapshot.shape[1:3] or tuple(info['derivation']['frames']) != row.recipe.frames or tuple(tuple(w) for w in info['derivation']['intervals']) != row.recipe.intervals:
+                            raise ValueError('Saved result does not match the document.')
+                        digest = hashlib.sha256()
+                        for frame in iter_saved_frames(path, row.materialization_id, row.recipe.frames):
+                            digest.update(frame.tobytes(order='C'))
+                        with h5py.File(path, 'r') as h:
+                            expected = h[f'ToFScope/Integrations/{row.materialization_id}'].attrs.get('sha256')
+                        if digest.hexdigest() != expected:
+                            raise ValueError('Saved result checksum is invalid.')
+                return restore_snapshot(document, snapshot)
+
+    def admit_collection(self, snapshot, replacing=None):
+        with self.lock:
+            entries = [e.snapshot for e in self.entries.values() if not e.closed and e.snapshot.id != replacing]
+            count = len(snapshot.signals)
+            if (count > self.settings.signals_per_analysis or
+                    count + sum(len(s.signals) for s in entries if s.owner == snapshot.owner) > self.settings.signals_per_user or
+                    count + sum(len(s.signals) for s in entries) > self.settings.signals_global):
+                raise CapacityError('Saved analysis exceeds signal limits.')
 
     def admit_signal(self, owner, analysis_count):
         # Called under signal_lock by every insertion, including pending jobs.
@@ -176,7 +221,7 @@ class WorkspaceService:
                 >= self.settings.analyses_per_user
             ):
                 raise CapacityError("Open analysis limit reached; close an analysis.")
-            self.admit_signal(owner, 0)
+            self.admit_collection(s)
             self.prepare(s)
             self.entries[s.id] = AnalysisEntry(s)
             self.store.put(replace(w, analysis_ids=w.analysis_ids + (s.id,)))
@@ -192,6 +237,7 @@ class WorkspaceService:
             s = self.initial(
                 owner, e.snapshot.workspace_id, dataset, aid, e.snapshot.revision + 1
             )
+            self.admit_collection(s, replacing=aid)
             self.prepare(s)
             self._release(e)
             e.snapshot = s

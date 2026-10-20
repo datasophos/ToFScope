@@ -54,7 +54,7 @@ class ExplorePresenter:
         result = []
         for signal in visible_signals(s):
             r = signal.recipe
-            lease = stack.enter_context(self.cache.load(s.owner, s.id, s.dataset, r))
+            lease = stack.enter_context(self.cache.load(s.owner, s.id, s.dataset, r, materialization_id=signal.materialization_id))
             a = lease.array
             v = np.full(stop - start + 1, np.nan)
             low = max(start, r.frames[0])
@@ -121,7 +121,7 @@ class ExplorePresenter:
                 )
                 if panels & {"ion", "front"}:
                     a = stack.enter_context(
-                        self.cache.load(owner, s.id, s.dataset, image_signal(s).recipe)
+                        self.cache.load(owner, s.id, s.dataset, image_signal(s).recipe, materialization_id=image_signal(s).materialization_id)
                     ).array
                     r = image_signal(s).recipe
                     lo, hi = selected_frames(s)

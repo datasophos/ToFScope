@@ -237,7 +237,7 @@ class JobService:
                     s = e.snapshot
                     old = get_signal(s, j.signal_id)
                     name = old.name if old.name_revision != j.name_revision else j.recipe.label
-                    updated = replace(old, name=name, recipe=j.recipe, recipe_version=j.snapshot.recipe_version)
+                    updated = replace(old, name=name, recipe=j.recipe, recipe_version=j.snapshot.recipe_version, materialization_id=None)
                     result = normalize_view(replace(s, revision=s.revision+1,
                         signals=tuple(updated if r.id == old.id else r for r in s.signals),
                         profile_signal_ids=tuple(dict.fromkeys((*s.profile_signal_ids, old.id))) if old.recipe is None else s.profile_signal_ids))

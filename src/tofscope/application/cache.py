@@ -51,7 +51,7 @@ class ArrayCache:
         self.loading = set()
         self.condition = Condition(RLock())
 
-    def key(self, dataset, recipe):
+    def key(self, dataset, recipe, materialization_id=None):
         return (
             dataset.key,
             dataset.generation,
@@ -60,6 +60,7 @@ class ArrayCache:
             recipe.saved_id,
             recipe.intervals,
             recipe.frames,
+            materialization_id,
         )
 
     def _evict(self, needed=None):
@@ -78,9 +79,9 @@ class ArrayCache:
         with self.condition:
             self._evict()
 
-    def acquire(self, owner, analysis_id, dataset, recipe, loader, estimated_bytes):
+    def acquire(self, owner, analysis_id, dataset, recipe, loader, estimated_bytes, materialization_id=None):
         self.repository.assert_current(owner, dataset)
-        key = self.key(dataset, recipe)
+        key = self.key(dataset, recipe, materialization_id)
         consumer = (owner, analysis_id)
         with self.condition:
             while key in self.loading:
@@ -138,7 +139,7 @@ class ArrayCache:
         self.entries.move_to_end(key)
         return ArrayLease(self, key, consumer, entry.array)
 
-    def load(self, owner, aid, dataset, recipe, **kwargs):
+    def load(self, owner, aid, dataset, recipe, materialization_id=None, **kwargs):
         with self.repository.access(owner, dataset) as path:
             import h5py
 
@@ -152,8 +153,9 @@ class ArrayCache:
             aid,
             dataset,
             recipe,
-            lambda: self.repository.read(owner, dataset, recipe, **kwargs),
+            lambda: self.repository.read(owner, dataset, recipe, materialization_id=materialization_id, **kwargs),
             n,
+            materialization_id=materialization_id,
         )
 
     def invalidate(self, dataset_key, generation):

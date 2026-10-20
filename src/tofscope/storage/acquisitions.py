@@ -221,8 +221,28 @@ class AcquisitionRepository:
                 else m.shape[1:3]
             )
 
-    def read(self, owner, dataset, recipe, progress=None, cancel=None, reserve=None):
+    def read(self, owner, dataset, recipe, progress=None, cancel=None, reserve=None, materialization_id=None):
         with self.access(owner, dataset) as p:
+            if materialization_id is not None:
+                from contextlib import nullcontext
+                from tofscope.storage.integration_store import saved_result_info, ROOT
+                info = saved_result_info(p, materialization_id)
+                derivation = info['derivation']
+                if (recipe.source != 'custom' or tuple(derivation['frames']) != recipe.frames or
+                        tuple(tuple(x) for x in derivation['intervals']) != recipe.intervals):
+                    raise ValueError('Saved data does not match the signal derivation.')
+                if cancel and cancel():
+                    raise InterruptedError()
+                with h5py.File(p, 'r') as h:
+                    data = h[f'{ROOT}/{materialization_id}/data']
+                    result = np.empty(data.shape, dtype='float32')
+                    data.read_direct(result)
+                with reserve(result.size) if reserve else nullcontext():
+                    if not np.isfinite(result).all():
+                        raise ValueError('Saved result contains invalid numerical values.')
+                if cancel and cancel():
+                    raise InterruptedError()
+                return result
             if recipe.source == "custom":
                 return custom_peak_windows(
                     p, recipe.intervals, *recipe.frames, progress, cancel, reserve
