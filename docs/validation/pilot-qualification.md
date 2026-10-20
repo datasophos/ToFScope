@@ -315,3 +315,12 @@ and 23 browser tests plus TypeScript. See [review details](signal-workspace-revi
 for fixes, review limits and the deferred deduplication-focus minor. Real-data
 arithmetic is unchanged; timing/equality results above describe the preceding
 qualification run, not a second full-volume benchmark after metadata-only fixes.
+
+
+The rebuilt wheel and source distribution passed offline installed-app checks
+again after review fixes. The exact verified staged assets were activated in the
+implementation checkout and the local service restarted on port 8765. Health and
+readiness returned 200; the new signal API schema and all served asset hashes
+matched. This reset temporary analyses/unsaved drafts as communicated before the
+restart. Canonical frontend source digest matches its manifest; the frozen
+prototype remains clean. No external deployment or release was performed.

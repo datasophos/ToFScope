@@ -9,7 +9,7 @@
     "production_bundle": true,
     "stale_package_smoke": "failed as expected: missing Create from spectrum",
     "frozen_checkout_clean": true,
-    "live_service_restarted": false
+    "live_service_restarted": true
   },
   "distribution": [
     {
@@ -170,13 +170,26 @@
     ],
     "workspaces": "In-memory; restart resets analyses and unsaved drafts"
   },
-  "activation": "Staged package verified; final review and activation pending",
+  "activation": {
+    "url": "http://127.0.0.1:8765",
+    "healthz": 200,
+    "readyz": 200,
+    "new_signal_api_verified": true,
+    "all_served_assets_verified": true,
+    "source_digest_matches": true,
+    "temporary_analyses_reset": true
+  },
   "final_review": {
     "reviewer": "fresh GPT-6.1 fallback after initial model usage limit",
     "important_findings_fixed": 4,
     "critical_findings": 0,
     "red_green_verified": true,
     "deferred_minor": "Stored deduplication reveals profile but does not focus/scroll existing row",
-    "real_data_metrics_scope": "Qualification before lifecycle/concurrency/coverage review fixes; arithmetic/readers unchanged"
+    "real_data_metrics_scope": "Qualification before lifecycle/concurrency/coverage review fixes; arithmetic/readers unchanged",
+    "package_smoke_rerun_after_fixes": true
+  },
+  "artifacts": {
+    "tofscope-0.2.0-py3-none-any.whl": "e17070a0263559f068b2b3012950dea842091b284947a9ada820bacf7a245df6",
+    "tofscope-0.2.0.tar.gz": "1cdbc045b255abb720ac6e73bdcf682e0c55ae150b19d997216c6285766b3f8d"
   }
 }
