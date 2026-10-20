@@ -59,7 +59,7 @@ def build_services(settings):
 
     def prepare(snapshot):
         with cache.load(
-            snapshot.owner, snapshot.id, snapshot.dataset, image_signal(snapshot).recipe
+            snapshot.owner, snapshot.id, snapshot.dataset, image_signal(snapshot).recipe, materialization_id=image_signal(snapshot).materialization_id
         ):
             pass
 

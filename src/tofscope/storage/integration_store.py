@@ -96,3 +96,33 @@ def read_saved_integration(path,saved_id):
         group=h5[f'{ROOT}/{saved_id}'];_read_info(group);data=group['data'][:]
     if not np.isfinite(data).all():raise ValueError('Saved integration contains non-finite values.')
     return data
+
+
+def saved_result_info(path, saved_id):
+    """Inspect persisted data without allocating its full volume."""
+    checked_uuid(saved_id)
+    with h5py.File(path, 'r') as handle:
+        try:
+            return _read_info(handle[f'{ROOT}/{saved_id}'])
+        except (KeyError, TypeError) as exc:
+            raise ValueError('Saved result is missing or invalid.') from exc
+
+
+def iter_saved_frames(path, saved_id, frames):
+    """Yield one original-resolution frame, releasing the file on generator close."""
+    checked_uuid(saved_id)
+    with h5py.File(path, 'r') as handle:
+        try:
+            group = handle[f'{ROOT}/{saved_id}']
+            info = _read_info(group)
+            low, high = info['derivation']['frames']
+            first, last = frames
+            if not low <= first <= last <= high:
+                raise ValueError('Saved frame selection is outside coverage.')
+            for index in range(first - low, last - low + 1):
+                values = group['data'][index]
+                if not np.isfinite(values).all():
+                    raise ValueError('Saved result contains invalid numerical values.')
+                yield values
+        except (KeyError, TypeError) as exc:
+            raise ValueError('Saved result is missing or invalid.') from exc
