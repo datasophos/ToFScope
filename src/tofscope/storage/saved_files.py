@@ -14,7 +14,7 @@ import h5py
 import numpy as np
 
 from tofscope import __version__
-from tofscope.storage.acquisitions import AcquisitionRepository
+from tofscope.storage.acquisitions import AcquisitionRepository, content_identity
 from tofscope.storage.analysis_document import ROOT, MAX_DOCUMENT_BYTES, read_document
 from tofscope.storage.integration_store import IntegrationRecord, write_integration_group, _read_info
 
@@ -102,12 +102,12 @@ class SavedFileStore:
             raise FileExistsError('Output already exists; choose a new name.')
         source = Path(source)
         initial = source.stat()
-        source_identity = (initial.st_dev, initial.st_ino, initial.st_size, initial.st_mtime_ns, initial.st_ctime_ns)
+        source_identity = content_identity(initial)
         def check():
             if cancel.is_set():
                 raise ValueError('Save cancelled.')
             now = source.stat()
-            if (now.st_dev, now.st_ino, now.st_size, now.st_mtime_ns, now.st_ctime_ns) != source_identity:
+            if content_identity(now) != source_identity:
                 raise ValueError('Source changed while saving.')
         check()
         with h5py.File(source, 'r') as handle:

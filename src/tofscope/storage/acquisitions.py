@@ -21,6 +21,11 @@ class DatasetBusy(ValueError):
     pass
 
 
+def content_identity(stat):
+    """Content-write identity; ctime also changes on permissions/cloud xattrs."""
+    return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns
+
+
 @dataclass(frozen=True)
 class DatasetRef:
     key: str
@@ -75,7 +80,7 @@ class AcquisitionRepository:
     def identity(self, p):
         s = p.stat()
         return hashlib.sha256(
-            f"{self.salt}|{p}|{s.st_dev}|{s.st_ino}|{s.st_size}|{s.st_mtime_ns}|{s.st_ctime_ns}".encode()
+            f"{self.salt}|{p}|{content_identity(s)}".encode()
         ).hexdigest()
 
     @contextmanager
