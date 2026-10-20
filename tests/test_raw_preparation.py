@@ -205,23 +205,29 @@ class RawPreparationTests(unittest.TestCase):
 
     def test_shared_queue_limit_applies_to_other_preparations(self):
         from tofscope.application.analyses import CapacityError
-        from tofscope.storage import raw_preparation
+        from tofscope.application import preparations
         self.s.jobs.settings = replace(self.settings, jobs_global=1)
         with h5py.File(self.settings.data_root / 'b.h5', 'r+') as f:
             del f['PeakData/PeakData']
         second = self.s.preparations.inspect('b', 'b.h5')
         entered, release = Event(), Event()
         self.addCleanup(release.set)
-        original = raw_preparation.integrate_peak_table
+        original = preparations.prepare_copy
         def pause(*args, **kwargs):
-            entered.set(); release.wait(3)
+            # Pause before HDF5 access: pausing inside the integration kernel
+            # holds h5py's global lock and blocks the second submission's inspect.
+            entered.set()
+            release.wait()
             return original(*args, **kwargs)
-        with patch.object(raw_preparation, 'integrate_peak_table', side_effect=pause):
+        with patch.object(preparations, 'prepare_copy', side_effect=pause):
             first = self.submit()
-            self.assertTrue(entered.wait(2))
-            with self.assertRaises(CapacityError):
-                self.s.preparations.submit('b', 'b.h5', 'acquisition', second.generation, 'second.h5')
-            release.set()
+            try:
+                self.assertTrue(entered.wait(5))
+                self.assertEqual(self.s.jobs.get('a', first.id).status, 'running')
+                with self.assertRaises(CapacityError):
+                    self.s.preparations.submit('b', 'b.h5', 'acquisition', second.generation, 'second.h5')
+            finally:
+                release.set()
             self.assertEqual(self.s.jobs.wait('a', first.id, 5).status, 'succeeded')
 
     def test_changing_source_during_integration_prevents_publication(self):
