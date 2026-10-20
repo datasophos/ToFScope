@@ -17,6 +17,7 @@ from tofscope.storage.bounded_events import admitted_events
 from tofscope.storage.explorer import integration_parameters, scalar, decode
 import re
 from tofscope.storage.saved_files import COPY_BYTES, SavedFile, file_id, filename, reserve_disk
+from tofscope.storage.compact_copy import compact_copy
 
 
 @dataclass(frozen=True)
@@ -128,21 +129,11 @@ def prepare_copy(repository, files, owner, source, name, required_bytes, cancell
         with repository.access(owner, source) as path:
             check()
             with reserve_disk(directory, required_bytes), repository.budget.reserve(owner, task_id, COPY_BYTES):
-                with path.open('rb') as src, temporary.open('xb') as out:
-                    os.chmod(temporary, 0o600)
-                    buffer = bytearray(COPY_BYTES)
-                    copied, total = 0, path.stat().st_size
-                    while True:
-                        check()
-                        count = src.readinto(buffer)
-                        if not count:
-                            break
-                        out.write(memoryview(buffer)[:count])
-                        copied += count
-                        progress('Copying raw acquisition', copied, total)
-                    out.flush()
-                    os.fsync(out.fileno())
-                    del buffer
+                descriptor = os.open(temporary, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+                os.close(descriptor)
+                with h5py.File(path, 'r') as src, h5py.File(temporary, 'w') as out:
+                    compact_copy(src, out, check, progress,
+                                 lambda n: repository.budget.reserve(owner, task_id, n))
             with raw_metadata(repository, owner, source, task_id) as (f, table, axis, windows, shape, ratio, normalization, assumptions):
                 scratch = int(np.prod(shape[1:])) * 24 + 4096
                 digest = hashlib.sha256()
@@ -158,8 +149,8 @@ def prepare_copy(repository, files, owner, source, name, required_bytes, cancell
                         if not re.findall(r'Ch\d+Record\s*=\s*(\d+)', config):
                             output.attrs['Configuration File Contents'] = config + '\n[ToFScope reconstruction assumptions]\nCh1Record=1\n'
                     data = output['PeakData'].create_dataset('PeakData', shape=shape, dtype='float32',
-                        chunks=(1, min(32, shape[1]), min(32, shape[2]), min(32, shape[3])),
-                        compression='lzf', shuffle=True)
+                        chunks=(1, shape[1], shape[2], 1),
+                        compression='gzip', compression_opts=1, shuffle=False)
                     for z in range(shape[0]):
                         check()
                         with reserve_disk(directory, int(np.prod(shape[1:])) * 8 + 64 * 1024**2):

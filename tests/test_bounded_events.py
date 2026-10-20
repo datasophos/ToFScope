@@ -118,6 +118,16 @@ class BoundedEventTests(unittest.TestCase):
                         np.testing.assert_array_equal(integrate_event_windows(events, np.arange(10.), 2, 4, [(1, 2)]), expected)
                 self.assertEqual(self.budget.physical_bytes, 0)
 
+    def test_bounded_write_roundtrips_empty_signed_and_long_cells(self):
+        from tofscope.storage.bounded_events import write_events
+        with h5py.File(self.path, 'r') as src, h5py.File(self.root / 'copy.h5', 'w') as dst:
+            copied = dst.create_dataset('events', shape=src['events'].shape, dtype=src['events'].dtype)
+            with admitted_events(src['events'], 0, self.reserve) as events:
+                write_events(copied, 0, events, self.reserve)
+            for idx in np.ndindex(src['events'].shape):
+                np.testing.assert_array_equal(copied[idx], src['events'][idx])
+        self.assertEqual(self.budget.physical_bytes, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

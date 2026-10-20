@@ -124,3 +124,44 @@ def admitted_events(raw, frame, reserve):
             raise ValueError("Raw event descriptor is outside admitted memory.")
         samples = np.concatenate(pieces) if pieces else np.empty(0, dtype=base)
         yield EventBatch(samples, offsets, lengths, shape)
+
+
+def write_events(target, frame, events, reserve):
+    """Write an admitted batch through HDF5's public VLEN interface.
+
+    Reuse its sample buffers directly instead of creating one Python array per
+    pixel. The caller keeps the borrowed batch alive until this returns.
+    """
+    base = h5py.check_dtype(vlen=target.dtype)
+    if (base is None or np.dtype(base) != events.samples.dtype
+            or target.shape[1:] != events.shape or not 0 <= frame < target.shape[0]
+            or not events.samples.flags.c_contiguous):
+        raise ValueError('Event batch does not match the destination dataset.')
+    try:
+        write = C.CDLL(h5py.h5d.__file__).H5Dwrite
+    except (OSError, AttributeError):
+        raise ValueError('This HDF5 build lacks bounded raw-event writing.') from None
+    hid = C.c_int64
+    write.argtypes = [hid, hid, hid, hid, hid, C.c_void_p]
+    write.restype = C.c_int
+    count = int(np.prod(events.shape))
+    if (events.offsets.shape != (count,) or events.lengths.shape != (count,)
+            or events.offsets.dtype.kind not in 'iu' or events.lengths.dtype.kind not in 'iu'):
+        raise ValueError('Event descriptors must be integer offsets and lengths.')
+    with phil, reserve(count * 64 + 4096), ExitStack() as stack:
+        if (np.any(events.offsets < 0) or np.any(events.lengths < 0)
+                or np.any(events.lengths > events.samples.size)
+                or np.any(events.offsets > events.samples.size - events.lengths)):
+            raise ValueError('Event batch exceeds its admitted sample buffer.')
+        descriptors = np.empty(count, dtype=np.dtype([('length', np.uintp), ('pointer', np.uintp)], align=True))
+        descriptors['length'] = events.lengths
+        descriptors['pointer'] = events.samples.ctypes.data + events.offsets * events.samples.dtype.itemsize
+        descriptors['pointer'][events.lengths == 0] = 0
+        memory_type = target.id.get_type(); stack.callback(memory_type.close)
+        file_space = target.id.get_space(); stack.callback(file_space.close)
+        file_space.select_hyperslab((frame, 0, 0), (1, *events.shape))
+        memory_space = h5py.h5s.create_simple(events.shape); stack.callback(memory_space.close)
+        if write(target.id.id, memory_type.id, memory_space.id, file_space.id, 0,
+                 C.c_void_p(descriptors.ctypes.data)) < 0:
+            raise ValueError('Raw event copy failed.')
+        del descriptors
