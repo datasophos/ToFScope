@@ -46,3 +46,15 @@ remain read only; preparation is an explicit, cancellable operation on a new cop
 5. Verify disposable fixtures, RosettaSciIO parity and the actual small raw pair;
    qualify the large raw file when locally accessible. Distinguish blocked checks.
 6. Regenerate schema/assets, package and document launch/limitations; coherent commits.
+
+## Completion
+
+Steps 1–6 implemented. Full-volume large-file preparation, verification/reopening
+and first/middle/last frame RosettaSciIO comparisons passed; the raw source hash
+was unchanged. All small-file channels matched RosettaSciIO; 50 vendor-edge
+mismatches are explicitly recorded in `docs/validation/raw-acquisition-preparation.md`.
+The final review's disk double-counting and retained-buffer findings were fixed
+and regression-checked. Validation includes 156 Python tests, 42 browser workflows,
+11 frontend unit tests, wheel/sdist offline installs and non-root Docker checks.
+Activation of the local service requires a restart; open unsaved analyses must
+be saved/discarded before that restart. No acquisition writes or external deploys.

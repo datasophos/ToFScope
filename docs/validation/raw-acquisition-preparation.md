@@ -70,3 +70,29 @@ completed-frame metadata are rejected; no uncalibrated windows are invented.
 Preparation uses cooperative source locking. Reloading the page does not cancel
 a queued job; a completed copy remains in Saved files. NFS locking, power-loss
 durability and a commercial TOFexplorer roundtrip remain unqualified.
+
+## Final verification and review
+
+156 Python tests, 42 browser workflows, 11 frontend unit checks and the production
+build pass. Browser tests cover confirmation before submitting work, backing out,
+preparation/opening with visible plots, cancellation retaining existing analyses,
+and a raw filename supplied by the launcher. Python tests cover fractional and
+overlapping windows, unordered tables, shared endpoints, padded event buffers,
+RosettaSciIO parity, completed writes, source changes before/during preparation,
+owner isolation, shared queue admission, cancellation, disk/memory exhaustion,
+exclusive names and cleanup.
+
+Independent final review found two resource-accounting errors: retaining the
+source disk reservation after its bytes were physically written, and retaining
+the copy buffer after its memory lease ended. Both are fixed. The copy buffer is
+released before its lease, the disk reservation ends after copying, and each
+frame reserves only outstanding growth. A simulated low-free-space regression
+failed before correction and passes after it. Scientific counting is unchanged.
+The real-file measurements above precede these accounting-only fixes.
+
+Both wheel and sdist install independently from cached dependencies and exercise
+raw confirmation/preparation plus the existing save/restart/reopen/CSV/PNG flow
+without Node, RosettaSciIO, HyperSpy or external browser requests. Docker smoke
+checks run as UID 10001 with a read-only root filesystem and acquisition mount,
+separate writable runtime/saved mounts, and one exposed port; raw preparation,
+plots, saved-copy creation and reopening pass.

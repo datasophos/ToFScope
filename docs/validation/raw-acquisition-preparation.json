@@ -42,5 +42,49 @@
     "peak_managed_sampled": 121569536,
     "completed_frames": 1301,
     "spare_event_frame_excluded": true
+  },
+  "automated_checks": {
+    "python_tests": 156,
+    "browser_workflows": 42,
+    "frontend_unit_tests": 11,
+    "production_build": true,
+    "final_review_findings_resolved": [
+      "copy_disk_reservation_double_counting",
+      "copy_buffer_lifetime"
+    ]
+  },
+  "distribution": [
+    {
+      "artifact": "tofscope-0.2.0-py3-none-any.whl",
+      "installed_without_node": true,
+      "runtime_dependencies_clean": true,
+      "offline_browser": true,
+      "raw_preparation_without_scientific_runtime": true,
+      "plots_integration_export": true,
+      "saved_copy_restart_source_removed": true,
+      "exact_restored_csv": true,
+      "optional_download": true,
+      "interrupted_download_preserves_saved_file": true
+    },
+    {
+      "artifact": "tofscope-0.2.0.tar.gz",
+      "installed_without_node": true,
+      "runtime_dependencies_clean": true,
+      "offline_browser": true,
+      "raw_preparation_without_scientific_runtime": true,
+      "plots_integration_export": true,
+      "saved_copy_restart_source_removed": true,
+      "exact_restored_csv": true,
+      "optional_download": true,
+      "interrupted_download_preserves_saved_file": true
+    }
+  ],
+  "container": {
+    "non_root_uid": 10001,
+    "readonly_rootfs": true,
+    "readonly_acquisitions": true,
+    "raw_preparation_readonly_mount": true,
+    "saved_copy_reopen": true,
+    "one_port": true
   }
 }
