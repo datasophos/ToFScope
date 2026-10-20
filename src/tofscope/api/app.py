@@ -250,8 +250,8 @@ def create_app(settings, services=None, bootstrap_secret=None):
         return s.analyses.get(o, aid)
 
     @app.delete("/api/v1/analyses/{aid}", status_code=204)
-    def close(aid: str, o=Depends(owner), s=Depends(svc)):
-        s.analyses.close(o, aid)
+    def close(aid: str, expected_revision: int = Query(ge=0), o=Depends(owner), s=Depends(svc)):
+        s.analyses.close(o, aid, expected_revision)
 
     @app.post("/api/v1/analyses/{aid}/replace", response_model=AnalysisSnapshot)
     def replace_analysis(

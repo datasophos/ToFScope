@@ -130,5 +130,23 @@
     "saved_copy_reopen": true,
     "one_port": true,
     "health_and_plots": true
+  },
+  "extended_real_run": {
+    "status": "blocked",
+    "reason": "ProtonDrive source HDF5 open timed out (errno 60); retry blocked at initial source hash and was interrupted. No complete high-water result."
+  },
+  "final_validation": {
+    "date": "2026-10-20",
+    "python_tests": 140,
+    "frontend_unit_tests": 11,
+    "browser_tests": 32,
+    "typecheck": true,
+    "fresh_frontend_build": true,
+    "final_review_fixed": 4,
+    "deferred_minors": 0,
+    "artifacts": {
+      "tofscope-0.2.0-py3-none-any.whl": "ddd831fc542a2ca52624b5bfef08da47f8b6ae9e3083f696f92a81a80c500baa",
+      "tofscope-0.2.0.tar.gz": "3ae86755cbc6d88fcefa1ed17098a48c830138399450b0cc4e4728b24122ef6a"
+    }
   }
 }

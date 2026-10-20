@@ -111,3 +111,18 @@ class SavedFilesTests(unittest.TestCase):
             handle['external'] = h5py.ExternalLink('b.h5', '/')
         with self.assertRaises(ValueError): self.save()
         self.assertEqual(list(self.store.owner_root('a').iterdir()), [])
+
+    def test_large_copy_keeps_only_one_admitted_buffer(self):
+        import tracemalloc
+        from tofscope.storage.saved_files import COPY_BYTES
+        with h5py.File(self.source, 'r+') as h:
+            data = h.create_dataset('Payload', (24 * 1024**2,), dtype='uint8')
+            for start in range(0, data.size, COPY_BYTES):
+                data[start:start + COPY_BYTES] = 0
+        tracemalloc.start()
+        try:
+            self.save()
+            _, peak = tracemalloc.get_traced_memory()
+        finally:
+            tracemalloc.stop()
+        self.assertLess(peak, COPY_BYTES + 2 * 1024**2)

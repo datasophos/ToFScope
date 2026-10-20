@@ -8,6 +8,7 @@ import numpy as np
 from tofscope.storage.dataset_io import locked_read
 
 ROOT='ToFScope/Integrations'
+MAX_METADATA_BYTES = 64 * 1024
 
 
 def checked_uuid(value):
@@ -49,7 +50,10 @@ def write_integration_group(h5,record,frame_data):
     if record.id in parent:raise ValueError('An integration with this UUID already exists.')
     group=parent.create_group(record.id);group.attrs.update(schema_version=1,complete=False)
     metadata=asdict(record);metadata['spatial_shape']=list(record.spatial_shape)
-    group.create_dataset('recipe_json',data=json.dumps(metadata,ensure_ascii=False),dtype=h5py.string_dtype('utf-8'))
+    encoded = json.dumps(metadata, ensure_ascii=False).encode('utf-8')
+    if len(encoded) > MAX_METADATA_BYTES:
+        raise ValueError('Integration metadata exceeds limits.')
+    group.create_dataset('recipe_json', data=np.frombuffer(encoded, dtype='uint8'))
     first,last=record.derivation['frames'];ny,nx=record.spatial_shape
     data=group.create_dataset('data',shape=(last-first+1,ny,nx),dtype='float32',chunks=(1,ny,nx),compression='gzip',shuffle=True)
     count=0
@@ -62,10 +66,18 @@ def write_integration_group(h5,record,frame_data):
     return record.id
 
 
+def metadata_size(group):
+    stored = group['recipe_json']
+    if stored.ndim != 1 or stored.dtype != np.dtype('uint8') or stored.size > MAX_METADATA_BYTES:
+        raise ValueError('Integration metadata encoding or size exceeds limits.')
+    return stored.size
+
+
 def _read_info(group):
     if not bool(group.attrs.get('complete',False)):raise ValueError('Integration is incomplete.')
     if int(group.attrs.get('schema_version',0))!=1:raise ValueError('Unsupported integration schema version.')
-    raw=group['recipe_json'][()];metadata=json.loads(raw.decode() if isinstance(raw,bytes) else raw)
+    metadata_size(group)
+    metadata = json.loads(group['recipe_json'][:].tobytes().decode('utf-8'))
     record=IntegrationRecord(**{**metadata,'spatial_shape':tuple(metadata['spatial_shape'])})
     if group.name.rsplit('/',1)[-1]!=record.id:raise ValueError('Integration UUID does not match its group.')
     first,last=record.derivation['frames']

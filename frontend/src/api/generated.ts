@@ -1035,7 +1035,9 @@ export interface operations {
   };
   close_api_v1_analyses__aid__delete: {
     parameters: {
-      query?: never;
+      query: {
+        expected_revision: number;
+      };
       header?: never;
       path: {
         aid: string;

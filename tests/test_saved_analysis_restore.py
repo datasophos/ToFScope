@@ -58,6 +58,38 @@ class RestoreTests(unittest.TestCase):
                 s.cache.clear()
             self.assertEqual(s.cache.budget.users['fresh'], 0)
 
+    def test_oversized_result_metadata_is_rejected_before_restore(self):
+        import json
+        path = self.settings.data_root / 'portable.h5'
+        key = f'ToFScope/Integrations/{self.document.signals[-1].materialization_id}/recipe_json'
+        with h5py.File(path, 'r+') as h:
+            stored = h[key][()]
+            metadata = json.loads(stored.decode() if isinstance(stored, bytes) else bytes(stored).decode())
+            metadata['derivation']['label'] = 'x' * (5 * 1024**2)
+            del h[key]
+            h.create_dataset(key, data=json.dumps(metadata), dtype=h5py.string_dtype('utf-8'))
+        s = self.restart(global_bytes=128 * 1024, user_bytes=128 * 1024, analysis_bytes=128 * 1024)
+        with self.assertRaises(ValueError):
+            s.analyses.create_analysis('a', s.repository.open('a', 'portable.h5'))
+        self.assertEqual(s.analyses.entries, {})
+        self.assertEqual(s.cache.budget.physical_bytes, 0)
+
+    def test_bounded_result_metadata_still_requires_decode_admission(self):
+        import json
+        path = self.settings.data_root / 'portable.h5'
+        key = f'ToFScope/Integrations/{self.document.signals[-1].materialization_id}/recipe_json'
+        with h5py.File(path, 'r+') as h:
+            metadata = json.loads(h[key][:].tobytes())
+            metadata['derivation']['label'] = 'x' * 20000
+            del h[key]
+            h.create_dataset(key, data=np.frombuffer(json.dumps(metadata).encode(), dtype='uint8'))
+        s = self.restart(global_bytes=128 * 1024, user_bytes=128 * 1024, analysis_bytes=128 * 1024)
+        with patch('tofscope.storage.integration_store._read_info', side_effect=AssertionError('parsed before admission')) as reader:
+            with self.assertRaisesRegex(ValueError, 'Memory budget'):
+                s.analyses.create_analysis('a', s.repository.open('a', 'portable.h5'))
+            reader.assert_not_called()
+        self.assertEqual(s.cache.budget.physical_bytes, 0)
+
     def test_missing_hidden_result_and_invalid_values_fail_open(self):
         path = self.settings.data_root / 'portable.h5'
         with h5py.File(path, 'r+') as h:

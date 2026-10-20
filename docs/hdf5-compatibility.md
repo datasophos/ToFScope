@@ -141,3 +141,8 @@ documents fail explicitly. Custom records are checksum-verified on open, includi
 hidden results, and restored without raw reintegration. Original files remain
 unchanged. Vendor/commercial-software round trips and NFS crash durability remain
 unverified; these outputs are supported by ToFScope's own reader.
+
+Integration `recipe_json` uses a bounded one-dimensional uint8 UTF-8 encoding
+(maximum 64 KiB), checked before allocation. Restoring an analysis admits its
+combined embedded recipe decoding scratch in addition to state JSON and frame
+scratch. Unsupported earlier experimental encodings are rejected explicitly.

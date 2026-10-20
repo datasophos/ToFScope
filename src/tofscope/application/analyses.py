@@ -120,7 +120,7 @@ class AnalysisService:
             )
 
         from tofscope.storage.analysis_document import read_document, restore_snapshot, ROOT, MAX_DOCUMENT_BYTES
-        from tofscope.storage.integration_store import saved_result_info, iter_saved_frames
+        from tofscope.storage.integration_store import saved_result_info, iter_saved_frames, metadata_size, ROOT as RESULT_ROOT
         from contextlib import nullcontext
         import hashlib
         import h5py
@@ -141,19 +141,26 @@ class AnalysisService:
                 document = read_document(path, self.settings)
                 if document is None:
                     return snapshot
-                for row in document.signals:
-                    if row.materialization_id:
-                        info = saved_result_info(path, row.materialization_id)
-                        if tuple(info['spatial_shape']) != snapshot.shape[1:3] or tuple(info['derivation']['frames']) != row.recipe.frames or tuple(tuple(w) for w in info['derivation']['intervals']) != row.recipe.intervals:
-                            raise ValueError('Saved result does not match the document.')
-                        digest = hashlib.sha256()
-                        for frame in iter_saved_frames(path, row.materialization_id, row.recipe.frames):
-                            digest.update(frame.tobytes(order='C'))
-                        with h5py.File(path, 'r') as h:
-                            expected = h[f'ToFScope/Integrations/{row.materialization_id}'].attrs.get('sha256')
-                        if digest.hexdigest() != expected:
-                            raise ValueError('Saved result checksum is invalid.')
-                return restore_snapshot(document, snapshot)
+                try:
+                    with h5py.File(path, 'r') as handle:
+                        result_metadata_bytes = sum(metadata_size(handle[f'{RESULT_ROOT}/{row.materialization_id}'])
+                                                    for row in document.signals if row.materialization_id)
+                except (KeyError, TypeError) as exc:
+                    raise ValueError('Saved result is missing or invalid.') from exc
+                with budget.reserve(owner, snapshot.id, result_metadata_bytes * 16) if budget else nullcontext():
+                    for row in document.signals:
+                        if row.materialization_id:
+                            info = saved_result_info(path, row.materialization_id)
+                            if tuple(info['spatial_shape']) != snapshot.shape[1:3] or tuple(info['derivation']['frames']) != row.recipe.frames or tuple(tuple(w) for w in info['derivation']['intervals']) != row.recipe.intervals:
+                                raise ValueError('Saved result does not match the document.')
+                            digest = hashlib.sha256()
+                            for frame in iter_saved_frames(path, row.materialization_id, row.recipe.frames):
+                                digest.update(frame.tobytes(order='C'))
+                            with h5py.File(path, 'r') as h:
+                                expected = h[f'ToFScope/Integrations/{row.materialization_id}'].attrs.get('sha256')
+                            if digest.hexdigest() != expected:
+                                raise ValueError('Saved result checksum is invalid.')
+                    return restore_snapshot(document, snapshot)
 
     def admit_collection(self, snapshot, replacing=None):
         with self.lock:
@@ -210,9 +217,11 @@ class AnalysisService:
             lease.release()
         e.leases.clear()
 
-    def close(self, owner, aid):
+    def close(self, owner, aid, expected_revision=None):
         e = self.entry(owner, aid)
         with self.signal_lock, e.lock:
+            if expected_revision is not None and e.snapshot.revision != expected_revision:
+                raise Conflict("Analysis changed in another view; review it before closing.", e.snapshot.revision)
             e.closed = True
             self._release(e)
         for callback in self.on_close:

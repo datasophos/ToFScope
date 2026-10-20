@@ -91,3 +91,18 @@ class SaveJobTests(unittest.TestCase):
                 self.submit('after.h5', 'busy')
             release.set()
             self.assertEqual(self.s.jobs.wait('a', job.id, 4).status, 'succeeded')
+
+    def test_cleanup_failure_after_publication_keeps_successful_result(self):
+        from pathlib import Path
+        original = Path.unlink
+        def fail_after_publish(path, *args, **kwargs):
+            if path.name.startswith('.tmp-') and (path.parent / 'copy.h5').exists():
+                raise PermissionError('injected cleanup denial')
+            return original(path, *args, **kwargs)
+        with patch.object(Path, 'unlink', fail_after_publish):
+            result = self.s.jobs.wait('a', self.submit().id, 4)
+        self.assertEqual(result.status, 'succeeded', result.safe_error)
+        self.assertIsNotNone(result.saved_file)
+        self.assertEqual(self.s.analyses.get('a', self.a.id).saved_revision, self.a.revision)
+        ref = self.s.repository.open('a', result.saved_file.id, location='saved')
+        self.assertEqual(self.s.analyses.create_analysis('a', ref).saved_revision, 0)
