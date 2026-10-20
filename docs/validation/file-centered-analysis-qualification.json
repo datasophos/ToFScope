@@ -265,5 +265,15 @@
     "browser_tests": 37,
     "typecheck_and_frontend_build": true,
     "visual_inspection": true
+  },
+  "toolbar_consistency_update": {
+    "browser_tests": 38,
+    "frontend_unit_tests": 11,
+    "typecheck_and_build": true,
+    "signal_action_height_alignment_at_enlarged_text": true,
+    "all_four_plot_toolbars_checked": true,
+    "reset_zoom_tooltip": "Reset zoom",
+    "png_export_tooltip": "Save plot/image as PNG",
+    "maximize_restore_tooltips": true
   }
 }

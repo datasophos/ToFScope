@@ -14,6 +14,32 @@ import {
   type CurveStyle,
   type LegendEntry,
 } from "./curveStyle";
+function PlotToolbarIcon({ action }: { action: "reset" | "save" }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {action === "reset" ? (
+        <path d="M3 10a9 9 0 1 1 2.6 8.3M3 4v6h6" />
+      ) : (
+        <>
+          <rect x="3" y="3" width="18" height="14" rx="2" />
+          <circle cx="8" cy="8" r="1.4" />
+          <path d="m3 14 5-5 4 4 3-3 6 6M12 17v6m-3-3 3 3 3-3" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 export function PlotPanel({
   name,
   title,
@@ -169,8 +195,13 @@ export function PlotPanel({
           {zoomWindow && (
             <button onClick={() => setZoom(zoomWindow)}>Zoom to draft</button>
           )}
-          <button onClick={() => setZoom(null)} title="Reset horizontal zoom">
-            Reset zoom
+          <button
+            className="plot-icon-button"
+            onClick={() => setZoom(null)}
+            aria-label="Reset zoom"
+            title="Reset zoom"
+          >
+            <PlotToolbarIcon action="reset" />
           </button>
           <button
             onClick={async () => {
@@ -189,12 +220,16 @@ export function PlotPanel({
                 setExportError("PNG export failed. Please try again.");
               }
             }}
+            className="plot-icon-button"
             aria-label={`Export ${title} PNG`}
+            title="Save plot/image as PNG"
           >
-            PNG
+            <PlotToolbarIcon action="save" />
           </button>
           <button
+            className="plot-icon-button"
             aria-label={`${maximized || expanded ? "Restore" : "Maximize"} ${title}`}
+            title={`${maximized || expanded ? "Restore" : "Maximize"} ${title}`}
             onClick={onMaximize}
           >
             {maximized || expanded ? "↙" : "↗"}

@@ -36,7 +36,9 @@ test("independent files, exact Explore state, union calculation and offline down
   await page.mouse.up();
   await expect(page.getByTestId("analysis-revision")).toHaveText("1");
   for (const name of ["b.h5", "a.h5"]) {
-    await page.getByRole("button", { name: "＋ Open TOFexplorer file" }).click();
+    await page
+      .getByRole("button", { name: "＋ Open TOFexplorer file" })
+      .click();
     await page.getByRole("button", { name: `◫ ${name}` }).dblclick();
   }
   await expect(page.getByRole("tab")).toHaveCount(3);
@@ -305,4 +307,47 @@ test("full-size image maximize and restore stay responsive without fetching data
     ).toBeLessThan(200);
   }
   expect(dataRequests).toBe(requestsBefore);
+});
+
+test("plot toolbar actions are compact icons with tooltips in every pane", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `toolbar-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+  for (const name of ["ion", "front", "spectrum", "profile"]) {
+    const pane = page.getByTestId(`panel-${name}`);
+    const reset = pane.getByRole("button", { name: "Reset zoom", exact: true });
+    await expect(reset).toHaveAttribute("title", "Reset zoom");
+    await expect(reset.locator("svg")).toBeVisible();
+    await expect(reset).toHaveText("");
+    await reset.click();
+    const save = pane.getByRole("button", { name: /^Export .* PNG$/ });
+    await expect(save).toHaveAttribute("title", "Save plot/image as PNG");
+    await expect(save.locator("svg")).toBeVisible();
+    await expect(save).toHaveText("");
+    const maximize = pane.getByRole("button", { name: /^Maximize / });
+    await expect(maximize).toHaveAttribute(
+      "title",
+      (await maximize.getAttribute("aria-label"))!,
+    );
+    const heights = await Promise.all(
+      [reset, save, maximize].map(
+        async (button) => (await button.boundingBox())!.height,
+      ),
+    );
+    expect(Math.max(...heights) - Math.min(...heights)).toBeLessThan(0.5);
+    await maximize.click();
+    const restore = pane.getByRole("button", { name: /^Restore / });
+    await expect(restore).toHaveAttribute(
+      "title",
+      (await restore.getAttribute("aria-label"))!,
+    );
+    await restore.click();
+  }
 });
