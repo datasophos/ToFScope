@@ -16,8 +16,8 @@ select {
 }
 button {
   cursor: pointer;
-  border: 0;
-  background: transparent;
+  border: 1px solid transparent;
+  background: white;
   border-radius: 5px;
   padding: 6px 10px;
   color: #214858;
@@ -49,8 +49,8 @@ button.help-button,
   width: 18px;
   height: 18px;
   padding: 0;
-  border: 1px solid #a3b6c1;
   border-radius: 50%;
+  border-color: #bccbd2;
   color: #6d8390;
   font:
     italic 12px Georgia,
@@ -71,7 +71,7 @@ button.help-button,
   padding: 11px 13px;
   background: #183348;
   color: #edf5f8;
-  border-radius: 0;
+  border-radius: 6px;
   box-shadow: 0 4px 16px #10253630;
   font-size: 12px;
   line-height: 1.5;
@@ -87,10 +87,8 @@ button.help-button,
 input,
 select {
   padding: 5px;
-  border: 0;
-  border-bottom: 1px solid #91a4af;
-  border-radius: 0;
-  background: #f0f4f6;
+  border: 1px solid transparent;
+  border-radius: 4px;
   max-width: 100%;
 }
 .selection-overlay {
@@ -141,8 +139,8 @@ select {
   max-width: calc(100vw - 40px);
   padding: 6px;
   background: white;
-  border: 0;
-  border-radius: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
   box-shadow: 0 5px 18px #20374425;
 }
 .signal-picker-popover > input {
@@ -204,7 +202,7 @@ output {
 }
 .badge {
   font-size: 11px;
-  border-radius: 0;
+  border-radius: 4px;
   padding: 3px 7px;
   background: #e4edf0;
   color: #486675;
@@ -225,18 +223,16 @@ output {
   gap: 2px;
 }
 .tab {
-  background: transparent;
-  border-radius: 0;
-  border-bottom: 2px solid transparent;
+  background: #cbdce4;
+  border-radius: 5px;
 }
 .tab button {
   border: 0;
   background: transparent;
 }
 .tab.active {
-  background: transparent;
-  border-bottom-color: #1388a1;
-  font-weight: 600;
+  background: white;
+  box-shadow: none;
 }
 .analysis-heading {
   display: flex;
@@ -323,8 +319,8 @@ small {
 }
 .depth-strip {
   background: white;
-  border: 0;
-  border-radius: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
   padding: 12px 15px;
   margin-bottom: 14px;
   display: flex;
@@ -348,11 +344,11 @@ small {
 }
 .plot-panel {
   background: white;
-  border: 0;
-  border-radius: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
   min-width: 0;
   overflow: hidden;
-  box-shadow: none;
+  box-shadow: 0 2px 5px #213d5010;
   resize: vertical;
   min-height: 300px;
   height: 340px;
@@ -486,8 +482,8 @@ small {
   overflow: auto;
   background: white;
   padding: 24px;
-  border-radius: 0;
-  box-shadow: 0 12px 32px #102c4433;
+  border-radius: 10px;
+  box-shadow: 0 15px 60px #102c4466;
 }
 .dialog header {
   display: flex;
@@ -570,8 +566,8 @@ small {
 .signal-tray {
   position: relative;
   margin-bottom: 14px;
-  border: 0;
-  border-radius: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
   background: white;
 }
 .signal-strip {
@@ -616,9 +612,9 @@ small {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: 5px;
-  background: #eaf1f5;
+  background: #f5f9fb;
 }
 .signal-chip button {
   border: 0;
@@ -738,8 +734,8 @@ small {
   overflow: auto;
   padding: 16px;
   background: white;
-  border: 0;
-  border-radius: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
   box-shadow: 0 7px 28px #10253630;
 }
 .tool-popover > .row:first-child {
@@ -823,8 +819,8 @@ small {
   min-width: 0;
   padding: 14px;
   background: white;
-  border: 0;
-  border-radius: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
   max-height: 620px;
   overflow-y: auto;
 }
@@ -972,11 +968,9 @@ small {
 .download-copy {
   display: inline-block;
   padding: 7px 12px;
-  border: 0;
-  border-radius: 0;
-  color: #214858;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: #203744;
 }
 
 .folder-paths {
@@ -986,7 +980,7 @@ small {
   font-size: 0.85rem;
   padding: 0.8rem;
   background: #f3f7f8;
-  border-radius: 0;
+  border-radius: 0.4rem;
 }
 .folder-paths dt {
   font-weight: 600;
@@ -1286,35 +1280,4 @@ small {
   .file-explorer-header {
     padding: 10px 14px;
   }
-}
-
-/* Flat controls: fills and single-edge indicators carry state, not outlined pills. */
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-a:focus-visible {
-  outline: 2px solid #167d9a;
-  outline-offset: 2px;
-}
-input[type="checkbox"],
-input[type="radio"],
-input[type="range"] {
-  border: 0;
-  background: transparent;
-}
-.signal-picker-trigger {
-  background: #eaf1f5;
-}
-.tab button:hover {
-  background: #cbdce4;
-}
-.welcome > button,
-.save-copy form > button {
-  background: #166c84;
-  color: white;
-  font-weight: 600;
-}
-.welcome > button:hover,
-.save-copy form > button:hover {
-  background: #205e70;
 }
