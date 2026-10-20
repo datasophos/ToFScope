@@ -9,7 +9,7 @@ external account service or runtime Node is used in local mode.
 Local desktop launch:
 
 ```sh
-tofscope --data-root /path/to/acquisitions
+tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 ```
 
 The default address is `http://127.0.0.1:8765`. An empty configured root opens the
@@ -52,13 +52,41 @@ origins are rejected. The configured research-group data root grants authenticat
 group members read access; repository authorization is a separate injectable
 policy. This pilot does not manage accounts or enable shared mutable editing.
 
-Each browser tab starts a new workspace. Opening A/B/A creates three independent
-analyses. Explicit reattach accepts an owned analysis ID; attached views share
-canonical revisions, while focus/zoom/drafts stay local. View heartbeats are 15 s,
-leases 45 s, disconnect grace 120 s and idle expiry 15 min. Explicit close cancels
-work immediately; it does not rely on browser unload delivery. Workspace metadata,
-active arrays and jobs are ephemeral: restarting loses them. Export settings
-before restart or source replacement; recipe re-import is not implemented.
+Open A/B/A as three independent file analyses. Refresh automatically recovers the
+owner's live file tabs; there are no workspace containers or manual analysis-ID
+reconnect controls. View heartbeats are 15 s, leases 45 s, disconnect grace 120 s
+and idle expiry 15 min. Explicit close cancels pending work. Live analyses and
+jobs remain ephemeral; **Save as…** persists committed work in a new HDF5 file.
+Opening that file restores all stored/custom/hidden signals, exact custom
+results, names/colors, ROI, frame/depth selections and display settings.
+
+Configure persistent output with `--output-root`, `TOFSCOPE_OUTPUT_ROOT`, or
+`output_root` in TOML. Default: `~/.local/share/tofscope/saved-acquisitions`.
+Runtime cleanup must not remove this directory. Owner hash subdirectories are
+private; the Saved files picker and downloads enforce the authenticated owner.
+Copies are portable: download or move a completed copy into another installation's
+acquisition root to open it there under fresh service identities. Embedded metadata
+contains no credentials or original server paths.
+
+Save creates an exclusive temporary sibling, streams the acquisition with an
+8-MiB buffer, adds versioned analysis state and original-resolution custom values,
+verifies checksums, and publishes by exclusive hard link. Existing destinations
+and input files are never replaced. This requires same-filesystem hard-link
+support; actual NFS/crash durability is unqualified. Cancel/error before publication
+removes the temporary output. A successful save remains valid if a later browser
+refresh or download fails. Private `.tmp-*` leftovers from a process crash are
+never listed as completed files and may be removed while the service is stopped.
+
+A saved copy includes the full acquisition. Allow input size plus derived volumes,
+HDF5 overhead and concurrent saves; disk admission reserves capacity conservatively.
+Saving is unavailable during calculations or uncommitted drafts. A revision/source
+change before publication fails the save rather than persisting an ambiguous state.
+The UI marks saved/unsaved state and asks before close/replacement. Browser close
+can warn but cannot guarantee an asynchronous save during teardown.
+
+Save does not start a browser download. **Download copy** is optional and notes that
+large files may take a long time. Transfers use bounded buffers; disconnecting does
+not delete the saved file. Browser transfer resume/range requests are not provided.
 
 The default managed budget is 4 GiB server / 2 GiB user / 1 GiB analysis, with
 8 analyses/user and 32/server. Queue limits are 4/analysis, 8/user, 32/server;
@@ -68,17 +96,16 @@ Raw reconstruction has separately reserved scratch space and frame-boundary
 cancellation. Python objects, HDF5's internal caches/ragged decoding, allocator
 retention and browser/GPU memory add overhead outside the managed NumPy budget;
 use OS/container RSS limits with headroom. These controls are admission limits,
-not a guarantee that total process RSS equals managed bytes. Comparison metadata
-has a configurable default quota of 128 per analysis. The response cap is 32 MiB.
+not a guarantee that total process RSS equals managed bytes. Signal metadata has a configurable default quota of 129 per analysis. The response cap is 32 MiB.
 
 Acquisition reads use canonical-path cooperative locks in a writable external
 lock directory, waiting up to 30 s on executor threads. All service processes
 must share that directory. One API process is supported; do not scale workers
-behind a load balancer because workspace state is in memory. Independent programs
+behind a load balancer because live analysis state is in memory. Independent programs
 that ignore these locks can still replace acquisitions: identity checks mark
-all dependent analyses stale and require explicit reopen. No write endpoint
-exists, even when either experimental write policy flag is set. Preserved native
-write validators are for future features and disposable-copy tests only.
+all dependent analyses stale and require explicit reopen. Original-acquisition write endpoints remain unavailable, even when experimental
+native-write policy flags are set. New saved copies use a separate output policy;
+they do not enable vendor-native write-back.
 
 Optional local container verification:
 
@@ -117,3 +144,9 @@ Record limits include pending and hidden signals: `signals_per_analysis=129`,
 TOML/environment/CLI precedence; environment names use `TOFSCOPE_SIGNALS_*`.
 Memory admission and job limits still apply independently. There is no legacy
 comparison-limit option or old active/comparison API compatibility layer.
+
+Container deployments need a writable persistent volume mounted at `/saved` for
+`TOFSCOPE_OUTPUT_ROOT=/saved`, plus writable `/runtime`; keep `/data` read only.
+The local container check uses temporary `/saved` storage for disposable tests.
+Do not use that temporary volume configuration when persisted copies must survive
+container replacement.

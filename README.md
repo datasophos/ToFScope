@@ -1,12 +1,13 @@
 # ToFScope Explore
 
-A read-only ToF-SIMS workspace built with React/TypeScript and FastAPI. One
+A ToF-SIMS analysis application built with React/TypeScript and FastAPI.
+Original acquisitions remain read only; analyses can be saved as new HDF5 files. One
 installable Python application bundles the frontend and ECharts locally; one
 service and port serve everything, with no runtime Node.js or CDN requirement.
 
 ```sh
 uv sync --frozen
-uv run tofscope --data-root /path/to/acquisitions
+uv run tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 ```
 
 For an installed wheel: `pip install dist/tofscope-0.2.0-py3-none-any.whl`, then
@@ -16,16 +17,16 @@ the browser after readiness. `tofscope serve --no-browser` runs a service;
 configuration/assets. See [deployment](docs/deployment.md) for configuration,
 proxy authentication, resource limits, container use and restart behavior.
 
-Open multiple files, including the same file repeatedly, in workspace tabs.
+Open multiple files, including the same file repeatedly, in independent file tabs.
 Each analysis owns independent named signals, ROI, frame coverage and viewing
 choices. The **Signals** tray lists stored channels and raw integrations: choose
 one with **Images** and show or hide additional **Profile** curves. Names and
 colors stay with each signal when you switch views.
 
-Use **Add stored signal** to search vendor channels, or **Create from spectrum**
+Use **Add signal** to search vendor channels, or **Create from spectrum**
 to name a raw integration and draw/enter exact inclusive mass intervals. Multiple
 intervals form a union. **Calculate signal** adds a result to the tray/profile;
-**Show in images** switches the ion map and front projection explicitly. **Details**
+**Images** switches the ion map and front projection explicitly. **Details**
 exposes provenance, coverage, rename, duplicate, and custom **Edit signal** actions.
 Edits stay separate until **Update signal** succeeds; progress, cancellation and
 errors remain visible beside the signal. Failed calculations preserve old results.
@@ -38,10 +39,20 @@ and log Y beside the spectrum. Spectrum drag zooms normally and edits intervals
 only while a signal editor is open. Images stay square; maximize/Escape and
 Ctrl/Cmd-wheel zoom preserve the view. Ordinary wheel scrolls the page.
 
-CSV exports visible ROI profiles at original scale and resolution. Schema-4
-Settings JSON includes all committed signals and display choices. PNG includes
-profile labels. Missing signal/SE coverage remains missing. Acquisitions stay
-read only; pending drafts are never exported as committed results.
+**Save as…** creates a self-contained HDF5 copy with all committed signals,
+full-resolution custom results (including hidden signals), names/colors, ROI,
+frame/depth selections and display settings. Open it from **Saved files** to
+restore the analysis after a restart or on another machine. Saving does not
+change the input, including when the input is an earlier saved copy.
+
+Saving defaults to the server; **Download copy** is an explicit optional action.
+Large files may take a long time to transfer. A saved copy includes the acquisition,
+so a 2.2-GB input needs at least that much output space plus derived results.
+Use a persistent `--output-root`; its default is
+`~/.local/share/tofscope/saved-acquisitions`, separated privately by owner.
+Finish/discard drafts and finish/cancel calculations before saving. Closing an
+unsaved analysis offers Save as, Discard or Cancel. CSV exports visible ROI
+profiles at original scale/resolution; PNG includes profile labels.
 
 The pilot requires stored `PeakData` metadata; raw-only acquisitions are not yet
 supported.
@@ -49,8 +60,8 @@ supported.
 This is the **Explore pilot**, not full feature parity. Calibration editors,
 atomic identification/isotope dialogs, sections, volume tools and controlled
 native saves are specified in the [completion plan](docs/superpowers/plans/2026-10-18-react-fastapi-completion.md).
-Acquisition writes and recipe import are unavailable. Workspace state is in
-memory and lost on restart. Shared use requires a trusted authenticated proxy;
+In-place acquisition writes remain unavailable. Live tabs/jobs are in memory;
+reopen saved HDF5 copies to restore committed work after a restart. Shared use requires a trusted authenticated proxy;
 actual NFS deployment remains unqualified.
 
 Scientific readers were compared before implementation: direct h5py preserves

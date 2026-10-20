@@ -30,6 +30,8 @@ with tempfile.TemporaryDirectory(prefix="tofscope-container-") as d:
         "--read-only",
         "--tmpfs",
         "/runtime:rw,uid=10001,gid=10001,mode=0700",
+        "--tmpfs",
+        "/saved:rw,uid=10001,gid=10001,mode=0700",
         "-v",
         f"{data}:/data:ro",
         "-p",
@@ -62,7 +64,32 @@ with tempfile.TemporaryDirectory(prefix="tofscope-container-") as d:
                         subprocess.check_output(["docker", "logs", id], text=True)
                     )
                 time.sleep(0.1)
-        code = "import os;from pathlib import Path;from tofscope.config import load_settings;from tofscope.api.app import build_services;s=build_services(load_settings());d=s.repository.open('fixture','a.h5');a=s.analyses.create_analysis('fixture',d);p=s.presenter.snapshot('fixture',a.id);assert p.panels;assert os.getuid()==10001;assert not os.access('/data/a.h5',os.W_OK);s.analyses.close_all();s.jobs.shutdown();print('non-root read-only plots passed')"
+        code = """
+import os
+from tofscope.config import load_settings
+from tofscope.api.app import build_services
+from tofscope.application.commands import CommandEnvelope
+s = build_services(load_settings())
+try:
+    d = s.repository.open('fixture', 'a.h5')
+    a = s.analyses.create_analysis('fixture', d)
+    assert s.presenter.snapshot('fixture', a.id).panels
+    assert os.getuid() == 10001
+    assert not os.access('/data/a.h5', os.W_OK)
+    env = CommandEnvelope('container-save', a.revision, a.dataset.generation,
+                          {'type': 'set_depth', 'depth': {'mode': 'all'}})
+    job = s.saves.submit('fixture', a.id, env, 'saved.h5')
+    done = s.jobs.wait('fixture', job.id, 20)
+    assert done.status == 'succeeded', done.safe_error
+    ref = s.repository.open('fixture', done.saved_file.id, location='saved')
+    restored = s.analyses.create_analysis('fixture', ref)
+    assert restored.saved_revision == restored.revision
+    assert s.presenter.snapshot('fixture', restored.id).panels
+    print('non-root read-only plots and saved-copy reopen passed')
+finally:
+    s.jobs.shutdown()
+    s.analyses.close_all()
+"""
         output = subprocess.check_output(
             ["docker", "exec", id, "python", "-c", code], text=True
         )
@@ -74,6 +101,7 @@ with tempfile.TemporaryDirectory(prefix="tofscope-container-") as d:
                     "readonly_rootfs": True,
                     "readonly_acquisitions": True,
                     "writable_runtime": True,
+                    "saved_copy_reopen": True,
                     "one_port": True,
                     "health_and_plots": True,
                 }

@@ -425,3 +425,13 @@ Profiles lists colored chips, and Add signal combines stored-channel search with
 Create from spectrum. Manage signals opens the complete collection on demand.
 This keeps the plots near the top of the viewport while retaining access to hidden
 signals and exact provenance. Calculation progress appears on the relevant chip.
+
+## File-centered persistence amendment (2026-10-19)
+
+The approved file-centered design supersedes public workspace grouping, manual
+analysis-ID reattachment and the earlier lack of durable restoration. Independent
+file tabs remain owner-scoped. Save as writes a new self-contained HDF5 copy and
+opening it restores committed state/results; original acquisitions stay immutable.
+Downloads are optional and never automatic. See the
+[file-centered plan](superpowers/plans/2026-10-19-file-centered-analysis.md).
+This does not implement the completion plan's native save-back feature.

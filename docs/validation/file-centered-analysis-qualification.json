@@ -1,0 +1,134 @@
+{
+  "real_saved_copy": {
+    "source": "pfib_1301x128x128_AlTiPt.h5",
+    "source_bytes": 2207119636,
+    "shape": [
+      1301,
+      128,
+      128,
+      217
+    ],
+    "original_sha256": "914fd248ced472358e47c7180733f2715998d957ac3c384c11d42f1cd6938c8d",
+    "original_unchanged": true,
+    "vendor_chunk_count": 1116388,
+    "vendor_payload_sha256": "7f77bd14df2a60c4651b520a8fa395f4ff5ff59b474e405c086cc822199dfb96",
+    "vendor_payloads_exact": true,
+    "custom_volume_sha256": "31166416a2a4c2e7792e5fb60ee337c4ec5f094c77beadbebd263c887ead6268",
+    "custom_values_exact": true,
+    "exact_restored_csv": true,
+    "hidden_signals_restored": true,
+    "fresh_owner_and_moved_copy": true,
+    "restore_without_reintegration": true,
+    "integration_seconds": 26.328814500011504,
+    "save_seconds": 12.772101584007032,
+    "saved_bytes": 2213709919,
+    "elapsed_seconds": 91.97302999999374,
+    "limitations": [
+      "Filesystem/NFS crash durability not qualified.",
+      "Commercial software round trip not tested.",
+      "Real original remains in place; literal source removal is covered by disposable installed-package checks."
+    ]
+  },
+  "distribution": [
+    {
+      "artifact": "tofscope-0.2.0-py3-none-any.whl",
+      "installed_without_node": true,
+      "runtime_dependencies_clean": true,
+      "offline_browser": true,
+      "plots_integration_export": true,
+      "saved_copy_restart_source_removed": true,
+      "exact_restored_csv": true,
+      "optional_download": true,
+      "interrupted_download_preserves_saved_file": true
+    },
+    {
+      "artifact": "tofscope-0.2.0.tar.gz",
+      "installed_without_node": true,
+      "runtime_dependencies_clean": true,
+      "offline_browser": true,
+      "plots_integration_export": true,
+      "saved_copy_restart_source_removed": true,
+      "exact_restored_csv": true,
+      "optional_download": true,
+      "interrupted_download_preserves_saved_file": true
+    }
+  ],
+  "browser": {
+    "initial_four_panels_ms": 3216.4625419536605,
+    "resident_stored_signal_switch_ms": 577.1033749915659,
+    "resident_switch_reintegration_jobs": 0,
+    "resident_switch_spectrum_refetches": 0,
+    "image_resize_timings": {
+      "ion": [
+        {
+          "action": "maximize",
+          "ms": 26.299999952316284
+        },
+        {
+          "action": "restore",
+          "ms": 26.100000023841858
+        },
+        {
+          "action": "maximize",
+          "ms": 21.600000023841858
+        },
+        {
+          "action": "restore",
+          "ms": 33.800000071525574
+        },
+        {
+          "action": "maximize",
+          "ms": 23.200000047683716
+        },
+        {
+          "action": "restore",
+          "ms": 26.700000047683716
+        }
+      ],
+      "front": [
+        {
+          "action": "maximize",
+          "ms": 22
+        },
+        {
+          "action": "restore",
+          "ms": 27.700000047683716
+        },
+        {
+          "action": "maximize",
+          "ms": 26
+        },
+        {
+          "action": "restore",
+          "ms": 27.5
+        },
+        {
+          "action": "maximize",
+          "ms": 26.5
+        },
+        {
+          "action": "restore",
+          "ms": 28.299999952316284
+        }
+      ]
+    },
+    "frame_step_p50_ms": 267.79950002674013,
+    "frame_step_p95_ms": 330.75308392290026,
+    "frame_step_samples": 4,
+    "offline": true,
+    "browser_errors": [],
+    "stored_signal_options": 217,
+    "signal_picker_height_px": 200,
+    "opened_distinct_files": false
+  },
+  "container": {
+    "docker_version": "29.7.2",
+    "non_root_uid": 10001,
+    "readonly_rootfs": true,
+    "readonly_acquisitions": true,
+    "writable_runtime": true,
+    "saved_copy_reopen": true,
+    "one_port": true,
+    "health_and_plots": true
+  }
+}

@@ -1,6 +1,6 @@
 # File-centered Analysis Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace workspace management with independent file tabs and restore committed analyses from self-contained HDF5 copies.
 
@@ -122,11 +122,11 @@ Paths in the file map are relative to `src/tofscope/` unless stated otherwise.
 
 **Files:** Modify `scripts/check_distribution.py`, `scripts/check_real_browser.py`, `README.md`, `docs/deployment.md`, `docs/hdf5-compatibility.md`, `docs/react-fastapi-migration.md`, `docs/superpowers/plans/2026-10-18-react-fastapi-completion.md`; create `scripts/check_saved_copy.py`, `docs/validation/file-centered-analysis.md`.
 
-- [ ] Extend the installed wheel/sdist smoke to save stored/custom/hidden signals, restart the installed service, remove its original disposable fixture, reopen the saved file, assert exact profile/settings state and exercise optional download. Block external browser requests and run with no Node in runtime PATH. Verify no automatic download on save.
-- [ ] Add read-only real-source qualification: write output only to a task-specific temporary directory; compare original file identity/hash, vendor metadata/data, full-resolution custom arrays and selected ROI profiles after restart/source-independent reopen. Include two owners/independent analyses, cancellation and resource high-water evidence. Do not move/delete/edit the real source; use a copied fixture when proving source removal.
-- [ ] Run `.venv/bin/python -m unittest discover -s tests`, `npm --prefix frontend run typecheck`, `npm --prefix frontend test`, `npm --prefix frontend run test:e2e`, `python3 scripts/build_frontend.py`, then build fresh wheel/sdist and execute the updated distribution smoke. Report original-write denial separately from successful new-file saves. Run real-data qualification only if readable; leave NFS/commercial-tool/hardware results explicitly unverified unless actually observed.
-- [ ] Update launch instructions with persistent output-root behavior and disk requirements; state that browser download is optional and may take a long time. Mark the completion plan's separate native-save feature still deferred; record the new embedded state as context for calibration/identification/3D without claiming their state is already implemented.
-- [ ] Review storage/publication and owner boundaries, run `git diff --check`, confirm frozen prototype remains clean, and commit `Qualify packaged file-centered analysis persistence.` Do not publish or deploy. Summarize launch instructions, passed/blocked checks and remaining limitations.
+- [x] Extend the installed wheel/sdist smoke to save stored/custom/hidden signals, restart the installed service, remove its original disposable fixture, reopen the saved file, assert exact profile/settings state and exercise optional download. Block external browser requests and run with no Node in runtime PATH. Verify no automatic download on save.
+- [x] Add read-only real-source qualification: write output only to a task-specific temporary directory; compare original file identity/hash, vendor metadata/data, full-resolution custom arrays and selected ROI profiles after restart/source-independent reopen. Include two owners/independent analyses, cancellation and resource high-water evidence. Do not move/delete/edit the real source; use a copied fixture when proving source removal.
+- [x] Run `.venv/bin/python -m unittest discover -s tests`, `npm --prefix frontend run typecheck`, `npm --prefix frontend test`, `npm --prefix frontend run test:e2e`, `python3 scripts/build_frontend.py`, then build fresh wheel/sdist and execute the updated distribution smoke. Report original-write denial separately from successful new-file saves. Run real-data qualification only if readable; leave NFS/commercial-tool/hardware results explicitly unverified unless actually observed.
+- [x] Update launch instructions with persistent output-root behavior and disk requirements; state that browser download is optional and may take a long time. Mark the completion plan's separate native-save feature still deferred; record the new embedded state as context for calibration/identification/3D without claiming their state is already implemented.
+- [x] Review storage/publication and owner boundaries, run `git diff --check`, confirm frozen prototype remains clean, and commit `Qualify packaged file-centered analysis persistence.` Do not publish or deploy. Summarize launch instructions, passed/blocked checks and remaining limitations.
 
 ## Plan self-review
 

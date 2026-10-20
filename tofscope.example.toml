@@ -1,6 +1,7 @@
 [tofscope]
 data_root = "/srv/tofscope/data"
 runtime_dir = "/var/lib/tofscope"
+output_root = "/srv/tofscope/saved"
 lock_dir = "/var/lib/tofscope/locks"
 host = "127.0.0.1"
 port = 8765

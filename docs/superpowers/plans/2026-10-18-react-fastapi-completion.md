@@ -116,3 +116,13 @@ This plan uses the pilot's exact `AnalysisSnapshot`, `CommandEnvelope`, `ArrayCa
 ## Handoff
 
 Complete the pilot first. These feature tasks depend on its stable service and data contracts, but do not require gradual legacy migration or parallel maintenance. Durable workspace restoration, collaborative editing, multi-host/API-worker scaling and a renderer requiring remote infrastructure need separate requirements and plans; they are not hidden prerequisites of this replacement.
+
+## File-centered persistence context (2026-10-19)
+
+The separately approved file-centered analysis plan replaces user-facing workspace
+groups and manual reattachment. Versioned saved HDF5 copies restore Explore signals,
+custom results and selections. This is new-file output only: Task 5's controlled
+native saves remain deferred, with their original opt-ins and deployment evidence
+requirements. Future calibration/identification/3D features must extend the saved
+document schema and round-trip tests; their state is not yet implemented. Never
+serialize pending drafts/jobs as completed numerical results.
