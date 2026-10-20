@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { Analysis } from "../api/client";
 import { CurveMarker } from "../components/CurveMarker";
 import { HelpHeading } from "../components/HelpButton";
@@ -20,7 +19,6 @@ export function SignalTray({
   onDetails: (id: string | undefined) => void;
   id?: string;
 }) {
-  const [search, setSearch] = useState("");
   const act = (command: Parameters<Send>[0]) =>
     void send(command).catch(() => {});
   const eligible = (row: Analysis["signals"][number]) =>
@@ -33,18 +31,8 @@ export function SignalTray({
       <header>
         <HelpHeading title="Signals" content={help.signal} />
         <div className="row signal-add">
-          <input
-            aria-label="Search stored signals"
-            placeholder="Search mass or label"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
           <SignalPicker
-            options={a.peaks.filter((p) =>
-              `${p.label} ${p.mass}`
-                .toLowerCase()
-                .includes(search.toLowerCase()),
-            )}
+            options={a.peaks}
             buttonLabel="Add stored signal"
             listboxLabel="Stored signals"
             placeholder="Add stored signal"
