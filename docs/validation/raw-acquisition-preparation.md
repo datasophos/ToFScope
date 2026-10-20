@@ -150,3 +150,9 @@ After reboot, isolated checkouts were restored persistently under
 repository; the previous `/private/tmp` worktrees no longer exist. Launch the app
 from the implementation checkout using `.venv/bin/tofscope --data-root <folder>`.
 The saved-files folder defaults to that same data folder. No runtime Node is needed.
+
+The corrected local service was restarted on port 8765; readiness, the new
+acknowledgment schema and exact bundled assets were verified. Both rebuilt wheel
+and sdist also passed the independent offline-browser installation checks without
+Node or RosettaSciIO. The installation resolver cache needed restoration after
+the reboot; the final cached/offline run passed for both artifacts.
