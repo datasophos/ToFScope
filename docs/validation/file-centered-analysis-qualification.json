@@ -251,5 +251,11 @@
         "interrupted_download_preserves_saved_file": true
       }
     ]
+  },
+  "flat_styling_update": {
+    "browser_tests": 37,
+    "typecheck_and_frontend_build": true,
+    "desktop_and_narrow_visual_inspection": true,
+    "decorative_rounded_rectangle_outlines_removed": true
   }
 }

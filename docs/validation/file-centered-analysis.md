@@ -144,3 +144,17 @@ Checks passed: 143 Python tests, 37 browser workflows, TypeScript/frontend build
 and independently installed offline wheel/sdist save/restart/export checks.
 Read-only directory inspection confirms the supplied acquisition root has six
 .h5 files. No original acquisitions were modified or saved copies relocated.
+
+## Flat application styling — 2026-10-20
+
+Decorative rounded rectangle outlines were removed throughout controls, tabs,
+signal chips, panels, menus and dialogs. Tabs use a single underline; field
+affordances use a fill and bottom rule; panels use spacing and flat surfaces.
+Keyboard focus indicators, contextual help circles and scientific chart/selection
+marks remain functional. Rectangular card shadows were removed from plots;
+floating overlay shadows retain their role in showing placement above content.
+
+All 37 browser workflows and the TypeScript/production frontend build pass.
+Desktop and narrow Explore screenshots were inspected, covering tabs, signal
+chips, controls and chart panels. Backend/API/scientific behavior is unchanged.
+The completion plan records this visual convention for future feature work.

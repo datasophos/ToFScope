@@ -126,3 +126,12 @@ native saves remain deferred, with their original opt-ins and deployment evidenc
 requirements. Future calibration/identification/3D features must extend the saved
 document schema and round-trip tests; their state is not yet implemented. Never
 serialize pending drafts/jobs as completed numerical results.
+
+### Visual conventions from Explore feedback (2026-10-20)
+
+Use flat surfaces and controls. Do not introduce decorative rounded rectangle
+outlines around tabs, buttons, signal chips, panels or contextual tools. Use
+spacing, subtle fills, typography and a single-edge active-tab indicator to
+communicate grouping and state. Editable fields use a fill and bottom rule.
+Keep keyboard focus indicators and scientific selection/axis markings visible;
+contextual help and progress indicators may retain their functional circles.
