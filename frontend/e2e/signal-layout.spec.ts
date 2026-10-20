@@ -2,7 +2,7 @@ import { manageSignals, addSignal } from "./signal-controls";
 import { test, expect } from "@playwright/test";
 test("signal collection scrolls without losing labels and contextual controls fit narrow screens", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   await page.setExtraHTTPHeaders({ "x-tofscope-user": `layout-${Date.now()}` });
   await page.goto("/");
@@ -43,7 +43,7 @@ test("signal collection scrolls without losing labels and contextual controls fi
     .getByRole("button", { name: "Restore Mass spectrum", exact: true })
     .click();
   await page.screenshot({
-    path: "/private/tmp/tofscope-signal-workspace-desktop.png",
+    path: testInfo.outputPath("tofscope-signal-workspace-desktop.png"),
     fullPage: true,
   });
   await manageSignals(page);

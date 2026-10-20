@@ -655,7 +655,9 @@ small {
   align-items: center;
   gap: 6px;
 }
-.signal-strip-actions > button {
+.signal-strip-actions > button,
+.signal-strip-actions .signal-picker-trigger {
+  line-height: 1.4;
   min-height: 34px;
   display: inline-flex;
   align-items: center;
