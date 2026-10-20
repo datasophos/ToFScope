@@ -8,6 +8,11 @@ class OpenAcquisition(StrictModel):
     location: Literal["acquisition", "saved"] = "acquisition"
 
 
+class PrepareAcquisition(OpenAcquisition):
+    generation: str = Field(min_length=1, max_length=128)
+    filename: str = Field(min_length=1, max_length=240)
+
+
 class RevisionEnvelope(StrictModel):
     request_id: str = Field(min_length=1, max_length=128)
     expected_revision: StrictInt = Field(ge=0)

@@ -36,7 +36,7 @@ class JobSnapshot:
     done: int = 0
     total: int = 0
     safe_error: str | None = None
-    kind: Literal["integration", "save"] = "integration"
+    kind: Literal["integration", "save", "preparation"] = "integration"
     stage: str = ""
     saved_file: SavedFile | None = None
     saved_revision: int | None = None
@@ -69,6 +69,7 @@ class JobService:
         self.condition = Condition(RLock())
         self.stopping = False
         self.save_handler = None
+        self.preparation_handler = None
         self.threads = [
             Thread(target=self._worker, daemon=True, name=f"tofscope-job-{i}")
             for i in range(settings.workers)
@@ -149,15 +150,18 @@ class JobService:
                 return snap
 
     def enqueue_save(self, owner, task):
+        return self.enqueue_task(owner, task, 'save', task.snapshot.id, task.snapshot.revision)
+
+    def enqueue_task(self, owner, task, kind, aid, saved_revision=None):
         with self.condition:
             active = [j for j in self.jobs.values() if j.snapshot.status not in TERMINAL]
-            aid = task.snapshot.id
             if (len(active) >= self.settings.jobs_global or
                     sum(j.owner == owner for j in active) >= self.settings.jobs_per_user or
                     sum(j.snapshot.analysis_id == aid for j in active) >= self.settings.jobs_per_analysis):
                 raise CapacityError('Work queue full; wait or cancel a job.')
-            snap = JobSnapshot(str(uuid4()), aid, 'queued', kind='save', saved_revision=task.snapshot.revision)
-            self.jobs[snap.id] = Job(snap, owner, task.snapshot.dataset, None, '', 0, 0, referenced=False, task=task)
+            snap = JobSnapshot(str(uuid4()), aid, 'queued', kind=kind, saved_revision=saved_revision)
+            source = task.snapshot.dataset if kind == 'save' else task.source
+            self.jobs[snap.id] = Job(snap, owner, source, None, '', 0, 0, referenced=False, task=task)
             self.pending.setdefault(owner, deque()).append(snap.id)
             if owner not in self.users:
                 self.users.append(owner)
@@ -228,10 +232,11 @@ class JobService:
                     return
             lease = None
             try:
-                if j.snapshot.kind == 'save':
+                if j.snapshot.kind in {'save', 'preparation'}:
                     if j.cancelled.is_set():
                         raise InterruptedError()
-                    result = self.save_handler(j)
+                    handler = self.save_handler if j.snapshot.kind == 'save' else self.preparation_handler
+                    result = handler(j)
                     with self.condition:
                         j.snapshot = replace(j.snapshot, status='succeeded', saved_file=result, done=j.snapshot.total)
                     continue
@@ -299,7 +304,7 @@ class JobService:
                         status="cancelled" if j.cancelled.is_set() else "obsolete"
                         if "changed" in str(exc).lower()
                         else "failed",
-                        safe_error=("Saving failed; check free space, output name and current analysis revision." if j.snapshot.kind == "save" else "Integration failed; check source/calibration or narrow the frame range.")
+                        safe_error=("Preparing raw data failed; check free space, source/calibration and output name." if j.snapshot.kind == "preparation" else "Saving failed; check free space, output name and current analysis revision." if j.snapshot.kind == "save" else "Integration failed; check source/calibration or narrow the frame range.")
                         if not isinstance(exc, CapacityError)
                         else str(exc),
                     )

@@ -114,3 +114,25 @@ class APITests(unittest.TestCase):
         b = c.post("/api/v1/analyses", headers=self.b, json={'relative_path':'a.h5'}).json()
         response = c.post(f"/api/v1/analyses/{a['id']}/commands", headers=self.a, json=base | {'command':{'type':'select_image_signal','signal_id':b['image_signal_id']}})
         self.assertEqual(response.status_code, 422)
+
+    def test_raw_inspection_confirmation_jobs_and_outputs_are_owner_scoped(self):
+        import h5py
+        with h5py.File(self.settings.data_root / 'a.h5', 'r+') as f:
+            del f['PeakData/PeakData']
+        preview = self.client.post('/api/v1/acquisitions/inspect', headers=self.a, json={'relative_path': 'a.h5'})
+        self.assertEqual(preview.status_code, 200, preview.text)
+        self.assertTrue(preview.json()['requires_preparation'])
+        self.assertEqual(self.client.get('/api/v1/analyses', headers=self.a).json(), [])
+        payload = dict(relative_path='a.h5', generation=preview.json()['generation'], filename='prepared.h5')
+        response = self.client.post('/api/v1/acquisitions/prepare', headers=self.a, json=payload)
+        self.assertEqual(response.status_code, 202, response.text)
+        services = self.client.app.state.services
+        done = services.jobs.wait('a', response.json()['id'], 5)
+        self.assertEqual(done.status, 'succeeded', done.safe_error)
+        self.assertEqual(self.client.get('/api/v1/jobs/' + done.id, headers=self.b).status_code, 404)
+        self.assertEqual(self.client.post('/api/v1/analyses', headers=self.b, json={'location': 'saved', 'relative_path': done.saved_file.id}).status_code, 422)
+        opened = self.client.post('/api/v1/analyses', headers=self.a, json={'location': 'saved', 'relative_path': done.saved_file.id})
+        self.assertEqual(opened.status_code, 200, opened.text)
+        collision = self.client.post('/api/v1/acquisitions/prepare', headers=self.a, json=payload)
+        self.assertEqual(collision.status_code, 409, collision.text)
+        self.assertIn('choose a new name', collision.json()['message'])
