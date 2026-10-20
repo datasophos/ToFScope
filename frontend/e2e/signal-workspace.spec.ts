@@ -8,7 +8,7 @@ test("signals are created independently, chosen for images, and hidden without l
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   await expect(page.getByRole("region", { name: "Signals" })).toBeVisible();
@@ -75,7 +75,7 @@ test("stored adds deduplicate, custom edits retain identity, and duplicate start
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   for (let i = 0; i < 2; i++) {
@@ -142,7 +142,7 @@ test("duplicating a stored signal preserves its exact frame coverage", async ({
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   await manageSignals(page);

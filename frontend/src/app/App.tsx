@@ -216,7 +216,7 @@ export function App() {
             setPicker(true);
           }}
         >
-          ＋ Open acquisition
+          ＋ Open TOFexplorer file
         </button>
         <HelpButton label="Files and saved analyses" content={help.files} />
         <div className="tabs" role="tablist">
@@ -255,7 +255,7 @@ export function App() {
             spatial selections to depth profiles.
           </p>
           <button disabled={!session} onClick={() => setPicker(true)}>
-            Choose an HDF5 acquisition
+            Open TOFexplorer (.h5) file
           </button>
           <p className="muted">
             Each open file has independent selections. Save a copy to keep your

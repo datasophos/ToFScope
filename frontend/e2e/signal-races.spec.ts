@@ -8,7 +8,7 @@ test("old image data keeps its own label during a delayed signal switch", async 
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   const ion = page.getByTestId("panel-ion");
@@ -55,7 +55,7 @@ test("a stale open draft cannot overwrite a newer completed edit from another vi
   await page.setExtraHTTPHeaders({ "x-tofscope-user": owner });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   await addSignal(page);

@@ -6,7 +6,7 @@ test("explicit spectrum modes, dirty-draft choice, precise bounds and independen
   await page.setExtraHTTPHeaders({ "x-tofscope-user": `editor-${Date.now()}` });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   const spectrum = page.getByTestId("panel-spectrum");
@@ -48,7 +48,7 @@ test("explicit spectrum modes, dirty-draft choice, precise bounds and independen
   await page
     .getByRole("button", { name: "Restore Mass spectrum", exact: true })
     .click();
-  await page.getByRole("button", { name: "＋ Open acquisition" }).click();
+  await page.getByRole("button", { name: "＋ Open TOFexplorer file" }).click();
   await page.getByRole("button", { name: "◫ b.h5" }).click();
   await expect(
     page.getByRole("region", { name: "Signal editor" }),
@@ -77,7 +77,7 @@ test("invalid calculation keeps its draft for correction and stored copies have 
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   await manageSignals(page);
@@ -124,7 +124,7 @@ test("removing a submitted signal also closes its frozen editor", async ({
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   let release!: () => void;

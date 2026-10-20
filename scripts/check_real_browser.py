@@ -71,7 +71,7 @@ def main():
 
                 page.route("**/*", route)
                 page.goto(url + "/#bootstrap=" + secret)
-                page.get_by_role("button", name="Choose an HDF5 acquisition").click()
+                page.get_by_role("button", name="Open TOFexplorer (.h5) file").click()
                 page.get_by_label("Search files").fill(a.file.name)
                 t = time.perf_counter()
                 page.get_by_role("button", name="◫ " + a.file.name, exact=True).click()
@@ -144,7 +144,7 @@ def main():
                     timings.append((time.perf_counter() - t) * 1000)
                 page.screenshot(path=str(a.output / "real-explore.png"), full_page=True)
                 if a.also_open:
-                    page.get_by_role("button", name="＋ Open acquisition").click()
+                    page.get_by_role("button", name="＋ Open TOFexplorer file").click()
                     page.get_by_label("Search files").fill(a.also_open.name)
                     page.get_by_role(
                         "button", name="◫ " + a.also_open.name, exact=True

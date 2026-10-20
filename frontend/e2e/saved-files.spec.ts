@@ -6,7 +6,7 @@ test("save a copy restores signal and display state and downloads only on reques
   await page.setExtraHTTPHeaders({ "x-tofscope-user": `saved-${Date.now()}` });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   await page
@@ -45,7 +45,7 @@ test("save a copy restores signal and display state and downloads only on reques
     .click();
   await expect(page.getByRole("tab")).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "Saved files", exact: true }).click();
   await page
@@ -65,7 +65,7 @@ test("a clean saved analysis still protects an uncommitted draft on close", asyn
   await page.setExtraHTTPHeaders({ "x-tofscope-user": `close-${Date.now()}` });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   await page.getByRole("button", { name: "Save as…", exact: true }).click();
@@ -106,7 +106,7 @@ test("close can save a new copy and filename collisions retain the unsaved analy
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   await page
@@ -120,7 +120,7 @@ test("close can save a new copy and filename collisions retain the unsaved analy
   await page.getByRole("button", { name: "Save copy", exact: true }).click();
   await expect(page.getByRole("tab")).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   await page.getByRole("button", { name: "Save as…", exact: true }).click();
@@ -150,7 +150,7 @@ test("hidden union results reopen with exact profiles and no new integration", a
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   await page
@@ -207,7 +207,7 @@ test("hidden union results reopen with exact profiles and no new integration", a
     .getByRole("button", { name: "Close analysis 1", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "Saved files", exact: true }).click();
   await page.getByRole("button", { name: "◫ union.h5", exact: true }).click();
@@ -236,7 +236,7 @@ test("file picker and save dialog show configured folders and exact save destina
   expect(response.ok()).toBeTruthy();
   const folders = await response.json();
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await expect(page.getByTestId("folder-acquisitions")).toContainText(
     folders.acquisitions,

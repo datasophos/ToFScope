@@ -8,7 +8,7 @@ test("contextual help works with mouse, keyboard and maximized panes", async ({
   await expect(page.locator(".brand svg")).toBeVisible();
   await expect(page.locator(".brand-name")).toContainText("FIB–SEM / TOF–SIMS");
   await page
-    .getByRole("button", { name: "Choose an HDF5 acquisition" })
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).click();
   for (const label of [
