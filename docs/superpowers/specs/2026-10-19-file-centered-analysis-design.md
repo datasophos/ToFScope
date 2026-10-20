@@ -50,8 +50,11 @@ chunks; evicted volumes can be reconstructed during saving under the same limits
 ## Storage and publication
 
 Use a configured server output directory and confined filenames, never arbitrary
-client filesystem paths. Include saved files in the file picker. Expose the
-completed file for download as appropriate to the existing local/shared service.
+client filesystem paths. Include saved files in the file picker. Saving defaults
+to a server-side file without starting a browser download. Offer an explicit, non-default Download
+action for the completed HDF5 copy, with a notice that large files may take a
+long time to transfer. Stream downloads with bounded memory and owner-scoped
+authorization; a failed or cancelled download does not remove the saved copy.
 Never overwrite an existing file, the input, or a hard-link alias of it.
 
 Create a private temporary sibling, stream-copy the source, add ToFScope content,
@@ -75,6 +78,8 @@ intervals, partial coverage, ROI, selections and display state after restart and
 source removal. Compare custom arrays and original-resolution profiles exactly.
 Test fresh-owner isolation, concurrent independent saves, cancellation, stale
 revisions, disk failures, filename collisions, aliases and malformed metadata.
-Check original hashes and vendor datasets/attributes before and after saving.
+Verify that saving starts no browser download by default, the optional download
+streams the complete saved file, and interrupting a transfer preserves the saved
+copy. Check original hashes and vendor datasets/attributes before and after saving.
 Verify packaged wheel/sdist workflows offline without Node/CDNs. Real-data and
 filesystem-specific checks must retain explicit passed/unverified distinctions.
