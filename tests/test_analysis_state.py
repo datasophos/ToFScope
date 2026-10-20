@@ -35,6 +35,17 @@ class AnalysisTests(unittest.TestCase):
         self.assertTrue(b.display.relative)
         self.assertEqual(self.ws.get("a", a.id).display, a.display)
 
+    def test_open_and_replace_establish_clean_baselines_without_claiming_a_save(self):
+        a = self.new()
+        self.assertEqual(a.opened_revision, a.revision)
+        self.assertIsNone(a.saved_revision)
+        a = self.command(a, {"type": "set_roi", "roi": [1, 1, 0, 0]})
+        self.assertLess(a.opened_revision, a.revision)
+        a = self.ws.replace("a", a.id, self.repo.open("a", "a.h5"), a.revision)
+        self.assertGreater(a.revision, 0)
+        self.assertEqual(a.opened_revision, a.revision)
+        self.assertIsNone(a.saved_revision)
+
     def test_same_file_analyses_have_independent_selections(self):
         a = self.new()
         b = self.new("b")

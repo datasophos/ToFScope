@@ -418,6 +418,11 @@ export interface components {
       mass_limits: [number, number];
       /** Next Style Index */
       next_style_index: number;
+      /**
+       * Opened Revision
+       * @default 0
+       */
+      opened_revision: number;
       /** Owner */
       owner: string;
       /** Peaks */

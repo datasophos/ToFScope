@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAnalysis } from "../app/useAnalysis";
+import { hasChanges } from "../app/changes";
 import { download, type Analysis, type Command } from "../api/client";
 import { PlotPanel } from "../plots/PlotPanel";
 import { HelpButton } from "../components/HelpButton";
@@ -172,9 +173,11 @@ export function ExploreScreen({
             onDismiss={onSaveDismiss}
           />
           <small data-testid="save-state">
-            {a.saved_revision === a.revision && !editor.draft
-              ? "Saved"
-              : "Unsaved changes"}
+            {editor.draft || hasChanges(a)
+              ? "Unsaved changes"
+              : a.saved_revision === a.revision
+                ? "Saved"
+                : "No changes"}
           </small>
           <HelpButton label="Exports" content={help.exports} />
         </div>

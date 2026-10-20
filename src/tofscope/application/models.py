@@ -54,3 +54,4 @@ class AnalysisSnapshot:
     stale: bool = False
     has_se: bool = False
     saved_revision: int | None = None
+    opened_revision: int = 0
