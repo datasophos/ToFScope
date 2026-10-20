@@ -121,6 +121,19 @@ class RawPreparationTests(unittest.TestCase):
         self.assertFalse(list(self.s.saves.files.owner_root('a').glob('.tmp-*')))
         self.assertEqual(self.s.cache.budget.physical_bytes, 0)
 
+    def test_consumed_copy_space_is_not_reserved_again_during_frame_writes(self):
+        usage = shutil.disk_usage(self.path.parent)
+        calls = 0
+        def free_space(_):
+            nonlocal calls
+            calls += 1
+            # Simulate copying the source leaving only enough for the next
+            # compressed frame. The already-consumed copy must not count twice.
+            return usage._replace(free=(100 if calls == 1 else 70) * 1024**2)
+        with patch('tofscope.storage.saved_files.shutil.disk_usage', side_effect=free_space):
+            done = self.s.jobs.wait('a', self.submit().id, 5)
+        self.assertEqual(done.status, 'succeeded', done.safe_error)
+
     def test_shared_queue_limit_applies_to_other_preparations(self):
         from tofscope.application.analyses import CapacityError
         from tofscope.storage import raw_preparation
