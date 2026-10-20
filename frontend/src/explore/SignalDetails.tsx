@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { Analysis, Command, Signal } from "../api/client";
 import { ToolPopover } from "./ToolPopover";
 import { ExactForm } from "./ExactForm";
@@ -16,29 +16,46 @@ export function SignalDetails({
   onClose: () => void;
 }) {
   const [name, setName] = useState(signal.name);
+  const [saving, setSaving] = useState(false);
+  const nameId = useId();
+  const changed = name !== signal.name;
   const recipe = signal.recipe;
   return (
     <ToolPopover title={`Signal details: ${signal.name}`} onClose={onClose}>
       <form
-        className="row"
+        className="signal-rename"
         onSubmit={(e) => {
           e.preventDefault();
+          if (!changed || !name.trim() || saving) return;
+          setSaving(true);
           void send({ type: "rename_signal", signal_id: signal.id, name })
             .then(onClose)
-            .catch(() => {});
+            .catch(() => {})
+            .finally(() => setSaving(false));
         }}
       >
-        <label>
-          Rename signal
+        <label htmlFor={nameId}>Rename signal</label>
+        <div className="row">
           <input
+            id={nameId}
             aria-label="Rename signal"
             value={name}
             maxLength={128}
             required
+            disabled={saving}
             onChange={(e) => setName(e.target.value)}
           />
-        </label>
-        <button>Rename</button>
+          {changed && (
+            <button
+              type="submit"
+              aria-label="Save signal name"
+              title="Save signal name"
+              disabled={!name.trim() || saving}
+            >
+              ✓
+            </button>
+          )}
+        </div>
       </form>
       {recipe && (
         <>

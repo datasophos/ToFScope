@@ -770,6 +770,20 @@ small {
 .tool-popover input {
   max-width: 100%;
 }
+.signal-rename > label {
+  margin-bottom: 6px;
+}
+.signal-rename .row {
+  flex-wrap: nowrap;
+}
+.signal-rename input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+.signal-rename button {
+  flex: none;
+}
 .plot-context {
   padding: 5px 14px 0;
   font-size: 11px;

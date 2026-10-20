@@ -61,7 +61,9 @@ test("signals are created independently, chosen for images, and hidden without l
   await expect(first.getByRole("checkbox")).toBeChecked();
   await row.getByRole("button", { name: "Details", exact: true }).click();
   await page.getByLabel("Rename signal", { exact: true }).fill("Ti renamed");
-  await page.getByRole("button", { name: "Rename", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Save signal name", exact: true })
+    .click();
   await expect(page.getByTestId("panel-ion")).toContainText("Ti renamed");
 });
 
