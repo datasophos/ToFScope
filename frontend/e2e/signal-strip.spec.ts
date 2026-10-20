@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test("compact signal strip keeps plots visible and exposes the full collection on demand", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   await page.setExtraHTTPHeaders({ "x-tofscope-user": `strip-${Date.now()}` });
   await page.goto("/");
@@ -31,7 +31,7 @@ test("compact signal strip keeps plots visible and exposes the full collection o
     500,
   );
   await page.screenshot({
-    path: "/private/tmp/tofscope-compact-strip-desktop.png",
+    path: testInfo.outputPath("tofscope-compact-strip-desktop.png"),
   });
   const added = await chips.last().getAttribute("data-signal-id");
   await chips
@@ -76,7 +76,7 @@ test("compact signal strip keeps plots visible and exposes the full collection o
   console.log(JSON.stringify({ signal_strip_narrow_px: narrowHeight }));
   expect(narrowHeight).toBeLessThan(140);
   await page.screenshot({
-    path: "/private/tmp/tofscope-compact-strip-narrow.png",
+    path: testInfo.outputPath("tofscope-compact-strip-narrow.png"),
   });
 });
 
