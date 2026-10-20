@@ -60,11 +60,14 @@ class SavedFileStore:
         self.settings = settings
         self.root = settings.output_root
 
-    def owner_root(self, owner):
+    def owner_path(self, owner):
         if not isinstance(owner, str) or not owner:
             raise PermissionError('An authenticated owner is required.')
+        return self.root / hashlib.sha256(owner.encode()).hexdigest()
+
+    def owner_root(self, owner):
+        path = self.owner_path(owner)
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
-        path = self.root / hashlib.sha256(owner.encode()).hexdigest()
         if path.is_symlink():
             raise ValueError('Saved-file directory cannot be a symbolic link.')
         path.mkdir(exist_ok=True, mode=0o700)

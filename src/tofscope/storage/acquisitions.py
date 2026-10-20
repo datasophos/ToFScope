@@ -7,7 +7,7 @@ import secrets
 import h5py
 import numpy as np
 from filelock import Timeout
-from tofscope.config import resolve_data_path
+from tofscope.config import resolve_data_path, is_private_output_path
 from tofscope.storage.dataset_io import LOCK_DIR, dataset_lock
 from tofscope.storage.explorer import inspect_file
 from tofscope.science.integration import custom_peak_windows
@@ -58,7 +58,7 @@ class AcquisitionRepository:
                     raise ValueError('Saved file unavailable.') from None
             elif dataset.location == 'acquisition':
                 p = resolve_data_path(self.settings, dataset.relative_path, require_file=True)
-                if p.is_relative_to(self.settings.output_root):
+                if is_private_output_path(self.settings, p):
                     raise PermissionError('Open saved files through the owner-scoped saved file list.')
             else:
                 raise ValueError('Unknown file location.')

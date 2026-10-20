@@ -244,6 +244,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/locations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Folder Locations */
+    get: operations["folder_locations_api_v1_locations_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/saved-files": {
     parameters: {
       query?: never;
@@ -539,6 +556,15 @@ export interface components {
       };
       /** Revision */
       revision: number;
+    };
+    /** FolderLocations */
+    FolderLocations: {
+      /** Acquisitions */
+      acquisitions: string;
+      /** Save Destination */
+      save_destination: string;
+      /** Saved Copies */
+      saved_copies: string;
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -1446,6 +1472,26 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  folder_locations_api_v1_locations_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FolderLocations"];
         };
       };
     };

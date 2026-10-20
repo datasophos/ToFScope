@@ -36,6 +36,7 @@ from tofscope.api.schemas import (
     ReplaceAcquisition,
     SubmitJob,
     SaveCopy,
+    FolderLocations,
 )
 from typing import Literal
 from tofscope.presentation.data import ExploreData
@@ -236,6 +237,12 @@ def create_app(settings, services=None, bootstrap_secret=None):
     def session(request: Request, o=Depends(owner)):
         entry = app.state.auth.sessions.get(request.cookies.get("tofscope_session", ""))
         return {"owner": o, "csrf": entry[1] if entry else ""}
+
+    @app.get('/api/v1/locations', response_model=FolderLocations)
+    def folder_locations(o=Depends(owner), s=Depends(svc)):
+        return FolderLocations(acquisitions=str(settings.data_root),
+                               saved_copies=str(settings.output_root),
+                               save_destination=str(s.saves.files.owner_path(o)))
 
     @app.get('/api/v1/analyses', response_model=list[AnalysisSnapshot])
     def open_files(o=Depends(owner), s=Depends(svc)):

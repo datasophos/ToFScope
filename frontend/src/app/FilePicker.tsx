@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FolderLocations } from "./FolderLocations";
 import { request } from "../api/client";
 type Page = {
   path: string;
@@ -45,6 +46,7 @@ export function FilePicker({
         <p>
           Files remain on this server. Opening creates an independent analysis.
         </p>
+        <FolderLocations />
         <div className="row file-locations">
           <button
             aria-pressed={location === "acquisition"}
@@ -82,7 +84,9 @@ export function FilePicker({
             Parent folder
           </button>
           <code>
-            {location === "saved" ? "Your saved files" : dir || "Data root"}
+            {location === "saved"
+              ? "Your saved files"
+              : dir || "Acquisition folder"}
           </code>
           <input
             aria-label="Search files"

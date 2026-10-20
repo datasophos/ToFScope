@@ -55,3 +55,9 @@ class ErrorResponse(StrictModel):
 
 class SaveCopy(RevisionEnvelope):
     filename: str = Field(min_length=1, max_length=240)
+
+
+class FolderLocations(StrictModel):
+    acquisitions: str
+    saved_copies: str
+    save_destination: str

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { FolderLocations } from "../app/FolderLocations";
 import { post, request, type Analysis, type Job } from "../api/client";
 
 export function SaveCopy({
@@ -102,6 +103,14 @@ export function SaveCopy({
               The new HDF5 file includes your committed signals, results and
               analysis settings. The original stays unchanged.
             </p>
+            <FolderLocations
+              save
+              filename={
+                job?.status === "succeeded"
+                  ? job.saved_file?.name || name
+                  : name
+              }
+            />
             <form
               onSubmit={async (event) => {
                 event.preventDefault();
