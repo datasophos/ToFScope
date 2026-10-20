@@ -12,6 +12,8 @@ export function useAnalysis(initial: Analysis) {
   const [state, setState] = useState(initial),
     [data, setData] = useState<Data | null>(null),
     [error, setError] = useState("");
+  const [pendingPanels, setPendingPanels] = useState(new Set<string>());
+  const [panelStates, setPanelStates] = useState<Record<string, Analysis>>({});
   const current = useRef(initial),
     mounted = useRef(true),
     loading = useRef(false),
@@ -45,7 +47,9 @@ export function useAnalysis(initial: Analysis) {
       else {
         const different = (x: unknown, y: unknown) =>
           JSON.stringify(x) !== JSON.stringify(y);
-        const active = different(before.active_recipe, a.active_recipe),
+        const image = (v: Analysis) =>
+          v.signals.find((s) => s.id === v.image_signal_id);
+        const active = different(image(before), image(a)),
           loaded = different(before.loaded_frames, a.loaded_frames);
         if (
           active ||
@@ -66,11 +70,17 @@ export function useAnalysis(initial: Analysis) {
           active ||
           loaded ||
           different(before.roi, a.roi) ||
-          different(before.comparisons, a.comparisons) ||
+          different(
+            before.signals.filter((s) =>
+              before.profile_signal_ids.includes(s.id),
+            ),
+            a.signals.filter((s) => a.profile_signal_ids.includes(s.id)),
+          ) ||
           before.display.relative !== a.display.relative
         )
           parts.push("profile");
       }
+      if (parts.length) setPendingPanels(new Set(parts));
       const d = parts.length
         ? await request<Data>(
             `/analyses/${a.id}/data?panels=${parts.join(",")}`,
@@ -94,6 +104,11 @@ export function useAnalysis(initial: Analysis) {
         dataRef.current = merged;
         prepared.current = a;
         setData(merged);
+        setPanelStates((old) => ({
+          ...old,
+          ...Object.fromEntries(Object.keys(d.panels).map((key) => [key, a])),
+        }));
+        setPendingPanels(new Set());
         setError("");
       }
     } catch (e) {
@@ -159,5 +174,15 @@ export function useAnalysis(initial: Analysis) {
       throw e;
     }
   };
-  return { state, data, error, send, refresh, accept, setError };
+  return {
+    state,
+    data,
+    error,
+    send,
+    refresh,
+    accept,
+    setError,
+    pendingPanels,
+    panelStates,
+  };
 }
