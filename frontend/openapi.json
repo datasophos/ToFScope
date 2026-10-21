@@ -146,6 +146,27 @@
             "title": "Image Signal Id",
             "type": "string"
           },
+          "isotope_job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isotope Job Id"
+          },
+          "isotope_measurement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeasurementResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "mass_limits": {
             "maxItems": 2,
             "minItems": 2,
@@ -294,6 +315,115 @@
         "title": "AnchorInput",
         "type": "object"
       },
+      "AnnotateSignal": {
+        "additionalProperties": false,
+        "properties": {
+          "candidate_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Id"
+          },
+          "measured_mz": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Measured Mz"
+          },
+          "signal_id": {
+            "title": "Signal Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "annotate_signal",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "signal_id",
+          "type",
+          "candidate_id"
+        ],
+        "title": "AnnotateSignal",
+        "type": "object"
+      },
+      "AtomicAssignment": {
+        "properties": {
+          "candidate_id": {
+            "title": "Candidate Id",
+            "type": "string"
+          },
+          "catalog": {
+            "$ref": "#/components/schemas/CatalogProvenance"
+          },
+          "charge": {
+            "title": "Charge",
+            "type": "integer"
+          },
+          "error_Th": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Th"
+          },
+          "error_ppm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Ppm"
+          },
+          "isotope": {
+            "$ref": "#/components/schemas/IsotopeRecord"
+          },
+          "measured_mz": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Measured Mz"
+          },
+          "predicted_mz": {
+            "title": "Predicted Mz",
+            "type": "number"
+          }
+        },
+        "required": [
+          "candidate_id",
+          "isotope",
+          "charge",
+          "predicted_mz",
+          "catalog"
+        ],
+        "title": "AtomicAssignment",
+        "type": "object"
+      },
       "Axis": {
         "properties": {
           "boundaries": {
@@ -343,6 +473,94 @@
         "title": "Bootstrap",
         "type": "object"
       },
+      "CandidateInput": {
+        "additionalProperties": false,
+        "properties": {
+          "charges": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Charges",
+            "type": "array"
+          },
+          "mz": {
+            "exclusiveMinimum": 0.0,
+            "title": "Mz",
+            "type": "number"
+          },
+          "tolerance": {
+            "minimum": 0.0,
+            "title": "Tolerance",
+            "type": "number"
+          },
+          "unit": {
+            "enum": [
+              "Th",
+              "ppm"
+            ],
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mz",
+          "tolerance",
+          "unit",
+          "charges"
+        ],
+        "title": "CandidateInput",
+        "type": "object"
+      },
+      "CandidateResult": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/IonCandidate"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "catalog": {
+            "$ref": "#/components/schemas/CatalogProvenance"
+          }
+        },
+        "required": [
+          "candidates",
+          "catalog"
+        ],
+        "title": "CandidateResult",
+        "type": "object"
+      },
+      "CatalogProvenance": {
+        "properties": {
+          "convention": {
+            "default": "Neutral isotope mass minus signed electron mass; binding energies omitted.",
+            "title": "Convention",
+            "type": "string"
+          },
+          "records_sha256": {
+            "title": "Records Sha256",
+            "type": "string"
+          },
+          "retrieved": {
+            "title": "Retrieved",
+            "type": "string"
+          },
+          "sources_json": {
+            "title": "Sources Json",
+            "type": "string"
+          }
+        },
+        "required": [
+          "records_sha256",
+          "retrieved",
+          "sources_json"
+        ],
+        "title": "CatalogProvenance",
+        "type": "object"
+      },
       "CommandEnvelope": {
         "additionalProperties": false,
         "properties": {
@@ -350,6 +568,7 @@
             "discriminator": {
               "mapping": {
                 "add_stored_signal": "#/components/schemas/AddStoredSignal",
+                "annotate_signal": "#/components/schemas/AnnotateSignal",
                 "remove_signal": "#/components/schemas/RemoveSignal",
                 "rename_signal": "#/components/schemas/RenameSignal",
                 "select_image_signal": "#/components/schemas/SelectImageSignal",
@@ -369,6 +588,9 @@
               },
               {
                 "$ref": "#/components/schemas/RenameSignal"
+              },
+              {
+                "$ref": "#/components/schemas/AnnotateSignal"
               },
               {
                 "$ref": "#/components/schemas/SelectImageSignal"
@@ -658,6 +880,18 @@
       "IntegrationInput": {
         "additionalProperties": false,
         "properties": {
+          "candidate_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Id"
+          },
           "expected_recipe_version": {
             "anyOf": [
               {
@@ -703,6 +937,18 @@
             "title": "Intervals",
             "type": "array"
           },
+          "measured_mz": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Measured Mz"
+          },
           "name": {
             "maxLength": 128,
             "minLength": 1,
@@ -729,6 +975,201 @@
         "title": "IntegrationInput",
         "type": "object"
       },
+      "IonCandidate": {
+        "properties": {
+          "charge": {
+            "title": "Charge",
+            "type": "integer"
+          },
+          "error_Th": {
+            "title": "Error Th",
+            "type": "number"
+          },
+          "error_ppm": {
+            "title": "Error Ppm",
+            "type": "number"
+          },
+          "isotope": {
+            "$ref": "#/components/schemas/IsotopeRecord"
+          },
+          "predicted_mz": {
+            "title": "Predicted Mz",
+            "type": "number"
+          }
+        },
+        "required": [
+          "isotope",
+          "charge",
+          "predicted_mz",
+          "error_Th",
+          "error_ppm"
+        ],
+        "title": "IonCandidate",
+        "type": "object"
+      },
+      "IsotopeMeasurement": {
+        "properties": {
+          "actual_frames": {
+            "anyOf": [
+              {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Frames"
+          },
+          "ambiguous": {
+            "title": "Ambiguous",
+            "type": "boolean"
+          },
+          "observed_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Fraction"
+          },
+          "recipe_id": {
+            "title": "Recipe Id",
+            "type": "string"
+          },
+          "requested_frames": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Requested Frames",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "summed_intensity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summed Intensity"
+          }
+        },
+        "required": [
+          "recipe_id",
+          "requested_frames",
+          "actual_frames",
+          "summed_intensity",
+          "observed_fraction",
+          "ambiguous",
+          "status"
+        ],
+        "title": "IsotopeMeasurement",
+        "type": "object"
+      },
+      "IsotopeRecord": {
+        "properties": {
+          "abundance_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abundance High"
+          },
+          "abundance_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abundance Low"
+          },
+          "abundance_uncertainty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abundance Uncertainty"
+          },
+          "mass_estimated": {
+            "default": false,
+            "title": "Mass Estimated",
+            "type": "boolean"
+          },
+          "mass_number": {
+            "title": "Mass Number",
+            "type": "integer"
+          },
+          "mass_uncertainty_u": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mass Uncertainty U"
+          },
+          "neutral_mass_u": {
+            "title": "Neutral Mass U",
+            "type": "number"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol",
+          "mass_number",
+          "neutral_mass_u",
+          "abundance_low",
+          "abundance_high",
+          "source_id"
+        ],
+        "title": "IsotopeRecord",
+        "type": "object"
+      },
       "JobSnapshot": {
         "properties": {
           "analysis_id": {
@@ -749,7 +1190,8 @@
             "enum": [
               "integration",
               "save",
-              "preparation"
+              "preparation",
+              "measurement"
             ],
             "title": "Kind",
             "type": "string"
@@ -817,6 +1259,177 @@
           "status"
         ],
         "title": "JobSnapshot",
+        "type": "object"
+      },
+      "MeasureIsotopes": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset_generation": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Dataset Generation",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "request_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "signal_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 128,
+            "minItems": 1,
+            "title": "Signal Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_revision",
+          "dataset_generation",
+          "signal_ids"
+        ],
+        "title": "MeasureIsotopes",
+        "type": "object"
+      },
+      "MeasuredSignal": {
+        "properties": {
+          "assignment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AtomicAssignment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "intervals": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            "title": "Intervals",
+            "type": "array"
+          },
+          "measurement": {
+            "$ref": "#/components/schemas/IsotopeMeasurement"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "signal_id": {
+            "title": "Signal Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "signal_id",
+          "name",
+          "assignment",
+          "intervals",
+          "measurement"
+        ],
+        "title": "MeasuredSignal",
+        "type": "object"
+      },
+      "MeasurementResult": {
+        "properties": {
+          "catalog": {
+            "$ref": "#/components/schemas/CatalogProvenance"
+          },
+          "dataset_generation": {
+            "title": "Dataset Generation",
+            "type": "string"
+          },
+          "dependency_key": {
+            "title": "Dependency Key",
+            "type": "string"
+          },
+          "frames": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Frames",
+            "type": "array"
+          },
+          "interpretation": {
+            "default": "Selected-set signal fractions; not quantitative composition.",
+            "title": "Interpretation",
+            "type": "string"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "out_of_date": {
+            "default": false,
+            "title": "Out Of Date",
+            "type": "boolean"
+          },
+          "roi": {
+            "maxItems": 4,
+            "minItems": 4,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Roi",
+            "type": "array"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/MeasuredSignal"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "job_id",
+          "dataset_generation",
+          "roi",
+          "frames",
+          "dependency_key",
+          "rows",
+          "catalog"
+        ],
+        "title": "MeasurementResult",
         "type": "object"
       },
       "OpenAcquisition": {
@@ -1701,6 +2314,16 @@
       },
       "SignalSnapshot": {
         "properties": {
+          "assignment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AtomicAssignment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -2102,6 +2725,55 @@
         "summary": "Analysis"
       }
     },
+    "/api/v1/analyses/{aid}/candidates": {
+      "post": {
+        "operationId": "candidates_api_v1_analyses__aid__candidates_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "aid",
+            "required": true,
+            "schema": {
+              "title": "Aid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Candidates"
+      }
+    },
     "/api/v1/analyses/{aid}/commands": {
       "post": {
         "operationId": "command_api_v1_analyses__aid__commands_post",
@@ -2267,6 +2939,43 @@
         "summary": "Export"
       }
     },
+    "/api/v1/analyses/{aid}/isotopes.csv": {
+      "get": {
+        "operationId": "isotope_export_api_v1_analyses__aid__isotopes_csv_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "aid",
+            "required": true,
+            "schema": {
+              "title": "Aid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Isotope Export"
+      }
+    },
     "/api/v1/analyses/{aid}/jobs": {
       "post": {
         "operationId": "job_api_v1_analyses__aid__jobs_post",
@@ -2314,6 +3023,100 @@
           }
         },
         "summary": "Job"
+      }
+    },
+    "/api/v1/analyses/{aid}/measurements": {
+      "get": {
+        "operationId": "isotope_results_api_v1_analyses__aid__measurements_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "aid",
+            "required": true,
+            "schema": {
+              "title": "Aid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MeasurementResult"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Isotope Results Api V1 Analyses  Aid  Measurements Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Isotope Results"
+      },
+      "post": {
+        "operationId": "measure_isotopes_api_v1_analyses__aid__measurements_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "aid",
+            "required": true,
+            "schema": {
+              "title": "Aid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeasureIsotopes"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Measure Isotopes"
       }
     },
     "/api/v1/analyses/{aid}/replace": {

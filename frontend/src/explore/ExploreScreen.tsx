@@ -1,3 +1,5 @@
+import { IdentifyDialog } from "../identification/IdentifyDialog";
+import { IsotopeMeasurements } from "../identification/IsotopeMeasurements";
 import { DepthEditor } from "../calibration/DepthEditor";
 import {
   frameToCoordinate,
@@ -311,7 +313,22 @@ export function ExploreScreen({
                     {d?.submittedJobId ? " · calculating" : ""}
                   </span>
                   {!d && (
-                    <button onClick={editor.openNew}>Create signal</button>
+                    <>
+                      <button onClick={editor.openNew}>Create signal</button>
+                      <IdentifyDialog
+                        analysis={a}
+                        spectrum={panels?.spectrum}
+                        send={send}
+                        active={active}
+                        onDraft={editor.openIdentified}
+                        refresh={refresh}
+                      />
+                      <IsotopeMeasurements
+                        analysis={a}
+                        active={active}
+                        refresh={refresh}
+                      />
+                    </>
                   )}
                 </>
               }

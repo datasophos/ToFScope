@@ -12,6 +12,7 @@ from pydantic import Field, StrictBool, StrictInt, field_validator, model_valida
 from tofscope.application.commands import StrictModel, DepthSelection, AnchorInput
 from tofscope.science.depth_calibration import DepthAnchor, validate_anchors
 from tofscope.application.models import AnalysisSnapshot, DisplaySettings, SignalSnapshot
+from tofscope.application.identification_models import AtomicAssignment, MeasuredSignal, CatalogProvenance, MeasurementResult
 from tofscope.science.signals import SignalRecipe
 
 FiniteStrictFloat = Annotated[float, Field(strict=True, allow_inf_nan=False)]
@@ -48,6 +49,7 @@ class DocumentSignal(StrictModel):
     style_index: StrictInt = Field(ge=0)
     recipe: RecipeDocument
     materialization_id: str | None = None
+    assignment: AtomicAssignment | None = None
 
     @field_validator('id', 'materialization_id')
     @classmethod
@@ -71,8 +73,18 @@ class DocumentDisplay(StrictModel):
     colormap: Literal["ion", "gray", "viridis", "magma", "cividis"] = "viridis"
 
 
+class DocumentMeasurement(StrictModel):
+    dataset_generation: str = Field(max_length=128)
+    roi: tuple[StrictInt, StrictInt, StrictInt, StrictInt]
+    frames: tuple[StrictInt, StrictInt]
+    rows: tuple[MeasuredSignal, ...] = Field(min_length=1, max_length=128)
+    catalog: CatalogProvenance
+    out_of_date: StrictBool
+
+
 class SavedAnalysisDocument(StrictModel):
-    schema_version: Literal[1, 2] = 2
+    schema_version: Literal[1, 2, 3] = 3
+    isotope_measurement: DocumentMeasurement | None = None
     shape: tuple[StrictInt, StrictInt, StrictInt, StrictInt]
     signals: tuple[DocumentSignal, ...] = Field(min_length=1, max_length=129)
     image_signal_id: str
@@ -115,6 +127,8 @@ class SavedAnalysisDocument(StrictModel):
             raise ValueError('Saved viewing frame outside coverage.')
         if self.depth.mode == 'window' and not lo <= self.depth.first <= self.depth.last <= hi:
             raise ValueError('Saved viewing window outside coverage.')
+        from tofscope.storage.identification_document import validate_measurement
+        validate_measurement(self)
         return self
 
 
@@ -124,8 +138,11 @@ def encode_document(snapshot: AnalysisSnapshot) -> SavedAnalysisDocument:
         if row.recipe is None:
             raise ValueError('Finish or discard pending signals before saving.')
         rows.append(dict(id=row.id, name=row.name, style_index=row.style_index,
-                         recipe=row.recipe.to_dict(), materialization_id=(row.materialization_id or str(uuid4())) if row.recipe.source == 'custom' else None))
-    return SavedAnalysisDocument(shape=snapshot.shape, signals=rows,
+                         recipe=row.recipe.to_dict(), assignment=row.assignment, materialization_id=(row.materialization_id or str(uuid4())) if row.recipe.source == 'custom' else None))
+    from tofscope.application.identification import current_result
+    measurement = current_result(snapshot)
+    captured = DocumentMeasurement(**{key: getattr(measurement, key) for key in DocumentMeasurement.model_fields}) if measurement else None
+    return SavedAnalysisDocument(shape=snapshot.shape, signals=rows, isotope_measurement=captured,
         image_signal_id=snapshot.image_signal_id, profile_signal_ids=snapshot.profile_signal_ids,
         next_style_index=snapshot.next_style_index,
         roi=snapshot.roi, depth=snapshot.depth, display=vars(snapshot.display), depth_anchors=[vars(x) for x in snapshot.depth_anchors],
@@ -138,7 +155,7 @@ def read_document(path: Path, limits) -> SavedAnalysisDocument | None:
             if ROOT not in handle:
                 return None
             group = handle[ROOT]
-            if not isinstance(group, h5py.Group) or group.attrs.get('schema_version') not in (1, 2) or group.attrs.get('complete') != np.bool_(True):
+            if not isinstance(group, h5py.Group) or group.attrs.get('schema_version') not in (1, 2, 3) or group.attrs.get('complete') != np.bool_(True):
                 raise ValueError('Unsupported or incomplete saved analysis.')
             data = group['state_json']
             if not isinstance(data, h5py.Dataset) or data.ndim != 1 or data.dtype != np.uint8 or not 0 < data.size <= min(MAX_DOCUMENT_BYTES, limits.response_bytes):
@@ -164,10 +181,23 @@ def restore_snapshot(document: SavedAnalysisDocument, initial: AnalysisSnapshot)
         recipe = SignalRecipe.from_dict(row.recipe.model_dump())
         recipe = replace(recipe, id=str(uuid4()))
         rows.append(SignalSnapshot(ids[row.id], row.name, row.style_index, recipe,
-                                   materialization_id=row.materialization_id))
-    return replace(initial, signals=tuple(rows), image_signal_id=ids[document.image_signal_id],
+                                   materialization_id=row.materialization_id, assignment=row.assignment))
+    restored = replace(initial, signals=tuple(rows), image_signal_id=ids[document.image_signal_id],
         profile_signal_ids=tuple(ids[x] for x in document.profile_signal_ids),
         next_style_index=document.next_style_index,
         roi=document.roi, depth=document.depth, display=DisplaySettings(**document.display.model_dump()), saved_revision=initial.revision,
         depth_anchors=tuple(DepthAnchor(x.frame, x.depth_nm) for x in document.depth_anchors),
         depth_unit=document.depth_unit, depth_coordinates=document.depth_coordinates)
+
+    if document.isotope_measurement:
+        from tofscope.application.identification import dependency_key
+        saved = document.isotope_measurement
+        recipes = {original.id: fresh.recipe.id for original, fresh in zip(document.signals, rows)}
+        measured = tuple(replace(row, signal_id=ids.get(row.signal_id, row.signal_id),
+                                 measurement=replace(row.measurement, recipe_id=recipes.get(row.signal_id, row.measurement.recipe_id)))
+                         for row in saved.rows)
+        available = all(row.signal_id in {signal.id for signal in rows} for row in measured)
+        key = dependency_key(restored, [row.signal_id for row in measured]) if available and not saved.out_of_date else 'saved-out-of-date'
+        result = MeasurementResult('', saved.dataset_generation, saved.roi, saved.frames, key, measured, saved.catalog, saved.out_of_date)
+        restored = replace(restored, isotope_measurement=result)
+    return restored

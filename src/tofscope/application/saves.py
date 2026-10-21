@@ -30,7 +30,7 @@ class SaveService:
             if old is not None:
                 return old
             with self.jobs.condition:
-                if any(j.snapshot.analysis_id == analysis_id and j.snapshot.kind == 'integration' and j.snapshot.status not in {'succeeded', 'failed', 'cancelled', 'obsolete'} for j in self.jobs.jobs.values()):
+                if any(j.snapshot.analysis_id == analysis_id and j.snapshot.kind in {'integration', 'measurement'} and j.snapshot.status not in {'succeeded', 'failed', 'cancelled', 'obsolete'} for j in self.jobs.jobs.values()):
                     raise ValueError('Finish or cancel calculations before saving.')
                 task = SaveTask(e.snapshot, encode_document(e.snapshot), name)
                 result = self.jobs.enqueue_save(owner, task)

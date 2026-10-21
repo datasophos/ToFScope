@@ -96,9 +96,23 @@ see [raw preparation](docs/validation/raw-acquisition-preparation.md) and
 
 See [TODO.md](TODO.md) for the current feature status and next work.
 
-This is the **Explore pilot**, not full feature parity. Calibration editors,
-atomic identification/isotope dialogs, sections, volume tools and controlled
-native saves are specified in the [completion plan](docs/superpowers/plans/2026-10-18-react-fastapi-completion.md).
+Atomic identification suggests offline isotope-ion candidates with explicit charge,
+polarity, mass error and reference provenance. Use **Identify peak** beside the mass
+spectrum; click its spectrum to pick a peak or enter an exact m/z. Annotate an
+existing signal, apply an exact window to a draft, or explicitly calculate a new
+comparison. Original file labels remain unchanged.
+
+**Isotope measurements** sums selected signals at original resolution over the
+current ROI and viewing frames, using their common coverage. Overlapping windows
+suppress fractions; unknown natural abundances remain unknown. Results describe
+selected-set signal ratios, not quantitative composition. Input changes mark
+captured measurements out of date until you explicitly Measure again. Isotope
+CSV and Settings JSON retain scope, mass errors, uncertainties and provenance;
+Save as/reopen also preserves annotations and captured results. See
+[identification validation](docs/validation/identification.md).
+
+The application still lacks full prototype feature parity. Sections, volume
+tools and controlled native saves are specified in the [completion plan](docs/superpowers/plans/2026-10-18-react-fastapi-completion.md).
 In-place acquisition writes remain unavailable. Live tabs/jobs are in memory;
 reopen saved HDF5 copies to restore committed work after a restart. Shared use requires a trusted authenticated proxy;
 actual NFS deployment remains unqualified.

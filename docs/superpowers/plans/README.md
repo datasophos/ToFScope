@@ -21,8 +21,9 @@ implemented. Depth calibration is implemented and merged through
 [PR #2](https://github.com/datasophos/ToFScope/pull/2); the subsequent Explore
 control/layout fixes and CI cleanup are merged through
 [PR #3](https://github.com/datasophos/ToFScope/pull/3). The completion plan's
-remaining scientific backlog starts with identification/isotopes, followed by
-sections and 3D. Controlled native vendor
+identification/isotope task is implemented, including durable annotations and
+captured measurements. The remaining scientific backlog starts with sections,
+followed by 3D. Controlled native vendor
 exports remain separate from the supported Save as workflow, which creates new
 HDF5 copies and restores analysis state.
 

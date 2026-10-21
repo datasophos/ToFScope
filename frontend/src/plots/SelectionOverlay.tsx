@@ -14,7 +14,7 @@ type Props = {
   onWindowSelect?: (index: number) => void;
   markers?: number[];
   onSelect: (bounds: number[]) => void;
-  onClick?: (x: number, y: number) => void;
+  onClick?: (x: number, y: number, unitsPerPixel: number) => void;
   onZoom?: (range: Range) => void;
   mode?: "x" | "xy" | "y";
   label?: string;
@@ -260,7 +260,12 @@ export function SelectionOverlay({
             e.clientY - d.pointerStart[1],
           ) < 4;
         if (isClick && onClick) {
-          onClick(...(end as [number, number]));
+          onClick(
+            end[0],
+            end[1],
+            (xRange[1] - xRange[0]) /
+              e.currentTarget.getBoundingClientRect().width,
+          );
           return;
         }
         // Without a picking action, clicks must not collapse zoom or selection bounds.

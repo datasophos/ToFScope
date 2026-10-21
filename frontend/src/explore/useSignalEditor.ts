@@ -179,6 +179,8 @@ export function useSignalEditor(
           [0, analysis.shape[0] - 1],
         ),
       ),
+    openIdentified: (name: string, interval: [number, number]) =>
+      open(createDraft(name, [interval], [0, analysis.shape[0] - 1])),
     openEdit: (id: string) => seed(id, false),
     openCopy: (id: string) => seed(id, true),
     patchDraft: (patch: Partial<SignalDraft>) =>

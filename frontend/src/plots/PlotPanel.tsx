@@ -87,7 +87,7 @@ export function PlotPanel({
   maximized: boolean;
   onMaximize: () => void;
   onSelect: (bounds: number[]) => void;
-  onClick?: (x: number, y: number) => void;
+  onClick?: (x: number, y: number, unitsPerPixel: number) => void;
   selection?: number[];
   selectionWindows?: Range[];
   selectedWindow?: number;

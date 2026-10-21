@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 import asyncio
 from pathlib import Path
 from fastapi import FastAPI, Request, Response, Depends, HTTPException, Query
@@ -20,6 +20,7 @@ from tofscope.application.resources import ResourceBudget
 from tofscope.application.cache import ArrayCache
 from tofscope.application.jobs import JobService, JobSnapshot, IntegrationSpec
 from tofscope.application.lifecycle import LifecycleService, ViewLease
+from tofscope.application.identification_models import CandidateResult, MeasurementResult
 from tofscope.application.models import AnalysisSnapshot
 from tofscope.application.signals import image_signal
 from tofscope.application.commands import CommandEnvelope
@@ -31,6 +32,8 @@ from tofscope.storage.acquisitions import (
 from tofscope.storage.file_browser import list_data_files
 from tofscope.api.auth import Auth
 from tofscope.api.schemas import (
+    CandidateInput,
+    MeasureIsotopes,
     Bootstrap,
     SessionInfo,
     OpenAcquisition,
@@ -58,6 +61,7 @@ class Services:
     exports: object = None
     saves: object = None
     preparations: object = None
+    identification: object = None
 
 
 def build_services(settings):
@@ -82,6 +86,8 @@ def build_services(settings):
     )
     from tofscope.application.preparations import PreparationService
     services.preparations = PreparationService(repo, jobs, services.saves.files)
+    from tofscope.application.identification import IdentificationService
+    services.identification = IdentificationService(ws, explore, cache, jobs)
     return services
 
 
@@ -300,6 +306,51 @@ def create_app(settings, services=None, bootstrap_secret=None):
     def command(aid: str, body: CommandEnvelope, o=Depends(owner), s=Depends(svc)):
         return s.explore.apply(o, aid, body)
 
+    def managed_json(o, aid, services, prepare):
+        services.analyses.get(o, aid)
+        reservation = services.cache.budget.reserve(o, aid, settings.response_bytes)
+        try:
+            value = prepare()
+            chunks = bytearray()
+            for part in json.JSONEncoder(allow_nan=False, separators=(',', ':')).iterencode(asdict(value) if value is not None else None):
+                encoded = part.encode()
+                if len(chunks) + len(encoded) > settings.response_bytes:
+                    raise CapacityError('Response exceeds configured limit; narrow the selected signals or tolerance.')
+                chunks.extend(encoded)
+            return ManagedResponse(bytes(chunks), media_type='application/json', reservation=reservation)
+        except BaseException:
+            reservation.release()
+            raise
+
+    @app.post('/api/v1/analyses/{aid}/candidates', response_model=CandidateResult)
+    def candidates(aid: str, body: CandidateInput, o=Depends(owner), s=Depends(svc)):
+        return managed_json(o, aid, s, lambda: s.identification.candidates(o, aid, body.mz, body.tolerance, body.unit, body.charges))
+
+    @app.post('/api/v1/analyses/{aid}/measurements', response_model=JobSnapshot, status_code=202)
+    def measure_isotopes(aid: str, body: MeasureIsotopes, o=Depends(owner), s=Depends(svc)):
+        return s.identification.measure(o, aid, body, body.signal_ids)
+
+    @app.get('/api/v1/analyses/{aid}/measurements', response_model=MeasurementResult | None)
+    def isotope_results(aid: str, o=Depends(owner), s=Depends(svc)):
+        return managed_json(o, aid, s, lambda: s.identification.result(o, aid))
+
+    @app.get('/api/v1/analyses/{aid}/isotopes.csv')
+    def isotope_export(aid: str, o=Depends(owner), s=Depends(svc)):
+        from tofscope.presentation.isotopes import isotope_csv
+        e = s.analyses.entry(o, aid)
+        reservation = s.cache.budget.reserve(o, aid, settings.response_bytes)
+        try:
+            with e.lock:
+                s.repository.assert_current(o, e.snapshot.dataset)
+                content = isotope_csv(e.snapshot)
+            if len(content) > settings.response_bytes:
+                raise ValueError('Export exceeds configured response limit.')
+            return ManagedResponse(content, media_type='text/csv', reservation=reservation,
+                headers={'Content-Disposition': 'attachment; filename="tofscope-isotopes.csv"'})
+        except BaseException:
+            reservation.release()
+            raise
+
     @app.post(
         "/api/v1/analyses/{aid}/jobs", response_model=JobSnapshot, status_code=202
     )
@@ -310,7 +361,7 @@ def create_app(settings, services=None, bootstrap_secret=None):
             body,
             IntegrationSpec(
                 tuple(body.spec.intervals), tuple(body.spec.frames), body.spec.name,
-                body.spec.signal_id, body.spec.expected_recipe_version
+                body.spec.signal_id, body.spec.expected_recipe_version, body.spec.candidate_id, body.spec.measured_mz
             ),
         )
 

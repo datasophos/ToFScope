@@ -1742,3 +1742,15 @@ small {
   padding-left: 12px;
   margin-left: 5px;
 }
+
+.identification-dialog { font-size: 13px; }
+.identification-dialog input[type="number"] { width: 140px; }
+.identification-dialog select { max-width: 330px; }
+.identification-dialog pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.identification-dialog details { margin: 8px 0; overflow-wrap: anywhere; }
+.identification-spectrum .plot-body { height: 180px; }
+.identification-spectrum .plot-panel { min-height: 260px; }
+.identification-spectrum .plot-toolbar { display: none; }
+.isotope-table-scroll { overflow-x: auto; max-height: 240px; }
+.isotope-table-scroll table { width: 100%; border-collapse: collapse; }
+.isotope-table-scroll th, .isotope-table-scroll td { padding: 8px; border-bottom: 1px solid #cbd5da; text-align: left; }
