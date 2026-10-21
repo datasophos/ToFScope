@@ -41,6 +41,46 @@ export function ViewingDepths({
   return (
     <section className="depth-strip" aria-label="Viewing depths">
       <HelpHeading title={`Viewing depths: ${summary}`} content={help.depth} />
+      <div
+        className="depth-coordinate-controls"
+        role="group"
+        aria-label="Depth coordinates"
+      >
+        <button
+          aria-pressed={a.depth_coordinates === "frame"}
+          onClick={() =>
+            void send({
+              type: "set_depth_display",
+              unit: a.depth_unit,
+              coordinates: "frame",
+            }).catch(() => {})
+          }
+        >
+          Frames
+        </button>
+        <button
+          aria-label="Physical depth"
+          aria-pressed={a.depth_coordinates === "depth"}
+          disabled={a.depth_anchors.length < 2}
+          title={
+            a.depth_anchors.length < 2
+              ? "Add a positive-depth anchor with Depth calibration first."
+              : "Show profiles and front projections in physical depth."
+          }
+          onClick={() =>
+            void send({
+              type: "set_depth_display",
+              unit: a.depth_unit,
+              coordinates: "depth",
+            }).catch(() => {})
+          }
+        >
+          Physical depth
+          {a.depth_coordinates === "depth"
+            ? ` (${a.depth_unit === "um" ? "µm" : a.depth_unit})`
+            : ""}
+        </button>
+      </div>
       {children}
       <div className="row">
         <button

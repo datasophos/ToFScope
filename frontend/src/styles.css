@@ -1344,3 +1344,37 @@ small {
   margin: 0;
   min-width: 0;
 }
+
+.calibration-editor input,
+.calibration-editor select {
+  border: 1px solid #718a98;
+  background-color: #fff;
+  color: #173d4b;
+  border-radius: 5px;
+}
+.calibration-editor fieldset > .row > label {
+  display: grid;
+  gap: 5px;
+}
+.calibration-editor input:disabled,
+.calibration-editor select:disabled {
+  background-color: #f0f4f6;
+  color: #536974;
+}
+.calibration-error {
+  color: #9f1b1b;
+  background: #fff0f0;
+  border: 1px solid #cc5656;
+  border-radius: 5px;
+  padding: 10px 12px;
+  font-weight: 600;
+}
+.depth-coordinate-controls {
+  display: flex;
+  gap: 5px;
+}
+.depth-coordinate-controls button[aria-pressed="true"] {
+  color: #fff;
+  background: #245b70;
+  border-color: #245b70;
+}

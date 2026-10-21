@@ -65,7 +65,9 @@ Resolved assumptions (2026-10-20):
   adding a parallel CalibrationService transport.
 - The compact UI uses a temporary graphical dialog near Viewing depths, based
   on the frozen prototype's frame-coordinate profiles, exact fields, fixed
-  origin, anchor table, graphical markers and explicit coverage.
+  origin, anchor table, graphical markers and explicit coverage. Manual feedback
+  moves Frames / Physical depth to main Viewing depths buttons and gives fields
+  visible outlines/white backgrounds, with red rejection alerts.
 - `set_depth_anchors` accepts canonical nm anchors (at most 4096);
   `set_depth_display` chooses `nm|um|mm` and `frame|depth`. Calibration belongs
   to each analysis, including same-file analyses. Display changes launch no jobs.
@@ -96,7 +98,10 @@ Resolved assumptions (2026-10-20):
   save/reopen and actual legacy document files; preserve unrelated panel admission.
 - [x] Regenerate API/build assets, qualify wheel/sdist and update validation records.
 - [x] Finish final browser regression (47 workflows) and Python regressions (176 tests).
-- [ ] Commit, open the stacked draft PR and verify GitHub CI.
+- [x] Commit and open [stacked draft PR #2](https://github.com/datasophos/ToFScope/pull/2) targeting `implement/react-fastapi-pilot`.
+- [x] Initial GitHub CI passed, including independent package and Docker qualification.
+- [x] Apply manual-testing UI refinements and add browser regressions for red errors,
+  input contrast and main-page coordinate buttons. Current CI status is on PR #2.
 
 Evidence: [depth calibration qualification](../../validation/depth-calibration.md).
 

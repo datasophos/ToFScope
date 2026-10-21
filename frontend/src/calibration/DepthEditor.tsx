@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Analysis, Panel } from "../api/client";
 import type { Send } from "../explore/SignalDetails";
 import { ToolPopover } from "../explore/ToolPopover";
@@ -19,6 +19,10 @@ export function DepthEditor({
     [depth, setDepth] = useState("");
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const errorMessage = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (error) errorMessage.current?.scrollIntoView({ block: "nearest" });
+  }, [error]);
   const scale = scales[a.depth_unit];
   const choose = (n: number) => {
     setFrame(String(n));
@@ -90,6 +94,7 @@ export function DepthEditor({
           title="Depth calibration"
           width={720}
           placement="top"
+          className="calibration-editor"
           onClose={() => setOpen(false)}
         >
           <p>
@@ -135,6 +140,11 @@ export function DepthEditor({
               </p>
             )}
           </div>
+          {error && (
+            <p className="calibration-error" role="alert" ref={errorMessage}>
+              {error}
+            </p>
+          )}
           <fieldset disabled={busy}>
             <div className="row">
               <label>
@@ -185,25 +195,6 @@ export function DepthEditor({
             </div>
             <p>Frame 0 is fixed at depth 0.</p>
             <div className="row">
-              <label>
-                Depth coordinates
-                <select
-                  aria-label="Depth coordinates"
-                  value={a.depth_coordinates}
-                  onChange={(e) =>
-                    void commit({
-                      type: "set_depth_display",
-                      coordinates: e.target.value as "frame" | "depth",
-                      unit: a.depth_unit,
-                    })
-                  }
-                >
-                  <option value="frame">Frames</option>
-                  <option value="depth" disabled={a.depth_anchors.length < 2}>
-                    Physical depth
-                  </option>
-                </select>
-              </label>
               <label>
                 Depth display unit
                 <select
@@ -266,9 +257,10 @@ export function DepthEditor({
               ? `Calibrated frames 0–${a.depth_anchors.at(-1)!.frame}; later depths are unknown and omitted in physical views.`
               : "Add a positive-depth anchor to enable physical coordinates."}{" "}
             Applies to profiles and front projections. Intensities and frame
-            selections stay unchanged.
+            selections stay unchanged. Switch Frames / Physical depth in the
+            main Viewing depths controls.
           </p>
-          <p role="alert">{error}</p>
+
           <button onClick={() => setOpen(false)}>Done</button>
         </ToolPopover>
       )}

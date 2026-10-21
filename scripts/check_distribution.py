@@ -155,9 +155,9 @@ def smoke(artifact, output):
                 dialog.get_by_label('Known depth', exact=True).fill('100')
                 dialog.get_by_role('button', name='Add anchor', exact=True).click()
                 expect(dialog.get_by_role('button', name='Remove anchor at frame 1')).to_be_visible()
-                dialog.get_by_label('Depth coordinates', exact=True).select_option('depth')
                 dialog.get_by_label('Depth display unit', exact=True).select_option('um')
                 dialog.get_by_role('button', name='Done', exact=True).click()
+                page.get_by_role('button', name='Physical depth', exact=True).click()
                 expect(page.get_by_test_id('panel-profile').locator('footer')).to_contain_text('depth · µm')
                 with page.expect_download() as before_download:
                     page.get_by_role('button', name='Profile CSV', exact=True).click()

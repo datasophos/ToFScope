@@ -2,12 +2,14 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 export function ToolPopover({
   title,
+  className = "",
   children,
   onClose,
   width = 400,
   placement = "anchor",
 }: {
   title: string;
+  className?: string;
   children: ReactNode;
   onClose: () => void;
   width?: number;
@@ -61,7 +63,7 @@ export function ToolPopover({
       }}
       role="dialog"
       aria-label={title}
-      className="tool-popover"
+      className={`tool-popover ${className}`}
       ref={root}
       onKeyDown={(e) => {
         if (e.key === "Escape") {
