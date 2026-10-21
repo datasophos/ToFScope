@@ -1420,6 +1420,9 @@ small {
   display: grid;
   gap: 5px;
 }
+.calibration-editor .anchor-entry {
+  align-items: flex-end;
+}
 .calibration-editor input:disabled,
 .calibration-editor select:disabled {
   background-color: #f0f4f6;

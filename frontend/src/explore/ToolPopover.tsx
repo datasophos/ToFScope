@@ -13,7 +13,7 @@ export function ToolPopover({
   children: ReactNode;
   onClose: () => void;
   width?: number;
-  placement?: "anchor" | "top";
+  placement?: "anchor" | "top" | "center";
 }) {
   const root = useRef<HTMLElement>(null);
   const [viewport, setViewport] = useState({
@@ -50,15 +50,22 @@ export function ToolPopover({
   return createPortal(
     <section
       style={{
-        left: Math.max(
-          12,
-          Math.min(
-            anchor.left,
-            viewport.width - Math.min(width, viewport.width - 24) - 12,
-          ),
-        ),
-        top,
-        maxHeight: viewport.height - top - 12,
+        left:
+          placement === "center"
+            ? viewport.width / 2
+            : Math.max(
+                12,
+                Math.min(
+                  anchor.left,
+                  viewport.width - Math.min(width, viewport.width - 24) - 12,
+                ),
+              ),
+        top: placement === "center" ? viewport.height / 2 : top,
+        transform: placement === "center" ? "translate(-50%, -50%)" : undefined,
+        maxHeight:
+          placement === "center"
+            ? viewport.height - 24
+            : viewport.height - top - 12,
         width,
       }}
       role="dialog"

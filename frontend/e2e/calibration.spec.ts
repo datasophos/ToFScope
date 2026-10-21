@@ -18,6 +18,25 @@ test("graphical and exact calibration edits, units and original-frame navigation
   page,
 }) => {
   const dialog = await open(page);
+  const dialogBox = (await dialog.boundingBox())!;
+  const viewport = page.viewportSize()!;
+  expect(
+    Math.abs(dialogBox.x + dialogBox.width / 2 - viewport.width / 2),
+  ).toBeLessThan(2);
+  expect(
+    Math.abs(dialogBox.y + dialogBox.height / 2 - viewport.height / 2),
+  ).toBeLessThan(2);
+  const add = (await dialog
+    .getByRole("button", { name: "Add anchor", exact: true })
+    .boundingBox())!;
+  for (const label of ["Anchor frame", "Known depth"]) {
+    const input = (await dialog
+      .getByLabel(label, { exact: true })
+      .boundingBox())!;
+    expect(Math.abs(input.y + input.height - add.y - add.height)).toBeLessThan(
+      2,
+    );
+  }
   const overlay = dialog.getByLabel("Calibration profiles selection");
   await expect(overlay).toBeVisible();
   const box = (await overlay.boundingBox())!;

@@ -93,7 +93,7 @@ export function DepthEditor({
         <ToolPopover
           title="Depth calibration"
           width={720}
-          placement="top"
+          placement="center"
           className="calibration-editor"
           onClose={() => setOpen(false)}
         >
@@ -146,7 +146,7 @@ export function DepthEditor({
             </p>
           )}
           <fieldset disabled={busy}>
-            <div className="row">
+            <div className="row anchor-entry">
               <label>
                 Selected frame
                 <input
