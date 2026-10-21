@@ -46,14 +46,14 @@ button.help-button,
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   padding: 0;
   border-radius: 50%;
-  border-color: #bccbd2;
-  color: #6d8390;
+  border-color: #c9d3d8;
+  color: #8797a0;
   font:
-    italic 12px Georgia,
+    italic 11px Georgia,
     serif;
   vertical-align: middle;
 }
@@ -90,6 +90,16 @@ select {
   border: 1px solid transparent;
   border-radius: 4px;
   max-width: 100%;
+}
+input[type="number"] {
+  min-width: 5em;
+  border-color: #bccbd2;
+  background: #fff;
+  color: #203744;
+  font-variant-numeric: tabular-nums;
+}
+input[type="number"]::-webkit-inner-spin-button {
+  opacity: 0.65;
 }
 .selection-overlay {
   position: absolute;
@@ -373,7 +383,6 @@ small {
   min-width: 0;
   overflow: hidden;
   box-shadow: 0 2px 5px #213d5010;
-  resize: vertical;
   min-height: 300px;
   height: 340px;
   display: flex;
@@ -394,6 +403,14 @@ small {
   font-size: 11px;
 }
 .plot-panel header > .row > button {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.plot-panel header > .row .control-popover > button,
+.plot-panel header > .row .plot-csv-button {
   min-height: 26px;
   display: inline-flex;
   align-items: center;
@@ -469,7 +486,8 @@ small {
   height: 100%;
   position: absolute;
 }
-.plot-panel.maximized {
+.plot-panel.maximized,
+.spectrum-workbench.maximized {
   position: fixed;
   inset: 20px;
   z-index: 20;
@@ -855,11 +873,8 @@ small {
   min-height: 340px;
 }
 .spectrum-workbench.maximized {
-  position: fixed;
-  inset: 18px;
-  z-index: 25;
-  background: #eef2f4;
-  height: auto;
+  border-radius: 7px;
+  overflow: hidden;
 }
 .signal-editor {
   min-width: 0;
@@ -1535,10 +1550,10 @@ small {
 }
 
 .file-bar > button.help-button {
-  width: 34px;
-  height: 34px;
-  border-color: #6e939f;
-  color: #dce8ee;
+  width: 30px;
+  height: 30px;
+  border-color: #58717c;
+  color: #91a4ad;
   background: transparent;
 }
 .file-bar > button.help-button:hover {
@@ -1562,6 +1577,14 @@ small {
   height: 28px;
   padding: 3px 7px;
   font-size: 12px;
+}
+.analysis-heading button.help-button {
+  flex: none;
+  width: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  height: 16px;
+  padding: 0;
 }
 .signal-strip,
 .depth-strip {
@@ -1598,10 +1621,10 @@ small {
   font-size: 11px;
 }
 .depth-strip .exact-form input[type="number"] {
-  width: 58px;
+  width: 76px;
 }
 .depth-strip input[aria-label="Frame"] {
-  width: 58px;
+  width: 76px;
 }
 .depth-strip input[type="range"] {
   width: 110px;
@@ -1609,7 +1632,9 @@ small {
 }
 .signal-strip button.help-button,
 .depth-strip button.help-button {
-  min-height: 18px;
-  height: 18px;
+  min-width: 16px;
+  min-height: 16px;
+  width: 16px;
+  height: 16px;
   padding: 0;
 }

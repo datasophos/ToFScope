@@ -196,13 +196,6 @@ export function ExploreScreen({
           </small>
           <AnalysisSettings analysis={a} send={send} />
           <button onClick={() => onReplace(a)}>Replace file</button>
-          <button
-            onClick={() =>
-              void download(a.id, "csv").catch((e) => setError(e.message))
-            }
-          >
-            Profile CSV
-          </button>
           <SaveCopy
             analysis={a}
             active={active}
@@ -265,9 +258,11 @@ export function ExploreScreen({
               </span>
             }
             toolbarControls={
-              <ImageDisplayControls analysis={a} display={display} />
+              <>
+                <ROIControls analysis={a} send={send} />
+                <ImageDisplayControls analysis={a} display={display} />
+              </>
             }
-            controls={<ROIControls analysis={a} send={send} />}
             mode="xy"
             selection={
               ionState.display.image === "sims"
@@ -359,6 +354,18 @@ export function ExploreScreen({
           <PlotPanel
             {...common("profile")}
             title="Depth profile"
+            toolbarControls={
+              <button
+                className="plot-csv-button"
+                aria-label="Profile CSV"
+                title="Export depth profile CSV"
+                onClick={() =>
+                  void download(a.id, "csv").catch((e) => setError(e.message))
+                }
+              >
+                CSV
+              </button>
+            }
             help={help.profile}
             panel={panels?.profile}
             status={
