@@ -2,11 +2,11 @@
   "assets": {
     "assets/datasophos-wordmark.png": "d727f11ef2aa8fe9b0d7780d28e33e0785956ca7f38a23c90c594d56253fad04",
     "assets/favicon.svg": "dcdec3e4480df28e57a9d9fa123347d551765651ab764bb53ec7f13f74f1e3f2",
-    "assets/index-B2ihzqBf.css": "9b4c70987aecd930977460ae4b4c189468c3a58e47bc057ebf2a135f0caf6f14",
-    "assets/index-cG03fz4k.js": "23fdc991a5fa275a8351bc12b797ec565e053000d3d892e384ebdec4e639b2b8",
-    "index.html": "419629442948857a03fab0abc7d34080ebae6423a7f269ec8f1a92e637742118",
+    "assets/index-bBWXD-m6.css": "17c6e137353b748364e23326ba03c803b04de16e2f3a4240adc6230db7ba4868",
+    "assets/index-od_hu4sU.js": "99a7a72cdda3debf4cd9a9c8a5ef50e381140f1110a0ddfa40689ced2c93798b",
+    "index.html": "6b4e21b82d1b663809bbdf5cc622c4b4639c1d7aa90a8a6d61ceec71f74bc309",
     "licenses/matplotlib.txt": "5a1a81ea301728c8bba2933da832c0cd62229daf20893a024ab3d53244468dbc"
   },
-  "source_sha256": "b36e78a91a011683e3952b2c6a1f736005ca90767e48bafcc3070d1ae23d9a1c",
+  "source_sha256": "10ddd460d15737d44b8a12868a98596caf4dfe2b2f0cc581c84a8c890b8b39ff",
   "version": "0.2.0"
 }

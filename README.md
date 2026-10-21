@@ -114,8 +114,10 @@ comparison. Original file labels remain unchanged.
 
 **Isotope measurements** sums selected signals at original resolution over the
 current ROI and viewing frames, using their common coverage. Overlapping windows
-suppress fractions; unknown natural abundances remain unknown. Results describe
-selected-set signal ratios, not quantitative composition. Input changes mark
+suppress fractions. Results show percentage shares, a readable region/frame
+summary, and explanations for zero intensity or missing isotope assignments.
+Calculation details and provenance are expandable. Results describe selected-set
+signal ratios, not quantitative composition. Input changes mark
 captured measurements out of date until you explicitly Measure again. Isotope
 CSV and Settings JSON retain scope, mass errors, uncertainties and provenance;
 Save as/reopen also preserves annotations and captured results. See

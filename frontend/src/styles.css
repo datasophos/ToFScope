@@ -1813,10 +1813,9 @@ small {
 }
 .identification-search {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) minmax(100px, 0.65fr) minmax(
-      100px,
-      0.65fr
-    ) auto;
+  grid-template-columns:
+    minmax(150px, 1fr) minmax(100px, 0.65fr) minmax(100px, 0.65fr)
+    auto;
   gap: 16px;
   align-items: end;
 }
@@ -1944,4 +1943,122 @@ small {
   .atomic-identification .plot-heading {
     min-width: 0;
   }
+}
+
+.isotope-measurements {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+.isotope-measurements > * {
+  flex-shrink: 0;
+}
+.isotope-measurements p,
+.isotope-measurements h3 {
+  margin: 0;
+  line-height: 1.5;
+}
+.measurement-intro,
+.measurement-secondary,
+.measurement-context span,
+.measurement-status {
+  color: #536974;
+}
+.measurement-selection {
+  border: 1px solid #dbe4e9;
+  border-radius: 6px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+.measurement-selection legend {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.measurement-selection fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.measurement-selection label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #f0f4f6;
+  border-radius: 4px;
+}
+.measurement-selection input {
+  margin: 0;
+}
+.measurement-status,
+.measurement-secondary,
+.measurement-context span,
+.measurement-note,
+.measurement-help,
+.measurement-provenance {
+  font-size: 12px;
+}
+.isotope-measurements [data-testid="isotope-results"] {
+  display: grid;
+  gap: 12px;
+}
+.measurement-context {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.measurement-context > div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 5px;
+  background: #f0f4f6;
+}
+.measurement-note {
+  border-left: 3px solid #718a98;
+  padding: 8px 12px;
+  color: #3a5867;
+  background: #f5f8fa;
+}
+.measurement-secondary {
+  display: block;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.isotope-measurements .isotope-table-scroll th {
+  position: sticky;
+  top: 0;
+  background: #f0f4f6;
+}
+.isotope-measurements .isotope-table-scroll td {
+  vertical-align: top;
+  font-variant-numeric: tabular-nums;
+}
+.isotope-measurements summary {
+  cursor: pointer;
+  color: #214858;
+}
+.isotope-measurements details p {
+  margin-top: 8px;
+}
+.measurement-footer {
+  border-top: 1px solid #dbe4e9;
+  padding-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+@media (max-width: 650px) {
+  .isotope-measurements {
+    padding: 16px;
+  }
+  .measurement-context {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.isotope-measurements .isotope-table-scroll table {
+  min-width: 720px;
 }

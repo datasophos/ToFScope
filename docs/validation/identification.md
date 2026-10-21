@@ -144,3 +144,29 @@ mass. Clearing the tolerance invalidates results until a value is entered.
 The settings regression verifies real request payloads for each control,
 including negative polarity and charge removal, and checks that changing to a
 narrow ppm tolerance removes the previous candidate results.
+
+
+## Measurement explanations and layout
+
+The isotope measurement dialog separates signal selection/run controls, captured
+region/frame summaries, results, and export controls. A short introduction replaces
+the dense opening explanation; calculation methods and provenance use collapsed
+native disclosures. The results table scrolls horizontally on narrow screens
+rather than squeezing its explanatory text into unreadable columns.
+
+Zero intensity now includes an explicit no-signal explanation, and a zero total
+explains why a share cannot be calculated. Missing assignments are identified as
+such, with guidance to annotate an isotope before displaying reference abundance.
+Valid shares display as percentages. A one-signal result explains that its share
+is always 100% when nonzero and suggests selecting additional signals. Common
+coverage and overlapping-window cases retain distinct explanations. Calculations,
+raw stored fractions and exports are unchanged.
+
+Two new browser workflows calculate real zero/nonzero raw windows, verify the
+explanations and 100% single-signal share, exercise the method disclosure, and
+check desktop/narrow layouts. These and all five identification browser workflows
+passed; 30 frontend tests, TypeScript and the packaged build also passed. Static
+independent review found no actionable issues.
+
+[Zero-intensity desktop layout](identification/measurement-zero-desktop.png) ·
+[Narrow layout](identification/measurement-zero-mobile.png)
