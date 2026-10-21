@@ -1,8 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { gestureBounds } from "./gesture";
 export type Range = [number, number];
 type Props = {
   xRange: Range;
+  insets?: { left: number; right: number; top: number; bottom: number };
+  onHover?: (x: number | null, y?: number) => void;
   yRange: Range;
   selection?: number[];
   markers?: number[];
@@ -56,6 +58,8 @@ function SelectionEdge({
 export function SelectionOverlay({
   xRange,
   yRange,
+  insets,
+  onHover,
   selection,
   markers,
   onSelect,
@@ -67,12 +71,34 @@ export function SelectionOverlay({
   image = false,
   selectionMode = "select",
 }: Props) {
+  const surface = useRef<SVGSVGElement>(null);
+  useEffect(() => {
+    const element = surface.current;
+    if (!element || !onZoom) return;
+    const wheel = (event: WheelEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      // React's delegated wheel listener is passive; native cancellation must be explicit.
+      event.preventDefault();
+      const bounds = element.getBoundingClientRect();
+      const center =
+        xRange[0] +
+        ((event.clientX - bounds.x) / bounds.width) * (xRange[1] - xRange[0]);
+      const factor = event.deltaY > 0 ? 1.2 : 1 / 1.2;
+      onZoom([
+        center + (xRange[0] - center) * factor,
+        center + (xRange[1] - center) * factor,
+      ]);
+    };
+    element.addEventListener("wheel", wheel, { passive: false });
+    return () => element.removeEventListener("wheel", wheel);
+  }, [onZoom, xRange[0], xRange[1]]);
   const drag = useRef<{
     start: number[];
     action: string;
     selection?: number[];
   } | null>(null);
   const [preview, setPreview] = useState<number[] | null>(null);
+  const [hoverX, setHoverX] = useState<number | null>(null);
   const shown = preview || selection;
   const coords = (e: React.PointerEvent<SVGSVGElement>) => {
     const b = e.currentTarget.getBoundingClientRect();
@@ -95,10 +121,20 @@ export function SelectionOverlay({
       (yRange[1] - yRange[0]);
   return (
     <svg
+      ref={surface}
       data-testid="selection-overlay"
       data-x-range={xRange.join(",")}
       aria-label={label}
       className={`selection-overlay ${image ? "image" : ""}`}
+      style={
+        insets
+          ? ({
+              ...insets,
+              width: `calc(100% - ${insets.left + insets.right}px)`,
+              height: `calc(100% - ${insets.top + insets.bottom}px)`,
+            } as CSSProperties)
+          : undefined
+      }
       viewBox="0 0 100 100"
       preserveAspectRatio="none"
       onPointerDown={(e) => {
@@ -114,7 +150,16 @@ export function SelectionOverlay({
           selection: selection?.slice(),
         };
       }}
+      onPointerLeave={() => {
+        setHoverX(null);
+        onHover?.(null);
+      }}
       onPointerMove={(e) => {
+        if (onHover) {
+          const [x, y] = coords(e);
+          setHoverX(x);
+          onHover(x, y);
+        }
         if (drag.current)
           setPreview(
             gestureBounds(drag.current, coords(e), mode, xRange, yRange),
@@ -141,17 +186,21 @@ export function SelectionOverlay({
         if (selectionMode === "zoom") onZoom?.([b[0], b[1]]);
         else onSelect(b);
       }}
-      onWheel={(e) => {
-        if (!onZoom || !(e.ctrlKey || e.metaKey)) return;
-        e.preventDefault();
-        const b = e.currentTarget.getBoundingClientRect(),
-          c =
-            xRange[0] + ((e.clientX - b.x) / b.width) * (xRange[1] - xRange[0]),
-          f = e.deltaY > 0 ? 1.2 : 1 / 1.2;
-        onZoom([c + (xRange[0] - c) * f, c + (xRange[1] - c) * f]);
-      }}
     >
       <rect width="100" height="100" fill="transparent" />
+      {hoverX !== null && (
+        <line
+          x1={px(hoverX)}
+          x2={px(hoverX)}
+          y1={0}
+          y2={100}
+          stroke="#526e7c"
+          strokeDasharray="3 3"
+          strokeWidth="1"
+          vectorEffect="non-scaling-stroke"
+          pointerEvents="none"
+        />
+      )}
       {markers
         ?.filter((x) => x >= xRange[0] && x <= xRange[1])
         .map((x) => (

@@ -67,7 +67,9 @@ Resolved assumptions (2026-10-20):
   on the frozen prototype's frame-coordinate profiles, exact fields, fixed
   origin, anchor table, graphical markers and explicit coverage. Manual feedback
   moves Frames / Physical depth to main Viewing depths buttons and gives fields
-  visible outlines/white backgrounds, with red rejection alerts.
+  visible outlines/white backgrounds, with red rejection alerts. Scientific axes
+  carry names/units/ticks, and line plots show hover x coordinates. Frame ticks
+  and readouts are integer-only; physical depth/mass retain precision.
 - `set_depth_anchors` accepts canonical nm anchors (at most 4096);
   `set_depth_display` chooses `nm|um|mm` and `frame|depth`. Calibration belongs
   to each analysis, including same-file analyses. Display changes launch no jobs.
@@ -97,7 +99,7 @@ Resolved assumptions (2026-10-20):
 - [x] Verify independent calibration, owner checks, source/revision boundaries,
   save/reopen and actual legacy document files; preserve unrelated panel admission.
 - [x] Regenerate API/build assets, qualify wheel/sdist and update validation records.
-- [x] Finish final browser regression (47 workflows) and Python regressions (176 tests).
+- [x] Finish final browser regression (49 workflows) and Python regressions (176 tests).
 - [x] Commit and open [stacked draft PR #2](https://github.com/datasophos/ToFScope/pull/2) targeting `implement/react-fastapi-pilot`.
 - [x] Initial GitHub CI passed, including independent package and Docker qualification.
 - [x] Apply manual-testing UI refinements and add browser regressions for red errors,

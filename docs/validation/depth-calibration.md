@@ -38,9 +38,9 @@ frames `[2,3]` under anchors `(0,0),(2,20),(4,60)`.
 
 - 176 Python tests, including eight depth application/presenter tests and an API
   calibration/owner/coordinate-override test; existing numerical suites retained.
-- 14 frontend unit assertions, including coordinate roundtrips, anchor validation,
+- 18 frontend unit assertions, including coordinate roundtrips, anchor validation,
   nonuniform boundaries and a single-sample footprint; TypeScript check passes.
-- All 47 browser workflows pass. Calibration coverage includes graphical selection, exact and table edits, rejected
+- All 49 browser workflows pass. Calibration coverage includes graphical selection, exact and table edits, rejected
   edits, units, profile/front navigation, anchor removal, same-file tab isolation,
   partial save/reopen and single/empty calibrated domains.
 - Regenerated OpenAPI/TypeScript; rebuilt bundled offline assets.
@@ -78,3 +78,21 @@ explicit buttons on the main Viewing depths strip, with the selected state
 highlighted and physical depth disabled until a positive anchor exists.
 Browser checks assert the error color, input border, select background and
 main-page coordinate behavior alongside navigation and restoration.
+
+Plots now draw named axes, units and tick marks directly in the renderer, with
+compact scientific tick formatting. Spectrum/profile hover shows a vertical
+guide and current x coordinate, including nearest acquisition frame for physical
+profiles. Shared renderer/gesture insets preserve coordinate mapping and square
+image domains. Axis names are included in PNG exports; the old corner caption
+is retained only as an accessible description. Browser coverage verifies hover
+without changing analysis revision and confirms unit-aware frame mapping.
+
+Frame-axis ticks and hover readouts display integer acquisition frames only;
+hover rounds to the nearest valid frame and clamps at acquisition endpoints.
+Physical depth and m/z retain decimal precision. Unit/browser regressions
+cover fractional pointer positions without allowing fractional frame labels.
+
+Ctrl/Cmd-wheel zoom uses a cancellable native wheel listener on each plot's
+selection surface. Modifier-wheel events prevent page scrolling/browser zoom;
+ordinary wheel events retain normal page scrolling. A browser regression checks
+both modifier keys, wheel cancellation, stable page scroll and normal scrolling.

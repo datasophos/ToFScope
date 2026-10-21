@@ -1,3 +1,4 @@
+import { formatTick, formatFrameTick, plotInsets } from "./axes";
 import { rowSpans } from "../calibration/coordinates";
 import { imageRaster } from "./imageRaster";
 import { curveStyle, type CurveStyle } from "./curveStyle";
@@ -15,6 +16,10 @@ echarts.use([
 export type ChartData = {
   kind: "line" | "image";
   yReverse?: boolean;
+  xLabel?: string;
+  yLabel?: string;
+  xInteger?: boolean;
+  yInteger?: boolean;
   x: number[];
   y?: number[];
   xBoundaries?: number[];
@@ -199,26 +204,62 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
     chart.setOption(
       {
         animation: false,
-        grid:
-          d.kind === "image"
+        grid: d.xLabel
+          ? plotInsets(d.kind)
+          : d.kind === "image"
             ? { left: 40, right: 40, top: 40, bottom: 40 }
             : { left: 60, right: 20, top: 20, bottom: 40 },
         tooltip: { trigger: "item", renderMode: "richText" },
         xAxis: {
+          name: d.xLabel,
+          nameLocation: "middle",
+          nameGap: 34,
+          nameTextStyle: { fontSize: 12, color: "#254554" },
+          axisLine: {
+            show: true,
+            onZero: false,
+            lineStyle: { color: "#627985" },
+          },
+          axisTick: { show: true, length: 5 },
+          splitNumber: 5,
           type: "value",
+          minInterval: d.xInteger ? 1 : undefined,
           min: d.xRange[0],
           max: d.xRange[1],
-          axisLabel: { fontSize: 10 },
+          axisLabel: {
+            fontSize: 10,
+            formatter: d.xInteger ? formatFrameTick : formatTick,
+            showMaxLabel: false,
+            color: "#425d6b",
+          },
         },
         yAxis: {
+          name: d.yLabel,
+          nameLocation: "middle",
+          nameGap: d.kind === "image" ? 44 : 56,
+          nameTextStyle: { fontSize: 12, color: "#254554" },
+          axisLine: {
+            show: true,
+            onZero: false,
+            lineStyle: { color: "#627985" },
+          },
+          axisTick: { show: true, length: 5 },
+          minorTick: { show: d.yScale === "log" },
+          splitNumber: 5,
           type: d.kind === "line" && d.yScale === "log" ? "log" : "value",
           inverse: !!d.yReverse,
           min:
             d.kind === "line" && d.yScale === "log"
               ? Math.min(...positiveValues, d.yRange[1])
               : d.yRange[0],
+          minInterval: d.yInteger ? 1 : undefined,
           max: d.yRange[1],
-          axisLabel: { fontSize: 10 },
+          axisLabel: {
+            fontSize: 10,
+            formatter: d.yInteger ? formatFrameTick : formatTick,
+            showMaxLabel: false,
+            color: "#425d6b",
+          },
         },
         series,
       },

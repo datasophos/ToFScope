@@ -38,6 +38,8 @@ ROI and color controls live beside the image, relative scaling beside profiles,
 and log Y beside the spectrum. Spectrum drag zooms normally and edits intervals
 only while a signal editor is open. Images stay square; maximize/Escape and
 Ctrl/Cmd-wheel zoom preserve the view. Ordinary wheel scrolls the page.
+Plots have named axes, units and tick marks. Hover over the spectrum or profile
+for the current x coordinate; calibrated profiles also show the nearest frame.
 
 **Depth calibration…** opens a temporary graphical editor beside the viewing
 controls. Click an original-frame profile position or enter an exact frame and

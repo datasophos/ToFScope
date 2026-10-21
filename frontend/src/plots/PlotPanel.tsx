@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { axisTitle, plotInsets, formatPosition } from "./axes";
+import { coordinateToFrame } from "../calibration/coordinates";
 import type { Panel } from "../api/client";
 import {
   mountChart,
@@ -125,18 +127,44 @@ export function PlotPanel({
   const coordinateKey = panel?.axes.map((a) => `${a.name}:${a.unit}`).join("/");
   useEffect(() => setZoom(null), [coordinateKey]);
   const xRange = zoom || range;
-  let high = 1;
-  for (const s of panel?.series || [])
-    for (const v of s.values) if (v !== null) high = Math.max(high, v);
-  if (panel?.relative) high = 1;
+  const high = useMemo(() => {
+    if (panel?.relative) return 1;
+    let maximum = 1;
+    for (const series of panel?.series ?? [])
+      for (const value of series.values)
+        if (value !== null) maximum = Math.max(maximum, value);
+    return maximum;
+  }, [panel]);
   const ya = panel?.axes[1],
     yRange: Range =
       ya && ya.boundaries.length
         ? [ya.boundaries[0], ya.boundaries.at(-1)!]
         : [0, high * 1.08];
+  const xLabel = axis ? axisTitle(axis) : "";
+  const yLabel = ya
+    ? axisTitle(ya)
+    : panel?.relative
+      ? "Relative intensity"
+      : name === "profile" || name === "calibration"
+        ? "Mean intensity"
+        : "Intensity";
+  const [cursor, setCursor] = useState<number | null>(null);
+  useEffect(() => setCursor(null), [panel?.content_version, zoom]);
+  const hoverFrame =
+    cursor !== null && axis && panel?.coordinate_kind === "depth"
+      ? coordinateToFrame(cursor, axis, panel.acquisition_frames ?? [])
+      : undefined;
+  const hoverLabel =
+    cursor === null || !axis || !axis.values.length
+      ? ""
+      : `${axis.name === "m/z" ? "m/z" : axis.name === "depth" ? "Depth" : "Frame"} = ${formatPosition(cursor, axis)}${axis.unit === "frame" ? "" : ` ${axis.unit}`}${hoverFrame !== undefined ? ` · nearest frame ${Math.round(hoverFrame)}` : ""}`;
   const data: ChartData | undefined = panel
     ? {
         kind: panel.kind,
+        xLabel,
+        yLabel,
+        xInteger: axis?.unit === "frame",
+        yInteger: ya?.unit === "frame",
         x: panel.axes[0].values,
         y: ya?.values,
         xBoundaries: panel.axes[0].boundaries,
@@ -184,6 +212,8 @@ export function PlotPanel({
       className={`plot-panel ${maximized ? "maximized" : ""}`}
       data-testid={`panel-${name}`}
       data-kind={panel?.kind}
+      data-x-axis={xLabel}
+      data-y-axis={yLabel}
       data-content-version={panel?.content_version}
       data-y-scale={name === "spectrum" ? yScale : undefined}
     >
@@ -315,6 +345,8 @@ export function PlotPanel({
             <SelectionOverlay
               label={`${title} selection`}
               xRange={xRange}
+              insets={plotInsets(panel.kind)}
+              onHover={panel.kind === "line" ? (x) => setCursor(x) : undefined}
               yRange={yRange}
               reverseY={image}
               selection={selection}
@@ -327,9 +359,14 @@ export function PlotPanel({
               selectionMode={selectionMode}
             />
           )}
+          {hoverLabel && (
+            <div className="plot-cursor-readout" role="tooltip">
+              {hoverLabel}
+            </div>
+          )}
         </div>
       </div>
-      <footer>
+      <footer className="plot-axis-description">
         {axis?.name} · {axis?.unit}
         {ya
           ? ` / ${ya.name} · ${ya.unit}`
