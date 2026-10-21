@@ -17,8 +17,12 @@ The packaged Explore application is implemented and qualified. Its follow-up
 [signal workspace](2026-10-19-explore-signal-workspace.md),
 [file-centered persistence](2026-10-19-file-centered-analysis.md), and
 [raw preparation](2026-10-20-raw-acquisition-preparation.md) plans are also
-implemented. The completion plan remains the next feature backlog: depth
-calibration, identification/isotopes, sections, and 3D. Controlled native vendor
+implemented. Depth calibration is implemented and merged through
+[PR #2](https://github.com/datasophos/ToFScope/pull/2); the subsequent Explore
+control/layout fixes and CI cleanup are merged through
+[PR #3](https://github.com/datasophos/ToFScope/pull/3). The completion plan's
+remaining scientific backlog starts with identification/isotopes, followed by
+sections and 3D. Controlled native vendor
 exports remain separate from the supported Save as workflow, which creates new
 HDF5 copies and restores analysis state.
 

@@ -56,7 +56,18 @@ This plan uses the pilot's exact `AnalysisSnapshot`, `CommandEnvelope`, `ArrayCa
 ## Task 1: Depth calibration and calibrated views
 
 Scope: Explore profiles and front projections. Sections and 3D remain Tasks 3/4.
-The user selected inline implementation stacked on the current PR #1 remote head.
+Depth calibration was implemented inline on the PR #1 branch and merged into
+`main` through [PR #2](https://github.com/datasophos/ToFScope/pull/2).
+[PR #3](https://github.com/datasophos/ToFScope/pull/3), merged on 2026-10-21,
+adds explicit viewing modes, centered calibration controls, and the confirmed
+heading/help overlap fix. Task 2 is the next unfinished scientific feature.
+
+The separate analysis range is now removed: profiles span the full acquisition,
+while signal calculation coverage and viewing selections remain distinct. The
+older restricted-domain and legacy-document checks below record historical
+validation. Files containing the retired analysis-range field are intentionally
+unsupported; no compatibility migration is planned. Current evidence is in the
+[Explore control validation](../../validation/explore-controls.md).
 
 Resolved assumptions (2026-10-20):
 
@@ -103,7 +114,8 @@ Resolved assumptions (2026-10-20):
 - [x] Commit and open [stacked draft PR #2](https://github.com/datasophos/ToFScope/pull/2) targeting `implement/react-fastapi-pilot`.
 - [x] Initial GitHub CI passed, including independent package and Docker qualification.
 - [x] Apply manual-testing UI refinements and add browser regressions for red errors,
-  input contrast and main-page coordinate buttons. Current CI status is on PR #2.
+  input contrast and main-page coordinate buttons; merged with PR #2. Subsequent
+  control/layout fixes are merged with PR #3.
 
 Evidence: [depth calibration qualification](../../validation/depth-calibration.md).
 
