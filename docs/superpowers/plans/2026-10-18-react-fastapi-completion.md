@@ -99,7 +99,7 @@ Resolved assumptions (2026-10-20):
 - [x] Verify independent calibration, owner checks, source/revision boundaries,
   save/reopen and actual legacy document files; preserve unrelated panel admission.
 - [x] Regenerate API/build assets, qualify wheel/sdist and update validation records.
-- [x] Finish final browser regression (49 workflows) and Python regressions (176 tests).
+- [x] Finish final browser regression (59 workflows) and Python regressions (179 tests).
 - [x] Commit and open [stacked draft PR #2](https://github.com/datasophos/ToFScope/pull/2) targeting `implement/react-fastapi-pilot`.
 - [x] Initial GitHub CI passed, including independent package and Docker qualification.
 - [x] Apply manual-testing UI refinements and add browser regressions for red errors,

@@ -601,6 +601,12 @@ export interface components {
     /** DisplaySettings */
     DisplaySettings: {
       /**
+       * Colormap
+       * @default viridis
+       * @enum {string}
+       */
+      colormap: "ion" | "gray" | "viridis" | "magma" | "cividis";
+      /**
        * Image
        * @default sims
        */
@@ -765,10 +771,10 @@ export interface components {
       omitted_frames: number;
       /**
        * Palette
-       * @default ion
+       * @default viridis
        * @enum {string}
        */
-      palette: "ion" | "gray";
+      palette: "ion" | "gray" | "viridis" | "magma" | "cividis";
       /**
        * Relative
        * @default false
@@ -972,6 +978,8 @@ export interface components {
     };
     /** SetDisplay */
     SetDisplay: {
+      /** Colormap */
+      colormap?: ("ion" | "gray" | "viridis" | "magma" | "cividis") | null;
       /**
        * Image
        * @default sims

@@ -1,4 +1,5 @@
 import { formatTick, formatFrameTick, plotInsets } from "./axes";
+import type { Panel } from "../api/client";
 import { rowSpans } from "../calibration/coordinates";
 import { imageRaster } from "./imageRaster";
 import { curveStyle, type CurveStyle } from "./curveStyle";
@@ -31,7 +32,7 @@ export type ChartData = {
   } & Partial<CurveStyle>)[];
   xRange: [number, number];
   yRange: [number, number];
-  palette?: "ion" | "gray";
+  palette?: Panel["palette"];
   log?: boolean;
   yScale?: "log" | "linear";
   relative?: boolean;
@@ -180,6 +181,14 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
                       Math.max(firstY, lastY),
                     );
                     if (rowBottom <= rowTop) return;
+                    // Share integer device-pixel boundaries to avoid translucent seams.
+                    const targetTop = Math.round(
+                      ((rowTop - y) / height) * scaled.height,
+                    );
+                    const targetBottom = Math.round(
+                      ((rowBottom - y) / height) * scaled.height,
+                    );
+                    if (targetBottom <= targetTop) return;
                     const sourceRow = d.yReverse ? i : source!.height - i - 1;
                     context.drawImage(
                       source!,
@@ -188,9 +197,9 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
                       (width / fullWidth) * source!.width,
                       1,
                       0,
-                      ((rowTop - y) / height) * scaled.height,
+                      targetTop,
                       scaled.width,
-                      ((rowBottom - rowTop) / height) * scaled.height,
+                      targetBottom - targetTop,
                     );
                   });
                 }

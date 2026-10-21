@@ -2,12 +2,12 @@ export type Drag = { start: number[]; action: string; selection?: number[] };
 export function gestureBounds(
   d: Drag,
   end: number[],
-  mode: "x" | "xy",
+  mode: "x" | "xy" | "y",
   xRange: [number, number],
   yRange: [number, number],
 ): number[] {
   let b =
-    mode === "xy"
+    mode !== "x"
       ? [
           Math.min(d.start[0], end[0]),
           Math.max(d.start[0], end[0]),
@@ -24,7 +24,7 @@ export function gestureBounds(
       );
       b[0] += dx;
       b[1] += dx;
-      if (mode === "xy") {
+      if (mode !== "x") {
         const dy = Math.max(
           yRange[0] - b[2],
           Math.min(yRange[1] - b[3], end[1] - d.start[1]),
@@ -37,9 +37,26 @@ export function gestureBounds(
     else if (d.action === "bottom") b[2] = end[1];
     else if (d.action === "top") b[3] = end[1];
   }
+  if (mode === "y") {
+    b[0] = xRange[0];
+    b[1] = xRange[1];
+  }
   return [
     Math.min(b[0], b[1]),
     Math.max(b[0], b[1]),
-    ...(mode === "xy" ? [Math.min(b[2], b[3]), Math.max(b[2], b[3])] : []),
+    ...(mode !== "x" ? [Math.min(b[2], b[3]), Math.max(b[2], b[3])] : []),
   ];
+}
+
+export function panRange(
+  view: [number, number],
+  shift: number,
+  domain: [number, number],
+): [number, number] {
+  if (view[1] - view[0] >= domain[1] - domain[0]) return view;
+  const delta = Math.max(
+    domain[0] - view[0],
+    Math.min(domain[1] - view[1], shift),
+  );
+  return [view[0] + delta, view[1] + delta];
 }

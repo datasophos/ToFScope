@@ -35,8 +35,8 @@ Original-resolution values must continue to drive profiles and exports.
 - [ ] Finish replacement feature-parity checks and release documentation.
 - [ ] Review and merge the migration branch into `main` after GitHub CI passes.
 
-Depth calibration validation passed 176 Python tests, 18 frontend unit assertions,
-TypeScript checks, all 49 browser workflows, and independent wheel/sdist installation
+Depth calibration validation passed 179 Python tests, 22 frontend unit assertions,
+TypeScript checks, all 59 browser workflows, and independent wheel/sdist installation
 checks. GitHub CI results are recorded in the [depth qualification](docs/validation/depth-calibration.md).
 Local Docker rerun was blocked by a stopped daemon; NFS/shared-storage behavior
 and commercial numerical round trips remain unqualified.

@@ -59,6 +59,7 @@ export function useAnalysis(initial: Analysis) {
           active ||
           loaded ||
           different(before.depth, a.depth) ||
+          before.display.colormap !== a.display.colormap ||
           before.display.log !== a.display.log ||
           before.display.image !== a.display.image
         )
@@ -68,6 +69,7 @@ export function useAnalysis(initial: Analysis) {
           loaded ||
           geometry ||
           different(before.roi.slice(2), a.roi.slice(2)) ||
+          before.display.colormap !== a.display.colormap ||
           before.display.log !== a.display.log
         )
           parts.push("front");
