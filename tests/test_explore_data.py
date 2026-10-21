@@ -91,7 +91,7 @@ class PresentationTests(unittest.TestCase):
         np.testing.assert_array_equal(d.panels["ion"].values, [[4.0, 6.0], [8.0, 10.0]])
         recipe = json.loads(self.exports.render("a", self.a.id, "json").content)
         self.assertEqual(recipe["schema_version"], 4)
-        self.assertEqual(recipe["loaded_frames"], [0, 2])
+        self.assertNotIn("loaded_frames", recipe)
         self.assertNotIn(str(self.settings.data_root), str(recipe))
 
     def test_missing_se_pixels_are_null_not_zero(self):

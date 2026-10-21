@@ -78,7 +78,6 @@ class SavedAnalysisDocument(StrictModel):
     image_signal_id: str
     profile_signal_ids: tuple[str, ...] = Field(max_length=129)
     next_style_index: StrictInt = Field(ge=0)
-    loaded_frames: tuple[StrictInt, StrictInt]
     roi: tuple[StrictInt, StrictInt, StrictInt, StrictInt]
     depth: DepthSelection
     display: DocumentDisplay
@@ -103,18 +102,15 @@ class SavedAnalysisDocument(StrictModel):
             raise ValueError('Invalid saved profile references.')
         if len({s.style_index for s in self.signals}) != len(self.signals) or self.next_style_index <= max(s.style_index for s in self.signals):
             raise ValueError('Invalid saved color ordinals.')
-        first, last = self.loaded_frames
         x0, x1, y0, y1 = self.roi
-        if not 0 <= first <= last < nz or not (0 <= x0 <= x1 < nx and 0 <= y0 <= y1 < ny):
+        if not (0 <= x0 <= x1 < nx and 0 <= y0 <= y1 < ny):
             raise ValueError('Saved selection outside acquisition.')
         for row in self.signals:
             a, b = row.recipe.frames
             if not 0 <= a <= b < nz or (row.recipe.source == 'stored' and not 0 <= row.recipe.stored_index < channels):
                 raise ValueError('Saved signal coverage/channel outside acquisition.')
         image = next(row for row in self.signals if row.id == self.image_signal_id)
-        lo, hi = max(first, image.recipe.frames[0]), min(last, image.recipe.frames[1])
-        if lo > hi:
-            raise ValueError('Saved image has no coverage in analysis range.')
+        lo, hi = image.recipe.frames
         if self.depth.mode == 'frame' and not lo <= self.depth.index <= hi:
             raise ValueError('Saved viewing frame outside coverage.')
         if self.depth.mode == 'window' and not lo <= self.depth.first <= self.depth.last <= hi:
@@ -131,7 +127,7 @@ def encode_document(snapshot: AnalysisSnapshot) -> SavedAnalysisDocument:
                          recipe=row.recipe.to_dict(), materialization_id=(row.materialization_id or str(uuid4())) if row.recipe.source == 'custom' else None))
     return SavedAnalysisDocument(shape=snapshot.shape, signals=rows,
         image_signal_id=snapshot.image_signal_id, profile_signal_ids=snapshot.profile_signal_ids,
-        next_style_index=snapshot.next_style_index, loaded_frames=snapshot.loaded_frames,
+        next_style_index=snapshot.next_style_index,
         roi=snapshot.roi, depth=snapshot.depth, display=vars(snapshot.display), depth_anchors=[vars(x) for x in snapshot.depth_anchors],
         depth_unit=snapshot.depth_unit, depth_coordinates=snapshot.depth_coordinates)
 
@@ -171,7 +167,7 @@ def restore_snapshot(document: SavedAnalysisDocument, initial: AnalysisSnapshot)
                                    materialization_id=row.materialization_id))
     return replace(initial, signals=tuple(rows), image_signal_id=ids[document.image_signal_id],
         profile_signal_ids=tuple(ids[x] for x in document.profile_signal_ids),
-        next_style_index=document.next_style_index, loaded_frames=document.loaded_frames,
+        next_style_index=document.next_style_index,
         roi=document.roi, depth=document.depth, display=DisplaySettings(**document.display.model_dump()), saved_revision=initial.revision,
         depth_anchors=tuple(DepthAnchor(x.frame, x.depth_nm) for x in document.depth_anchors),
         depth_unit=document.depth_unit, depth_coordinates=document.depth_coordinates)

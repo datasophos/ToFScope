@@ -13,7 +13,7 @@ def calibration(snapshot):
 
 
 def depth_samples(snapshot):
-    frames = np.arange(snapshot.loaded_frames[0], snapshot.loaded_frames[1] + 1)
+    frames = np.arange(snapshot.shape[0])
     active = calibration(snapshot) if snapshot.depth_coordinates == 'depth' else None
     if active is None:
         return frames, frames.astype(float), 'frame', 0

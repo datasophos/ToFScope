@@ -17,7 +17,6 @@ import { useSignalEditor } from "./useSignalEditor";
 import { ViewingDepths, availableFrames } from "./ViewingDepths";
 import { ROIControls } from "./ROIControls";
 import { ImageDisplayControls } from "./ImageDisplayControls";
-import { AnalysisSettings } from "./AnalysisSettings";
 import { roiFromBounds, roiBounds, frameWindow, type ROI } from "./selection";
 export function ExploreScreen({
   initial,
@@ -169,7 +168,7 @@ export function ExploreScreen({
   const coverage = (name: "profile" | "front") => {
     const p = panels?.[name];
     return p?.coordinate_kind === "depth"
-      ? `${p.omitted_frames || 0} frame${p.omitted_frames === 1 ? "" : "s"} with unknown depth omitted${!p.acquisition_frames?.length ? " · No calibrated depth in analysis range" : ""}`
+      ? `${p.omitted_frames || 0} frame${p.omitted_frames === 1 ? "" : "s"} with unknown depth omitted${!p.acquisition_frames?.length ? " · No calibrated depth in acquisition" : ""}`
       : "";
   };
   const ionState = panelStates.ion ?? a;
@@ -194,7 +193,6 @@ export function ExploreScreen({
               {a.revision}
             </output>
           </small>
-          <AnalysisSettings analysis={a} send={send} />
           <button onClick={() => onReplace(a)}>Replace file</button>
           <SaveCopy
             analysis={a}

@@ -944,6 +944,17 @@ small {
 .depth-strip .heading-help {
   margin: 0;
 }
+.depth-strip > .heading-help {
+  flex: none;
+  min-width: 0;
+}
+.depth-strip > .heading-help h2 {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .depth-strip .exact-form {
   margin: 0;
 }
@@ -1637,4 +1648,58 @@ small {
   width: 16px;
   height: 16px;
   padding: 0;
+}
+
+/* Viewing mode, active selection and axis settings share one desktop row. */
+.depth-mode-controls,
+.depth-selection-controls,
+.depth-axis-settings {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+.depth-mode-controls {
+  gap: 0;
+}
+.depth-mode-controls button {
+  border-radius: 0;
+  position: relative;
+}
+.depth-mode-controls button + button {
+  margin-left: -1px;
+}
+.depth-mode-controls button:first-child {
+  border-radius: 4px 0 0 4px;
+}
+.depth-mode-controls button:last-child {
+  border-radius: 0 4px 4px 0;
+}
+.depth-mode-controls button[aria-pressed="true"] {
+  background: #345d70;
+  border-color: #345d70;
+  color: white;
+  z-index: 1;
+}
+.depth-view-status {
+  color: #617582;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.depth-axis-settings {
+  margin-left: auto;
+  padding-left: 10px;
+  border-left: 1px solid #dce4e8;
+}
+.depth-axis-label {
+  color: #617582;
+  margin-right: 3px;
+}
+@media (max-width: 700px) {
+  .depth-axis-settings {
+    flex-wrap: wrap;
+    margin-left: 0;
+    padding-left: 0;
+    border-left: 0;
+  }
 }

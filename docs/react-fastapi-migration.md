@@ -414,7 +414,11 @@ supersedes active/comparison destination controls and snapshots in this proposal
 Analyses own stable named signal records; image choice and profile visibility
 reference their IDs. A signal tray replaces the permanent sidebar, custom drafts
 use an explicit spectrum editor, and display/ROI controls live beside plots.
-Calculation coverage, analysis range and viewing depths have distinct semantics.
+Calculation coverage belongs to each signal; viewing depths selects frames for
+the image without recalculating signals. The separate analysis range was removed
+on 2026-10-21: profiles and navigation use the acquisition domain, with image
+navigation limited to the image signal's coverage. Viewing controls expose All
+frames, Single frame and Frame range, and CSV export lives in the profile toolbar.
 Jobs target versioned signal IDs and commit atomically; display choices do not
 invalidate scientific work. Hidden signals count toward record quotas without
 pinning every volume. Settings use schema 4. Reader/renderer boundaries, scientific
