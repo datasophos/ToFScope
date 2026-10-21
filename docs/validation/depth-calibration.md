@@ -9,7 +9,8 @@ reference. Implementation and review were inline, without delegated agents.
 A temporary graphical editor opens from the existing Viewing depths strip.
 Profiles in the editor always use original acquisition frames, including unknown
 physical depths. Users select graphically or enter exact frame/depth values,
-update/remove anchors, and choose nm/µm/mm or frame/physical coordinates. The
+update/remove anchors, and choose nm/µm/mm. Frames / Physical depth buttons
+in the main Viewing depths strip switch coordinates. The
 origin is fixed, and positive anchors must increase strictly. Canonical depths
 are nm. Validation rejects bad edits without changing committed calibration.
 
@@ -60,9 +61,20 @@ screenshots and distribution JSON reports are temporary validation artifacts.
 
 ## Limits
 
-Local Docker rerun is blocked by a stopped daemon; PR #1's prior Docker result
-is not claimed as verification of this change. GitHub CI runs independent Docker
-qualification. Actual NFS/shared-storage behavior and commercial numerical
+Local Docker rerun is blocked by a stopped daemon. Both initial GitHub CI runs
+passed independent package and Docker qualification for this branch;
+[initial CI run](https://github.com/datasophos/ToFScope/actions/runs/39512876173).
+The manual-testing UI refinements receive a fresh CI run. Actual NFS/shared-storage behavior and commercial numerical
 round trips remain unqualified. No running local service was restarted.
 
 Final GitHub CI and browser results are recorded with the pull request.
+
+## Manual testing feedback
+
+Rejected edits now show a red, bordered alert beside the editor controls and
+scroll into view. Numeric fields have visible outlines and white backgrounds;
+the unit selector also uses a white background. Frames / Physical depth are
+explicit buttons on the main Viewing depths strip, with the selected state
+highlighted and physical depth disabled until a positive anchor exists.
+Browser checks assert the error color, input border, select background and
+main-page coordinate behavior alongside navigation and restoration.

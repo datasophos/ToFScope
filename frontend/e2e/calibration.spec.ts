@@ -33,15 +33,26 @@ test("graphical and exact calibration edits, units and original-frame navigation
     dialog.getByText("Calibrated frames 0–1", { exact: false }),
   ).toBeVisible();
   await dialog
-    .getByLabel("Depth coordinates", { exact: true })
-    .selectOption("depth");
-  await dialog
     .getByLabel("Depth display unit", { exact: true })
     .selectOption("um");
   await dialog.getByLabel("Anchor frame", { exact: true }).fill("2");
   await dialog.getByLabel("Known depth", { exact: true }).fill("0.05");
   await dialog.getByRole("button", { name: "Add anchor", exact: true }).click();
   await expect(dialog.getByRole("alert")).toContainText("increase");
+  await expect(dialog.getByRole("alert")).toHaveCSS(
+    "color",
+    "rgb(159, 27, 27)",
+  );
+  await expect(dialog.getByLabel("Known depth", { exact: true })).toHaveCSS(
+    "border-top-color",
+    "rgb(113, 138, 152)",
+  );
+  await expect(
+    dialog.getByLabel("Depth display unit", { exact: true }),
+  ).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await page.screenshot({
+    path: test.info().outputPath("calibration-rejection.png"),
+  });
   await dialog.getByLabel("Known depth", { exact: true }).fill("0.3");
   await dialog.getByRole("button", { name: "Add anchor", exact: true }).click();
   await expect(
@@ -56,10 +67,16 @@ test("graphical and exact calibration edits, units and original-frame navigation
   await expect(
     dialog.getByLabel("Depth at frame 1", { exact: true }),
   ).toHaveValue("0.12");
+  await expect(dialog.locator(".anchor-summary")).toContainText(
+    "frame 1: 0.12",
+  );
   await page.screenshot({
     path: test.info().outputPath("calibration-editor.png"),
   });
   await dialog.getByRole("button", { name: "Done", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Physical depth", exact: true })
+    .click();
   const panel = page.getByTestId("panel-profile");
   await expect(panel.locator("footer")).toContainText("depth · µm");
   const selection = panel.getByLabel("Depth profile selection");
@@ -95,8 +112,8 @@ test("graphical and exact calibration edits, units and original-frame navigation
     .getByRole("button", { name: "Remove anchor at frame 1" })
     .click();
   await expect(
-    dialog.getByLabel("Depth coordinates", { exact: true }),
-  ).toHaveValue("frame");
+    page.getByRole("button", { name: "Frames", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
   await dialog.getByRole("button", { name: "Done", exact: true }).click();
   await expect(panel.locator("footer")).toContainText("frame · frame");
 });
@@ -112,12 +129,12 @@ test("partial calibration survives save/reopen and remains independent between s
     dialog.getByRole("button", { name: "Remove anchor at frame 1" }),
   ).toBeVisible();
   await dialog
-    .getByLabel("Depth coordinates", { exact: true })
-    .selectOption("depth");
-  await dialog
     .getByLabel("Depth display unit", { exact: true })
     .selectOption("um");
   await dialog.getByRole("button", { name: "Done", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Physical depth", exact: true })
+    .click();
   await expect(page.getByTestId("panel-front")).toContainText(
     "1 frame with unknown depth omitted",
   );
@@ -173,10 +190,10 @@ test("single calibrated sample stays visible and unknown-only ranges stay empty"
   await expect(
     dialog.getByRole("button", { name: "Remove anchor at frame 1" }),
   ).toBeVisible();
-  await dialog
-    .getByLabel("Depth coordinates", { exact: true })
-    .selectOption("depth");
   await dialog.getByRole("button", { name: "Done", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Physical depth", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Analysis settings", exact: true })
     .click();

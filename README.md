@@ -41,8 +41,9 @@ Ctrl/Cmd-wheel zoom preserve the view. Ordinary wheel scrolls the page.
 
 **Depth calibration…** opens a temporary graphical editor beside the viewing
 controls. Click an original-frame profile position or enter an exact frame and
-known depth; frame 0/depth 0 is fixed. Anchors must increase strictly. Choose
-Frames or Physical depth, with nm, µm, or mm display. Physical profiles and front
+known depth; frame 0/depth 0 is fixed. Anchors must increase strictly. Choose the display unit (nm, µm, or mm) in
+the editor, then use the **Frames / Physical depth** buttons in the main
+**Viewing depths** strip. Physical profiles and front
 projections show only frames between anchors; later depths remain unknown.
 Selection and keyboard navigation still use original acquisition frames, and
 unit changes never resample intensities. Removing positive anchors restores
