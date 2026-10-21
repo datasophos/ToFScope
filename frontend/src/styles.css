@@ -1706,3 +1706,39 @@ small {
     border-left: 0;
   }
 }
+
+.app-credit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 6px 16px 10px;
+  color: #617582;
+  font-size: 11px;
+}
+.app-credit img {
+  width: 98px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.app-credit .datasophos-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.app-credit a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  text-decoration: none;
+}
+.app-credit a:hover {
+  text-decoration: underline;
+}
+.app-credit > a + a {
+  border-left: 1px solid #c9d3d8;
+  padding-left: 12px;
+  margin-left: 5px;
+}
