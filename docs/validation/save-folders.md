@@ -44,3 +44,9 @@ preventing inherited page-header button heights from clipping the folder names.
 A browser geometry assertion reproduces the clipping and verifies both location
 subtitles fit inside their buttons when launched from Save as. All 11 open/save
 browser workflows and the packaged build passed after the style correction.
+
+
+The filename input and Save copy button share a 36px height and matching font,
+with their top and bottom edges aligned. A geometry assertion catches inherited
+compact header-button styles overriding the save form. All seven save/reopen
+browser workflows and the packaged build passed after this correction.

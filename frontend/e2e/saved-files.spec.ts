@@ -266,6 +266,14 @@ test("file picker and save dialog show configured folders and exact save destina
     "title",
     `${folders.save_destination}/a_analysis.h5`,
   );
+  const field = (await page
+    .getByLabel("Saved filename", { exact: true })
+    .boundingBox())!;
+  const saveButton = (await page
+    .getByRole("button", { name: "Save copy", exact: true })
+    .boundingBox())!;
+  expect(Math.abs(field.y - saveButton.y)).toBeLessThan(1);
+  expect(Math.abs(field.height - saveButton.height)).toBeLessThan(1);
 });
 
 test("opening and replacing files stays clean until an edit is made", async ({

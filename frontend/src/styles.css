@@ -1032,12 +1032,19 @@ small {
   min-width: 180px;
 }
 .save-copy input {
-  min-height: 34px;
+  height: 36px;
+  min-height: 36px;
   padding: 8px 10px;
   border: 1px solid #718a98;
   border-radius: 5px;
   background: #fff;
   color: #173d4b;
+}
+.save-copy form > button {
+  height: 36px;
+  min-height: 36px;
+  padding: 8px 12px;
+  font: inherit;
 }
 .save-copy input:focus-visible {
   outline: 2px solid #315d70;
