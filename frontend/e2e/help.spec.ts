@@ -84,7 +84,13 @@ test("contextual help works with mouse, keyboard and maximized panes", async ({
   await page.keyboard.press("Escape");
   await expect(page.locator(".plot-panel.maximized")).toHaveCount(0);
 
+  await page
+    .getByRole("button", { name: "Image display settings", exact: true })
+    .click();
   await page.getByLabel("Image", { exact: true }).selectOption("se");
+  await page
+    .getByRole("button", { name: "Close Image display", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "SE Image help", exact: true })
     .click();

@@ -189,7 +189,7 @@ class ExplorePresenter:
                             values=image,
                             aggregation=aggregation,
                             intensity_range=bounds,
-                            palette="gray" if s.display.image == "se" else "ion",
+                            palette="gray" if s.display.image == "se" else s.display.colormap,
                             log=s.display.log,
                             signal_id=s.image_signal_id,
                             signal_name=image_signal(s).name,
@@ -208,6 +208,7 @@ class ExplorePresenter:
                         result["front"] = self.panel(
                             "image",
                             [fx, depth_axis],
+                            palette=s.display.colormap,
                             values=front[indices],
                             **geometry,
                             aggregation="exact sum along ROI y",

@@ -21,10 +21,38 @@ test("independent files, exact Explore state, union calculation and offline down
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
+  await page
+    .getByRole("button", { name: "Image display settings", exact: true })
+    .click();
   await expect(page.getByLabel("Log colors", { exact: true })).toBeChecked();
+  await page
+    .getByRole("button", { name: "Close Image display", exact: true })
+    .click();
   await expect(
-    page.getByLabel("Relative profiles", { exact: true }),
+    page
+      .getByTestId("panel-profile")
+      .locator("header")
+      .getByLabel("Relative profiles", { exact: true }),
   ).toBeChecked();
+  await expect(
+    page
+      .getByTestId("panel-spectrum")
+      .locator("header")
+      .getByRole("button", { name: "Create signal", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId("panel-spectrum").locator("header"),
+  ).toContainText("Viewing spectrum");
+  await expect(
+    page
+      .locator(".masthead")
+      .getByRole("button", { name: "Open TOFexplorer file", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(".masthead")
+      .getByRole("tab", { name: "1 · a.h5", exact: true }),
+  ).toBeVisible();
   const ion = page.getByTestId("panel-ion").getByTestId("selection-overlay");
   await expect(ion).toBeVisible();
   const b = (await ion.boundingBox())!;
@@ -37,7 +65,7 @@ test("independent files, exact Explore state, union calculation and offline down
   await expect(page.getByTestId("analysis-revision")).toHaveText("1");
   for (const name of ["b.h5", "a.h5"]) {
     await page
-      .getByRole("button", { name: "＋ Open TOFexplorer file" })
+      .getByRole("button", { name: "Open TOFexplorer file" })
       .click();
     await page.getByRole("button", { name: `◫ ${name}` }).dblclick();
   }
@@ -322,11 +350,23 @@ test("plot toolbar actions are compact icons with tooltips in every pane", async
   await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
   for (const name of ["ion", "front", "spectrum", "profile"]) {
     const pane = page.getByTestId(`panel-${name}`);
+    const pan = pane.getByRole("button", { name: "Pan", exact: true });
     const reset = pane.getByRole("button", { name: "Reset zoom", exact: true });
-    await expect(reset).toHaveAttribute("title", "Reset zoom");
-    await expect(reset.locator("svg")).toBeVisible();
-    await expect(reset).toHaveText("");
-    await reset.click();
+    if (name === "ion" || name === "front") {
+      await expect(pan).toHaveCount(0);
+      await expect(reset).toHaveCount(0);
+    } else {
+      await expect(pan.locator("svg")).toBeVisible();
+      await expect(pan).toHaveText("");
+      await expect(pan).toHaveAttribute("title", /Pan horizontally/);
+      await pan.click();
+      await expect(pan).toHaveAttribute("aria-pressed", "true");
+      await pan.click();
+      await expect(reset).toHaveAttribute("title", "Reset zoom");
+      await expect(reset.locator("svg")).toBeVisible();
+      await expect(reset).toHaveText("");
+      await reset.click();
+    }
     const save = pane.getByRole("button", { name: /^Export .* PNG$/ });
     await expect(save).toHaveAttribute("title", "Save plot/image as PNG");
     await expect(save.locator("svg")).toBeVisible();
@@ -337,9 +377,10 @@ test("plot toolbar actions are compact icons with tooltips in every pane", async
       (await maximize.getAttribute("aria-label"))!,
     );
     const heights = await Promise.all(
-      [reset, save, maximize].map(
-        async (button) => (await button.boundingBox())!.height,
-      ),
+      (name === "ion" || name === "front"
+        ? [save, maximize]
+        : [reset, save, maximize]
+      ).map(async (button) => (await button.boundingBox())!.height),
     );
     expect(Math.max(...heights) - Math.min(...heights)).toBeLessThan(0.5);
     await maximize.click();

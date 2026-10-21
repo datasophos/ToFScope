@@ -51,17 +51,17 @@ test("raster preserves pixel positions, missing data, sharp boundaries and zoom"
     return { original, boundary, zoomed };
   });
   expect(result.original).toEqual([
-    [25, 30, 90, 255],
-    [245, 220, 40, 255],
+    [68, 1, 84, 255],
+    [253, 231, 37, 255],
     [0, 0, 0, 0],
-    [135, 125, 65, 255],
+    [33, 145, 140, 255],
   ]);
   expect(result.boundary).toEqual([
-    [25, 30, 90, 255],
-    [245, 220, 40, 255],
+    [68, 1, 84, 255],
+    [253, 231, 37, 255],
   ]);
   expect(result.zoomed).toEqual([
-    [245, 220, 40, 255],
-    [245, 220, 40, 255],
+    [253, 231, 37, 255],
+    [253, 231, 37, 255],
   ]);
 });

@@ -99,7 +99,7 @@ test("signal collection belongs only to its active analysis tab", async ({
     exact: true,
   });
   await expect(manager).toBeVisible();
-  await page.getByRole("button", { name: "＋ Open TOFexplorer file" }).click();
+  await page.getByRole("button", { name: "Open TOFexplorer file" }).click();
   await page.getByRole("button", { name: "◫ b.h5" }).dblclick();
   await expect(page.getByRole("tab", { name: "2 · b.h5" })).toHaveAttribute(
     "aria-selected",

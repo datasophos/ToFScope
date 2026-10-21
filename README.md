@@ -34,10 +34,18 @@ errors remain visible beside the signal. Failed calculations preserve old result
 **Calculate over frames** defines a signal's coverage. **Viewing depths** chooses
 which available frames to show without recalculating the signal. **Analysis
 settings** controls the profile/navigation range without rewriting recipes.
-ROI and color controls live beside the image, relative scaling beside profiles,
-and log Y beside the spectrum. Spectrum drag zooms normally and edits intervals
-only while a signal editor is open. Images stay square; maximize/Escape and
-Ctrl/Cmd-wheel zoom preserve the view. Ordinary wheel scrolls the page.
+ROI controls live beside the image; **Display…** contains log colors, the
+SIMS colormap and the SIMS/SE image choice. Viridis is the SIMS default, with
+Cividis, Magma and grayscale available; the palette is saved with the analysis.
+SE images retain grayscale. Palette-matched, unfilled ROI outlines and full-width
+depth bands preserve image colors. Relative scaling lives in the profile header,
+and log Y beside the spectrum. Spectrum drag zooms normally and edits the active
+interval while a signal editor is open. All draft intervals remain numbered on
+the spectrum. Bounds display compactly while preserving exact calculation values.
+Single clicks preserve zoom; double-click resets the spectrum view. Toggle **Pan**
+to move a zoomed spectrum/profile horizontally, or use Ctrl/Cmd-wheel to zoom.
+Images show their full extent. Maximize/Escape preserves the view; ordinary wheel
+scrolls the page. The compact header holds file opening and independent file tabs.
 Plots have named axes, units and tick marks. Hover over the spectrum or profile
 for the current x coordinate; calibrated profiles also show the nearest frame.
 
@@ -138,3 +146,5 @@ checks or explicit completion-plan features. No legacy runtime or compatibility
 adapter is shipped. The [migration design](docs/react-fastapi-migration.md) and
 [pilot plan](docs/superpowers/plans/2026-10-18-react-fastapi-pilot.md) describe the
 boundaries and decisions.
+
+Color maps use canonical 256-color tables. Older blue–yellow selections migrate to Viridis.

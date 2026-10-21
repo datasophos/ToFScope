@@ -68,6 +68,7 @@ class DocumentDisplay(StrictModel):
     relative: StrictBool = True
     image: Literal['sims', 'se'] = 'sims'
     spectrum_log: StrictBool = True
+    colormap: Literal["ion", "gray", "viridis", "magma", "cividis"] = "viridis"
 
 
 class SavedAnalysisDocument(StrictModel):

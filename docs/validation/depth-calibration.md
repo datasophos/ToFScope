@@ -36,11 +36,11 @@ frames `[2,3]` under anchors `(0,0),(2,20),(4,60)`.
 
 ## Evidence
 
-- 176 Python tests, including eight depth application/presenter tests and an API
+- 179 Python tests, including eight depth application/presenter tests and an API
   calibration/owner/coordinate-override test; existing numerical suites retained.
-- 18 frontend unit assertions, including coordinate roundtrips, anchor validation,
+- 22 frontend unit assertions, including coordinate roundtrips, anchor validation,
   nonuniform boundaries and a single-sample footprint; TypeScript check passes.
-- All 49 browser workflows pass. Calibration coverage includes graphical selection, exact and table edits, rejected
+- The final browser regression covers 59 workflows. Calibration coverage includes graphical selection, exact and table edits, rejected
   edits, units, profile/front navigation, anchor removal, same-file tab isolation,
   partial save/reopen and single/empty calibrated domains.
 - Regenerated OpenAPI/TypeScript; rebuilt bundled offline assets.
@@ -64,8 +64,8 @@ screenshots and distribution JSON reports are temporary validation artifacts.
 Local Docker rerun is blocked by a stopped daemon. Both initial GitHub CI runs
 passed independent package and Docker qualification for this branch;
 [initial CI run](https://github.com/datasophos/ToFScope/actions/runs/39512876173).
-The manual-testing UI refinements receive a fresh CI run. Actual NFS/shared-storage behavior and commercial numerical
-round trips remain unqualified. No running local service was restarted.
+Final manual-testing refinements are verified locally; remote CI was not monitored. Actual NFS/shared-storage behavior and commercial numerical
+round trips remain unqualified. Running local services were restarted only with explicit user approval.
 
 Final GitHub CI and browser results are recorded with the pull request.
 
@@ -96,3 +96,33 @@ Ctrl/Cmd-wheel zoom uses a cancellable native wheel listener on each plot's
 selection surface. Modifier-wheel events prevent page scrolling/browser zoom;
 ordinary wheel events retain normal page scrolling. A browser regression checks
 both modifier keys, wheel cancellation, stable page scroll and normal scrolling.
+
+Single clicks in spectrum viewing mode preserve the current zoom. Pointer
+movement under four screen pixels is treated as a click, preventing zero-width
+zoom ranges without depending on mass/intensity scale. Drag zoom, reset,
+modifier-wheel zoom and profile/calibration frame picking remain covered.
+
+The plot toolbar exposes Pan as an explicit toggle. Pan drags translate the
+current horizontal view without changing its width, clamp at the data domain,
+and preserve all signal draft intervals. Switching Pan off restores normal
+selection/zoom gestures. Browser coverage verifies panning during signal creation
+and returning to interval editing; numerical tests cover domain clamping.
+Local verification for these follow-up gesture changes runs without monitoring
+GitHub, per the user's explicit preference.
+
+SIMS colormaps use canonical 256-color Viridis, Cividis and Magma lookup tables,
+plus grayscale. Viridis is the default. Older blue–yellow display settings migrate
+to Viridis; saved documents without the field use the new default. Palette changes
+leave scientific arrays, axes and exports unchanged; SE remains grayscale.
+The ion map and front projection share palette-matched colored outlines with
+transparent interiors. Front selections span the full width and resize vertically.
+Image pan/zoom controls were removed, and calibrated row rendering avoids
+fractional-pixel transparency. ROI changes update overlays immediately without
+refetching the unchanged ion image.
+
+The signal editor displays all draft intervals, permits choosing a band, and
+formats bounds compactly while preserving their exact values for calculation.
+Double-clicking the spectrum resets zoom without changing draft bounds. File tabs,
+open/help controls, plot headers and signal/depth bars use the compact layout
+verified at desktop and narrow widths. Local services were restarted only after
+explicit user approval. Remote CI was not checked for these final refinements.

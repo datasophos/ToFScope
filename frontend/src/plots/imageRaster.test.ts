@@ -14,13 +14,14 @@ const image: ChartData = {
   ],
   range: [0, 9],
   yReverse: true,
+  palette: "gray",
 };
 describe("scientific image raster", () => {
   it("preserves zero, missing values, linear colors and the full image extent", () => {
     const { width, height, pixels } = imagePixels(image);
     expect([width, height]).toEqual([2, 2]);
     expect(Array.from(pixels)).toEqual([
-      25, 30, 90, 255, 49, 51, 84, 255, 0, 0, 0, 0, 245, 220, 40, 255,
+      0, 0, 0, 255, 28, 28, 28, 255, 0, 0, 0, 0, 255, 255, 255, 255,
     ]);
     expect(image.values).toEqual([
       [0, 1],
@@ -43,7 +44,38 @@ describe("scientific image raster", () => {
       ],
     });
     expect(Array.from(pixels)).toEqual([
-      25, 30, 90, 255, 245, 220, 40, 255, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
   });
+});
+
+it("selectable palettes preserve scientific values and missing coverage", () => {
+  const original = imagePixels(image).pixels;
+  for (const palette of ["viridis", "magma", "cividis"] as const) {
+    const { pixels } = imagePixels({ ...image, palette });
+    expect(Array.from(pixels)).not.toEqual(Array.from(original));
+    expect(pixels[11]).toBe(0);
+    expect(image.values).toEqual([
+      [0, 1],
+      [null, 9],
+    ]);
+  }
+});
+
+it("uses canonical interior colors rather than interpolated approximations", () => {
+  for (const [palette, rgb] of [
+    ["viridis", [33, 145, 140]],
+    ["magma", [183, 55, 121]],
+    ["cividis", [125, 124, 120]],
+  ] as const) {
+    const { pixels } = imagePixels({
+      ...image,
+      palette,
+      x: [0],
+      y: [0],
+      values: [[128]],
+      range: [0, 255],
+    });
+    expect(Array.from(pixels)).toEqual([...rgb, 255]);
+  }
 });

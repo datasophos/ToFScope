@@ -169,13 +169,13 @@ output {
   display: block;
 }
 .masthead {
-  height: 64px;
+  min-height: 56px;
   background: #102536;
   color: white;
-  padding: 0 26px;
+  padding: 8px 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 18px;
 }
 .masthead strong {
   font-size: 19px;
@@ -183,6 +183,7 @@ output {
   letter-spacing: -0.6px;
 }
 .brand {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -200,22 +201,25 @@ output {
   flex: none;
   color: white;
 }
-.badge {
-  font-size: 11px;
-  border-radius: 4px;
-  padding: 3px 7px;
-  background: #e4edf0;
-  color: #486675;
-  display: inline-block;
-  margin-left: 12px;
-}
 .file-bar {
   display: flex;
-  gap: 15px;
+  flex: 1;
+  min-width: 0;
+  gap: 12px;
   align-items: center;
-  padding: 10px 22px;
-  background: #dde8ed;
-  border-bottom: 1px solid #bdcfd7;
+}
+.file-bar > button {
+  flex: none;
+  white-space: nowrap;
+}
+.tabs {
+  align-items: center;
+  min-height: 34px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #6e939f transparent;
 }
 .tabs,
 .tab {
@@ -223,12 +227,31 @@ output {
   gap: 2px;
 }
 .tab {
-  background: #cbdce4;
+  height: 34px;
+  flex: none;
+  max-width: 360px;
+  background: #254354;
   border-radius: 5px;
 }
 .tab button {
+  height: 34px;
+  padding-top: 0;
+  padding-bottom: 0;
   border: 0;
   background: transparent;
+  color: #dce8ee;
+}
+.tab button[role="tab"] {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tab button[aria-label] {
+  flex: none;
+}
+.tab.active button {
+  color: #203744;
 }
 .tab.active {
   background: white;
@@ -238,7 +261,8 @@ output {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 19px 25px;
+  padding: 10px 16px;
+  gap: 12px;
 }
 .eyebrow {
   text-transform: uppercase;
@@ -248,7 +272,7 @@ output {
   color: #668392;
 }
 h1 {
-  font-size: 23px;
+  font-size: 20px;
   letter-spacing: -0.6px;
   margin: 4px 0;
 }
@@ -321,11 +345,11 @@ small {
   background: white;
   border: 1px solid transparent;
   border-radius: 7px;
-  padding: 12px 15px;
-  margin-bottom: 14px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 6px 10px;
   flex-wrap: wrap;
 }
 .depth-strip input[type="number"] {
@@ -340,7 +364,7 @@ small {
 .plot-grid {
   display: grid;
   grid-template-columns: minmax(280px, min(38vh, 480px)) minmax(0, 1fr);
-  gap: 14px;
+  gap: 10px;
 }
 .plot-panel {
   background: white;
@@ -525,15 +549,14 @@ small {
   }
   .masthead {
     padding: 10px;
-  }
-  .masthead .badge {
-    display: none;
+    flex-wrap: wrap;
+    gap: 10px;
   }
   .analysis-heading {
     padding: 15px;
   }
   .file-bar {
-    overflow: auto;
+    flex-basis: 100%;
   }
   .welcome {
     margin: 40px auto;
@@ -574,11 +597,11 @@ small {
 
 /* Signal inventory and contextual tools replace the fixed sidebar. */
 .signal-workspace {
-  padding: 0 22px 20px;
+  padding: 0 12px 12px;
 }
 .signal-tray {
   position: relative;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
   border: 1px solid transparent;
   border-radius: 7px;
   background: white;
@@ -587,8 +610,8 @@ small {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px 14px;
-  padding: 10px 14px;
+  gap: 6px 10px;
+  padding: 6px 10px;
 }
 .signal-strip .curve-marker {
   margin-top: 0;
@@ -785,6 +808,9 @@ small {
   flex: 1;
   min-width: 0;
   width: 100%;
+  border-color: #879da8;
+  background: #f7fafc;
+  padding: 8px 10px;
 }
 .signal-rename button {
   flex: none;
@@ -1301,11 +1327,23 @@ small {
     padding: 10px 14px;
   }
 }
-.raw-preparation { max-width: 660px; }
-.raw-preparation p { line-height: 1.5; overflow-wrap: anywhere; }
-.preparation-filename { display: grid; gap: 8px; }
-.raw-preparation progress { width: 100%; }
-.preparation-actions { justify-content: flex-end; }
+.raw-preparation {
+  max-width: 660px;
+}
+.raw-preparation p {
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.preparation-filename {
+  display: grid;
+  gap: 8px;
+}
+.raw-preparation progress {
+  width: 100%;
+}
+.preparation-actions {
+  justify-content: flex-end;
+}
 .preparation-actions > button {
   width: auto;
   margin-top: 0;
@@ -1401,4 +1439,177 @@ small {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
+}
+
+.plot-pan-button[aria-pressed="true"] {
+  color: white;
+  background: #245b70;
+  border-color: #245b70;
+}
+
+.plot-controls select {
+  background-color: #fff;
+  border-color: #718a98;
+  color: #173d4b;
+}
+
+/* Display options float over the workspace rather than shrinking the image. */
+.image-display-settings > label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+.image-display-settings > label:has(input[type="checkbox"]) {
+  justify-content: flex-start;
+}
+.image-display-settings select {
+  max-width: 190px;
+  min-width: 0;
+}
+.plot-controls .control-popover {
+  min-width: 0;
+  max-width: 100%;
+}
+.plot-controls .control-popover > button {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plot-panel header {
+  flex-wrap: wrap;
+}
+.plot-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+  gap: 6px 12px;
+}
+.plot-heading > label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.plot-heading > .plot-status {
+  font-size: 11px;
+}
+.plot-panel header > .row {
+  flex-shrink: 0;
+}
+
+.signal-editor input {
+  border-color: #879da8;
+  background: #fff;
+  color: #203744;
+}
+.signal-editor input:focus {
+  outline: 2px solid #167d9a;
+  outline-offset: 1px;
+}
+.signal-editor .signal-name-field > input {
+  padding: 8px 10px;
+  background: #f7fafc;
+  font-weight: 600;
+}
+.signal-editor .editable-hint {
+  margin-left: 6px;
+  font-size: 10px;
+  color: #617582;
+  font-weight: normal;
+}
+
+.file-bar > .open-file-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+}
+
+.file-bar > button.help-button {
+  width: 34px;
+  height: 34px;
+  border-color: #6e939f;
+  color: #dce8ee;
+  background: transparent;
+}
+.file-bar > button.help-button:hover {
+  background: #254354;
+}
+
+/* Compact workspace bars leave vertical space for scientific plots. */
+.analysis-heading > div:first-child > span {
+  font-size: 12px;
+}
+.analysis-heading > .row {
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.analysis-heading button,
+.signal-strip button,
+.signal-strip select,
+.depth-strip button,
+.depth-strip input[type="number"] {
+  min-height: 28px;
+  height: 28px;
+  padding: 3px 7px;
+  font-size: 12px;
+}
+.signal-strip,
+.depth-strip {
+  font-size: 12px;
+}
+.signal-strip h2,
+.depth-strip h2 {
+  font-size: 12px;
+}
+.signal-strip-actions > button,
+.signal-strip-actions .signal-picker-trigger {
+  min-height: 28px;
+}
+.signal-strip .signal-chip button {
+  padding: 3px 6px;
+}
+.signal-chips {
+  padding: 0;
+}
+.depth-strip > .row,
+.depth-coordinate-controls {
+  gap: 4px;
+}
+.depth-strip .exact-form {
+  align-items: center;
+  gap: 6px;
+}
+.depth-strip .exact-form label {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 4px;
+  margin: 0;
+  font-size: 11px;
+}
+.depth-strip .exact-form input[type="number"] {
+  width: 58px;
+}
+.depth-strip input[aria-label="Frame"] {
+  width: 58px;
+}
+.depth-strip input[type="range"] {
+  width: 110px;
+  margin: 0 4px;
+}
+.signal-strip button.help-button,
+.depth-strip button.help-button {
+  min-height: 18px;
+  height: 18px;
+  padding: 0;
 }

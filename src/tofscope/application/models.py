@@ -12,6 +12,13 @@ class DisplaySettings:
     relative: bool = True
     image: str = "sims"
     spectrum_log: bool = True
+    colormap: Literal["ion", "gray", "viridis", "magma", "cividis"] = "viridis"
+
+
+    def __post_init__(self):
+        # Saved analyses and older clients may still use the retired palette name.
+        if self.colormap == "ion":
+            object.__setattr__(self, "colormap", "viridis")
 
 
 @dataclass(frozen=True)

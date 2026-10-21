@@ -81,6 +81,7 @@ class SetDisplay(StrictModel):
     relative: StrictBool
     image: Literal["sims", "se"] = "sims"
     spectrum_log: StrictBool | None = None
+    colormap: Literal["ion", "gray", "viridis", "magma", "cividis"] | None = None
 
 
 class AnchorInput(StrictModel):

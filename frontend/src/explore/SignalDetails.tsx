@@ -67,7 +67,14 @@ export function SignalDetails({
             </strong>{" "}
             · {recipe.frames[0]}–{recipe.frames[1]} frames
           </p>
-          <p>{recipe.intervals.map(([a, b]) => `${a}–${b} Th`).join(" ∪ ")}</p>
+          <p
+            data-mass-intervals
+            title={recipe.intervals.map(([a, b]) => `${a}–${b} Th`).join(" ∪ ")}
+          >
+            {recipe.intervals
+              .map(([a, b]) => `${a.toFixed(2)}–${b.toFixed(2)} Th`)
+              .join(" ∪ ")}
+          </p>
           {recipe.source === "stored" && (
             <ExactForm
               labels={["Coverage first", "Coverage last"]}
