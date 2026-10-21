@@ -32,7 +32,7 @@ export function IdentifyDialog({
 }) {
   const [open, setOpen] = useState(false),
     [mz, setMz] = useState("");
-  const [tolerance, setTolerance] = useState("0.1"),
+  const [tolerance, setTolerance] = useState("0.3"),
     [unit, setUnit] = useState<"Th" | "ppm">("Th");
   const [charges, setCharges] = useState([1]);
   const [spectrumLog, setSpectrumLog] = useState(true);
@@ -48,6 +48,7 @@ export function IdentifyDialog({
   const serial = useRef(0);
   const invalidate = () => {
     serial.current++;
+    setBusy(false);
     setResult(undefined);
     setSelected("");
     setError("");
@@ -69,28 +70,37 @@ export function IdentifyDialog({
   }, [a.dataset.generation]);
   const close = () => {
     serial.current++;
+    setBusy(false);
     setOpen(false);
   };
-  const find = async () => {
+  const find = async (
+    mass = mz,
+    settings: {
+      tolerance?: string;
+      unit?: "Th" | "ppm";
+      charges?: number[];
+    } = {},
+  ) => {
+    const nextTolerance = settings.tolerance ?? tolerance;
     const token = ++serial.current;
     setBusy(true);
     setError("");
     setSelected("");
     setResult(undefined);
     try {
-      if (!mz.trim() || !tolerance.trim())
+      if (!mass.trim() || !nextTolerance.trim())
         throw Error("Enter a positive mass and a nonnegative tolerance.");
       const value = await post<Result>(`/analyses/${a.id}/candidates`, {
-        mz: Number(mz),
-        tolerance: Number(tolerance),
-        unit,
-        charges,
+        mz: Number(mass),
+        tolerance: Number(nextTolerance),
+        unit: settings.unit ?? unit,
+        charges: settings.charges ?? charges,
       });
       if (serial.current === token) setResult(value);
     } catch (e) {
       if (serial.current === token) setError((e as Error).message);
     } finally {
-      setBusy(false);
+      if (serial.current === token) setBusy(false);
     }
   };
   const candidates = orderCandidates(
@@ -174,8 +184,8 @@ export function IdentifyDialog({
           className="identification-dialog atomic-identification"
         >
           <p className="identification-intro">
-            Pick a peak in the spectrum or enter an exact m/z to find atomic
-            isotope ions.
+            Click a peak to find atomic isotope candidates automatically, or
+            enter an exact m/z and choose Find candidates.
           </p>
           <form
             noValidate
@@ -206,6 +216,7 @@ export function IdentifyDialog({
                 onChange={(value) => {
                   invalidate();
                   setTolerance(value);
+                  if (value.trim()) void find(mz, { tolerance: value });
                 }}
               />
             </label>
@@ -216,7 +227,9 @@ export function IdentifyDialog({
                 value={unit}
                 onChange={(e) => {
                   invalidate();
-                  setUnit(e.target.value as "Th" | "ppm");
+                  const value = e.target.value as "Th" | "ppm";
+                  setUnit(value);
+                  void find(mz, { unit: value });
                 }}
               >
                 <option>Th</option>
@@ -237,11 +250,11 @@ export function IdentifyDialog({
                     checked={charges.includes(z)}
                     onChange={(e) => {
                       invalidate();
-                      setCharges(
-                        e.target.checked
-                          ? [...charges, z]
-                          : charges.filter((c) => c !== z),
-                      );
+                      const values = e.target.checked
+                        ? [...charges, z]
+                        : charges.filter((c) => c !== z);
+                      setCharges(values);
+                      void find(mz, { charges: values });
                     }}
                   />
                   {z > 0 ? "+" : ""}
@@ -254,7 +267,7 @@ export function IdentifyDialog({
             <PlotPanel
               name="identification"
               title="Identification spectrum"
-              help="Click within seven display pixels of a local maximum to snap; enter exact m/z above at any time. Drag to zoom. Log y is the default; use the scale control for linear intensity."
+              help="Click to pick a peak and find candidates immediately. Picks within seven display pixels of a local maximum snap to it; enter exact m/z above at any time. Drag to zoom. Log y is the default; use the scale control for linear intensity."
               panel={spectrum}
               maximized={false}
               onMaximize={() => {}}
@@ -266,16 +279,16 @@ export function IdentifyDialog({
                 Number(mz),
                 ...(candidate ? [candidate.predicted_mz] : []),
               ].filter(Number.isFinite)}
-              onClick={(x, _, scale) =>
-                pick(
-                  snapPeak(
-                    x,
-                    scale,
-                    spectrum?.axes[0].values ?? [],
-                    spectrum?.series?.[0]?.values ?? [],
-                  ),
-                )
-              }
+              onClick={(x, _, scale) => {
+                const mass = snapPeak(
+                  x,
+                  scale,
+                  spectrum?.axes[0].values ?? [],
+                  spectrum?.series?.[0]?.values ?? [],
+                );
+                pick(mass);
+                void find(String(mass));
+              }}
             />
           </div>
           {result && (

@@ -121,3 +121,26 @@ value. The tolerance spinner changes by 0.1; manual tolerances such as 0.01 rema
 accepted. Browser checks exercise ArrowUp/ArrowDown, compact/exact focus changes,
 and the actual unrounded candidate request. All three identification workflows,
 26 frontend tests, TypeScript and the packaged build passed after these changes.
+
+## Automatic search on spectrum picks
+
+Clicking the identification spectrum now picks/snaps the mass and immediately
+queries candidates using that exact new m/z and the current tolerance, unit and
+charges. The search receives the picked value explicitly rather than reading
+React state from the previous render. Manual entry retains the Find candidates
+button. Opening the dialog does not trigger a search.
+
+Request serial checks protect result, error and busy-state updates; changing
+inputs or closing the dialog invalidates older searches. A browser regression
+holds the first response, clicks another mass, verifies current settings/new
+mass in both requests, then releases the old response and confirms the second
+candidate set remains displayed. Seven focused browser workflows, 30 frontend
+tests, TypeScript and the packaged build passed. Independent review was clean.
+
+
+Tolerance defaults to 0.3 Th. Editing tolerance, switching Th/ppm, or checking
+or unchecking a charge immediately searches using the new setting and current
+mass. Clearing the tolerance invalidates results until a value is entered.
+The settings regression verifies real request payloads for each control,
+including negative polarity and charge removal, and checks that changing to a
+narrow ppm tolerance removes the previous candidate results.

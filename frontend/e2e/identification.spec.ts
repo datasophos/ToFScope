@@ -175,6 +175,7 @@ test("identification uses log scale, spaced fields and natural-abundance orderin
   ).toBeLessThan(2);
   await mass.fill("47.95924758911");
   const toleranceField = dialog.getByLabel("Tolerance", { exact: true });
+  await toleranceField.fill("0.1");
   await toleranceField.focus();
   await toleranceField.press("ArrowUp");
   await expect(toleranceField).toHaveValue("0.2");
@@ -231,4 +232,151 @@ test("identification uses log scale, spaced fields and natural-abundance orderin
     "data-y-scale",
     "linear",
   );
+});
+
+test("spectrum picks search immediately with current settings and discard older responses", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `identify-pick-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: /Open TOFexplorer/ })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+  await page
+    .getByRole("button", { name: "Identify peak", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Atomic identification" });
+  await dialog.getByLabel("Tolerance", { exact: true }).fill("0.2");
+  await dialog.getByLabel("+2", { exact: true }).check();
+  let count = 0;
+  let releaseOld!: () => void;
+  const oldGate = new Promise<void>((resolve) => {
+    releaseOld = resolve;
+  });
+  await page.route("**/candidates", async (route) => {
+    const first = ++count === 1;
+    const response = await route.fetch();
+    if (first) await oldGate;
+    await route.fulfill({ response });
+  });
+  const overlay = dialog.getByLabel("Identification spectrum selection", {
+    exact: true,
+  });
+  const box = (await overlay.boundingBox())!;
+  const first = page.waitForRequest((r) => r.url().endsWith("/candidates"), {
+    timeout: 3000,
+  });
+  await overlay.click({
+    position: { x: box.width * 0.25, y: box.height * 0.5 },
+  });
+  const request = await first;
+  expect(request.postDataJSON().mz).toBeCloseTo(1, 1);
+  expect(request.postDataJSON()).toMatchObject({
+    tolerance: 0.2,
+    unit: "Th",
+    charges: [1, 2],
+  });
+  const second = page.waitForRequest((r) => r.url().endsWith("/candidates"));
+  await overlay.click({
+    position: { x: box.width * 0.42, y: box.height * 0.5 },
+  });
+  expect((await second).postDataJSON().mz).toBeGreaterThan(1.9);
+  await expect(
+    dialog.getByRole("radio", { name: "He-4:+2", exact: true }),
+  ).toBeVisible();
+  const oldResponse = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/candidates") && r.request().postDataJSON().mz < 1.5,
+  );
+  releaseOld();
+  await (await oldResponse).finished();
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+  );
+  await expect(
+    dialog.getByRole("radio", { name: "He-4:+2", exact: true }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("radio", { name: "H-1:+1", exact: true }),
+  ).toHaveCount(0);
+  expect(
+    Number(
+      await dialog.getByLabel("Measured m/z", { exact: true }).inputValue(),
+    ),
+  ).toBeGreaterThan(1.9);
+});
+
+test("search settings immediately refresh candidates with the updated values", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `identify-settings-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: /Open TOFexplorer/ })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+  await page
+    .getByRole("button", { name: "Identify peak", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Atomic identification" });
+  await dialog.getByLabel("Measured m/z", { exact: true }).fill("2.014");
+  const search = async (change: () => Promise<unknown>, expected: object) => {
+    const request = page.waitForRequest(
+      (r) => r.url().endsWith("/candidates"),
+      { timeout: 3000 },
+    );
+    await change();
+    expect((await request).postDataJSON()).toMatchObject({
+      mz: 2.014,
+      ...expected,
+    });
+    await expect(
+      dialog.getByRole("button", { name: "Find candidates", exact: true }),
+    ).toBeEnabled();
+  };
+  await search(
+    () =>
+      dialog
+        .getByRole("button", { name: "Find candidates", exact: true })
+        .click(),
+    { tolerance: 0.3, unit: "Th", charges: [1] },
+  );
+  await expect(
+    dialog.getByRole("radio", { name: "H-2:+1", exact: true }),
+  ).toBeVisible();
+  await search(
+    () => dialog.getByLabel("Tolerance", { exact: true }).fill("0.2"),
+    { tolerance: 0.2, unit: "Th", charges: [1] },
+  );
+  await search(
+    () =>
+      dialog.getByLabel("Tolerance unit", { exact: true }).selectOption("ppm"),
+    { tolerance: 0.2, unit: "ppm", charges: [1] },
+  );
+  await expect(
+    dialog.getByRole("radio", { name: "H-2:+1", exact: true }),
+  ).toHaveCount(0);
+  await search(() => dialog.getByLabel("+2", { exact: true }).check(), {
+    tolerance: 0.2,
+    unit: "ppm",
+    charges: [1, 2],
+  });
+  await search(() => dialog.getByLabel("-1", { exact: true }).check(), {
+    tolerance: 0.2,
+    unit: "ppm",
+    charges: [1, 2, -1],
+  });
+  await search(() => dialog.getByLabel("+1", { exact: true }).uncheck(), {
+    tolerance: 0.2,
+    unit: "ppm",
+    charges: [2, -1],
+  });
 });

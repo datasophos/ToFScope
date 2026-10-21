@@ -103,8 +103,9 @@ See [TODO.md](TODO.md) for the current feature status and next work.
 
 Atomic identification suggests offline isotope-ion candidates with explicit charge,
 polarity, mass error and reference provenance. Use **Identify peak** beside the mass
-spectrum; its plot starts with log intensity. Click to pick a peak or enter an
-exact m/z. Candidates default to known natural abundances, shown as percentages
+spectrum; its plot starts with log intensity. Click a peak to search immediately,
+or enter an exact m/z. Tolerance defaults to 0.3 Th; changing tolerance, its unit,
+or charge and polarity refreshes candidates immediately. Candidates default to known natural abundances, shown as percentages
 and ordered by abundance within the mass tolerance. Closest-mass ordering and
 isotopes without tabulated natural abundance are optional. Annotate an
 existing signal, apply an exact window to a draft, or explicitly calculate a new
