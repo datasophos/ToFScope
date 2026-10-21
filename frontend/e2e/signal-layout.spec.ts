@@ -67,16 +67,9 @@ test("signal collection scrolls without losing labels and contextual controls fi
   await expect(
     page.getByTestId("signal-row").first().getByText("Images", { exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Analysis settings", exact: true })
-    .click();
-  await expect(
-    page.getByLabel("Analysis first", { exact: true }),
-  ).toBeVisible();
-  await page.keyboard.press("Escape");
   await expect(
     page.getByRole("button", { name: "Analysis settings", exact: true }),
-  ).toBeFocused();
+  ).toHaveCount(0);
   await page.getByRole("button", { name: /^ROI:/ }).click();
   await expect(page.getByLabel("ROI x first", { exact: true })).toBeVisible();
 });

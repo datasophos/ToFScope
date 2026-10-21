@@ -17,10 +17,7 @@ export function SignalCollection({
 }) {
   const act = (command: Parameters<Send>[0]) =>
     void send(command).catch(() => {});
-  const eligible = (row: Analysis["signals"][number]) =>
-    !!row.recipe &&
-    row.recipe.frames[0] <= a.loaded_frames[1] &&
-    row.recipe.frames[1] >= a.loaded_frames[0];
+  const eligible = (row: Analysis["signals"][number]) => !!row.recipe;
   return (
     <div
       className="signal-table"
@@ -109,7 +106,7 @@ export function SignalCollection({
                   title={
                     eligible(row)
                       ? "Use for ion map and front projection"
-                      : "No ready coverage in the analysis range"
+                      : "Signal calculation is not ready"
                   }
                   onChange={() =>
                     act({ type: "select_image_signal", signal_id: row.id })

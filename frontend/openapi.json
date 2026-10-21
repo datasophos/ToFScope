@@ -146,20 +146,6 @@
             "title": "Image Signal Id",
             "type": "string"
           },
-          "loaded_frames": {
-            "maxItems": 2,
-            "minItems": 2,
-            "prefixItems": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "integer"
-              }
-            ],
-            "title": "Loaded Frames",
-            "type": "array"
-          },
           "mass_limits": {
             "maxItems": 2,
             "minItems": 2,
@@ -274,7 +260,6 @@
           "owner",
           "dataset",
           "revision",
-          "loaded_frames",
           "roi",
           "depth",
           "signals",
@@ -368,7 +353,6 @@
                 "remove_signal": "#/components/schemas/RemoveSignal",
                 "rename_signal": "#/components/schemas/RenameSignal",
                 "select_image_signal": "#/components/schemas/SelectImageSignal",
-                "set_analysis_frames": "#/components/schemas/SetAnalysisFrames",
                 "set_depth": "#/components/schemas/SetDepth",
                 "set_depth_anchors": "#/components/schemas/SetDepthAnchors",
                 "set_depth_display": "#/components/schemas/SetDepthDisplay",
@@ -403,9 +387,6 @@
               },
               {
                 "$ref": "#/components/schemas/SetDepth"
-              },
-              {
-                "$ref": "#/components/schemas/SetAnalysisFrames"
               },
               {
                 "$ref": "#/components/schemas/SetDisplay"
@@ -1383,36 +1364,6 @@
           "csrf"
         ],
         "title": "SessionInfo",
-        "type": "object"
-      },
-      "SetAnalysisFrames": {
-        "additionalProperties": false,
-        "properties": {
-          "frames": {
-            "maxItems": 2,
-            "minItems": 2,
-            "prefixItems": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "integer"
-              }
-            ],
-            "title": "Frames",
-            "type": "array"
-          },
-          "type": {
-            "const": "set_analysis_frames",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "frames"
-        ],
-        "title": "SetAnalysisFrames",
         "type": "object"
       },
       "SetDepth": {

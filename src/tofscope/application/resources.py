@@ -53,7 +53,7 @@ class ResourceBudget:
                 )
             ):
                 raise CapacityError(
-                    "Memory budget reached; narrow loaded frames, remove comparisons or close an analysis."
+                    "Memory budget reached; hide profiles or close an analysis."
                 )
             if physical:
                 self.physical_bytes += bytes

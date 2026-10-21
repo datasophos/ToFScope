@@ -468,8 +468,6 @@ export interface components {
       id: string;
       /** Image Signal Id */
       image_signal_id: string;
-      /** Loaded Frames */
-      loaded_frames: [number, number];
       /** Mass Limits */
       mass_limits: [number, number];
       /** Next Style Index */
@@ -536,7 +534,6 @@ export interface components {
         | components["schemas"]["SetStoredCoverage"]
         | components["schemas"]["SetROI"]
         | components["schemas"]["SetDepth"]
-        | components["schemas"]["SetAnalysisFrames"]
         | components["schemas"]["SetDisplay"]
         | components["schemas"]["SetDepthAnchors"]
         | components["schemas"]["SetDepthDisplay"];
@@ -924,16 +921,6 @@ export interface components {
       initial_file?: string | null;
       /** Owner */
       owner: string;
-    };
-    /** SetAnalysisFrames */
-    SetAnalysisFrames: {
-      /** Frames */
-      frames: [number, number];
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: "set_analysis_frames";
     };
     /** SetDepth */
     SetDepth: {

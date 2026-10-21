@@ -26,10 +26,7 @@ export function SignalTray({
 }) {
   const act = (command: Parameters<Send>[0]) =>
     void send(command).catch(() => {});
-  const eligible = (row: Analysis["signals"][number]) =>
-    !!row.recipe &&
-    row.recipe.frames[0] <= a.loaded_frames[1] &&
-    row.recipe.frames[1] >= a.loaded_frames[0];
+  const eligible = (row: Analysis["signals"][number]) => !!row.recipe;
   const [managing, setManaging] = useState(false);
   const image = a.signals.find((row) => row.id === a.image_signal_id);
   const label = (row: Analysis["signals"][number]) =>

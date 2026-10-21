@@ -104,7 +104,6 @@ class AnalysisService:
                 owner,
                 dataset,
                 revision,
-                frames,
                 (0, nx - 1, 0, ny - 1),
                 AllDepth(),
                 (SignalSnapshot(recipe.id, recipe.label, 0, recipe),),

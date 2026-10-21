@@ -327,6 +327,42 @@ export function App() {
           />
         </div>
       ))}
+      <footer className="app-credit">
+        <a
+          className="datasophos-credit"
+          href="https://datasophos.co"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Made by Datasophos"
+        >
+          <span>Made by</span>
+          <img
+            src="/assets/datasophos-wordmark.png"
+            alt="Datasophos"
+            width="98"
+            height="28"
+          />
+        </a>
+        <a
+          href="https://github.com/datasophos/ToFScope/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Report an issue
+          <svg
+            className="external-link-icon"
+            viewBox="0 0 16 16"
+            width="12"
+            height="12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            aria-hidden="true"
+          >
+            <path d="M9 2h5v5M14 2 7 9M7 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V9" />
+          </svg>
+        </a>
+      </footer>
       {confirming && pendingAction && (
         <UnsavedChanges
           name={

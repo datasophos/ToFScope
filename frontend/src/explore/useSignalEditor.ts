@@ -176,7 +176,7 @@ export function useSignalEditor(
           `Signal ${analysis.next_style_index + 1}`,
           analysis.signals.find((s) => s.id === analysis.image_signal_id)
             ?.recipe?.intervals ?? [analysis.mass_limits],
-          analysis.loaded_frames,
+          [0, analysis.shape[0] - 1],
         ),
       ),
     openEdit: (id: string) => seed(id, false),

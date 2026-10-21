@@ -32,8 +32,12 @@ Edits stay separate until **Update signal** succeeds; progress, cancellation and
 errors remain visible beside the signal. Failed calculations preserve old results.
 
 **Calculate over frames** defines a signal's coverage. **Viewing depths** chooses
-which available frames to show without recalculating the signal. **Analysis
-settings** controls the profile/navigation range without rewriting recipes.
+which available frames to show without recalculating the signal. Choose **All
+frames**, **Single frame**, or **Frame range**; only the selected mode's controls
+appear. Range edits take effect with **Apply**, and the status describes the
+displayed image. Profiles use the full acquisition domain, with gaps outside
+signal coverage. **CSV** beside the depth profile controls exports its curves;
+a selected frame range limits exported rows.
 ROI controls live beside the image; **Display…** contains log colors, the
 SIMS colormap and the SIMS/SE image choice. Viridis is the SIMS default, with
 Cividis, Magma and grayscale available; the palette is saved with the analysis.
