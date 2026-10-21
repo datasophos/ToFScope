@@ -1,0 +1,6 @@
+recursive-include src/tofscope/static *
+recursive-include src/tofscope/resources/reference *
+include README.md pyproject.toml setup.py
+prune frontend
+prune tests
+prune docs

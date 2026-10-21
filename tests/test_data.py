@@ -5,7 +5,7 @@ from pathlib import Path
 import h5py
 import numpy as np
 
-from explorer import integrate_events, preview_grid, roi_from_bounds, sum_depth_window, se_mean
+from tofscope.storage.explorer import integrate_events, preview_grid, roi_from_bounds, sum_depth_window, se_mean
 
 
 class IntegrationTests(unittest.TestCase):

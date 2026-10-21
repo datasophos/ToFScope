@@ -1,0 +1,130 @@
+{
+  "small": {
+    "file": "pfib-tofwerk raw.h5",
+    "shape": [
+      10,
+      64,
+      64,
+      259
+    ],
+    "seconds": 0.18212862499058247,
+    "prepared_bytes": 4824710,
+    "source_sha256": "e698ea4260b430f0f2ebe28d65fe1b96cba3f193a1adb8e25871a6ef82484486",
+    "exact_rosettasciio": true,
+    "exact_vendor": false,
+    "vendor_max_difference": 0.25,
+    "opened_shape": [
+      10,
+      64,
+      64,
+      259
+    ],
+    "vendor_differing_values": 50
+  },
+  "large": {
+    "file": "pfib_1301x128x128_AlTiPt_raw.h5",
+    "shape": [
+      1301,
+      128,
+      128,
+      216
+    ],
+    "seconds": 84.45137245906517,
+    "prepared_bytes": 2483743409,
+    "source_sha256": "695d82ceff8d769ac2e38d18aa5be24898a15581ce293d059a916662485061c4",
+    "source_unchanged": true,
+    "exact_rosettasciio_frames": [
+      0,
+      650,
+      1300
+    ],
+    "peak_rss_sampled": 246890496,
+    "peak_managed_sampled": 121569536,
+    "completed_frames": 1301,
+    "spare_event_frame_excluded": true
+  },
+  "automated_checks": {
+    "python_tests": 156,
+    "browser_workflows": 42,
+    "frontend_unit_tests": 11,
+    "production_build": true,
+    "final_review_findings_resolved": [
+      "copy_disk_reservation_double_counting",
+      "copy_buffer_lifetime"
+    ]
+  },
+  "distribution": [
+    {
+      "artifact": "tofscope-0.2.0-py3-none-any.whl",
+      "installed_without_node": true,
+      "runtime_dependencies_clean": true,
+      "offline_browser": true,
+      "raw_preparation_without_scientific_runtime": true,
+      "plots_integration_export": true,
+      "saved_copy_restart_source_removed": true,
+      "exact_restored_csv": true,
+      "optional_download": true,
+      "interrupted_download_preserves_saved_file": true
+    },
+    {
+      "artifact": "tofscope-0.2.0.tar.gz",
+      "installed_without_node": true,
+      "runtime_dependencies_clean": true,
+      "offline_browser": true,
+      "raw_preparation_without_scientific_runtime": true,
+      "plots_integration_export": true,
+      "saved_copy_restart_source_removed": true,
+      "exact_restored_csv": true,
+      "optional_download": true,
+      "interrupted_download_preserves_saved_file": true
+    }
+  ],
+  "container": {
+    "non_root_uid": 10001,
+    "readonly_rootfs": true,
+    "readonly_acquisitions": true,
+    "raw_preparation_readonly_mount": true,
+    "saved_copy_reopen": true,
+    "one_port": true
+  },
+  "cloud_opening_regressions": [
+    {
+      "file": "pfib-tofwerk raw.h5",
+      "prepared_and_opened": true,
+      "shape": [
+        10,
+        64,
+        64,
+        259
+      ],
+      "assumptions": [],
+      "exact_rosettasciio": true,
+      "original_unchanged": true
+    },
+    {
+      "file": "fake_fib_sims_raw.h5",
+      "prepared_and_opened": true,
+      "shape": [
+        5,
+        16,
+        16,
+        10
+      ],
+      "assumptions": [
+        "Clock period is missing: assume events are sample indices (clock ratio 1).",
+        "Recording-channel settings are missing: assume one active channel."
+      ],
+      "exact_rosettasciio": true,
+      "original_unchanged": true
+    }
+  ],
+  "latest_checks": {
+    "python_tests": 161,
+    "browser_workflows": 44,
+    "frontend_unit_tests": 11,
+    "metadata_only_identity_change": "ignored",
+    "genuine_content_changes": "rejected",
+    "initial_inspection_retry_limit": 3,
+    "incomplete_metadata": "explicit_assumption_acknowledgment_required"
+  }
+}

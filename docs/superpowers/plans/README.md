@@ -1,5 +1,33 @@
 # ToFScope implementation roadmap
 
+## React/FastAPI replacement — 2026-10-18
+
+The unreleased app may be replaced wholesale; the Marimo prototype is preserved
+in a frozen reference checkout. These plans implement the
+[replacement proposal](../../react-fastapi-migration.md):
+
+1. [Packaged Explore application and multi-user foundation](2026-10-18-react-fastapi-pilot.md):
+   scientific reference, package boundaries, independent analyses, resource/job
+   management, renderer evaluation, API, React Explore, distribution and deployment.
+2. [Complete workspace](2026-10-18-react-fastapi-completion.md): depth calibration,
+   identification/isotopes, sections, spatial renderer selection, multi-layer 3D,
+   controlled saves and full parity qualification.
+
+The packaged Explore application is implemented and qualified. Its follow-up
+[signal workspace](2026-10-19-explore-signal-workspace.md),
+[file-centered persistence](2026-10-19-file-centered-analysis.md), and
+[raw preparation](2026-10-20-raw-acquisition-preparation.md) plans are also
+implemented. The completion plan remains the next feature backlog: depth
+calibration, identification/isotopes, sections, and 3D. Controlled native vendor
+exports remain separate from the supported Save as workflow, which creates new
+HDF5 copies and restores analysis state.
+
+[TODO.md](../../../TODO.md) tracks current replacement capabilities. The older
+plans below describe prototype work and remain historical context; completed
+prototype features do not imply replacement UI parity.
+
+## Prototype roadmap — 2026-10-16
+
 These are proposed implementation plans for the six items in [TODO.md](../../../TODO.md), grounded in the current Python/AnyWidget/Plotly prototype. No feature implementation or HDF5 mutation is part of this planning change.
 
 Read the [shared design brief](../specs/2026-10-16-roadmap-design.md) first. Each plan includes file boundaries, concrete interfaces, test-first tasks, validation commands, acceptance criteria and proposed commit boundaries.

@@ -1,17 +1,40 @@
-# ToFScope TODO
+# ToFScope status and next work
 
-- [x] Multi-peak 3D mapping ([plan](docs/superpowers/plans/2026-10-16-01-multi-peak-3d.md)): support multiple tiled views and overlays with a separate colormap for each peak.
-- [x] File browser for on-server files ([plan](docs/superpowers/plans/2026-10-16-02-server-file-browser.md)): configure the data storage location on the server and browse files within it.
-- [ ] Write custom integration windows and their integrated data back into the HDF5 file ([plan](docs/superpowers/plans/2026-10-16-03-hdf5-write-back.md)).
-  - Protected experimental save/reload is implemented; [commercial reading/display passed for one test addition](docs/hdf5-compatibility.md), including SE images and reopening. Numerical agreement and the full UI save workflow remain unverified. Native additions currently require contiguous, full-acquisition windows.
-- [x] Select multiple disjoint integration windows and combine them into one signal ([plan](docs/superpowers/plans/2026-10-16-04-disjoint-integration-windows.md)).
-- [x] Peak identification helper and isotope abundance table ([plan](docs/superpowers/plans/2026-10-16-05-peak-identification-abundance.md)).
-- [x] Calibrate profile depth by assigning known physical depths to selected frames and interpolating between those points ([plan](docs/superpowers/plans/2026-10-16-06-depth-calibration.md)).
-  - Calibrated coordinates also apply to the front projection, XZ/YZ sections, and single/multi-ion 3D, with physical aspect ratios when X/Y dimensions are known.
-- [x] modals are in the top left corner
-- [x] Identify and depth calibration tools should be graphical first
-- [ ] re-evaluate marimo as framework
-  - [Platform and deployment recommendations](docs/platform-and-deployment.md) recorded; validate the proposed replacement with a packaged Explore screen before a full migration.
-- [ ] Depth profile along side of 3D render
+Status of the React/FastAPI application as of 2026-10-20. The frozen Marimo
+prototype is preserved at tag `prototype-2026-10-18`; its completed features are
+reference behavior, not evidence that the replacement exposes those features.
 
-See the [roadmap index](docs/superpowers/plans/README.md) for dependencies, recommended order, and proposed decisions to review.
+## Available
+
+- [x] Packaged React/FastAPI Explore application with bundled frontend assets.
+- [x] Server file browser, independent file tabs, and configurable acquisition/saved-copy folders.
+- [x] Named signals, multiple disjoint integration intervals, image selection, and profile comparisons.
+- [x] Ion/SE maps, front projections, depth profiles, mass spectra, linked selections, and exports.
+- [x] Save analysis state and full-resolution custom results in a new HDF5 copy; restore by reopening it.
+- [x] Confirmed raw acquisition preparation, including explicit missing-metadata assumptions.
+- [x] Compact prepared files with channel-oriented gzip storage and verified numerical preservation.
+
+## Next scientific features
+
+- [ ] Depth calibration editor and physical-depth coordinates in views and exports.
+- [ ] Peak identification, signal annotations, and explicit isotope measurements.
+- [ ] Linked XZ/YZ cross-sections.
+- [ ] Multi-signal 3D overlays and tiled views, including a depth profile alongside the volume.
+- [ ] Persist and restore the new calibration, identification, and spatial-view state.
+
+Implement these through the [replacement completion plan](docs/superpowers/plans/2026-10-18-react-fastapi-completion.md).
+Depth calibration comes first because sections and 3D depend on its coordinates.
+Original-resolution values must continue to drive profiles and exports.
+
+## Qualification and project maintenance
+
+- [ ] Complete TOFexplorer numerical round-trip checks on disposable files.
+- [ ] Decide whether native TOFexplorer-channel export is needed beyond ToFScope saved copies.
+- [ ] Qualify the target shared-storage deployment, including permissions, locking, and durability.
+- [ ] Finish replacement feature-parity checks and release documentation.
+- [ ] Review and merge the migration branch into `main` after GitHub CI passes.
+
+The last local verification passed 167 Python tests, 44 browser workflows, and
+independent wheel/sdist installation checks. Docker verification was blocked by
+a stopped local daemon; shared NFS behavior remains unqualified. See the
+[validation records](docs/validation/) and [roadmap index](docs/superpowers/plans/README.md).

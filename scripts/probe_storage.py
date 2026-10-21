@@ -12,14 +12,14 @@ import sys
 import tempfile
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from dataset_io import dataset_lock
+from tofscope.storage.dataset_io import dataset_lock
 
 
 def probe(root):
     root=Path(root).resolve(strict=True)
     with tempfile.TemporaryDirectory(prefix='.tofscope-probe-',dir=root) as temporary:
         path=Path(temporary)/'test';path.write_bytes(b'original')
-        script="from dataset_io import dataset_lock;from filelock import Timeout;import sys\ntry:\n with dataset_lock(sys.argv[1]).acquire(timeout=.1):sys.exit(1)\nexcept Timeout:sys.exit(0)"
+        script="from tofscope.storage.dataset_io import dataset_lock;from filelock import Timeout;import sys\ntry:\n with dataset_lock(sys.argv[1]).acquire(timeout=.1):sys.exit(1)\nexcept Timeout:sys.exit(0)"
         with dataset_lock(path):
             result=subprocess.run([sys.executable,'-c',script,str(path)],cwd=Path(__file__).resolve().parents[1],capture_output=True,text=True,timeout=10)
             if result.returncode:raise RuntimeError('Cross-process lock exclusion failed: '+result.stderr)

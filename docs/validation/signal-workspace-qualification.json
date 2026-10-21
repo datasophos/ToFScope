@@ -1,0 +1,195 @@
+{
+  "date": "2026-10-19",
+  "scope": "Local signal-workspace redesign; read-only acquisitions",
+  "checks": {
+    "python_tests": 111,
+    "frontend_unit_tests": 11,
+    "browser_tests": 23,
+    "typescript": true,
+    "production_bundle": true,
+    "stale_package_smoke": "failed as expected: missing Create from spectrum",
+    "frozen_checkout_clean": true,
+    "live_service_restarted": true
+  },
+  "distribution": [
+    {
+      "artifact": "tofscope-0.2.0-py3-none-any.whl",
+      "installed_without_node": true,
+      "runtime_dependencies_clean": true,
+      "offline_browser": true,
+      "plots_integration_export": true
+    },
+    {
+      "artifact": "tofscope-0.2.0.tar.gz",
+      "installed_without_node": true,
+      "runtime_dependencies_clean": true,
+      "offline_browser": true,
+      "plots_integration_export": true
+    }
+  ],
+  "real_browser": {
+    "initial_four_panels_ms": 1387.5357919605449,
+    "resident_stored_signal_switch_ms": 311.71616702340543,
+    "resident_switch_reintegration_jobs": 0,
+    "resident_switch_spectrum_refetches": 0,
+    "image_resize_timings": {
+      "ion": [
+        {
+          "action": "maximize",
+          "ms": 27.899999976158142
+        },
+        {
+          "action": "restore",
+          "ms": 29
+        },
+        {
+          "action": "maximize",
+          "ms": 26.399999976158142
+        },
+        {
+          "action": "restore",
+          "ms": 29.200000047683716
+        },
+        {
+          "action": "maximize",
+          "ms": 27.899999976158142
+        },
+        {
+          "action": "restore",
+          "ms": 30
+        }
+      ],
+      "front": [
+        {
+          "action": "maximize",
+          "ms": 26.800000071525574
+        },
+        {
+          "action": "restore",
+          "ms": 29.59999990463257
+        },
+        {
+          "action": "maximize",
+          "ms": 29.200000047683716
+        },
+        {
+          "action": "restore",
+          "ms": 30.40000009536743
+        },
+        {
+          "action": "maximize",
+          "ms": 28.800000071525574
+        },
+        {
+          "action": "restore",
+          "ms": 30
+        }
+      ]
+    },
+    "frame_step_p50_ms": 181.7512089619413,
+    "frame_step_p95_ms": 181.88833293970674,
+    "frame_step_samples": 4,
+    "offline": true,
+    "browser_errors": [],
+    "stored_signal_options": 217,
+    "signal_picker_height_px": 200,
+    "opened_distinct_files": true
+  },
+  "real_service": {
+    "users": 2,
+    "analyses": 6,
+    "same_file": true,
+    "foreign_denied": true,
+    "independent_revision": true,
+    "selection_p50_ms": 1.046145975124091,
+    "selection_p95_ms": 1.2335830833762884,
+    "health_p95_ms": 1.1341250501573086,
+    "payload_bytes": [
+      2456250
+    ],
+    "job_states": [
+      "running",
+      "succeeded"
+    ],
+    "managed_bytes": 89456640,
+    "peak_rss": 260292608,
+    "external_services_modified": false
+  },
+  "integration": {
+    "prototype": {
+      "seconds": 17.184418292017654,
+      "frames": 1301,
+      "managed_peak_bytes": 85262336,
+      "managed_scratch_accounted": false,
+      "reservation_calls": 1,
+      "sha256": "2c5b35292c24716b711345128552b05735d6ba178657eb64db34a3e18515523e",
+      "exact_equal": true
+    },
+    "previous_pilot": {
+      "seconds": 73.5257697920315,
+      "frames": 1301,
+      "managed_peak_bytes": 112005996,
+      "managed_scratch_accounted": true,
+      "reservation_calls": 21316887,
+      "sha256": "2c5b35292c24716b711345128552b05735d6ba178657eb64db34a3e18515523e",
+      "exact_equal": true
+    },
+    "pooled_pilot": {
+      "seconds": 12.74977829202544,
+      "frames": 1301,
+      "managed_peak_bytes": 128586368,
+      "managed_scratch_accounted": true,
+      "reservation_calls": 6514,
+      "sha256": "2c5b35292c24716b711345128552b05735d6ba178657eb64db34a3e18515523e",
+      "exact_equal": true
+    },
+    "service_job": {
+      "seconds": 11.672791457967833,
+      "status": "succeeded",
+      "done": 1301,
+      "total": 1301,
+      "exact_equal": true,
+      "revision": 2
+    },
+    "source_unchanged": true,
+    "intervals": [
+      [
+        26.5,
+        27.5
+      ]
+    ],
+    "file": "pfib_1301x128x128_AlTiPt.h5",
+    "baseline_ref": "967e5cb"
+  },
+  "limitations": {
+    "raw_only_acquisition": "pfib_1301x128x128_AlTiPt_raw.h5 has no PeakData; unsupported layout, original analysis preserved",
+    "unverified": [
+      "NFS/proxy deployment",
+      "acquisition hardware",
+      "controlled acquisition writes"
+    ],
+    "workspaces": "In-memory; restart resets analyses and unsaved drafts"
+  },
+  "activation": {
+    "url": "http://127.0.0.1:8765",
+    "healthz": 200,
+    "readyz": 200,
+    "new_signal_api_verified": true,
+    "all_served_assets_verified": true,
+    "source_digest_matches": true,
+    "temporary_analyses_reset": true
+  },
+  "final_review": {
+    "reviewer": "fresh GPT-6.1 fallback after initial model usage limit",
+    "important_findings_fixed": 4,
+    "critical_findings": 0,
+    "red_green_verified": true,
+    "deferred_minor": "Stored deduplication reveals profile but does not focus/scroll existing row",
+    "real_data_metrics_scope": "Qualification before lifecycle/concurrency/coverage review fixes; arithmetic/readers unchanged",
+    "package_smoke_rerun_after_fixes": true
+  },
+  "artifacts": {
+    "tofscope-0.2.0-py3-none-any.whl": "e17070a0263559f068b2b3012950dea842091b284947a9ada820bacf7a245df6",
+    "tofscope-0.2.0.tar.gz": "1cdbc045b255abb720ac6e73bdcf682e0c55ae150b19d997216c6285766b3f8d"
+  }
+}
