@@ -1378,3 +1378,27 @@ small {
   background: #245b70;
   border-color: #245b70;
 }
+
+.plot-panel .plot-axis-description {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.plot-cursor-readout {
+  position: absolute;
+  top: 2px;
+  right: 26px;
+  padding: 3px 7px;
+  border: 1px solid #bccbd2;
+  border-radius: 4px;
+  background: #ffffffee;
+  color: #173d4b;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}

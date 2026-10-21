@@ -184,6 +184,9 @@ def smoke(artifact, output):
                 page.get_by_role('button', name='◫ package_copy.h5', exact=True).dblclick()
                 expect(page.get_by_test_id('panel-ion')).to_contain_text('Package signal')
                 expect(page.get_by_test_id('panel-spectrum')).to_have_attribute('data-y-scale', 'linear')
+                expect(page.get_by_test_id('panel-profile')).to_have_attribute('data-x-axis', 'Depth (µm)')
+                page.get_by_test_id('panel-profile').get_by_label('Depth profile selection').hover()
+                expect(page.get_by_test_id('panel-profile').get_by_role('tooltip')).to_contain_text('Depth =')
                 expect(page.get_by_test_id('save-state')).to_have_text('Saved')
                 expect(page.get_by_test_id('panel-profile').locator('footer')).to_contain_text('depth · µm')
                 expect(page.get_by_test_id('panel-front')).to_contain_text('1 frame with unknown depth omitted')
@@ -213,7 +216,7 @@ def smoke(artifact, output):
                 runtime_dependencies_clean=True, offline_browser=True,
                 raw_preparation_without_scientific_runtime=True,
                 plots_integration_export=True, saved_copy_restart_source_removed=True,
-                exact_restored_csv=True, calibrated_copy_roundtrip=True, optional_download=True,
+                exact_restored_csv=True, calibrated_copy_roundtrip=True, scientific_axes_hover=True, optional_download=True,
                 interrupted_download_preserves_saved_file=True)
         finally:
             stop(); log.close()
