@@ -6,6 +6,8 @@ export default defineConfig({
     baseURL: process.env.TOFSCOPE_TEST_URL || "http://127.0.0.1:18763",
     headless: true,
     channel: "chrome",
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
   },
   webServer: process.env.TOFSCOPE_TEST_URL
     ? undefined

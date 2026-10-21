@@ -32,4 +32,30 @@ Signal calculation coverage and saved viewing selections remain supported.
 
 Restart the application to load the Python changes. The current development service
 was left running to preserve its in-memory login and open analyses. Rebuilt UI assets
-load on refresh. Remote GitHub Actions were not checked.
+load on refresh. Remote GitHub Actions were not checked during the original UI validation.
+
+## Help-test CI timeout follow-up (2026-10-21)
+
+The user-reported [CI run](https://github.com/datasophos/ToFScope/actions/runs/39628449540)
+failed at the monolithic help test's 30-second limit. Its logs did not identify a
+stalled action, and the run uploaded no diagnostic artifacts. The timeout did
+not reproduce in 20 local probes using CPU throttling, including a smaller
+viewport and different font metrics; its underlying cause remains unconfirmed.
+
+The same coverage now runs as four isolated scenarios: hover/discoverability,
+keyboard/pinned dismissal, maximized Escape behavior, and SE-specific content.
+Each action has a 10-second limit within the unchanged 30-second test budget.
+Playwright retains traces and screenshots on failure; CI uploads test-results
+for seven days so future failures retain their action log and page context.
+No application behavior, retries, or overall test timeout was changed.
+
+Follow-up verification:
+
+- `npm --prefix frontend run test:e2e -- help.spec.ts --repeat-each=10`: 40 passed.
+- `npm --prefix frontend run test:e2e`: 66 passed.
+- `npm --prefix frontend run typecheck`: passed.
+- `npm --prefix frontend test`: 22 passed.
+- Workflow YAML parsed; PR/main triggers and the conditional artifact step checked.
+- `git diff --check`: passed.
+
+No subsequent CI run was monitored.

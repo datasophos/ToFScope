@@ -1,16 +1,31 @@
 import { test, expect } from "@playwright/test";
 
-test("contextual help works with mouse, keyboard and maximized panes", async ({
+// A stalled action should name its locator before the overall test budget expires.
+test.use({ actionTimeout: 10_000 });
+
+test.beforeEach(async ({ page }) => {
+  await test.step("Open a disposable acquisition", async () => {
+    await page.setExtraHTTPHeaders({
+      "x-tofscope-user": `help-${crypto.randomUUID()}`,
+    });
+    await page.goto("/");
+    await expect(page.locator(".brand svg")).toBeVisible();
+    await expect(page.locator(".brand-name")).toContainText(
+      "FIB–SEM / TOF–SIMS",
+    );
+    await page
+      .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
+      .click();
+    await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+    await expect(
+      page.getByRole("heading", { name: "a.h5", exact: true }),
+    ).toBeVisible();
+  });
+});
+
+test("help buttons are discoverable and hover help stays within the viewport", async ({
   page,
 }) => {
-  await page.setExtraHTTPHeaders({ "x-tofscope-user": `help-${Date.now()}` });
-  await page.goto("/");
-  await expect(page.locator(".brand svg")).toBeVisible();
-  await expect(page.locator(".brand-name")).toContainText("FIB–SEM / TOF–SIMS");
-  await page
-    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
-    .click();
-  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   for (const label of [
     "Files and saved analyses",
     "Signals",
@@ -53,7 +68,12 @@ test("contextual help works with mouse, keyboard and maximized panes", async ({
   ).toBe(true);
   await page.mouse.move(0, 0);
   await expect(tooltip).toBeHidden();
+});
 
+test("keyboard and pinned help dismiss without changing analysis state", async ({
+  page,
+}) => {
+  const tooltip = page.getByRole("tooltip");
   const massHelp = page.getByRole("button", {
     name: "Mass spectrum help",
     exact: true,
@@ -72,7 +92,16 @@ test("contextual help works with mouse, keyboard and maximized panes", async ({
   await page.getByRole("heading", { name: "a.h5", exact: true }).click();
   await expect(tooltip).toBeHidden();
   await expect(page.getByTestId("analysis-revision")).toHaveText("0");
+});
 
+test("Escape dismisses help before restoring a maximized plot", async ({
+  page,
+}) => {
+  const tooltip = page.getByRole("tooltip");
+  const ionHelp = page.getByRole("button", {
+    name: "Ion map help",
+    exact: true,
+  });
   await page
     .getByRole("button", { name: "Maximize Ion map", exact: true })
     .click();
@@ -83,7 +112,10 @@ test("contextual help works with mouse, keyboard and maximized panes", async ({
   await expect(page.locator(".plot-panel.maximized")).toHaveCount(1);
   await page.keyboard.press("Escape");
   await expect(page.locator(".plot-panel.maximized")).toHaveCount(0);
+});
 
+test("SE image help follows the displayed image type", async ({ page }) => {
+  const tooltip = page.getByRole("tooltip");
   await page
     .getByRole("button", { name: "Image display settings", exact: true })
     .click();
