@@ -1116,7 +1116,10 @@ small {
   background: #f4f7f9;
   border-right: 1px solid #dce5e9;
 }
-.file-sidebar button {
+.file-explorer .file-sidebar button {
+  height: auto;
+  min-height: 56px;
+  line-height: 1.4;
   display: flex;
   align-items: center;
   gap: 9px;

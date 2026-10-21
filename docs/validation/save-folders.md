@@ -37,3 +37,10 @@ Validation:
 
 Activating these backend changes in an existing local service requires a restart.
 Open analyses reside in memory and should be saved before restarting.
+
+
+The sidebar location buttons explicitly size themselves for both label lines,
+preventing inherited page-header button heights from clipping the folder names.
+A browser geometry assertion reproduces the clipping and verifies both location
+subtitles fit inside their buttons when launched from Save as. All 11 open/save
+browser workflows and the packaged build passed after the style correction.

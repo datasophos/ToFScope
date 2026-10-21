@@ -335,6 +335,14 @@ test("save folder picker creates a subfolder and the saved copy can be reopened 
     name: "Choose save folder",
     exact: true,
   });
+  for (const name of ["Acquisitions", "Saved files"]) {
+    const location = picker.getByRole("button", { name, exact: true });
+    const bounds = (await location.boundingBox())!;
+    const detail = (await location.locator("small").boundingBox())!;
+    expect(detail.y + detail.height).toBeLessThanOrEqual(
+      bounds.y + bounds.height,
+    );
+  }
   await picker.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(save.getByTestId("save-destination")).toHaveAttribute(
     "title",
