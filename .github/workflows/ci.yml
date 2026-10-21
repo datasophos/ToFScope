@@ -1,5 +1,8 @@
 name: Packaged Explore
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
 jobs:
   pilot:
     runs-on: ubuntu-latest
