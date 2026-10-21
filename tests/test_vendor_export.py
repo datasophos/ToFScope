@@ -7,8 +7,8 @@ import numpy as np
 import subprocess
 import sys
 from filelock import Timeout
-from signals import SignalRecipe
-from vendor_export import export_native_copy
+from tofscope.science.signals import SignalRecipe
+from tofscope.storage.vendor_export import export_native_copy
 from test_signal_recipes import make_acquisition
 
 
@@ -56,7 +56,7 @@ class NativeExportTests(unittest.TestCase):
         with self.assertRaises(ValueError):export_native_copy(self.source,self.root/'cycle.h5',[recipe])
 
     def test_rejects_nested_references_attributes_and_external_storage(self):
-        from vendor_export import validate_native_layout
+        from tofscope.storage.vendor_export import validate_native_layout
         with h5py.File(self.source,'r+') as f:
             dtype=np.dtype([('target',h5py.ref_dtype),('number','i4')])
             data=np.zeros(1,dtype=dtype);data['target'][0]=f['FullSpectra/MassAxis'].ref
@@ -78,10 +78,12 @@ class NativeExportTests(unittest.TestCase):
             with self.subTest(kind='virtual dataset'),self.assertRaises(ValueError):validate_native_layout(f)
 
     def test_public_copy_obeys_source_lock_even_with_prepared_values(self):
-        script="from dataset_io import dataset_lock;import sys,time\nwith dataset_lock(sys.argv[1]):\n print('locked',flush=True)\n time.sleep(.6)"
+        script="from tofscope.storage.dataset_io import dataset_lock;import sys,time\nwith dataset_lock(sys.argv[1]):\n print('locked',flush=True)\n time.sleep(.6)"
         process=subprocess.Popen([sys.executable,'-c',script,str(self.source)],stdout=subprocess.PIPE,text=True)
         try:
             self.assertEqual(process.stdout.readline().strip(),'locked')
             recipe=SignalRecipe(intervals=((1,2),),frames=(0,2),label='test')
-            with self.assertRaises(Timeout):export_native_copy(self.source,self.root/'locked.h5',[recipe],volumes=[np.ones((3,1,2),dtype=np.float32)])
+            started=__import__('time').monotonic()
+            export_native_copy(self.source,self.root/'locked.h5',[recipe],volumes=[np.ones((3,1,2),dtype=np.float32)])
+            self.assertGreater(__import__('time').monotonic()-started,.3)
         finally:process.wait(timeout=3);process.stdout.close()

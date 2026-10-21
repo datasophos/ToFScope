@@ -1,319 +1,124 @@
-# ToFScope prototype
+# ToFScope Explore
 
-A local **Marimo + Plotly** explorer for ToF-Explorer / Tofwerk HDF5 data.
-No Panel or Anaconda dependencies. The source HDF5 file is opened read-only.
-
-See the [platform and deployment recommendations](docs/platform-and-deployment.md)
-for the proposed next-stage architecture, simple local/server packaging, and
-incremental migration criteria. The instructions below run the current prototype.
-
-## Run
-
-From this directory:
+A ToF-SIMS analysis application built with React/TypeScript and FastAPI.
+Original acquisitions remain read only; analyses can be saved as new HDF5 files. One
+installable Python application bundles the frontend and ECharts locally; one
+service and port serve everything, with no runtime Node.js or CDN requirement.
 
 ```sh
-uv run --no-dev --locked marimo run app.py --host 127.0.0.1 --port 2718
+uv sync --frozen
+uv run tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 ```
 
-Open <http://127.0.0.1:2718>. If the adjacent AlTiPt example is available, it is
-selected by default. Otherwise the workspace starts without a loaded acquisition.
-**Open file** browses the server data directory with breadcrumbs,
-filtering and paginated results; select a file and press **Open dataset**.
-Files remain on the computer running Python. Keep the server bound to localhost.
+For an installed wheel: `pip install dist/tofscope-0.2.0-py3-none-any.whl`, then
+`tofscope --data-root /path/to/acquisitions`. The launcher binds loopback and opens
+the browser after readiness. `tofscope serve --no-browser` runs a service;
+`tofscope open` opens its authenticated local UI; `tofscope doctor` checks
+configuration/assets. See [deployment](docs/deployment.md) for configuration,
+proxy authentication, resource limits, container use and restart behavior.
 
-For deployment, explicitly configure a POSIX data root (including an NFS mount):
+Open multiple files, including the same file repeatedly, in independent file tabs.
+Each analysis owns independent named signals, ROI, frame coverage and viewing
+choices. The **Signals** tray lists stored channels and raw integrations: choose
+one with **Images** and show or hide additional **Profile** curves. Names and
+colors stay with each signal when you switch views.
 
-```sh
-TOFSCOPE_DATA_ROOT=/mnt/acquisitions uv run --no-dev --locked marimo run app.py --host 127.0.0.1 --port 2718
-```
+Use **Add signal** to search vendor channels, or **Create from spectrum**
+to name a raw integration and draw/enter exact inclusive mass intervals. Multiple
+intervals form a union. **Calculate signal** adds a result to the tray/profile;
+**Images** switches the ion map and front projection explicitly. **Details**
+exposes provenance, coverage, rename, duplicate, and custom **Edit signal** actions.
+Edits stay separate until **Update signal** succeeds; progress, cancellation and
+errors remain visible beside the signal. Failed calculations preserve old results.
 
-An explicit root starts with no acquisition loaded. Optionally set `TOF_FILE`
-to an absolute path inside that root, or a path relative to it. With neither
-setting, the demo root is the supplied example's directory if it exists,
-otherwise the repository's `data` directory. Acquisition files are not bundled;
-set `TOFSCOPE_DATA_ROOT` to your data directory when running a standalone checkout.
-An empty root
-remains usable; a failed open preserves the current analysis. The picker
-lists `.h5`/`.hdf5` files without reading acquisition arrays. Paths in browser
-state and exported recipes are root-relative. Symlinks must resolve inside the
-root. The root and its directory structure must be controlled by a trusted
-server administrator; this is not a sandbox against hostile local filesystem
-mutations. Authentication and remote multi-user hosting are outside this feature.
+**Calculate over frames** defines a signal's coverage. **Viewing depths** chooses
+which available frames to show without recalculating the signal. **Analysis
+settings** controls the profile/navigation range without rewriting recipes.
+ROI and color controls live beside the image, relative scaling beside profiles,
+and log Y beside the spectrum. Spectrum drag zooms normally and edits intervals
+only while a signal editor is open. Images stay square; maximize/Escape and
+Ctrl/Cmd-wheel zoom preserve the view. Ordinary wheel scrolls the page.
 
-`TOFSCOPE_ALLOW_WRITES` accepts only `true` or `false` and defaults to `false`.
-This setting reserves server write policy for the write-back feature; the current
-explorer continues to open acquisitions read-only. NFS locking and replacement
-behavior must be verified on the deployment mount before enabling write-back.
+**Save as…** creates a self-contained HDF5 copy with all committed signals,
+full-resolution custom results (including hidden signals), names/colors, ROI,
+frame/depth selections and display settings. Open it from **Saved files** to
+restore the analysis after a restart or on another machine. Saving does not
+change the input, including when the input is an earlier saved copy.
 
-To inspect or modify the reactive notebook:
+Saving defaults to the server; **Download copy** is an explicit optional action.
+Large files may take a long time to transfer. A saved copy includes the acquisition,
+so a 2.2-GB input needs at least that much output space plus derived results.
+The acquisition folder (`--data-root`) defaults to the current working directory.
+The saved copies folder (`--output-root`) defaults to that acquisition folder;
+set it explicitly when saving elsewhere or using read-only acquisition storage.
+Local saves go directly into the displayed saved copies folder. Hosted
+deployments keep copies in private owner subfolders. The file picker shows
+both folders, and Save as shows the exact destination in its tooltip.
+Finish/discard drafts and finish/cancel calculations before saving. Closing an
+unsaved analysis offers Save as, Discard or Cancel. CSV exports visible ROI
+profiles at original scale/resolution; PNG includes profile labels.
 
-```sh
-uv run --no-dev --locked marimo edit app.py
-```
+TOFWERK TOFexplorer `.h5` acquisitions can contain stored ion maps or raw events.
+For raw files without ion maps, the app previews the required preparation and
+asks for confirmation before integrating peak windows into a new copy. Missing
+timing/channel metadata requires explicit acknowledgment of the assumptions.
+New preparations compact unused HDF5 space and use channel-oriented gzip storage;
+see [raw preparation](docs/validation/raw-acquisition-preparation.md) and
+[storage measurements](docs/validation/compact-raw-preparation.md).
 
-## Try it
+See [TODO.md](TODO.md) for the current feature status and next work.
 
-The published app fills the browser window with a single tabbed workspace and
-a persistent signal sidebar. Marimo edit mode keeps its normal notebook layout.
+This is the **Explore pilot**, not full feature parity. Calibration editors,
+atomic identification/isotope dialogs, sections, volume tools and controlled
+native saves are specified in the [completion plan](docs/superpowers/plans/2026-10-18-react-fastapi-completion.md).
+In-place acquisition writes remain unavailable. Live tabs/jobs are in memory;
+reopen saved HDF5 copies to restore committed work after a restart. Shared use requires a trusted authenticated proxy;
+actual NFS deployment remains unqualified.
 
-1. Click the ion-channel picker and type a mass (for example `27` or `193.95`)
-   or a stored label (`Pt`). Search results show exact masses and integration
-   limits, with at most eight results visible. Use Arrow keys and Enter to
-   select, or Escape to cancel. Recent channels appear as one-click shortcuts.
-   The comparison picker adds stored channels to a persistent list. Add as many
-   comparison windows as needed; each row has its own remove button and color.
-   The same colors identify depth-profile curves and spectrum bands.
-   Searches use file labels rather than inferring ion identities for nominal bins.
-2. **Explore** shows images on the left and the mass spectrum above the depth
-   profile on the right. The four plot frames share an even grid; hover or focus
-   a small **i** icon for interaction help. Each display has a **⤢** maximize button.
-   Use **Restore layout** or **Escape** to return with its selections and zoom intact.
-   Toggle **SIMS images** / **FIB SE image** above the images.
-   SIMS opens with a top projection summed over loaded depth, and a front XZ
-   projection summed over the ROI’s Y rows. Click the depth profile to pick a frame. Drag across
-   it to select a persistent shaded depth window, such as frames 200–400. Drag
-   its edges to resize, or Shift-drag inside it to move the interval. The window
-   **sums the ion maps** and shows the **mean SE image** over the inclusive frame
-   interval. Plot titles state the aggregation and frame count. The window also
-   crops cross-sections, 3D and exports, and fills the integration frame fields.
-   The full loaded profile remains visible for context. Clicking a frame exits
-   window mode and restores single-frame maps. **All depths**, beside the frame
-   controls, clears either a single-frame selection or a depth window and restores
-   the top projection over all loaded depths. The depth profile also offers this
-   reset while a selection is active, including when maximized.
-   Use the frame number or previous/next buttons for exact single-frame steps.
-3. Draw a rectangle on the ion map to define a spatial ROI. Click its gold
-   outline to reveal edit handles, then drag to move or resize it. The depth profile, cross-sections and 3D crop
-   share that region. **Reset to full field** clears it; exact pixel limits are
-   available in the sidebar.
-4. Use the embedded spectrum, or open **Mass spectrum** for a larger view. Drag horizontally to select a mass interval, including
-   when starting directly on a peak. Drag a gold edge to resize it; Shift-drag
-   inside the band to move it. If you switch to Plotly's zoom/pan tools, use
-   **Draw window** to return to interval selection. The exact limits appear in
-   the sidebar. The interval is a
-   **draft** until you press **Apply custom window**; browsing does not trigger
-   raw reconstruction. **Zoom to window** helps adjust narrow intervals.
-   **Mass windows** lists draft intervals. Select a row to edit it, use **Add
-   interval** for another row, or × to remove one. Dragging or entering limits
-   changes only the selected row. Apply combines all rows into one signal: gaps
-   are excluded, and overlapping intervals/shared endpoints count each event
-   once. Removing all rows disables Apply without changing the active signal;
-   Add interval or drawing on the spectrum starts a new draft.
-5. Set the first/last integration frames and Apply. Start with a small interval
-   for a quick trial. Reconstruction reads one raw frame at a time and reports
-   progress. **Restore stored channel** returns to the original integrated data.
-   To keep the image signal and add a comparison instead, choose **Add window to
-   comparisons**. Each custom comparison retains its own mass bounds and frame
-   coverage. Frames outside that coverage are missing, not zero. ROI changes
-   recompute every comparison; relative scaling normalizes each curve separately.
-6. Use **Cross-sections** for XZ/YZ views or **3D volume** to rotate the selected
-   signal. The compact selection strip and expandable **Data & preview details** show the stored/applied source,
-   exact mass limits, depth layers, spatial ROI and preview resolution. Each 3D
-   voxel contains the active mass-window intensity at one X/Y/depth position;
-   the integrated top projection sums those layers. Comparison channels
-   affect comparison curves and spectrum bands; relative-profile scaling affects
-   the profile chart only. Neither changes the active image or 3D signal. Pending mass
-   or reconstruction-frame edits are called out separately until Apply.
-   Context links jump to the spectrum or slice/profile view to edit the source
-   selection. Opacity, threshold and display stretch change rendering only.
-7. Download the full-resolution ROI mean depth profiles (active signal plus all
-   comparisons) with **Profile CSV**, or
-   save the active analysis recipe and comparison definitions with **Settings JSON**.
-   Schema 3 records every mass interval, source channel, inclusive frame coverage
-   and a stable recipe UUID. Composite recipes do not substitute one bounding
-   interval for their separated windows. Older raw single-window recipes can be
-   converted by `SignalRecipe.from_dict`; legacy stored recipes need a channel
-   index to preserve vendor-derived values.
-   CSV cells outside a comparison’s frame coverage are empty.
+Scientific readers were compared before implementation: direct h5py preserves
+selective bounded reads and exact existing NumPy integration without unused
+signal-framework lifecycle machinery. See [reader evidence](docs/validation/reader-decision.md).
+ECharts and Plotly passed the same focused interaction probes; ECharts was chosen
+for the smaller bundle and public numerical-axis adapter. See
+[renderer evidence](docs/validation/renderer-decision.md) and
+[pilot qualification](docs/validation/pilot-qualification.md).
 
-Plot interactions update shared Python state through an AnyWidget bridge.
-Plotly's JavaScript bundle comes from the installed package; no CDN is required.
-Only visible plots in the active tab render. Frame changes update slices and markers
-without rebuilding the 3D volume. The frontend lives in `web/`; `workspace.py`
-handles its events and `explorer.py` contains reusable file/analysis functions.
-
-## Scientific and performance scope
-
-Comparison count has no fixed cap. Custom comparisons retain their reconstructed
-volumes in memory so spatial ROI changes remain exact; narrow the frame range
-when trying many custom windows on a large acquisition.
-
-
-- `explorer.py` is a reusable data layer independent of Marimo. It reads the
-  Tofwerk schema directly with h5py to bound access to individual peak channels
-  and raw depth slices; it does not yet use the higher-level eXSpy signal API.
-- Stored channels are already integrated. Editing a true mass window therefore
-  reconstructs a new channel from `FullSpectra/EventList`, using calibrated
-  `MassAxis`, the TDC clock ratio, and waveform / active-channel normalization.
-  Both mass-window endpoints are inclusive; entered bounds retain their numeric
-  precision when rendered, applied, and exported. Missing calibration metadata
-  produces an error rather than a guessed normalization.
-- A four-frame nominal-27 reconstruction of the supplied example differed
-  from the vendor-stored total by approximately **0.005%**, with at most **0.25**
-  intensity units per pixel (one event divided by normalization 4). The cause
-  has not been established. Treat reconstructed channels as independently
-  derived results, not bit-identical reproductions of vendor processing.
-- Frames are zero-based and inclusive. The example contains 1,302 raw writes
-  but 1,301 stored frames. The prototype uses only the stored frame domain;
-  it does not infer the correspondence of the extra raw write.
-- SE images are paired by index, shown in native pixels. Spatial registration
-  and timing alignment have not been established. Window mode averages them
-  without registration. The final SE image is shorter; each mean-image pixel is
-  divided by its actual coverage count so missing rows do not bias it downward.
-- X/Y units derive from `FIBParams.ViewField` (millimeters converted to µm).
-  Z defaults to acquisition frames. Known-depth anchors enable physical depth
-  across profiles, projections, cross-sections and 3D. **Z exaggeration** is a
-  display setting; 1× preserves physical proportions when X/Y are calibrated.
-- Profiles and slices use original-resolution data. The 3D preview uses block
-  means (including partial edge blocks), at most 96 × 32 × 32 voxels in Fast mode
-  or 160 × 48 × 48 in Detailed mode. Thin features contribute to block means,
-  although their displayed contrast and geometry can change with downsampling.
-- Logarithmic colors apply `log(1 + intensity)` only to displays. Ion maps
-  keep a fixed color range across frames, estimated from the channel.
-- CSV exports contain unscaled ROI mean intensity over the selected depth
-  window, or the loaded frame range when no window is selected. The optional
-  relative profile display does not change the values. JSON recipes include
-  the selected and loaded frame ranges and are downloadable;
-  re-import is not implemented yet.
-- The example's 217-channel array expands to 17.2 GiB. The app loads channels
-  individually (81.3 MiB each), caches up to three stored channels, and retains
-  the active custom channel and each custom comparison. Full custom reintegration can take a minute or
-  longer. Progress appears while that calculation is running.
-- This is a prototype for files that contain `PeakData/PeakData`, a peak table,
-  mass axis and sum spectrum. Raw-only files,
-  background subtraction, mass recalibration,
-  segmentation and quantitative composition are outside its current scope.
-
-## Known-depth calibration
-
-Use **Depth…** to see the active and comparison profiles, including the current
-spatial ROI and relative scaling. Click a profile position to select its frame,
-then enter the known depth and **Add anchor**. Clicking an existing anchor
-pre-fills its depth for **Update anchor**. Frame 0 stays fixed at depth 0.
-The editor always uses acquisition frames, so you can select unknown depths
-even while the main views use physical coordinates. Drag to zoom or use
-**All frames**; exact frame entry and the anchor table remain available.
-Switch **Depth coordinates** to physical depth and choose
-nm, µm or mm. Between anchors the profile uses piecewise-linear interpolation;
-later depths stay unknown. Dragging still selects original acquisition frames,
-without resampling or changing intensities. CSV adds `depth_nm`, leaving unknown
-values blank; JSON retains canonical nm anchors and the interpolation policy.
-Removing all positive-depth anchors restores frame coordinates in every view.
-**Depth…** is also available on the front projection, XZ/YZ sections and 3D.
-Their depth coordinates and selection markers follow the same calibration;
-clicking a section still selects an original acquisition frame. The ion top
-map and SE image retain their original data and selection behavior.
-
-Physical views omit frames beyond the last anchor, with an explicit coverage
-summary. The 3D preview clips unknown-depth frames before pooling. Preview
-positions average calibrated coordinates within each frame block, including
-blocks spanning changes in calibration slope. No intensities are interpolated
-onto a new depth grid. Tiled and overlay layers share that calibrated geometry.
-
-With a known X/Y field of view, 3D starts at **1× Z exaggeration** and preserves
-physical proportions across nm/µm/mm display changes. Thin specimens can look
-flat at true scale; increase exaggeration to inspect them. Without X/Y scale,
-Z still shows calibrated depth but the 3D aspect ratio remains arbitrary.
-Frame mode retains its separate arbitrary stretch setting.
-
-## Atomic ions and isotope measurements
-
-Use **Identify…** to open the interactive spectrum. Click a peak to search
-candidate atomic assignments automatically; clicks snap to nearby local maxima
-within seven display pixels, otherwise to the nearest sampled mass bin.
-Drag to zoom, scroll to zoom further, or use **Full spectrum** / **Selected
-window**. The selected mass and predicted candidates are marked on the plot.
-Tolerance in Th or ppm, polarity, charges 1–3 and exact mass entry remain
-editable. The helper uses the offline NIST/CIAAW catalog;
-reference version and mass convention are in [data/reference/README.md](data/reference/README.md).
-Select a candidate and **Annotate signal** to record an interpretation alongside
-the original label. **Apply window** and **Add as comparison** are separate
-analysis actions with editable exact integration limits.
-
-The **Isotopes** tab explicitly measures selected active/comparison signals in
-the current ROI and depth window. It shows original intensity sums, observed
-fractions within that selected set, natural reference abundances/ranges and
-coverage/status. Ratios use common covered frames. Overlapping windows suppress
-fractions; unknown reference abundances remain unknown. These are signal ratios,
-not a quantitative composition fit. **Isotope CSV** and Settings JSON preserve
-measurement scope and annotations; measurements do not automatically rerun when
-you change the ROI or depth window. Molecular ions/adducts are outside this pass.
-
-## Multiple 3D ion layers
-
-In **3D volume**, open **Layers…** to add registered active/comparison signals.
-Each layer retains its mass recipe and coverage, with its own colormap, opacity,
-percentile threshold, visibility and Solo action. Choose tiled or overlay views;
-tiles page four scenes at a time and support linked or independent cameras.
-The selected ROI and depth window apply to all layers. Their shared preview
-grid preserves missing coverage and valid partial-block means. A total budget
-of 500,000 displayed voxels is shared across rendered layers; styles reuse cached
-previews. Relative profile scaling does not affect volume values.
-
-Layers lists exact mass intervals, source coverage, actual preview resolution,
-and displayed numerical intensity ranges. Independent scales are the default;
-shared scales use the same numerical range without normalizing individual ions.
-Overlay transparency can obscure a layer, so tiled views and Solo remain useful.
-Thin/constant selections use points. Z remains frames with arbitrary stretch.
-
-The AlTiPt example's three stored Fast layers produced a 10,815,206-byte encoded
-figure (three 93 × 32 × 32 previews). Cached preparation took about 0.09 s;
-30 headless Chrome/SwiftShader drag interactions had a measured 95th percentile
-of about 170 ms including browser-driver and frame scheduling. These local
-prototype measurements satisfy the proposed 32 MiB / 200 ms budgets; they do
-not establish performance for other hardware, larger selections or raw reconstruction.
-
-## Saving integrations (experimental)
-
-**Save integration…** reviews the active applied custom signal before any write.
-The default server is read only. Experimental native saves require both
-`TOFSCOPE_ALLOW_WRITES=true` and `TOFSCOPE_ALLOW_UNVERIFIED_NATIVE=true`.
-Commercial TOFexplorer reading/display passed for one representative addition
-in v2.9.7+3484e0dd; numerical agreement and the full UI save workflow remain
-unverified. Both experimental opt-ins remain required; see the
-[compatibility and storage notes](docs/hdf5-compatibility.md) before enabling.
-Initially, native saves support contiguous windows covering every frame, with
-an ASCII label. Disjoint or partial-frame native saves are rejected explicitly.
-
-A save retains a backup, verifies a sibling copy, then replaces the selected
-file at its original path. Full XY scientific intensities and exact recipes are
-saved; ROI, log colors and preview sampling do not alter saved values. The
-workspace reloads and selects the saved integration. Saved records are available
-in **Saved integrations**. Other open sessions must reload after a source change;
-export Settings JSON first if you want to retain an old analysis recipe.
-
-## Verify
+Build/verify from source (Node is needed only for frontend development/builds):
 
 ```sh
+npm --prefix frontend ci
+npm --prefix frontend run generate:api
+npm --prefix frontend run typecheck
+npm --prefix frontend test
+npm --prefix frontend run test:e2e
+uv run python scripts/build_frontend.py
 uv run python -m unittest discover -s tests -v
-uv run marimo check app.py
-uv run python scripts/check_browser.py
-uv run python scripts/check_spectrum.py
-uv run python scripts/check_depth_window.py
-uv run python scripts/check_peak_picker.py
-uv run python scripts/check_volume_context.py
-uv run python scripts/check_comparisons_layout.py
-uv run python scripts/check_display_layout.py
-uv run python scripts/check_all_depths.py
-uv run python scripts/check_roi_replacement.py
-uv run python scripts/check_viewport.py
-uv run python scripts/check_window_sets.py
-uv run python scripts/check_interval_selection_race.py
-uv run python scripts/check_file_browser.py
-uv run python scripts/check_depth_calibration.py
-uv run python scripts/check_calibrated_views.py
-uv run python scripts/check_dialog_position.py
-uv run python scripts/check_peak_helper.py
-uv run python scripts/check_peak_helper_reset.py
-uv run python scripts/check_graphical_tools.py
-uv run python scripts/check_multi_volume.py
-uv run python scripts/check_writeback.py
+uv build
+uv run python scripts/check_distribution.py --artifacts dist --output /tmp/tofscope-distribution
+uv run python scripts/check_container.py
 ```
 
-The numerical tests cover empty pixels, inclusive mass-window endpoints,
-out-of-range events, invalid bounds, pooling of thin features and partial
-blocks, conversion of drawn coordinates to pixel regions, comparison frame
-alignment and ROI updates, independent normalization, and exact XZ projections. Browser checks
-use installed Google Chrome and the real example to exercise profile clicks
-and drags, ROI drawing/editing, mass-window drawing, tabs, integration, multiple
-comparison windows, the SIMS/SE toggle, and exports.
+Prebuilt assets are included in both wheel and sdist. A source build fails for
+missing/stale assets. CI checks generated API drift, scientific/service tests,
+frontend behavior, offline installed-package smoke and the container.
+
+The complete Marimo prototype is frozen at
+`37ecacf24c32388cd7f84bc11fa509989cc44775` in a separate checkout, with its own
+locked environment. Recreate without changing this application:
+
+```sh
+git worktree add --detach /path/to/tofscope-prototype 37ecacf24c32388cd7f84bc11fa509989cc44775
+cd /path/to/tofscope-prototype
+uv sync --frozen
+uv run marimo run app.py --headless --host 127.0.0.1 --port 27991
+```
+
+Set `TOFSCOPE_DATA_ROOT` and `TOF_FILE` there to inspect an acquisition. Keep
+original acquisitions read only; prototype write flags should remain disabled.
+The [baseline](docs/validation/prototype-baseline.md) records its test evidence.
+Old widget assertions are preserved under `docs/validation/prototype-tests/`;
+[coverage mapping](docs/validation/coverage-map.md) assigns them to replacement
+checks or explicit completion-plan features. No legacy runtime or compatibility
+adapter is shipped. The [migration design](docs/react-fastapi-migration.md) and
+[pilot plan](docs/superpowers/plans/2026-10-18-react-fastapi-pilot.md) describe the
+boundaries and decisions.

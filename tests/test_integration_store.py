@@ -5,8 +5,8 @@ from pathlib import Path
 from uuid import uuid4
 import h5py
 import numpy as np
-from integration_store import IntegrationRecord,write_integration_group,list_saved_integrations,read_saved_integration
-from signals import SignalRecipe,read_signal
+from tofscope.storage.integration_store import IntegrationRecord,write_integration_group,list_saved_integrations,read_saved_integration
+from tofscope.science.signals import SignalRecipe,read_signal
 from test_signal_recipes import make_acquisition
 
 

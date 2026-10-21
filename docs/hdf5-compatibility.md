@@ -128,3 +128,21 @@ post-save active-layer export consistency is also checked. Further malformed
 saved-metadata cases and an independent comparison of a representative unknown
 vendor metadata tree remain useful test improvements; the current verification
 does not claim exhaustive coverage of every vendor metadata field.
+
+## Saved analysis copies
+
+File-centered Save as creates a byte-preserving acquisition copy, then writes a
+version-1 `/ToFScope/Analysis/state_json` uint8 document and full-resolution custom
+values under `/ToFScope/Integrations/<uuid>`. It does not rebuild vendor PeakData
+or flatten disjoint/partial integrations into native vendor channels. The document
+records committed signal relationships and selections; credentials, leases, jobs
+and original server paths are excluded. Unknown, incomplete, oversized or corrupt
+documents fail explicitly. Custom records are checksum-verified on open, including
+hidden results, and restored without raw reintegration. Original files remain
+unchanged. Vendor/commercial-software round trips and NFS crash durability remain
+unverified; these outputs are supported by ToFScope's own reader.
+
+Integration `recipe_json` uses a bounded one-dimensional uint8 UTF-8 encoding
+(maximum 64 KiB), checked before allocation. Restoring an analysis admits its
+combined embedded recipe decoding scratch in addition to state JSON and frame
+scratch. Unsupported earlier experimental encodings are rejected explicitly.

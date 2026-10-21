@@ -1,7 +1,7 @@
 """Exact isotope candidates retain ambiguity and attributed abundance ranges."""
 import unittest
 from dataclasses import asdict
-from isotopes import IsotopeRecord,ion_mz,find_candidates,load_catalog,ELECTRON_MASS_U
+from tofscope.science.isotopes import IsotopeRecord,ion_mz,find_candidates,load_catalog,ELECTRON_MASS_U
 
 
 class IsotopeTests(unittest.TestCase):

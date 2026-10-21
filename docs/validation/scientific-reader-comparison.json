@@ -1,0 +1,72 @@
+{
+  "versions": {
+    "h5py": "3.16.0",
+    "rosettasciio": "0.15.0",
+    "hyperspy": "2.5.0"
+  },
+  "runs": [
+    {
+      "backend": "h5py",
+      "lazy": false,
+      "exact": true,
+      "peak_rss": 51789824,
+      "wall_ms": 25.586333009414375,
+      "open_files_after": [],
+      "metadata": []
+    },
+    {
+      "backend": "rsciio",
+      "lazy": false,
+      "exact": true,
+      "peak_rss": 60473344,
+      "wall_ms": 127.71708297077566,
+      "open_files_after": [],
+      "metadata": [
+        "General",
+        "Signal",
+        "Acquisition_instrument"
+      ]
+    },
+    {
+      "backend": "rsciio",
+      "lazy": true,
+      "exact": true,
+      "peak_rss": 444317696,
+      "wall_ms": 2981.224499992095,
+      "open_files_after": [],
+      "metadata": [
+        "General",
+        "Signal",
+        "Acquisition_instrument"
+      ]
+    },
+    {
+      "backend": "hyperspy",
+      "lazy": false,
+      "exact": true,
+      "peak_rss": 76382208,
+      "wall_ms": 102.88808296900243,
+      "open_files_after": [],
+      "metadata": [
+        "_HyperSpy",
+        "General",
+        "Signal",
+        "Acquisition_instrument"
+      ]
+    },
+    {
+      "backend": "hyperspy",
+      "lazy": true,
+      "exact": true,
+      "peak_rss": 454000640,
+      "wall_ms": 3421.26337508671,
+      "open_files_after": [],
+      "metadata": [
+        "_HyperSpy",
+        "General",
+        "Signal",
+        "Acquisition_instrument"
+      ]
+    }
+  ]
+}

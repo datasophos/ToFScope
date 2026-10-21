@@ -1,0 +1,24 @@
+[tofscope]
+data_root = "/srv/tofscope/data"
+runtime_dir = "/var/lib/tofscope"
+output_root = "/srv/tofscope/saved"
+lock_dir = "/var/lib/tofscope/locks"
+host = "127.0.0.1"
+port = 8765
+mode = "local"
+global_bytes = 4294967296
+user_bytes = 2147483648
+analysis_bytes = 1073741824
+response_bytes = 33554432
+analyses_per_user = 8
+analyses_global = 32
+jobs_per_analysis = 4
+jobs_per_user = 8
+jobs_global = 32
+workers = 2
+# Shared mode requires all of the following and network confinement to the proxy:
+# mode = "proxy"
+# host = "0.0.0.0"
+# trusted_proxies = ["192.0.2.10"]
+# public_origin = "https://tofscope.example.org"
+# identity_header = "x-tofscope-user"

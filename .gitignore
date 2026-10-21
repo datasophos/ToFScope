@@ -3,3 +3,11 @@ __pycache__/
 *.pyc
 .DS_Store
 
+.superpowers/
+.worktrees/
+node_modules/
+dist/
+build/
+*.egg-info/
+frontend/test-results/
+frontend/playwright-report/
