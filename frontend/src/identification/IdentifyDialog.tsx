@@ -27,7 +27,11 @@ export function IdentifyDialog({
   spectrum?: Panel;
   send: Send;
   active: boolean;
-  onDraft: (name: string, interval: [number, number]) => void;
+  onDraft: (
+    candidateId: string,
+    interval: [number, number],
+    measuredMz: number,
+  ) => void;
   refresh: () => Promise<void>;
 }) {
   const [open, setOpen] = useState(false),
@@ -139,7 +143,7 @@ export function IdentifyDialog({
       } else {
         const bounds = interval();
         if (action === "draft") {
-          onDraft(selected, bounds);
+          onDraft(selected, bounds, Number(mz));
           close();
         } else {
           await post<Job>(`/analyses/${a.id}/jobs`, {
@@ -433,11 +437,11 @@ export function IdentifyDialog({
           )}
           <div className="identification-actions">
             <fieldset>
-              <legend>Annotate an existing signal</legend>
+              <legend>Assign an isotope to an existing signal</legend>
               <label>
-                Signal to annotate
+                Signal to assign
                 <select
-                  aria-label="Signal to annotate"
+                  aria-label="Signal to assign"
                   value={signalId}
                   onChange={(e) => setSignalId(e.target.value)}
                 >
@@ -453,13 +457,13 @@ export function IdentifyDialog({
                   disabled={busy || !candidate}
                   onClick={() => void act("annotate")}
                 >
-                  Annotate signal
+                  Assign isotope to signal
                 </button>
                 <button
                   disabled={busy || !annotation}
                   onClick={() => void act("clear")}
                 >
-                  Clear annotation
+                  Clear isotope assignment
                 </button>
               </div>
               {annotation && <p>Assigned {annotation.candidate_id}</p>}

@@ -108,9 +108,10 @@ spectrum; its plot starts with log intensity. Click a peak to search immediately
 or enter an exact m/z. Tolerance defaults to 0.3 Th; changing tolerance, its unit,
 or charge and polarity refreshes candidates immediately. Candidates default to known natural abundances, shown as percentages
 and ordered by abundance within the mass tolerance. Closest-mass ordering and
-isotopes without tabulated natural abundance are optional. Annotate an
-existing signal, apply an exact window to a draft, or explicitly calculate a new
-comparison. Original file labels remain unchanged.
+isotopes without tabulated natural abundance are optional. Assign an isotope to an
+existing signal, apply an exact window to an assigned draft, or explicitly
+calculate a new assigned comparison. The draft keeps its isotope assignment when
+you rename it. Original file labels remain unchanged.
 
 **Isotope measurements** sums selected signals at original resolution over the
 current ROI and viewing frames, using their common coverage. Overlapping windows
@@ -120,7 +121,7 @@ Calculation details and provenance are expandable. Results describe selected-set
 signal ratios, not quantitative composition. Input changes mark
 captured measurements out of date until you explicitly Measure again. Isotope
 CSV and Settings JSON retain scope, mass errors, uncertainties and provenance;
-Save as/reopen also preserves annotations and captured results. See
+Save as/reopen also preserves isotope assignments and captured results. See
 [identification validation](docs/validation/identification.md).
 
 The application still lacks full prototype feature parity. Sections, volume

@@ -329,9 +329,9 @@ export function IsotopeMeasurements({
               compared this way.
             </p>
             <p>
-              A signal name is only a label. Use Identify peak → Annotate signal
-              to attach an isotope identification and show its reference
-              abundance.
+              A signal name is only a label. Use Identify peak → Assign isotope
+              to signal to attach an isotope identification and show its
+              reference abundance.
             </p>
           </details>
           <div className="measurement-footer">

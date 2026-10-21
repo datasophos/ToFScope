@@ -31,6 +31,11 @@ export function SignalEditor({
             ? "Changes not calculated"
             : "Draw on the spectrum or enter mass intervals."}
       </p>
+      {d.isotope && (
+        <p className="draft-status">
+          Isotope assignment: {d.isotope.candidateId}
+        </p>
+      )}
       <form
         onSubmit={(event) => {
           event.preventDefault();

@@ -120,6 +120,8 @@ export function useSignalEditor(
           frames: [Number(d.frames[0]), Number(d.frames[1])],
           signal_id: d.signalId,
           expected_recipe_version: d.recipeVersion,
+          candidate_id: d.isotope?.candidateId,
+          measured_mz: d.isotope?.measuredMz,
         },
       };
       if (
@@ -179,8 +181,15 @@ export function useSignalEditor(
           [0, analysis.shape[0] - 1],
         ),
       ),
-    openIdentified: (name: string, interval: [number, number]) =>
-      open(createDraft(name, [interval], [0, analysis.shape[0] - 1])),
+    openIdentified: (
+      candidateId: string,
+      interval: [number, number],
+      measuredMz: number,
+    ) =>
+      open({
+        ...createDraft(candidateId, [interval], [0, analysis.shape[0] - 1]),
+        isotope: { candidateId, measuredMz },
+      }),
     openEdit: (id: string) => seed(id, false),
     openCopy: (id: string) => seed(id, true),
     patchDraft: (patch: Partial<SignalDraft>) =>

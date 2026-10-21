@@ -170,3 +170,25 @@ independent review found no actionable issues.
 
 [Zero-intensity desktop layout](identification/measurement-zero-desktop.png) ·
 [Narrow layout](identification/measurement-zero-mobile.png)
+
+
+## Preserve assignments through Apply window
+
+Apply window previously copied only the candidate label into a new signal draft,
+so calculation created an isotope-named signal without its assignment. Identified
+drafts now retain the selected candidate ID and exact measured m/z independently
+of the editable signal name. Submission passes both through the existing job API,
+which constructs the full catalog-backed assignment. The editor shows the pending
+assignment before calculation. Manually created drafts continue without inferred
+assignments; labels are never parsed to guess isotope identity.
+
+The user-facing controls now say Assign isotope to signal, Signal to assign, and
+Clear isotope assignment. Measurement help uses the same language. Signals created
+before this fix require an explicit one-time assignment; no migration guesses
+identity from their names.
+
+A browser regression reproduces the missing job fields, then verifies the fixed
+workflow: select H-2, Apply window, rename the draft, calculate, and measure. The
+request preserves the exact measured mass and the measured row includes its
+isotope assignment and reference abundance. Nine focused browser workflows, 30
+frontend unit tests, TypeScript and the packaged build passed.

@@ -22,10 +22,10 @@ test("atomic annotation preserves labels and explicit measurement becomes stale"
     .click();
   await dialog.getByRole("radio", { name: "Al-27:+1", exact: true }).check();
   await dialog
-    .getByLabel("Signal to annotate", { exact: true })
+    .getByLabel("Signal to assign", { exact: true })
     .selectOption({ index: 0 });
   await dialog
-    .getByRole("button", { name: "Annotate signal", exact: true })
+    .getByRole("button", { name: "Assign isotope to signal", exact: true })
     .click();
   await expect(
     dialog.getByText("Assigned Al-27:+1", { exact: true }),
@@ -379,4 +379,68 @@ test("search settings immediately refresh candidates with the updated values", a
     unit: "ppm",
     charges: [2, -1],
   });
+});
+
+test("Apply window retains the chosen isotope through a renamed draft and measurement", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `identify-draft-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: /Open TOFexplorer/ })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+  await page
+    .getByRole("button", { name: "Identify peak", exact: true })
+    .click();
+  const identify = page.getByRole("dialog", { name: "Atomic identification" });
+  await identify
+    .getByLabel("Measured m/z", { exact: true })
+    .fill("2.014123456789");
+  await identify
+    .getByRole("button", { name: "Find candidates", exact: true })
+    .click();
+  await identify.getByRole("radio", { name: "H-2:+1", exact: true }).check();
+  await identify.getByLabel("Window lower Th", { exact: true }).fill("1");
+  await identify.getByLabel("Window upper Th", { exact: true }).fill("2");
+  await identify
+    .getByRole("button", { name: "Apply window", exact: true })
+    .click();
+  const draft = page.getByRole("region", {
+    name: "Signal editor",
+    exact: true,
+  });
+  await draft
+    .getByLabel("Signal name", { exact: true })
+    .fill("Hydrogen window");
+  const submitted = page.waitForRequest(
+    (r) => r.url().endsWith("/jobs") && r.method() === "POST",
+  );
+  await draft
+    .getByRole("button", { name: "Calculate signal", exact: true })
+    .click();
+  expect((await submitted).postDataJSON().spec).toMatchObject({
+    name: "Hydrogen window",
+    candidate_id: "H-2:+1",
+    measured_mz: 2.014123456789,
+  });
+  await expect(draft).toBeHidden();
+  await page
+    .getByRole("button", { name: "Isotope measurements", exact: true })
+    .click();
+  const measurements = page.getByRole("dialog", {
+    name: "Isotope measurements",
+    exact: true,
+  });
+  await measurements.getByRole("checkbox", { name: /Hydrogen window/ }).check();
+  await measurements
+    .getByRole("button", { name: "Measure", exact: true })
+    .click();
+  const results = measurements.getByTestId("isotope-results");
+  await expect(results.locator("tbody tr")).toContainText("H-2:+1");
+  await expect(results).not.toContainText("No isotope assigned");
+  await expect(results.locator("tbody td").nth(3)).toContainText("%");
 });
