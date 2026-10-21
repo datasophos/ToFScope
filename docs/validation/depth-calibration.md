@@ -143,3 +143,13 @@ Browser coverage exercises Control and Meta on the main spectrum, profile and
 identification spectrum, verifies translated ranges preserve width, release
 mid-drag, manual-toggle persistence and blur cleanup. Ten focused browser
 workflows, 30 frontend unit tests, TypeScript and the packaged build passed.
+
+
+Temporary pan indication is now scoped to the hovered plot. Moving between plots
+while holding Cmd/Ctrl transfers the indicator; leaving plots clears it. Manually
+toggled pan remains active off-hover. Physical DOM ancestry distinguishes the
+identification plot from its underlying spectrum, since React portal events also
+bubble through the parent plot. The drag retains its original tool even when
+hover changes. Both-modifier browser checks cover these transitions, including
+exactly one active indicator in the identification dialog. Five focused browser
+workflows and 30 frontend tests passed, along with TypeScript and the build.

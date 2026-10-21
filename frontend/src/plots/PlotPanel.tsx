@@ -119,7 +119,8 @@ export function PlotPanel({
   const [zoom, setZoom] = useState<Range | null>(null);
   const [panning, setPanning] = useState(false);
   const panModifier = usePanModifier();
-  const panActive = panning || panModifier;
+  const [hovered, setHovered] = useState(false);
+  const panActive = panning || (panModifier && hovered);
   const [yScale, setYScale] = useState<"log" | "linear">("log");
   useEffect(() => {
     if (spectrumLog !== undefined) setYScale(spectrumLog ? "log" : "linear");
@@ -228,6 +229,17 @@ export function PlotPanel({
   return (
     <section
       className={`plot-panel ${maximized ? "maximized" : ""}`}
+      onPointerOver={(e) =>
+        setHovered(
+          (e.target as Element).closest(".plot-panel") === e.currentTarget,
+        )
+      }
+      onPointerMove={(e) =>
+        setHovered(
+          (e.target as Element).closest(".plot-panel") === e.currentTarget,
+        )
+      }
+      onPointerLeave={() => setHovered(false)}
       data-testid={`panel-${name}`}
       data-kind={panel?.kind}
       data-palette={panel?.palette}

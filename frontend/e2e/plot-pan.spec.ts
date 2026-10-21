@@ -91,6 +91,25 @@ for (const key of ["Control", "Meta"]) {
       await overlay.hover();
       await page.keyboard.down(key);
       await expect(pan).toHaveAttribute("aria-pressed", "true");
+      await expect(
+        page.locator('.plot-pan-button[aria-pressed="true"]'),
+      ).toHaveCount(1);
+      if (name === "spectrum") {
+        const profile = page.getByTestId("panel-profile");
+        const profilePan = profile.getByRole("button", {
+          name: "Pan",
+          exact: true,
+        });
+        await profile.getByTestId("selection-overlay").hover();
+        await expect(pan).toHaveAttribute("aria-pressed", "false");
+        await expect(profilePan).toHaveAttribute("aria-pressed", "true");
+        await page.mouse.move(1, 1);
+        await expect(
+          page.locator('.plot-pan-button[aria-pressed="true"]'),
+        ).toHaveCount(0);
+        await overlay.hover();
+        await expect(pan).toHaveAttribute("aria-pressed", "true");
+      }
       await expect(overlay).toHaveCSS("cursor", "grab");
       const original = (await overlay.getAttribute("data-x-range"))!
         .split(",")
@@ -117,6 +136,9 @@ for (const key of ["Control", "Meta"]) {
       expect(after[0]).toBeLessThan(before[0]);
       expect(after[1] - after[0]).toBeCloseTo(before[1] - before[0], 10);
       await pan.click();
+      await page.mouse.move(1, 1);
+      await expect(pan).toHaveAttribute("aria-pressed", "true");
+      await overlay.hover();
       await page.keyboard.down(key);
       await page.keyboard.up(key);
       await expect(pan).toHaveAttribute("aria-pressed", "true");
