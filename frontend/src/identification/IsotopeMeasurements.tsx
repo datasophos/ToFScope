@@ -1,13 +1,7 @@
 import { formatNumber } from "../shared/numbers";
 import { formatAbundance } from "./candidates";
 import { useEffect, useState } from "react";
-import {
-  download,
-  post,
-  request,
-  type Analysis,
-  type Job,
-} from "../api/client";
+import { post, request, type Analysis, type Job } from "../api/client";
 import type { components } from "../api/generated";
 import { ToolPopover } from "../explore/ToolPopover";
 type Result = components["schemas"]["MeasurementResult"];
@@ -336,13 +330,6 @@ export function IsotopeMeasurements({
           </details>
           <div className="measurement-footer">
             <div className="row">
-              <button
-                onClick={() =>
-                  void download(a.id, "json").catch((e) => setError(e.message))
-                }
-              >
-                Settings JSON
-              </button>
               <button disabled={!result} onClick={() => void csv()}>
                 Isotope CSV
               </button>

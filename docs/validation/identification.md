@@ -192,3 +192,8 @@ workflow: select H-2, Apply window, rename the draft, calculate, and measure. Th
 request preserves the exact measured mass and the measured row includes its
 isotope assignment and reference abundance. Nine focused browser workflows, 30
 frontend unit tests, TypeScript and the packaged build passed.
+
+
+The measurement footer now contains only Isotope CSV and Close. Settings JSON
+was removed because it exports analysis configuration rather than measurements.
+Both measurement browser workflows and the packaged build passed after removal.
