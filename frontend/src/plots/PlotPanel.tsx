@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { usePanModifier } from "./usePanModifier";
 import { axisTitle, plotInsets, formatPosition } from "./axes";
 import { coordinateToFrame } from "../calibration/coordinates";
 import type { Panel } from "../api/client";
@@ -117,6 +118,8 @@ export function PlotPanel({
   const [stageSize, setStageSize] = useState(0);
   const [zoom, setZoom] = useState<Range | null>(null);
   const [panning, setPanning] = useState(false);
+  const panModifier = usePanModifier();
+  const panActive = panning || panModifier;
   const [yScale, setYScale] = useState<"log" | "linear">("log");
   useEffect(() => {
     if (spectrumLog !== undefined) setYScale(spectrumLog ? "log" : "linear");
@@ -262,8 +265,8 @@ export function PlotPanel({
               <button
                 className="plot-icon-button plot-pan-button"
                 aria-label="Pan"
-                aria-pressed={panning}
-                title="Pan horizontally: drag to move the view. Turn off to select or zoom."
+                aria-pressed={panActive}
+                title="Pan horizontally: drag to move the view. Hold Cmd/Ctrl for temporary pan; turn off to select or zoom."
                 onClick={() => setPanning(!panning)}
               >
                 <PlotToolbarIcon action="pan" />
@@ -395,7 +398,9 @@ export function PlotPanel({
               mode={mode}
               image={image}
               palette={panel.palette}
-              selectionMode={image ? "select" : panning ? "pan" : selectionMode}
+              selectionMode={
+                image ? "select" : panActive ? "pan" : selectionMode
+              }
             />
           )}
           {hoverLabel && (

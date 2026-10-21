@@ -46,8 +46,9 @@ depth bands preserve image colors. Relative scaling lives in the profile header,
 and log Y beside the spectrum. Spectrum drag zooms normally and edits the active
 interval while a signal editor is open. All draft intervals remain numbered on
 the spectrum. Bounds display compactly while preserving exact calculation values.
-Single clicks preserve zoom; double-click resets the spectrum view. Toggle **Pan**
-to move a zoomed spectrum/profile horizontally, or use Ctrl/Cmd-wheel to zoom.
+Single clicks preserve zoom; double-click resets the spectrum view. Hold Cmd/Ctrl
+and drag to pan any zoomed spectrum/profile horizontally; the **Pan** indicator
+lights while held. Toggle **Pan** to keep it enabled, or use Ctrl/Cmd-wheel to zoom.
 Images show their full extent. Maximize/Escape preserves the view; ordinary wheel
 scrolls the page. The compact header holds file opening and independent file tabs.
 Plots have named axes, units and tick marks. Hover over the spectrum or profile

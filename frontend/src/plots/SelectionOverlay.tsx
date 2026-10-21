@@ -128,6 +128,7 @@ export function SelectionOverlay({
     pointerStart: [number, number];
     viewRange: Range;
     panStarted: boolean;
+    selectionMode: "select" | "zoom" | "pan";
     action: string;
     selection?: number[];
     selectionWindows?: Range[];
@@ -199,10 +200,13 @@ export function SelectionOverlay({
       preserveAspectRatio="none"
       onPointerDown={(e) => {
         e.preventDefault();
+        // Keep the gesture's tool fixed even if the modifier is released mid-drag.
+        const gestureMode =
+          !image && (e.ctrlKey || e.metaKey) ? "pan" : selectionMode;
         const windowTarget = (e.target as Element).closest(
           "[data-window-index]",
         );
-        if (windowTarget && selectionMode !== "pan") {
+        if (windowTarget && gestureMode !== "pan") {
           onWindowSelect?.(
             Number(windowTarget.getAttribute("data-window-index")),
           );
@@ -214,6 +218,7 @@ export function SelectionOverlay({
           pointerStart: [e.clientX, e.clientY],
           viewRange: [xRange[0], xRange[1]],
           panStarted: false,
+          selectionMode: gestureMode,
           action:
             (e.target as Element).getAttribute("data-action") === "move" &&
             !e.shiftKey
@@ -233,7 +238,8 @@ export function SelectionOverlay({
           onHover(x, y);
         }
         if (drag.current) {
-          if (selectionMode === "pan") panTo(e.clientX, drag.current);
+          if (drag.current.selectionMode === "pan")
+            panTo(e.clientX, drag.current);
           else
             setPreview(
               gestureBounds(drag.current, coords(e), mode, xRange, yRange),
@@ -249,7 +255,7 @@ export function SelectionOverlay({
         if (!d) return;
         drag.current = null;
         setPreview(null);
-        if (selectionMode === "pan") {
+        if (d.selectionMode === "pan") {
           panTo(e.clientX, d);
           return;
         }
@@ -271,7 +277,7 @@ export function SelectionOverlay({
         // Without a picking action, clicks must not collapse zoom or selection bounds.
         if (isClick) return;
         const b = gestureBounds(d, end, mode, xRange, yRange);
-        if (selectionMode === "zoom") onZoom?.([b[0], b[1]]);
+        if (d.selectionMode === "zoom") onZoom?.([b[0], b[1]]);
         else onSelect(b);
       }}
     >

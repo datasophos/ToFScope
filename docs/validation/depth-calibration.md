@@ -126,3 +126,20 @@ Double-clicking the spectrum resets zoom without changing draft bounds. File tab
 open/help controls, plot headers and signal/depth bars use the compact layout
 verified at desktop and narrow widths. Local services were restarted only after
 explicit user approval. Remote CI was not checked for these final refinements.
+
+
+## Temporary modifier panning
+
+Holding Cmd or Ctrl temporarily activates horizontal pan on shared spectrum and
+profile plots, including the identification spectrum. The Pan button reflects
+the effective tool and its tooltip documents the shortcut. Releasing the modifier
+restores the previous tool; manual pan stays selected. Blur and hidden-document
+events clear temporary state. Pointer events synchronize modifier state for plots
+mounted while a key is already held.
+
+A drag keeps the tool chosen at pointer-down through pointer-up, so releasing
+the modifier mid-gesture cannot accidentally zoom, pick a peak or edit an interval.
+Browser coverage exercises Control and Meta on the main spectrum, profile and
+identification spectrum, verifies translated ranges preserve width, release
+mid-drag, manual-toggle persistence and blur cleanup. Ten focused browser
+workflows, 30 frontend unit tests, TypeScript and the packaged build passed.
