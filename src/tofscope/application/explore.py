@@ -1,4 +1,5 @@
 from dataclasses import replace
+from tofscope.science.depth_calibration import DepthAnchor, validate_anchors
 from tofscope.application.commands import CommandEnvelope, AllDepth
 from tofscope.application.models import DisplaySettings, SignalSnapshot
 from tofscope.application.signals import get_signal, normalize_view, usable_frames, valid_name
@@ -122,8 +123,17 @@ class ExploreService:
                 if not 0 <= first <= last < s.shape[0]:
                     raise ValueError('Analysis range outside acquisition.')
                 patch = dict(loaded_frames=tuple(c.frames), depth=AllDepth())
+            elif kind == 'set_depth_anchors':
+                anchors = validate_anchors(tuple(DepthAnchor(x.frame, x.depth_nm) for x in c.anchors), s.shape[0])
+                patch['depth_anchors'] = anchors
+                if len(anchors) < 2:
+                    patch['depth_coordinates'] = 'frame'
+            elif kind == 'set_depth_display':
+                if c.coordinates == 'depth' and len(s.depth_anchors) < 2:
+                    raise ValueError('Add a positive-depth anchor first.')
+                patch.update(depth_unit=c.unit, depth_coordinates=c.coordinates)
             elif kind == 'set_display':
-                patch['display'] = DisplaySettings(c.log, c.relative, c.image, s.display.spectrum_log if c.spectrum_log is None else c.spectrum_log)
+                patch['display'] = DisplaySettings(c.log, c.relative, c.image, s.display.spectrum_log if c.spectrum_log is None else c.spectrum_log, s.display.colormap if c.colormap is None else c.colormap)
             result = normalize_view(replace(s, revision=s.revision+1, **patch))
             if kind == 'remove_signal':
                 e.tokens.pop(signal.id, None)

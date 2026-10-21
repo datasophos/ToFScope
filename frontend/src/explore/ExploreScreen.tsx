@@ -1,3 +1,8 @@
+import { DepthEditor } from "../calibration/DepthEditor";
+import {
+  frameToCoordinate,
+  coordinateToFrame,
+} from "../calibration/coordinates";
 import { useEffect, useState } from "react";
 import { useAnalysis } from "../app/useAnalysis";
 import { hasChanges } from "../app/changes";
@@ -11,6 +16,7 @@ import { SignalEditor } from "./SignalEditor";
 import { useSignalEditor } from "./useSignalEditor";
 import { ViewingDepths, availableFrames } from "./ViewingDepths";
 import { ROIControls } from "./ROIControls";
+import { ImageDisplayControls } from "./ImageDisplayControls";
 import { AnalysisSettings } from "./AnalysisSettings";
 import { roiFromBounds, roiBounds, frameWindow, type ROI } from "./selection";
 export function ExploreScreen({
@@ -129,13 +135,49 @@ export function ExploreScreen({
     panels?.ion.signal_name ??
     a.signals.find((s) => s.id === a.image_signal_id)?.name ??
     "";
+  const coordinate = (name: "profile" | "front", f: number) => {
+    const p = panels?.[name];
+    return p
+      ? frameToCoordinate(
+          f,
+          p.axes[name === "front" ? 1 : 0],
+          p.acquisition_frames ?? [],
+        )
+      : undefined;
+  };
+  const original = (name: "profile" | "front", v: number) => {
+    const p = panels?.[name];
+    return p
+      ? coordinateToFrame(
+          v,
+          p.axes[name === "front" ? 1 : 0],
+          p.acquisition_frames ?? [],
+        )
+      : undefined;
+  };
+  const depthSelection = (name: "profile" | "front") => {
+    if (!selectedDepth) return undefined;
+    const p = panels?.[name];
+    if (!p?.acquisition_frames?.length) return undefined;
+    const [lo, hi] = [p.acquisition_frames[0], p.acquisition_frames.at(-1)!];
+    if (selectedDepth[1] < lo || selectedDepth[0] > hi) return undefined;
+    return [
+      coordinate(name, Math.max(lo, selectedDepth[0]))!,
+      coordinate(name, Math.min(hi, selectedDepth[1]))!,
+    ];
+  };
+  const coverage = (name: "profile" | "front") => {
+    const p = panels?.[name];
+    return p?.coordinate_kind === "depth"
+      ? `${p.omitted_frames || 0} frame${p.omitted_frames === 1 ? "" : "s"} with unknown depth omitted${!p.acquisition_frames?.length ? " · No calibrated depth in analysis range" : ""}`
+      : "";
+  };
   const ionState = panelStates.ion ?? a;
   const ionFrames = panels?.ion.frame_range;
   return (
     <main className="explore-screen">
       <div className="analysis-heading">
         <div>
-          <span className="eyebrow">Independent analysis</span>
           <h1>{a.dataset.name || a.dataset.relative_path.split("/").pop()}</h1>
           <span>
             {a.shape[0].toLocaleString()} frames · {a.shape[2]} × {a.shape[1]}{" "}
@@ -203,7 +245,9 @@ export function ExploreScreen({
           id={details}
           onDetails={setDetails}
         />
-        <ViewingDepths analysis={a} send={send} />
+        <ViewingDepths analysis={a} send={send}>
+          <DepthEditor analysis={a} send={send} active={active} />
+        </ViewingDepths>
         <div className="plot-grid">
           <PlotPanel
             {...common("ion")}
@@ -220,34 +264,14 @@ export function ExploreScreen({
                 {pendingPanels.has("ion") ? " · Updating…" : ""}
               </span>
             }
-            controls={
-              <>
-                <ROIControls analysis={a} send={send} />
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={a.display.log}
-                    onChange={(e) => display({ log: e.target.checked })}
-                  />
-                  Log colors
-                </label>
-                <label>
-                  Image{" "}
-                  <select
-                    aria-label="Image"
-                    value={a.display.image}
-                    onChange={(e) => display({ image: e.target.value })}
-                  >
-                    <option value="sims">SIMS</option>
-                    {a.has_se && <option value="se">SE (unregistered)</option>}
-                  </select>
-                </label>
-              </>
+            toolbarControls={
+              <ImageDisplayControls analysis={a} display={display} />
             }
+            controls={<ROIControls analysis={a} send={send} />}
             mode="xy"
             selection={
               ionState.display.image === "sims"
-                ? roiBounds(ionState.roi as ROI, a.shape, a.fov_um)
+                ? roiBounds(a.roi as ROI, a.shape, a.fov_um)
                 : undefined
             }
             onSelect={(b) => {
@@ -273,22 +297,30 @@ export function ExploreScreen({
               panel={panels?.spectrum}
               selectionMode={d ? "select" : "zoom"}
               selection={interval?.map(Number)}
+              selectionWindows={d?.intervals.map(
+                ([low, high]) =>
+                  [Number(low), Number(high)] as [number, number],
+              )}
+              selectedWindow={d?.selectedInterval}
+              onWindowSelect={(index) =>
+                editor.patchDraft({ selectedInterval: index })
+              }
               onSelect={draftSelect}
               zoomWindow={
                 interval
                   ? (interval.map(Number) as [number, number])
                   : undefined
               }
-              status={
-                <span>
-                  {spectrumMode}
-                  {d?.submittedJobId ? " · calculating" : ""}
-                </span>
-              }
-              controls={
-                !d ? (
-                  <button onClick={editor.openNew}>Create signal</button>
-                ) : undefined
+              headingControls={
+                <>
+                  <span className="plot-status">
+                    {spectrumMode}
+                    {d?.submittedJobId ? " · calculating" : ""}
+                  </span>
+                  {!d && (
+                    <button onClick={editor.openNew}>Create signal</button>
+                  )}
+                </>
               }
             />
           </div>
@@ -300,19 +332,24 @@ export function ExploreScreen({
             expectedKind="image"
             status={
               <span>
-                {panels?.front.signal_name ?? ""}
+                {panels?.front.signal_name ?? ""} · {coverage("front")}
                 {pendingPanels.has("front") ? " · Updating…" : ""}
               </span>
             }
             selection={
-              selectedDepth
-                ? [0, a.fov_um ?? a.shape[2], ...selectedDepth]
+              depthSelection("front")
+                ? [0, a.fov_um ?? a.shape[2], ...depthSelection("front")!]
                 : undefined
             }
-            mode="xy"
-            onClick={(_, y) => frame(y)}
+            mode="y"
+            onClick={(_, y) => {
+              const f = original("front", y);
+              if (f !== undefined) frame(f);
+            }}
             onSelect={(b) => {
-              const [first, last] = frameWindow(b.slice(2), bounds);
+              const v = b.slice(2).map((x) => original("front", x));
+              if (v.some((x) => x === undefined)) return;
+              const [first, last] = frameWindow(v as number[], bounds);
               act({
                 type: "set_depth",
                 depth: { mode: "window", first, last },
@@ -325,9 +362,14 @@ export function ExploreScreen({
             help={help.profile}
             panel={panels?.profile}
             status={
-              pendingPanels.has("profile") ? <span>Updating…</span> : undefined
+              coverage("profile") || pendingPanels.has("profile") ? (
+                <span>
+                  {coverage("profile")}
+                  {pendingPanels.has("profile") ? " · Updating…" : ""}
+                </span>
+              ) : undefined
             }
-            controls={
+            headingControls={
               <label>
                 <input
                   type="checkbox"
@@ -349,10 +391,15 @@ export function ExploreScreen({
               onVisibility: (id, visible) =>
                 act({ type: "set_profile_visible", signal_id: id, visible }),
             }}
-            selection={selectedDepth}
-            onClick={(x) => frame(x)}
+            selection={depthSelection("profile")}
+            onClick={(x) => {
+              const f = original("profile", x);
+              if (f !== undefined) frame(f);
+            }}
             onSelect={(b) => {
-              const [first, last] = frameWindow(b, bounds);
+              const v = b.map((x) => original("profile", x));
+              if (v.some((x) => x === undefined)) return;
+              const [first, last] = frameWindow(v as number[], bounds);
               act({
                 type: "set_depth",
                 depth: { mode: "window", first, last },
@@ -363,10 +410,6 @@ export function ExploreScreen({
             }
           />
         </div>
-        <p className="scope-note">
-          Original-resolution values drive profiles and CSV exports. Color and
-          relative scaling affect display only. Acquisition files are read only.
-        </p>
       </div>
     </main>
   );

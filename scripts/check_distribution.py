@@ -133,6 +133,10 @@ def smoke(artifact, output):
                 page.get_by_role("button", name="◫ a.h5").dblclick()
                 page.get_by_test_id("panel-ion").locator("canvas").first.wait_for()
                 assert page.evaluate("location.hash") == ""
+                page.get_by_role('button', name='Image display settings', exact=True).click()
+                page.get_by_label('SIMS colormap', exact=True).select_option('cividis')
+                page.get_by_role('button', name='Close Image display', exact=True).click()
+                expect(page.get_by_test_id('panel-ion')).to_have_attribute('data-palette', 'cividis')
                 page.get_by_role("button", name="Add signal", exact=True).click()
                 page.get_by_role("button", name="Create from spectrum", exact=True).click()
                 page.get_by_label("Signal name", exact=True).fill("Package signal")
@@ -149,6 +153,16 @@ def smoke(artifact, output):
                 expect(first.get_by_role('checkbox')).not_to_be_checked()
                 page.get_by_role("button", name="Close Manage signals", exact=True).click()
                 page.get_by_role('button', name='Use linear y scale', exact=True).click()
+                page.get_by_role('button', name='Calibrate depth', exact=True).click()
+                dialog = page.get_by_role('dialog', name='Depth calibration', exact=True)
+                dialog.get_by_label('Anchor frame', exact=True).fill('1')
+                dialog.get_by_label('Known depth', exact=True).fill('100')
+                dialog.get_by_role('button', name='Add anchor', exact=True).click()
+                expect(dialog.get_by_role('button', name='Remove anchor at frame 1')).to_be_visible()
+                dialog.get_by_label('Depth display unit', exact=True).select_option('um')
+                dialog.get_by_role('button', name='Done', exact=True).click()
+                page.get_by_role('button', name='Physical depth', exact=True).click()
+                expect(page.get_by_test_id('panel-profile').locator('footer')).to_contain_text('depth · µm')
                 with page.expect_download() as before_download:
                     page.get_by_role('button', name='Profile CSV', exact=True).click()
                 before_csv = Path(before_download.value.path()).read_bytes()
@@ -174,7 +188,15 @@ def smoke(artifact, output):
                 page.get_by_role('button', name='◫ package_copy.h5', exact=True).dblclick()
                 expect(page.get_by_test_id('panel-ion')).to_contain_text('Package signal')
                 expect(page.get_by_test_id('panel-spectrum')).to_have_attribute('data-y-scale', 'linear')
+                expect(page.get_by_test_id('panel-profile')).to_have_attribute('data-x-axis', 'Depth (µm)')
+                page.get_by_test_id('panel-profile').get_by_label('Depth profile selection').hover()
+                expect(page.get_by_test_id('panel-profile').get_by_role('tooltip')).to_contain_text('Depth =')
                 expect(page.get_by_test_id('save-state')).to_have_text('Saved')
+                page.get_by_role('button', name='Image display settings', exact=True).click()
+                expect(page.get_by_label('SIMS colormap', exact=True)).to_have_value('cividis')
+                page.get_by_role('button', name='Close Image display', exact=True).click()
+                expect(page.get_by_test_id('panel-profile').locator('footer')).to_contain_text('depth · µm')
+                expect(page.get_by_test_id('panel-front')).to_contain_text('1 frame with unknown depth omitted')
                 page.get_by_role('button', name='Manage signals', exact=True).click()
                 expect(page.get_by_test_id('signal-row')).to_have_count(2)
                 expect(page.get_by_test_id('signal-row').first.get_by_role('checkbox')).not_to_be_checked()
@@ -201,7 +223,7 @@ def smoke(artifact, output):
                 runtime_dependencies_clean=True, offline_browser=True,
                 raw_preparation_without_scientific_runtime=True,
                 plots_integration_export=True, saved_copy_restart_source_removed=True,
-                exact_restored_csv=True, optional_download=True,
+                exact_restored_csv=True, calibrated_copy_roundtrip=True, scientific_axes_hover=True, colormap_roundtrip=True, optional_download=True,
                 interrupted_download_preserves_saved_file=True)
         finally:
             stop(); log.close()

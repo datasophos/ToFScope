@@ -9,7 +9,8 @@ import h5py
 import numpy as np
 from pydantic import Field, StrictBool, StrictInt, field_validator, model_validator
 
-from tofscope.application.commands import StrictModel, DepthSelection
+from tofscope.application.commands import StrictModel, DepthSelection, AnchorInput
+from tofscope.science.depth_calibration import DepthAnchor, validate_anchors
 from tofscope.application.models import AnalysisSnapshot, DisplaySettings, SignalSnapshot
 from tofscope.science.signals import SignalRecipe
 
@@ -67,10 +68,11 @@ class DocumentDisplay(StrictModel):
     relative: StrictBool = True
     image: Literal['sims', 'se'] = 'sims'
     spectrum_log: StrictBool = True
+    colormap: Literal["ion", "gray", "viridis", "magma", "cividis"] = "viridis"
 
 
 class SavedAnalysisDocument(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 2
     shape: tuple[StrictInt, StrictInt, StrictInt, StrictInt]
     signals: tuple[DocumentSignal, ...] = Field(min_length=1, max_length=129)
     image_signal_id: str
@@ -80,12 +82,20 @@ class SavedAnalysisDocument(StrictModel):
     roi: tuple[StrictInt, StrictInt, StrictInt, StrictInt]
     depth: DepthSelection
     display: DocumentDisplay
+    depth_anchors: tuple[AnchorInput, ...] = Field(default=(AnchorInput(frame=0, depth_nm=0.),), min_length=1, max_length=4096)
+    depth_unit: Literal['nm', 'um', 'mm'] = 'nm'
+    depth_coordinates: Literal['frame', 'depth'] = 'frame'
 
     @model_validator(mode='after')
     def relationships(self):
         nz, ny, nx, channels = self.shape
         if min(self.shape) <= 0:
             raise ValueError('Invalid saved acquisition dimensions.')
+        anchors = tuple(DepthAnchor(x.frame, x.depth_nm) for x in self.depth_anchors)
+        if anchors != validate_anchors(anchors, nz):
+            raise ValueError('Saved calibration must include sorted anchors and fixed origin.')
+        if self.depth_coordinates == 'depth' and len(anchors) < 2:
+            raise ValueError('Saved physical coordinates require positive anchors.')
         ids = {s.id for s in self.signals}
         if len(ids) != len(self.signals) or self.image_signal_id not in ids:
             raise ValueError('Invalid saved signal relationships.')
@@ -122,7 +132,8 @@ def encode_document(snapshot: AnalysisSnapshot) -> SavedAnalysisDocument:
     return SavedAnalysisDocument(shape=snapshot.shape, signals=rows,
         image_signal_id=snapshot.image_signal_id, profile_signal_ids=snapshot.profile_signal_ids,
         next_style_index=snapshot.next_style_index, loaded_frames=snapshot.loaded_frames,
-        roi=snapshot.roi, depth=snapshot.depth, display=vars(snapshot.display))
+        roi=snapshot.roi, depth=snapshot.depth, display=vars(snapshot.display), depth_anchors=[vars(x) for x in snapshot.depth_anchors],
+        depth_unit=snapshot.depth_unit, depth_coordinates=snapshot.depth_coordinates)
 
 
 def read_document(path: Path, limits) -> SavedAnalysisDocument | None:
@@ -131,12 +142,14 @@ def read_document(path: Path, limits) -> SavedAnalysisDocument | None:
             if ROOT not in handle:
                 return None
             group = handle[ROOT]
-            if not isinstance(group, h5py.Group) or group.attrs.get('schema_version') != 1 or group.attrs.get('complete') != np.bool_(True):
+            if not isinstance(group, h5py.Group) or group.attrs.get('schema_version') not in (1, 2) or group.attrs.get('complete') != np.bool_(True):
                 raise ValueError('Unsupported or incomplete saved analysis.')
             data = group['state_json']
             if not isinstance(data, h5py.Dataset) or data.ndim != 1 or data.dtype != np.uint8 or not 0 < data.size <= min(MAX_DOCUMENT_BYTES, limits.response_bytes):
                 raise ValueError('Saved analysis metadata exceeds limits or has invalid encoding.')
             value = SavedAnalysisDocument.model_validate(json.loads(data[:].tobytes()))
+            if value.schema_version != group.attrs['schema_version']:
+                raise ValueError('Saved document version mismatch.')
             if len(value.signals) > limits.signals_per_analysis:
                 raise ValueError('Saved signal count exceeds this service limit.')
             if value.shape != tuple(handle['PeakData/PeakData'].shape):
@@ -159,4 +172,6 @@ def restore_snapshot(document: SavedAnalysisDocument, initial: AnalysisSnapshot)
     return replace(initial, signals=tuple(rows), image_signal_id=ids[document.image_signal_id],
         profile_signal_ids=tuple(ids[x] for x in document.profile_signal_ids),
         next_style_index=document.next_style_index, loaded_frames=document.loaded_frames,
-        roi=document.roi, depth=document.depth, display=DisplaySettings(**document.display.model_dump()), saved_revision=initial.revision)
+        roi=document.roi, depth=document.depth, display=DisplaySettings(**document.display.model_dump()), saved_revision=initial.revision,
+        depth_anchors=tuple(DepthAnchor(x.frame, x.depth_nm) for x in document.depth_anchors),
+        depth_unit=document.depth_unit, depth_coordinates=document.depth_coordinates)

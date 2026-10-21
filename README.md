@@ -34,16 +34,40 @@ errors remain visible beside the signal. Failed calculations preserve old result
 **Calculate over frames** defines a signal's coverage. **Viewing depths** chooses
 which available frames to show without recalculating the signal. **Analysis
 settings** controls the profile/navigation range without rewriting recipes.
-ROI and color controls live beside the image, relative scaling beside profiles,
-and log Y beside the spectrum. Spectrum drag zooms normally and edits intervals
-only while a signal editor is open. Images stay square; maximize/Escape and
-Ctrl/Cmd-wheel zoom preserve the view. Ordinary wheel scrolls the page.
+ROI controls live beside the image; **Display…** contains log colors, the
+SIMS colormap and the SIMS/SE image choice. Viridis is the SIMS default, with
+Cividis, Magma and grayscale available; the palette is saved with the analysis.
+SE images retain grayscale. Palette-matched, unfilled ROI outlines and full-width
+depth bands preserve image colors. Relative scaling lives in the profile header,
+and log Y beside the spectrum. Spectrum drag zooms normally and edits the active
+interval while a signal editor is open. All draft intervals remain numbered on
+the spectrum. Bounds display compactly while preserving exact calculation values.
+Single clicks preserve zoom; double-click resets the spectrum view. Toggle **Pan**
+to move a zoomed spectrum/profile horizontally, or use Ctrl/Cmd-wheel to zoom.
+Images show their full extent. Maximize/Escape preserves the view; ordinary wheel
+scrolls the page. The compact header holds file opening and independent file tabs.
+Plots have named axes, units and tick marks. Hover over the spectrum or profile
+for the current x coordinate; calibrated profiles also show the nearest frame.
+
+**Depth calibration…** opens a temporary graphical editor beside the viewing
+controls. Click an original-frame profile position or enter an exact frame and
+known depth; frame 0/depth 0 is fixed. Anchors must increase strictly. Choose the display unit (nm, µm, or mm) in
+the editor, then use the **Frames / Physical depth** buttons in the main
+**Viewing depths** strip. Physical profiles and front
+projections show only frames between anchors; later depths remain unknown.
+Selection and keyboard navigation still use original acquisition frames, and
+unit changes never resample intensities. Removing positive anchors restores
+frame coordinates. CSV includes canonical `depth_nm`, blank for unknown depths,
+even when viewing in frames. A single plane's display footprint does not imply
+known thickness. Sections and 3D remain future work.
 
 **Save as…** creates a self-contained HDF5 copy with all committed signals,
 full-resolution custom results (including hidden signals), names/colors, ROI,
-frame/depth selections and display settings. Open it from **Saved files** to
+frame/depth selections, calibration anchors and coordinate/unit choices, and display settings. Open it from **Saved files** to
 restore the analysis after a restart or on another machine. Saving does not
-change the input, including when the input is an earlier saved copy.
+change the input, including when the input is an earlier saved copy. New copies
+use analysis document version 2; version 1 copies open in frame coordinates with
+no positive anchors. Older application versions reject version 2 documents.
 
 Saving defaults to the server; **Download copy** is an explicit optional action.
 Large files may take a long time to transfer. A saved copy includes the acquisition,
@@ -122,3 +146,5 @@ checks or explicit completion-plan features. No legacy runtime or compatibility
 adapter is shipped. The [migration design](docs/react-fastapi-migration.md) and
 [pilot plan](docs/superpowers/plans/2026-10-18-react-fastapi-pilot.md) describe the
 boundaries and decisions.
+
+Color maps use canonical 256-color tables. Older blue–yellow selections migrate to Viridis.

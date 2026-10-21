@@ -1,4 +1,6 @@
 from contextlib import ExitStack
+from dataclasses import replace
+from tofscope.presentation.coordinates import depth_samples
 from dataclasses import asdict
 import hashlib
 import json
@@ -66,7 +68,7 @@ class ExplorePresenter:
             result.append(Curve(signal.id, signal.style_index, signal_label(s, signal), finite(v), np.isfinite(v).tolist()))
         return result
 
-    def snapshot(self, owner, analysis_id, panels=None):
+    def snapshot(self, owner, analysis_id, panels=None, coordinates=None):
         panels = set(PANELS if panels is None else panels)
         if not panels <= PANELS:
             raise ValueError("Unknown display panel.")
@@ -76,6 +78,8 @@ class ExplorePresenter:
             if e.closed:
                 raise KeyError("Analysis unavailable.")
             s = e.snapshot
+            if coordinates is not None:
+                s = replace(s, depth_coordinates=coordinates)
             meta = metadata_stack.enter_context(
                 self.repository.metadata(owner, s.dataset, s.id)
             )
@@ -97,7 +101,8 @@ class ExplorePresenter:
                 )
                 + (len(meta.mass_axis) if "spectrum" in panels else 0)
             )
-            estimate = int(count * 128 + 4096)
+            geometry_bytes = ((last - first + 1) + len(s.depth_anchors)) * 256 if panels & {"front", "profile"} else 0
+            estimate = int(count * 128 + geometry_bytes + 4096)
             if estimate > self.settings.response_bytes * 4:
                 raise CapacityError("Display is too large; narrow loaded frames.")
             with (
@@ -105,6 +110,12 @@ class ExplorePresenter:
                 ExitStack() as stack,
             ):
                 result = {}
+                if panels & {"front", "profile"}:
+                    original_frames, coordinates, depth_unit, omitted = depth_samples(s)
+                    depth_axis = axis('depth' if s.depth_coordinates == 'depth' else 'frame', depth_unit, coordinates)
+                    indices = original_frames - first
+                    geometry = dict(acquisition_frames=original_frames.tolist(), omitted_frames=omitted,
+                                    coordinate_kind=s.depth_coordinates)
                 xaxis = axis(
                     "x",
                     "µm" if s.fov_um else "pixel",
@@ -127,7 +138,6 @@ class ExplorePresenter:
                     lo, hi = selected_frames(s)
                     low = max(lo, r.frames[0])
                     high = min(hi, r.frames[1])
-                    frames = axis("frame", "frame", np.arange(first, last + 1))
                     x0, x1, y0, y1 = s.roi
                     if "ion" in panels:
                         if s.display.image == "se":
@@ -179,7 +189,7 @@ class ExplorePresenter:
                             values=image,
                             aggregation=aggregation,
                             intensity_range=bounds,
-                            palette="gray" if s.display.image == "se" else "ion",
+                            palette="gray" if s.display.image == "se" else s.display.colormap,
                             log=s.display.log,
                             signal_id=s.image_signal_id,
                             signal_name=image_signal(s).name,
@@ -197,8 +207,10 @@ class ExplorePresenter:
                         fx = xaxis
                         result["front"] = self.panel(
                             "image",
-                            [fx, frames],
-                            values=front,
+                            [fx, depth_axis],
+                            palette=s.display.colormap,
+                            values=front[indices],
+                            **geometry,
                             aggregation="exact sum along ROI y",
                             intensity_range=(
                                 0,
@@ -212,8 +224,10 @@ class ExplorePresenter:
                 if "profile" in panels:
                     result["profile"] = self.panel(
                         "line",
-                        [axis("frame", "frame", np.arange(first, last + 1))],
-                        series=self.curves(s, stack),
+                        [depth_axis],
+                        series=[replace(c, values=[c.values[i] for i in indices], coverage=[c.coverage[i] for i in indices])
+                                for c in self.curves(s, stack)],
+                        **geometry,
                         aggregation="original-resolution ROI mean / pixel",
                         relative=s.display.relative,
                     )
