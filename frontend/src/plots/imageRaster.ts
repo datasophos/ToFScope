@@ -1,3 +1,4 @@
+import { colormaps } from "./colormaps";
 import type { ChartData } from "./selectedRenderer";
 
 // Only display colors are rasterized. The original values and axes stay intact.
@@ -8,6 +9,10 @@ export function imagePixels(d: ChartData) {
   const transform = (value: number) =>
     d.log ? Math.log1p(Math.max(0, value)) : value;
   const [min, max] = d.range || [0, 1];
+  const lookup =
+    d.palette === "magma" || d.palette === "cividis"
+      ? colormaps[d.palette]
+      : colormaps.viridis;
   const low = transform(min),
     span = transform(max) - low || 1;
   for (let row = 0; row < height; row++) {
@@ -23,9 +28,10 @@ export function imagePixels(d: ChartData) {
           pixels[offset + 2] =
             Math.round(255 * t);
       } else {
-        pixels[offset] = Math.round(25 + 220 * t);
-        pixels[offset + 1] = Math.round(30 + 190 * t);
-        pixels[offset + 2] = Math.round(90 - 50 * t);
+        const color = Math.round(t * 255) * 3;
+        pixels[offset] = lookup[color];
+        pixels[offset + 1] = lookup[color + 1];
+        pixels[offset + 2] = lookup[color + 2];
       }
       pixels[offset + 3] = 255;
     }

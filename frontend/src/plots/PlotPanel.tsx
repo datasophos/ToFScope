@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { axisTitle, plotInsets, formatPosition } from "./axes";
+import { coordinateToFrame } from "../calibration/coordinates";
 import type { Panel } from "../api/client";
 import {
   mountChart,
@@ -14,7 +16,7 @@ import {
   type CurveStyle,
   type LegendEntry,
 } from "./curveStyle";
-function PlotToolbarIcon({ action }: { action: "reset" | "save" }) {
+function PlotToolbarIcon({ action }: { action: "reset" | "save" | "pan" }) {
   return (
     <svg
       width="16"
@@ -27,7 +29,9 @@ function PlotToolbarIcon({ action }: { action: "reset" | "save" }) {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      {action === "reset" ? (
+      {action === "pan" ? (
+        <path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3" />
+      ) : action === "reset" ? (
         <>
           <g strokeOpacity="0.4">
             <circle cx="10" cy="10" r="7.5" />
@@ -57,10 +61,16 @@ export function PlotPanel({
   onSelect,
   onClick,
   selection,
+  selectionWindows,
+  selectedWindow,
+  onWindowSelect,
+  markers,
   mode = "x",
   onAllDepths,
   zoomWindow,
   controls,
+  toolbarControls,
+  headingControls,
   status,
   legendActions,
   expanded = false,
@@ -79,10 +89,16 @@ export function PlotPanel({
   onSelect: (bounds: number[]) => void;
   onClick?: (x: number, y: number) => void;
   selection?: number[];
-  mode?: "x" | "xy";
+  selectionWindows?: Range[];
+  selectedWindow?: number;
+  onWindowSelect?: (index: number) => void;
+  markers?: number[];
+  mode?: "x" | "xy" | "y";
   onAllDepths?: () => void;
   zoomWindow?: Range;
   controls?: ReactNode;
+  toolbarControls?: ReactNode;
+  headingControls?: ReactNode;
   status?: ReactNode;
   expanded?: boolean;
   selectionMode?: "select" | "zoom";
@@ -99,13 +115,14 @@ export function PlotPanel({
     chart = useRef<ChartHandle | null>(null);
   const [stageSize, setStageSize] = useState(0);
   const [zoom, setZoom] = useState<Range | null>(null);
+  const [panning, setPanning] = useState(false);
   const [yScale, setYScale] = useState<"log" | "linear">("log");
   useEffect(() => {
     if (spectrumLog !== undefined) setYScale(spectrumLog ? "log" : "linear");
   }, [spectrumLog]);
   const [exportError, setExportError] = useState<string | null>(null);
   const legend: LegendEntry[] =
-    name === "profile"
+    name === "profile" || name === "calibration"
       ? (panel?.series || []).map((series, index) => ({
           id: series.signal_id,
           label: series.label,
@@ -120,20 +137,52 @@ export function PlotPanel({
     axis && axis.boundaries.length
       ? [axis.boundaries[0], axis.boundaries.at(-1)!]
       : [0, 1];
-  const xRange = zoom || range;
-  let high = 1;
-  for (const s of panel?.series || [])
-    for (const v of s.values) if (v !== null) high = Math.max(high, v);
-  if (panel?.relative) high = 1;
+  const coordinateKey = panel?.axes.map((a) => `${a.name}:${a.unit}`).join("/");
+  useEffect(() => setZoom(null), [coordinateKey]);
+  const xRange =
+    panel?.kind === "image" || expectedKind === "image" ? range : zoom || range;
+  const high = useMemo(() => {
+    if (panel?.relative) return 1;
+    let maximum = 1;
+    for (const series of panel?.series ?? [])
+      for (const value of series.values)
+        if (value !== null) maximum = Math.max(maximum, value);
+    return maximum;
+  }, [panel]);
   const ya = panel?.axes[1],
-    yRange: Range = ya
-      ? [ya.boundaries[0], ya.boundaries.at(-1)!]
-      : [0, high * 1.08];
+    yRange: Range =
+      ya && ya.boundaries.length
+        ? [ya.boundaries[0], ya.boundaries.at(-1)!]
+        : [0, high * 1.08];
+  const xLabel = axis ? axisTitle(axis) : "";
+  const yLabel = ya
+    ? axisTitle(ya)
+    : panel?.relative
+      ? "Relative intensity"
+      : name === "profile" || name === "calibration"
+        ? "Mean intensity"
+        : "Intensity";
+  const [cursor, setCursor] = useState<number | null>(null);
+  useEffect(() => setCursor(null), [panel?.content_version, zoom]);
+  const hoverFrame =
+    cursor !== null && axis && panel?.coordinate_kind === "depth"
+      ? coordinateToFrame(cursor, axis, panel.acquisition_frames ?? [])
+      : undefined;
+  const hoverLabel =
+    cursor === null || !axis || !axis.values.length
+      ? ""
+      : `${axis.name === "m/z" ? "m/z" : axis.name === "depth" ? "Depth" : "Frame"} = ${formatPosition(cursor, axis)}${axis.unit === "frame" ? "" : ` ${axis.unit}`}${hoverFrame !== undefined ? ` · nearest frame ${Math.round(hoverFrame)}` : ""}`;
   const data: ChartData | undefined = panel
     ? {
         kind: panel.kind,
+        xLabel,
+        yLabel,
+        xInteger: axis?.unit === "frame",
+        yInteger: ya?.unit === "frame",
         x: panel.axes[0].values,
         y: ya?.values,
+        xBoundaries: panel.axes[0].boundaries,
+        yBoundaries: ya?.boundaries,
         values: panel.values,
         series,
         xRange,
@@ -177,12 +226,19 @@ export function PlotPanel({
       className={`plot-panel ${maximized ? "maximized" : ""}`}
       data-testid={`panel-${name}`}
       data-kind={panel?.kind}
+      data-palette={panel?.palette}
+      data-x-axis={xLabel}
+      data-y-axis={yLabel}
       data-content-version={panel?.content_version}
       data-y-scale={name === "spectrum" ? yScale : undefined}
     >
       <header>
-        <HelpHeading title={title} content={help} />
+        <div className="plot-heading">
+          <HelpHeading title={title} content={help} />
+          {headingControls}
+        </div>
         <div className="row">
+          {toolbarControls}
           {onAllDepths && <button onClick={onAllDepths}>All depths</button>}
           {name === "spectrum" && (
             <button
@@ -200,14 +256,27 @@ export function PlotPanel({
           {zoomWindow && (
             <button onClick={() => setZoom(zoomWindow)}>Zoom to draft</button>
           )}
-          <button
-            className="plot-icon-button"
-            onClick={() => setZoom(null)}
-            aria-label="Reset zoom"
-            title="Reset zoom"
-          >
-            <PlotToolbarIcon action="reset" />
-          </button>
+          {!image && (
+            <>
+              <button
+                className="plot-icon-button plot-pan-button"
+                aria-label="Pan"
+                aria-pressed={panning}
+                title="Pan horizontally: drag to move the view. Turn off to select or zoom."
+                onClick={() => setPanning(!panning)}
+              >
+                <PlotToolbarIcon action="pan" />
+              </button>
+              <button
+                className="plot-icon-button"
+                onClick={() => setZoom(null)}
+                aria-label="Reset zoom"
+                title="Reset zoom"
+              >
+                <PlotToolbarIcon action="reset" />
+              </button>
+            </>
+          )}
           <button
             onClick={async () => {
               setExportError(null);
@@ -295,6 +364,7 @@ export function PlotPanel({
         )}
         <div
           className={`plot-stage ${image ? "image" : ""}`}
+          onDoubleClick={name === "spectrum" ? () => setZoom(null) : undefined}
           data-testid={`plot-stage-${name}`}
           data-stage-ready={stageReady ? "true" : "false"}
           style={
@@ -308,20 +378,33 @@ export function PlotPanel({
             <SelectionOverlay
               label={`${title} selection`}
               xRange={xRange}
+              insets={plotInsets(panel.kind)}
+              panDomain={range}
+              onHover={panel.kind === "line" ? (x) => setCursor(x) : undefined}
               yRange={yRange}
               reverseY={image}
               selection={selection}
+              selectionWindows={selectionWindows}
+              selectedWindow={selectedWindow}
+              onWindowSelect={onWindowSelect}
+              markers={markers}
               onSelect={onSelect}
               onClick={onClick}
-              onZoom={setZoom}
+              onZoom={image ? undefined : setZoom}
               mode={mode}
               image={image}
-              selectionMode={selectionMode}
+              palette={panel.palette}
+              selectionMode={image ? "select" : panning ? "pan" : selectionMode}
             />
+          )}
+          {hoverLabel && (
+            <div className="plot-cursor-readout" role="tooltip">
+              {hoverLabel}
+            </div>
           )}
         </div>
       </div>
-      <footer>
+      <footer className="plot-axis-description">
         {axis?.name} · {axis?.unit}
         {ya
           ? ` / ${ya.name} · ${ya.unit}`

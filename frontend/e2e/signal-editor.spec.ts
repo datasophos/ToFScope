@@ -36,6 +36,7 @@ test("explicit spectrum modes, dirty-draft choice, precise bounds and independen
     page.getByRole("button", { name: "Keep editing", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+  await page.getByLabel("Mass lower 1", { exact: true }).focus();
   await expect(page.getByLabel("Mass lower 1", { exact: true })).toHaveValue(
     "1.123456789123",
   );
@@ -48,12 +49,16 @@ test("explicit spectrum modes, dirty-draft choice, precise bounds and independen
   await page
     .getByRole("button", { name: "Restore Mass spectrum", exact: true })
     .click();
-  await page.getByRole("button", { name: "＋ Open TOFexplorer file" }).click();
+  await page.getByRole("button", { name: "Open TOFexplorer file" }).click();
   await page.getByRole("button", { name: "◫ b.h5" }).dblclick();
   await expect(
     page.getByRole("region", { name: "Signal editor" }),
   ).toBeHidden();
   await page.getByRole("tab", { name: "1 · a.h5" }).click();
+  await page
+    .getByLabel("Mass lower 1", { exact: true })
+    .filter({ visible: true })
+    .focus();
   await expect(
     page.getByLabel("Mass lower 1", { exact: true }).filter({ visible: true }),
   ).toHaveValue("1.123456789123");

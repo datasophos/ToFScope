@@ -225,42 +225,62 @@ export function App() {
             <strong>ToFScope</strong>
             <small>FIB–SEM / TOF–SIMS</small>
           </div>
-          <span className="badge">Explore · originals read only</span>
         </div>
-        <span>{session?.owner || "Local instrument"}</span>
+        <nav className="file-bar" aria-label="Files and open analyses">
+          <button
+            className="open-file-button"
+            aria-label="Open TOFexplorer file"
+            title="Open TOFexplorer file"
+            disabled={!session}
+            onClick={() => {
+              setReplace(null);
+              setPicker(true);
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 8V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v2" />
+              <path d="M3 8h17a1 1 0 0 1 1 1.3l-2.5 10a1 1 0 0 1-1 .7H5a2 2 0 0 1-2-2V8Z" />
+            </svg>
+          </button>
+          <div className="tabs" role="tablist" aria-label="Open analyses">
+            {analyses.map((a, i) => (
+              <div
+                key={a.id}
+                className={a.id === active ? "tab active" : "tab"}
+              >
+                <button
+                  role="tab"
+                  title={
+                    a.dataset.name || a.dataset.relative_path.split("/").pop()
+                  }
+                  aria-selected={a.id === active}
+                  onClick={() => setActive(a.id)}
+                >
+                  {i + 1} ·{" "}
+                  {a.dataset.name || a.dataset.relative_path.split("/").pop()}
+                </button>
+                <button
+                  aria-label={`Close analysis ${i + 1}`}
+                  onClick={() => requestAction(a, "close")}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          <HelpButton label="Files and saved analyses" content={help.files} />
+        </nav>
       </header>
-      <div className="file-bar">
-        <button
-          disabled={!session}
-          onClick={() => {
-            setReplace(null);
-            setPicker(true);
-          }}
-        >
-          ＋ Open TOFexplorer file
-        </button>
-        <HelpButton label="Files and saved analyses" content={help.files} />
-        <div className="tabs" role="tablist">
-          {analyses.map((a, i) => (
-            <div key={a.id} className={a.id === active ? "tab active" : "tab"}>
-              <button
-                role="tab"
-                aria-selected={a.id === active}
-                onClick={() => setActive(a.id)}
-              >
-                {i + 1} ·{" "}
-                {a.dataset.name || a.dataset.relative_path.split("/").pop()}
-              </button>
-              <button
-                aria-label={`Close analysis ${i + 1}`}
-                onClick={() => requestAction(a, "close")}
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
       {error && (
         <div role="alert" className="error">
           {error}

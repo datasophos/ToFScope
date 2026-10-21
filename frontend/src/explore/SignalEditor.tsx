@@ -1,7 +1,47 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import type { Analysis } from "../api/client";
 import type { SignalEditorController } from "./useSignalEditor";
 import { HelpHeading } from "../components/HelpButton";
 import { help } from "./help";
+function MassBoundInput({
+  value,
+  label,
+  onFocus,
+  onChange,
+}: {
+  value: string;
+  label: string;
+  onFocus: () => void;
+  onChange: (value: string) => void;
+}) {
+  const [focused, setFocused] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  useLayoutEffect(() => {
+    if (focused) input.current?.select();
+  }, [focused]);
+  const compact =
+    value.trim() && Number.isFinite(Number(value))
+      ? String(Number(Number(value).toFixed(2)))
+      : value;
+  return (
+    <input
+      ref={input}
+      type="number"
+      step="any"
+      required
+      aria-label={label}
+      title={`Exact bound: ${value} Th`}
+      value={focused ? value : compact}
+      onFocus={() => {
+        setFocused(true);
+        onFocus();
+      }}
+      onBlur={() => setFocused(false)}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  );
+}
+
 export function SignalEditor({
   editor: e,
   analysis,
@@ -37,8 +77,8 @@ export function SignalEditor({
         }}
       >
         <fieldset disabled={busy}>
-          <label>
-            Signal name
+          <label className="signal-name-field">
+            Signal name <span className="editable-hint">Editable</span>
             <input
               aria-label="Signal name"
               maxLength={128}
@@ -60,33 +100,27 @@ export function SignalEditor({
               >
                 {i + 1}
               </button>
-              <input
-                type="number"
-                step="any"
-                required
-                aria-label={`Mass lower ${i + 1}`}
+              <MassBoundInput
+                label={`Mass lower ${i + 1}`}
                 value={a}
                 onFocus={() => e.patchDraft({ selectedInterval: i })}
-                onChange={(event) =>
+                onChange={(value) =>
                   e.patchDraft({
                     intervals: d.intervals.map((v, j) =>
-                      j === i ? [event.target.value, v[1]] : v,
+                      j === i ? [value, v[1]] : v,
                     ),
                   })
                 }
               />
               <span>–</span>
-              <input
-                type="number"
-                step="any"
-                required
-                aria-label={`Mass upper ${i + 1}`}
+              <MassBoundInput
+                label={`Mass upper ${i + 1}`}
                 value={b}
                 onFocus={() => e.patchDraft({ selectedInterval: i })}
-                onChange={(event) =>
+                onChange={(value) =>
                   e.patchDraft({
                     intervals: d.intervals.map((v, j) =>
-                      j === i ? [v[0], event.target.value] : v,
+                      j === i ? [v[0], value] : v,
                     ),
                   })
                 }

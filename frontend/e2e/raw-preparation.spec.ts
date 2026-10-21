@@ -73,7 +73,7 @@ test("preparation cancellation preserves the existing analysis", async ({
     .click();
   await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
   await page
-    .getByRole("button", { name: "＋ Open TOFexplorer file", exact: true })
+    .getByRole("button", { name: "Open TOFexplorer file", exact: true })
     .click();
   await page.getByRole("button", { name: "▸ nested", exact: true }).dblclick();
   await page.getByRole("button", { name: "◫ raw.h5", exact: true }).dblclick();

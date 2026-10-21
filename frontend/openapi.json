@@ -87,6 +87,38 @@
             ],
             "title": "Depth"
           },
+          "depth_anchors": {
+            "default": [
+              {
+                "depth_nm": 0.0,
+                "frame": 0
+              }
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DepthAnchor"
+            },
+            "title": "Depth Anchors",
+            "type": "array"
+          },
+          "depth_coordinates": {
+            "default": "frame",
+            "enum": [
+              "frame",
+              "depth"
+            ],
+            "title": "Depth Coordinates",
+            "type": "string"
+          },
+          "depth_unit": {
+            "default": "nm",
+            "enum": [
+              "nm",
+              "um",
+              "mm"
+            ],
+            "title": "Depth Unit",
+            "type": "string"
+          },
           "display": {
             "$ref": "#/components/schemas/DisplaySettings"
           },
@@ -258,6 +290,25 @@
         "title": "AnalysisSnapshot",
         "type": "object"
       },
+      "AnchorInput": {
+        "additionalProperties": false,
+        "properties": {
+          "depth_nm": {
+            "title": "Depth Nm",
+            "type": "number"
+          },
+          "frame": {
+            "title": "Frame",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "frame",
+          "depth_nm"
+        ],
+        "title": "AnchorInput",
+        "type": "object"
+      },
       "Axis": {
         "properties": {
           "boundaries": {
@@ -319,6 +370,8 @@
                 "select_image_signal": "#/components/schemas/SelectImageSignal",
                 "set_analysis_frames": "#/components/schemas/SetAnalysisFrames",
                 "set_depth": "#/components/schemas/SetDepth",
+                "set_depth_anchors": "#/components/schemas/SetDepthAnchors",
+                "set_depth_display": "#/components/schemas/SetDepthDisplay",
                 "set_display": "#/components/schemas/SetDisplay",
                 "set_profile_visible": "#/components/schemas/SetProfileVisible",
                 "set_roi": "#/components/schemas/SetROI",
@@ -356,6 +409,12 @@
               },
               {
                 "$ref": "#/components/schemas/SetDisplay"
+              },
+              {
+                "$ref": "#/components/schemas/SetDepthAnchors"
+              },
+              {
+                "$ref": "#/components/schemas/SetDepthDisplay"
               }
             ],
             "title": "Command"
@@ -466,6 +525,24 @@
         "title": "DatasetRef",
         "type": "object"
       },
+      "DepthAnchor": {
+        "properties": {
+          "depth_nm": {
+            "title": "Depth Nm",
+            "type": "number"
+          },
+          "frame": {
+            "title": "Frame",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "frame",
+          "depth_nm"
+        ],
+        "title": "DepthAnchor",
+        "type": "object"
+      },
       "DepthWindow": {
         "additionalProperties": false,
         "properties": {
@@ -493,6 +570,18 @@
       },
       "DisplaySettings": {
         "properties": {
+          "colormap": {
+            "default": "viridis",
+            "enum": [
+              "ion",
+              "gray",
+              "viridis",
+              "magma",
+              "cividis"
+            ],
+            "title": "Colormap",
+            "type": "string"
+          },
           "image": {
             "default": "sims",
             "title": "Image",
@@ -776,6 +865,13 @@
       },
       "Panel": {
         "properties": {
+          "acquisition_frames": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Acquisition Frames",
+            "type": "array"
+          },
           "aggregation": {
             "default": "original",
             "title": "Aggregation",
@@ -790,6 +886,15 @@
           },
           "content_version": {
             "title": "Content Version",
+            "type": "string"
+          },
+          "coordinate_kind": {
+            "default": "frame",
+            "enum": [
+              "frame",
+              "depth"
+            ],
+            "title": "Coordinate Kind",
             "type": "string"
           },
           "coverage": {
@@ -854,11 +959,19 @@
             "title": "Log",
             "type": "boolean"
           },
+          "omitted_frames": {
+            "default": 0,
+            "title": "Omitted Frames",
+            "type": "integer"
+          },
           "palette": {
-            "default": "ion",
+            "default": "viridis",
             "enum": [
               "ion",
-              "gray"
+              "gray",
+              "viridis",
+              "magma",
+              "cividis"
             ],
             "title": "Palette",
             "type": "string"
@@ -1340,9 +1453,85 @@
         "title": "SetDepth",
         "type": "object"
       },
+      "SetDepthAnchors": {
+        "additionalProperties": false,
+        "properties": {
+          "anchors": {
+            "items": {
+              "$ref": "#/components/schemas/AnchorInput"
+            },
+            "maxItems": 4096,
+            "title": "Anchors",
+            "type": "array"
+          },
+          "type": {
+            "const": "set_depth_anchors",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "anchors"
+        ],
+        "title": "SetDepthAnchors",
+        "type": "object"
+      },
+      "SetDepthDisplay": {
+        "additionalProperties": false,
+        "properties": {
+          "coordinates": {
+            "enum": [
+              "frame",
+              "depth"
+            ],
+            "title": "Coordinates",
+            "type": "string"
+          },
+          "type": {
+            "const": "set_depth_display",
+            "title": "Type",
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "nm",
+              "um",
+              "mm"
+            ],
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "unit",
+          "coordinates"
+        ],
+        "title": "SetDepthDisplay",
+        "type": "object"
+      },
       "SetDisplay": {
         "additionalProperties": false,
         "properties": {
+          "colormap": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ion",
+                  "gray",
+                  "viridis",
+                  "magma",
+                  "cividis"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Colormap"
+          },
           "image": {
             "default": "sims",
             "enum": [
@@ -2032,6 +2221,23 @@
               "default": "ion,front,spectrum,profile",
               "title": "Panels",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "coordinates",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "const": "frame",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Coordinates"
             }
           }
         ],

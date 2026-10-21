@@ -53,12 +53,13 @@ for (const candidate of ["echarts", "plotly"])
         Array.from(el.querySelectorAll("canvas")).some((canvas) => {
           const c = canvas.getContext("2d")!;
           const p = c.getImageData(
-            Math.floor(60 + (canvas.width - 80) * 0.9),
-            Math.floor(20 + (canvas.height - 60) * 0.9),
+            Math.floor(40 + (canvas.width - 80) * 0.9),
+            Math.floor(40 + (canvas.height - 80) * 0.1),
             1,
             1,
           ).data;
-          return p[3] > 0 && p[2] < 100;
+          // Increasing Y places the last acquisition rows at the top.
+          return p[3] === 255 && p[0] > 150 && p[1] > 150 && p[2] < 100;
         }),
       );
       expect(

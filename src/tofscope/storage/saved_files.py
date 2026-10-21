@@ -146,7 +146,7 @@ class SavedFileStore:
                     if ROOT in handle:
                         del handle[ROOT]
                     group = handle.require_group(ROOT)
-                    group.attrs.update(schema_version=1, complete=False)
+                    group.attrs.update(schema_version=document.schema_version, complete=False)
                     group.create_dataset('state_json', data=np.frombuffer(encoded, dtype='uint8'))
                     for row in document.signals:
                         if row.materialization_id is None:

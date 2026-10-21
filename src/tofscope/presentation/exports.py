@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from contextlib import ExitStack
 import csv
+import numpy as np
+from tofscope.presentation.coordinates import calibration
 import io
 import json
 from tofscope.presentation.explore import selected_frames
@@ -39,7 +41,10 @@ class ExportService:
                     depth=s.depth.model_dump(),
                     roi=list(s.roi),
                     calibration={
-                        "anchors_nm": [[0, 0]],
+                        "anchors_nm": [[x.frame, x.depth_nm] for x in s.depth_anchors],
+                        "unit": s.depth_unit,
+                        "coordinates": s.depth_coordinates,
+                        "extrapolation": False,
                         "policy": "interpolate only between anchors",
                     },
                     display={
@@ -47,6 +52,7 @@ class ExportService:
                         "relative": s.display.relative,
                         "image": s.display.image,
                         "spectrum_log": s.display.spectrum_log,
+                        "colormap": s.display.colormap,
                     },
                     recipe_import_available=False,
                 )
@@ -55,8 +61,8 @@ class ExportService:
             elif format == "csv":
                 with ExitStack() as stack:
                     estimate = (s.loaded_frames[1] - s.loaded_frames[0] + 1) * (
-                        len(visible_signals(s))
-                    ) * 128 + 4096
+                        len(visible_signals(s)) + 1
+                    ) * 128 + len(s.depth_anchors) * 256 + 4096
                     if estimate > p.settings.response_bytes:
                         raise ValueError("Export too large; narrow loaded frames.")
                     stack.enter_context(
@@ -65,16 +71,19 @@ class ExportService:
                     curves = p.curves(s, stack)
                     out = io.StringIO()
                     writer = csv.writer(out)
-                    writer.writerow(["frame", *[c.label for c in curves]])
+                    depth_calibration = calibration(s)
+                    writer.writerow(["frame", *(["depth_nm"] if depth_calibration else []), *[c.label for c in curves]])
                     first, last = (
                         (s.depth.first, s.depth.last)
                         if s.depth.mode == "window"
                         else s.loaded_frames
                     )
-                    for z in range(first, last + 1):
+                    depths = depth_calibration.frame_to_depth(np.arange(first, last + 1)) if depth_calibration else None
+                    for offset, z in enumerate(range(first, last + 1)):
                         writer.writerow(
                             [
                                 z,
+                                *([float(depths[offset]) if np.isfinite(depths[offset]) else ''] if depths is not None else []),
                                 *[
                                     ""
                                     if c.values[z - s.loaded_frames[0]] is None

@@ -50,11 +50,16 @@ export function useAnalysis(initial: Analysis) {
         const image = (v: Analysis) =>
           v.signals.find((s) => s.id === v.image_signal_id);
         const active = different(image(before), image(a)),
-          loaded = different(before.loaded_frames, a.loaded_frames);
+          loaded = different(before.loaded_frames, a.loaded_frames),
+          geometry =
+            different(before.depth_anchors, a.depth_anchors) ||
+            before.depth_unit !== a.depth_unit ||
+            before.depth_coordinates !== a.depth_coordinates;
         if (
           active ||
           loaded ||
           different(before.depth, a.depth) ||
+          before.display.colormap !== a.display.colormap ||
           before.display.log !== a.display.log ||
           before.display.image !== a.display.image
         )
@@ -62,13 +67,16 @@ export function useAnalysis(initial: Analysis) {
         if (
           active ||
           loaded ||
+          geometry ||
           different(before.roi.slice(2), a.roi.slice(2)) ||
+          before.display.colormap !== a.display.colormap ||
           before.display.log !== a.display.log
         )
           parts.push("front");
         if (
           active ||
           loaded ||
+          geometry ||
           different(before.roi, a.roi) ||
           different(
             before.signals.filter((s) =>
