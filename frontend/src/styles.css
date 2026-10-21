@@ -1031,6 +1031,22 @@ small {
   flex: 1;
   min-width: 180px;
 }
+.save-copy input {
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px solid #718a98;
+  border-radius: 5px;
+  background: #fff;
+  color: #173d4b;
+}
+.save-copy input:focus-visible {
+  outline: 2px solid #315d70;
+  outline-offset: 2px;
+}
+.save-copy input:disabled {
+  background: #f0f4f6;
+  color: #536974;
+}
 .save-copy progress {
   display: block;
   width: 100%;
