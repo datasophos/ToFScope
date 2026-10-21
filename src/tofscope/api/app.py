@@ -42,6 +42,7 @@ from tofscope.api.schemas import (
     SubmitJob,
     SaveCopy,
     FolderLocations,
+    CreateSaveFolder,
 )
 from typing import Literal
 from tofscope.presentation.data import ExploreData
@@ -254,7 +255,26 @@ def create_app(settings, services=None, bootstrap_secret=None):
     def folder_locations(o=Depends(owner), s=Depends(svc)):
         return FolderLocations(acquisitions=str(settings.data_root),
                                saved_copies=str(settings.output_root),
-                               save_destination=str(s.saves.files.owner_path(o)))
+                               save_destination=str(s.saves.files.owner_path(o)),
+                               can_save_to_acquisitions=settings.mode == 'local' and o == 'local')
+
+    @app.get('/api/v1/save-folders')
+    def save_folders(directory: str = '', location: Literal['acquisition', 'saved'] = 'saved',
+                     query: str = '', offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100),
+                     o=Depends(owner), s=Depends(svc)):
+        try:
+            return s.saves.files.browse(o, directory, location, query=query, offset=offset, limit=limit, folders_only=True)
+        except FileNotFoundError:
+            raise HTTPException(404, 'Save folder is unavailable.') from None
+
+    @app.post('/api/v1/save-folders', status_code=201)
+    def create_save_folder(body: CreateSaveFolder, o=Depends(owner), s=Depends(svc)):
+        try:
+            return s.saves.files.create_directory(o, body.directory, body.location, body.name)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from None
+        except FileNotFoundError:
+            raise HTTPException(404, 'Save folder is unavailable.') from None
 
     @app.post('/api/v1/acquisitions/inspect', response_model=PreparationPreview)
     def inspect_acquisition(body: OpenAcquisition, o=Depends(owner), s=Depends(svc)):
@@ -433,14 +453,18 @@ def create_app(settings, services=None, bootstrap_secret=None):
         directory: str = "",
         location: Literal["acquisition", "saved"] = "acquisition",
         query: str = "",
+        folders: bool = False,
         offset: int = Query(0, ge=0),
         limit: int = Query(100, ge=1, le=100),
         o=Depends(owner),
         s=Depends(svc),
     ):
         if location == 'saved':
-            if directory:
-                raise ValueError('Saved files have no subdirectories.')
+            if folders or directory:
+                try:
+                    return s.saves.files.browse(o, directory, query=query, offset=offset, limit=limit)
+                except FileNotFoundError:
+                    raise HTTPException(404, 'Save folder is unavailable.') from None
             values = [f for f in s.saves.files.list(o) if query.lower() in f.name.lower()]
             entries = [dict(name=f.name, path=f.id, kind='file', size=f.size) for f in values[offset:offset + limit]]
             return dict(path='', entries=entries, total=len(values), next_offset=offset + limit if offset + limit < len(values) else None)

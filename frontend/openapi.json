@@ -649,6 +649,37 @@
         "title": "CommandEnvelope",
         "type": "object"
       },
+      "CreateSaveFolder": {
+        "additionalProperties": false,
+        "properties": {
+          "directory": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Directory",
+            "type": "string"
+          },
+          "location": {
+            "default": "saved",
+            "enum": [
+              "acquisition",
+              "saved"
+            ],
+            "title": "Location",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CreateSaveFolder",
+        "type": "object"
+      },
       "Curve": {
         "properties": {
           "coverage": {
@@ -846,6 +877,11 @@
           "acquisitions": {
             "title": "Acquisitions",
             "type": "string"
+          },
+          "can_save_to_acquisitions": {
+            "default": false,
+            "title": "Can Save To Acquisitions",
+            "type": "boolean"
           },
           "save_destination": {
             "title": "Save Destination",
@@ -1877,6 +1913,21 @@
             "maxLength": 128,
             "minLength": 1,
             "title": "Dataset Generation",
+            "type": "string"
+          },
+          "destination_location": {
+            "default": "saved",
+            "enum": [
+              "acquisition",
+              "saved"
+            ],
+            "title": "Destination Location",
+            "type": "string"
+          },
+          "directory": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Directory",
             "type": "string"
           },
           "expected_revision": {
@@ -3352,6 +3403,16 @@
           },
           {
             "in": "query",
+            "name": "folders",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Folders",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
             "name": "offset",
             "required": false,
             "schema": {
@@ -3491,6 +3552,125 @@
           }
         },
         "summary": "Folder Locations"
+      }
+    },
+    "/api/v1/save-folders": {
+      "get": {
+        "operationId": "save_folders_api_v1_save_folders_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Directory",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "location",
+            "required": false,
+            "schema": {
+              "default": "saved",
+              "enum": [
+                "acquisition",
+                "saved"
+              ],
+              "title": "Location",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Query",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Folders"
+      },
+      "post": {
+        "operationId": "create_save_folder_api_v1_save_folders_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSaveFolder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Save Folder"
       }
     },
     "/api/v1/saved-files": {

@@ -94,3 +94,64 @@ class SaveApiTests(unittest.TestCase):
             self.assertEqual([e['name'] for e in listing], ['a.h5', 'b.h5', 'copy.h5'])
             reopened = client.post('/api/v1/analyses', headers=h, json={'location':'saved','relative_path':saved.saved_file.id})
             self.assertEqual(reopened.status_code, 200, reopened.text)
+
+    def test_choose_save_folder_and_reopen_nested_copy(self):
+        from pathlib import Path
+        setup_case(self, mode='proxy', trusted_proxies=('testclient',), public_origin='http://testserver')
+        with TestClient(create_app(self.settings)) as client:
+            h = {'x-tofscope-user': 'a', 'Origin': 'http://testserver'}
+            store = client.app.state.services.saves.files
+            child = store.owner_root('a') / 'results'
+            created = client.post('/api/v1/save-folders', headers=h, json={'name':'results'})
+            self.assertEqual(created.status_code, 201, created.text)
+            duplicate = client.post('/api/v1/save-folders', headers=h, json={'name':'results'})
+            self.assertEqual(duplicate.status_code, 422, duplicate.text)
+            self.assertIn('already exists', duplicate.json()['message'])
+            folders = client.get('/api/v1/save-folders', headers=h)
+            self.assertEqual(folders.status_code, 200, folders.text)
+            self.assertEqual(folders.json()['entries'][0]['path'], 'results')
+            self.assertEqual(client.get('/api/v1/save-folders', headers=h, params={'directory':'../'}).status_code, 422)
+            self.assertEqual(client.get('/api/v1/save-folders', headers=h, params={'directory':str(self.settings.data_root)}).status_code, 422)
+            (store.owner_root('a') / 'escape').symlink_to(self.settings.data_root, target_is_directory=True)
+            self.assertEqual(client.get('/api/v1/save-folders', headers=h, params={'directory':'escape'}).status_code, 422)
+            a = client.post('/api/v1/analyses', headers=h, json={'relative_path':'a.h5'}).json()
+            body = dict(request_id='nested', expected_revision=a['revision'], dataset_generation=a['dataset']['generation'], filename='copy.h5', directory='results')
+            response = client.post(f"/api/v1/analyses/{a['id']}/saves", headers=h, json=body)
+            self.assertEqual(response.status_code, 202, response.text)
+            job = client.app.state.services.jobs.wait('a', response.json()['id'], 5)
+            self.assertEqual(job.status, 'succeeded', job.safe_error)
+            self.assertTrue((child / 'copy.h5').is_file())
+            fid = job.saved_file.id
+            self.assertEqual(client.get(f'/api/v1/saved-files/{fid}/download', headers=h).status_code, 200)
+            self.assertEqual(client.get(f'/api/v1/saved-files/{fid}/download', headers=h | {'x-tofscope-user':'b'}).status_code, 404)
+            self.assertEqual(client.post('/api/v1/analyses', headers=h, json={'location':'saved','relative_path':fid}).status_code, 200)
+            entries = client.get('/api/v1/files', headers=h, params={'location':'saved','directory':'results'}).json()['entries']
+            self.assertEqual(entries[0]['path'], fid)
+
+    def test_local_user_can_choose_configured_data_folder_but_not_escape(self):
+        import tempfile
+        from pathlib import Path
+        setup_case(self, public_origin='http://testserver')
+        other = tempfile.TemporaryDirectory(); self.addCleanup(other.cleanup)
+        outside = Path(other.name).resolve()
+        destination = self.settings.data_root / 'results'
+        destination.mkdir()
+        (destination / 'subfolder').mkdir()
+        with TestClient(create_app(self.settings, bootstrap_secret='save-folder-test')) as client:
+            h = {'Origin':'http://testserver'}
+            auth = client.post('/api/v1/auth/bootstrap', headers=h, json={'secret':'save-folder-test'})
+            h['x-csrf-token'] = auth.json()['csrf']
+            folders = client.get('/api/v1/save-folders', headers=h, params={'location':'acquisition','directory':'results'})
+            self.assertEqual(folders.status_code, 200, folders.text)
+            self.assertEqual(folders.json()['entries'][0]['path'], 'results/subfolder')
+            self.assertEqual(client.get('/api/v1/save-folders', headers=h, params={'directory':str(outside)}).status_code, 422)
+            self.assertEqual(client.get('/api/v1/save-folders', headers=h, params={'location':'acquisition','directory':'../'}).status_code, 422)
+            a = client.post('/api/v1/analyses', headers=h, json={'relative_path':'a.h5'}).json()
+            response = client.post(f"/api/v1/analyses/{a['id']}/saves", headers=h, json=dict(request_id='external', expected_revision=a['revision'], dataset_generation=a['dataset']['generation'], filename='outside.h5', directory='results', destination_location='acquisition'))
+            self.assertEqual(response.status_code, 202, response.text)
+            job = client.app.state.services.jobs.wait('local', response.json()['id'], 5)
+            self.assertEqual(job.status, 'succeeded', job.safe_error)
+            self.assertTrue((destination / 'outside.h5').is_file())
+            self.assertEqual(client.get(f'/api/v1/saved-files/{job.saved_file.id}/download', headers=h).status_code, 200)
+            self.assertEqual(client.post('/api/v1/analyses', headers=h, json={'location':'saved','relative_path':job.saved_file.id}).status_code, 200)
+            self.assertFalse((self.settings.output_root / 'outside.h5').exists())

@@ -13,6 +13,8 @@ type Page = {
   entries: Entry[];
   total: number;
   next_offset: number | null;
+  full_path?: string;
+  parent?: string | null;
 };
 type Location = "acquisition" | "saved";
 
@@ -45,17 +47,26 @@ function fileSize(bytes: number) {
 }
 
 export function FilePicker({
-  onOpen,
+  onOpen = async () => {},
   onClose,
   initialRawSelection = null,
+  onChooseFolder,
+  initialDirectory = "",
+  initialLocation = "acquisition",
 }: {
-  onOpen: (path: string, location: Location) => Promise<void>;
+  onOpen?: (path: string, location: Location) => Promise<void>;
+  onChooseFolder?: (directory: string, location: Location) => void;
+  initialDirectory?: string;
+  initialLocation?: Location;
   onClose: () => void;
   initialRawSelection?: RawSelection | null;
 }) {
+  const folderMode = !!onChooseFolder;
+  const title = folderMode ? "Choose save folder" : "Open TOFexplorer file";
   const { folders, error: folderError } = useFolderLocations();
-  const [location, setLocation] = useState<Location>("acquisition");
-  const [dir, setDir] = useState("");
+  const [newFolder, setNewFolder] = useState("");
+  const [location, setLocation] = useState<Location>(initialLocation);
+  const [dir, setDir] = useState(initialDirectory);
   const [query, setQuery] = useState("");
   const [offset, setOffset] = useState(0);
   const [page, setPage] = useState<Page | null>(null);
@@ -85,7 +96,7 @@ export function FilePicker({
     setPage(null);
     setSelected(null);
     request<Page>(
-      `/files?location=${location}&directory=${encodeURIComponent(dir)}&query=${encodeURIComponent(query)}&offset=${offset}`,
+      `/${folderMode ? "save-folders" : "files"}?location=${location}&directory=${encodeURIComponent(dir)}&query=${encodeURIComponent(query)}&offset=${offset}&folders=true`,
     )
       .then((value) => {
         if (alive) setPage(value);
@@ -99,7 +110,7 @@ export function FilePicker({
     return () => {
       alive = false;
     };
-  }, [dir, query, offset, location]);
+  }, [dir, query, offset, location, folderMode]);
 
   const navigate = (path: string, nextLocation = location) => {
     setDir(path);
@@ -114,6 +125,7 @@ export function FilePicker({
       navigate(entry.path);
       return;
     }
+    if (folderMode) return;
     setBusy(true);
     setError("");
     try {
@@ -139,11 +151,9 @@ export function FilePicker({
   };
   const chosen = page?.entries.find((entry) => entry.path === selected);
   const rootPath =
-    location === "saved" ? folders?.saved_copies : folders?.acquisitions;
+    location === "saved" ? folders?.save_destination : folders?.acquisitions;
   const currentPath =
-    location === "saved"
-      ? folders?.save_destination
-      : [rootPath, dir].filter(Boolean).join("/");
+    page?.full_path || [rootPath, dir].filter(Boolean).join("/");
   const segments = dir.split("/").filter(Boolean);
 
   const handleKeys = (event: KeyboardEvent<HTMLElement>) => {
@@ -213,14 +223,14 @@ export function FilePicker({
     <div className="scrim">
       <section
         ref={dialog}
-        className="dialog file-explorer"
+        className={`dialog file-explorer ${folderMode ? "folder-picker" : ""}`}
         role="dialog"
         aria-modal="true"
-        aria-label="Open TOFexplorer file"
+        aria-label={title}
         onKeyDown={handleKeys}
       >
         <header className="file-explorer-header">
-          <h2>Open TOFexplorer file</h2>
+          <h2>{title}</h2>
           <button aria-label="Close picker" disabled={busy} onClick={onClose}>
             ×
           </button>
@@ -247,7 +257,12 @@ export function FilePicker({
                 key={value}
                 aria-label={label}
                 aria-pressed={location === value}
-                disabled={busy}
+                disabled={
+                  busy ||
+                  (folderMode &&
+                    value === "acquisition" &&
+                    !folders?.can_save_to_acquisitions)
+                }
                 onClick={() => navigate("", value)}
               >
                 <FileIcon folder />
@@ -266,7 +281,7 @@ export function FilePicker({
                 className="file-up"
                 aria-label="Parent folder"
                 title="Parent folder"
-                disabled={busy || location === "saved" || !dir}
+                disabled={busy || !dir}
                 onClick={() => navigate(segments.slice(0, -1).join("/"))}
               >
                 ↑
@@ -285,7 +300,11 @@ export function FilePicker({
                   onClick={() => navigate("")}
                 >
                   {rootPath
-                    ? folderName(rootPath)
+                    ? folderName(
+                        location === "saved"
+                          ? folders?.saved_copies || rootPath
+                          : rootPath,
+                      )
                     : location === "saved"
                       ? "Saved files"
                       : "Acquisitions"}
@@ -388,9 +407,11 @@ export function FilePicker({
                 <p className="file-list-message">
                   {query
                     ? "No matching files."
-                    : location === "saved"
-                      ? "No saved files in this location."
-                      : "No .h5 files in this folder."}
+                    : folderMode
+                      ? "No subfolders in this folder."
+                      : location === "saved"
+                        ? "No saved files in this location."
+                        : "No .h5 files in this folder."}
                 </p>
               )}
             </div>
@@ -423,21 +444,64 @@ export function FilePicker({
             </div>
           </div>
         </div>
+        {folderMode && (
+          <form
+            className="file-new-folder"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (busy || loading || !page || !newFolder.trim()) return;
+              setBusy(true);
+              setError("");
+              try {
+                const created = await post<{ path: string }>("/save-folders", {
+                  location,
+                  directory: page.path,
+                  name: newFolder.trim(),
+                });
+                setNewFolder("");
+                navigate(created.path);
+              } catch (e) {
+                setError((e as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <label>
+              New folder name
+              <input
+                aria-label="New folder name"
+                value={newFolder}
+                maxLength={240}
+                disabled={busy || loading}
+                onChange={(e) => setNewFolder(e.target.value)}
+              />
+            </label>
+            <button disabled={busy || loading || !page || !newFolder.trim()}>
+              Create folder
+            </button>
+          </form>
+        )}
         <footer className="file-explorer-footer">
-          <span title={chosen?.name}>
-            {chosen?.name || "TOFexplorer files (.h5)"}
+          <span title={folderMode ? currentPath : chosen?.name}>
+            {folderMode
+              ? currentPath
+              : chosen?.name || "TOFexplorer files (.h5)"}
           </span>
           <button disabled={busy} onClick={onClose}>
             Cancel
           </button>
           <button
             className="primary"
-            disabled={!chosen || loading || busy}
+            disabled={
+              loading || busy || (folderMode ? !page || !!folderError : !chosen)
+            }
             onClick={() => {
-              if (chosen) void openEntry(chosen);
+              if (folderMode && page) onChooseFolder?.(page.path, location);
+              else if (chosen) void openEntry(chosen);
             }}
           >
-            Open
+            {folderMode ? "Use this folder" : "Open"}
           </button>
         </footer>
       </section>

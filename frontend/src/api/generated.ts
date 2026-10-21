@@ -347,6 +347,24 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/save-folders": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Save Folders */
+    get: operations["save_folders_api_v1_save_folders_get"];
+    put?: never;
+    /** Create Save Folder */
+    post: operations["create_save_folder_api_v1_save_folders_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/saved-files": {
     parameters: {
       query?: never;
@@ -665,6 +683,22 @@ export interface components {
       /** Request Id */
       request_id: string;
     };
+    /** CreateSaveFolder */
+    CreateSaveFolder: {
+      /**
+       * Directory
+       * @default
+       */
+      directory: string;
+      /**
+       * Location
+       * @default saved
+       * @enum {string}
+       */
+      location: "acquisition" | "saved";
+      /** Name */
+      name: string;
+    };
     /** Curve */
     Curve: {
       /** Coverage */
@@ -762,6 +796,11 @@ export interface components {
     FolderLocations: {
       /** Acquisitions */
       acquisitions: string;
+      /**
+       * Can Save To Acquisitions
+       * @default false
+       */
+      can_save_to_acquisitions: boolean;
       /** Save Destination */
       save_destination: string;
       /** Saved Copies */
@@ -1113,6 +1152,17 @@ export interface components {
     SaveCopy: {
       /** Dataset Generation */
       dataset_generation: string;
+      /**
+       * Destination Location
+       * @default saved
+       * @enum {string}
+       */
+      destination_location: "acquisition" | "saved";
+      /**
+       * Directory
+       * @default
+       */
+      directory: string;
       /** Expected Revision */
       expected_revision: number;
       /** Filename */
@@ -1962,6 +2012,7 @@ export interface operations {
         directory?: string;
         location?: "acquisition" | "saved";
         query?: string;
+        folders?: boolean;
         offset?: number;
         limit?: number;
       };
@@ -2069,6 +2120,74 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["FolderLocations"];
+        };
+      };
+    };
+  };
+  save_folders_api_v1_save_folders_get: {
+    parameters: {
+      query?: {
+        directory?: string;
+        location?: "acquisition" | "saved";
+        query?: string;
+        offset?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_save_folder_api_v1_save_folders_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateSaveFolder"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };

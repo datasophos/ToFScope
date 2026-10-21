@@ -77,26 +77,105 @@ class SavedFileStore:
         path.mkdir(exist_ok=True, mode=0o700)
         return path
 
+    def directory(self, owner, directory='', location='saved', *, writable=False):
+        if location == 'acquisition':
+            if self.settings.mode != 'local' or owner != 'local':
+                raise ValueError('Save within your saved-files folder.')
+            root = self.settings.data_root
+        elif location == 'saved':
+            root = self.owner_root(owner)
+        else:
+            raise ValueError('Unknown save location.')
+        if not isinstance(directory, str) or '\x00' in directory or '\\' in directory:
+            raise ValueError('Choose a folder within the configured location.')
+        relative = Path(directory)
+        if relative.is_absolute() or '..' in relative.parts:
+            raise ValueError('Choose a folder within the configured location.')
+        target = root
+        for part in relative.parts:
+            target = target / part
+            if target.is_symlink():
+                raise ValueError('Save folders cannot be symbolic links.')
+        target = target.resolve()
+        if not target.is_relative_to(root):
+            raise ValueError('Save folder is outside the configured location.')
+        if not target.is_dir():
+            raise FileNotFoundError('Save folder is unavailable.')
+        if writable and not os.access(target, os.W_OK | os.X_OK):
+            raise PermissionError('The server cannot write to this folder.')
+        return target
+
+    def identifier(self, owner, target):
+        root = self.owner_root(owner)
+        if target.is_relative_to(root):
+            return file_id(target.relative_to(root).as_posix())
+        if self.settings.mode == 'local' and owner == 'local' and target.is_relative_to(self.settings.data_root):
+            return file_id(str(target))
+        raise ValueError('File must stay within a configured save location.')
+
     def path(self, owner, identifier):
         try:
-            name = base64.urlsafe_b64decode(identifier + '=' * (-len(identifier) % 4)).decode()
-            if file_id(filename(name)) != identifier:
+            decoded = base64.urlsafe_b64decode(identifier + '=' * (-len(identifier) % 4)).decode()
+            if file_id(decoded) != identifier:
                 raise ValueError('Invalid saved file ID.')
+            name = Path(decoded)
+            filename(name.name)
+            if name.is_absolute():
+                if self.settings.mode != 'local' or owner != 'local' or not name.is_relative_to(self.settings.data_root):
+                    raise ValueError('Invalid saved file ID.')
+                parent = self.directory(owner, str(name.parent.relative_to(self.settings.data_root)), 'acquisition')
+            else:
+                parent = self.directory(owner, str(name.parent))
+            target = parent / name.name
         except (ValueError, UnicodeError, TypeError) as exc:
             raise ValueError('Invalid saved file ID.') from exc
-        target = self.owner_root(owner) / name
         if target.is_symlink() or not target.is_file():
             raise FileNotFoundError('Saved file unavailable.')
         return target
+
+    def browse(self, owner, directory='', location='saved', *, query='', offset=0, limit=100, folders_only=False):
+        if len(query) > 256 or offset < 0 or not 1 <= limit <= 100:
+            raise ValueError('Invalid folder listing limits.')
+        target = self.directory(owner, directory, location)
+        root = self.settings.data_root if location == 'acquisition' else self.owner_root(owner)
+        entries = []
+        for child in target.iterdir():
+            if child.name.startswith('.') or query.casefold() not in child.name.casefold() or child.is_symlink():
+                continue
+            try:
+                if child.is_dir():
+                    entries.append(dict(name=child.name, path=child.relative_to(root).as_posix(), kind='directory', size=0))
+                elif not folders_only and child.is_file() and child.suffix == '.h5':
+                    entries.append(dict(name=child.name, path=self.identifier(owner, child), kind='file', size=child.stat().st_size))
+            except OSError:
+                continue
+        entries.sort(key=lambda row: (row['kind'] != 'directory', row['name'].casefold(), row['name']))
+        relative = target.relative_to(root).as_posix()
+        relative = '' if relative == '.' else relative
+        parent = str(Path(relative).parent) if relative else None
+        return dict(path=relative, full_path=str(target), parent='' if parent == '.' else parent,
+                    entries=entries[offset:offset + limit], total=len(entries),
+                    next_offset=offset + limit if offset + limit < len(entries) else None)
+
+    def create_directory(self, owner, directory, location, name):
+        if not name or name.startswith('.') or len(name.encode()) > 240 or any(c in name for c in ('/', '\\', '\x00')) or any(ord(c) < 32 for c in name):
+            raise ValueError('Choose a plain folder name.')
+        parent = self.directory(owner, directory, location, writable=True)
+        try:
+            (parent / name).mkdir(mode=0o700)
+        except FileExistsError:
+            raise ValueError('A file or folder with that name already exists. Choose another name.') from None
+        root = self.settings.data_root if location == 'acquisition' else self.owner_root(owner)
+        return dict(path=(parent / name).relative_to(root).as_posix())
 
     def list(self, owner):
         return [SavedFile(file_id(p.name), p.name, p.stat().st_size)
                 for p in sorted(self.owner_root(owner).iterdir())
                 if not p.name.startswith('.') and p.suffix == '.h5' and p.is_file() and not p.is_symlink()]
 
-    def publish_copy(self, owner, source, document, frames, name, cancel, progress, before_publish):
+    def publish_copy(self, owner, source, document, frames, name, cancel, progress, before_publish, directory='', destination_location='saved'):
         name = filename(name)
-        directory = self.owner_root(owner)
+        directory = self.directory(owner, directory, destination_location, writable=True)
         destination = directory / name
         if os.path.lexists(destination):
             raise FileExistsError('Output already exists; choose a new name.')
@@ -173,7 +252,7 @@ class SavedFileStore:
                 # The caller holds its revision lock across validation and publication.
                 # A callback may return a context manager to make that interval explicit.
                 from contextlib import nullcontext
-                result = SavedFile(file_id(name), name, temporary.stat().st_size)
+                result = SavedFile(self.identifier(owner, destination), name, temporary.stat().st_size)
                 guard = before_publish()
                 with guard if guard is not None else nullcontext():
                     check()

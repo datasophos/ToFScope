@@ -308,3 +308,94 @@ test("opening and replacing files stays clean until an edit is made", async ({
     page.getByRole("dialog", { name: "Unsaved changes", exact: true }),
   ).toBeVisible();
 });
+
+test("save folder picker creates a subfolder and the saved copy can be reopened there", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `save-subfolder-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: /Open TOFexplorer/ })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+  await page.getByRole("button", { name: "Save as…", exact: true }).click();
+  const save = page.getByRole("dialog", { name: "Save a copy", exact: true });
+  await save.getByLabel("Saved filename", { exact: true }).fill("nested.h5");
+  const original = await save
+    .getByTestId("save-destination")
+    .getAttribute("title");
+  await save
+    .getByRole("button", { name: "Choose folder…", exact: true })
+    .click();
+  let picker = page.getByRole("dialog", {
+    name: "Choose save folder",
+    exact: true,
+  });
+  await picker.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(save.getByTestId("save-destination")).toHaveAttribute(
+    "title",
+    original!,
+  );
+  await save
+    .getByRole("button", { name: "Choose folder…", exact: true })
+    .click();
+  picker = page.getByRole("dialog", {
+    name: "Choose save folder",
+    exact: true,
+  });
+  await expect(
+    picker.getByRole("button", { name: "Acquisitions", exact: true }),
+  ).toBeDisabled();
+  await picker
+    .getByLabel("New folder name", { exact: true })
+    .fill("Study results");
+  await picker
+    .getByRole("button", { name: "Create folder", exact: true })
+    .click();
+  await picker.screenshot({
+    path: test.info().outputPath("save-folder-picker.png"),
+  });
+  await page.setViewportSize({ width: 560, height: 800 });
+  await expect
+    .poll(() => picker.evaluate((el) => el.scrollWidth <= el.clientWidth))
+    .toBe(true);
+  await picker
+    .getByRole("button", { name: "Use this folder", exact: true })
+    .click();
+  await expect(save.getByTestId("save-destination")).toHaveAttribute(
+    "title",
+    /\/Study results\/nested.h5$/,
+  );
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await save.screenshot({
+    path: test.info().outputPath("save-destination.png"),
+  });
+  await save.getByRole("button", { name: "Save copy", exact: true }).click();
+  await expect(save.getByText("Copy saved.", { exact: true })).toBeVisible();
+  const download = page.waitForEvent("download");
+  await save.getByRole("link", { name: "Download copy", exact: true }).click();
+  expect((await download).suggestedFilename()).toBe("nested.h5");
+  await save
+    .getByRole("button", { name: "Close save dialog", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Open TOFexplorer file", exact: true })
+    .click();
+  const open = page.getByRole("dialog", {
+    name: "Open TOFexplorer file",
+    exact: true,
+  });
+  await open.getByRole("button", { name: "Saved files", exact: true }).click();
+  await open
+    .getByRole("button", { name: "▸ Study results", exact: true })
+    .dblclick();
+  await open
+    .getByRole("button", { name: "◫ nested.h5", exact: true })
+    .dblclick();
+  await expect(open).toBeHidden();
+  await expect(page.getByRole("tab")).toHaveCount(2);
+});

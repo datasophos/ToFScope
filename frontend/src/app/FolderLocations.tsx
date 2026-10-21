@@ -27,20 +27,38 @@ export function useFolderLocations() {
   return { folders, error };
 }
 
-export function FolderLocations({ filename = "" }: { filename?: string }) {
+export function FolderLocations({
+  filename = "",
+  directory = "",
+  location = "saved",
+}: {
+  filename?: string;
+  directory?: string;
+  location?: "acquisition" | "saved";
+}) {
   const { folders, error } = useFolderLocations();
   if (error) return <p role="alert">{error}</p>;
   if (!folders) return <p role="status">Loading folders…</p>;
-  const destination = `${folders.save_destination}/${filename}`;
+  const root =
+    location === "saved" ? folders.save_destination : folders.acquisitions;
+  const folder = [root, directory].filter(Boolean).join("/");
+  const destination = `${folder}/${filename}`;
   return (
     <dl className="folder-paths">
-      <dt>Saved copies folder</dt>
-      <dd data-testid="folder-saved-copies" title={folders.saved_copies}>
-        {folderName(folders.saved_copies)}
+      <dt>Save folder</dt>
+      <dd
+        data-testid="folder-saved-copies"
+        title={
+          directory || location !== "saved" ? folder : folders.saved_copies
+        }
+      >
+        {folderName(
+          !directory && location === "saved" ? folders.saved_copies : folder,
+        )}
       </dd>
       <dt>Save destination</dt>
       <dd data-testid="save-destination" title={destination}>
-        {folderName(destination)}
+        {destination}
       </dd>
     </dl>
   );

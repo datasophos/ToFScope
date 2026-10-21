@@ -63,12 +63,21 @@ class ErrorResponse(StrictModel):
 
 class SaveCopy(RevisionEnvelope):
     filename: str = Field(min_length=1, max_length=240)
+    directory: str = Field(default='', max_length=4096)
+    destination_location: Literal['acquisition', 'saved'] = 'saved'
+
+
+class CreateSaveFolder(StrictModel):
+    name: str = Field(min_length=1, max_length=240)
+    directory: str = Field(default='', max_length=4096)
+    location: Literal['acquisition', 'saved'] = 'saved'
 
 
 class FolderLocations(StrictModel):
     acquisitions: str
     saved_copies: str
     save_destination: str
+    can_save_to_acquisitions: bool = False
 
 
 class CandidateInput(StrictModel):
