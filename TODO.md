@@ -39,8 +39,8 @@ Original-resolution values must continue to drive profiles and exports.
 - [x] Merge the packaged Explore migration and depth calibration into `main` ([PR #1](https://github.com/datasophos/ToFScope/pull/1), [PR #2](https://github.com/datasophos/ToFScope/pull/2)).
 - [x] Merge Explore control/layout fixes, branding, and CI cleanup ([PR #3](https://github.com/datasophos/ToFScope/pull/3)).
 
-Recorded local validation includes 194 Python tests, 23 frontend unit tests,
-and the latest 69 browser workflows, plus TypeScript checks and a rebuilt client.
+Recorded local validation includes 194 Python tests, 30 frontend unit tests,
+and the latest 71 browser workflows, plus TypeScript checks and a rebuilt client.
 See [identification qualification](docs/validation/identification.md) for atomic
 matching, measurements and save/reopen evidence. See [Explore control validation](docs/validation/explore-controls.md) for the
 confirmed help-button overlap fix and [depth qualification](docs/validation/depth-calibration.md)

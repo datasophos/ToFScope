@@ -72,3 +72,52 @@ were rebuilt after the final changes. Remote CI was not checked.
 
 Screenshots: [atomic identification](identification/atomic-identification.png),
 [isotope measurements](identification/isotope-measurements.png).
+
+## Identification dialog refinement
+
+Manual testing on the local example datasets exposed a spectrum-scale bug:
+`PlotPanel` enabled logarithmic scaling only for the main spectrum's internal
+name. An explicit spectrum-scale property now enables the same log/linear
+behavior in the identification dialog, with log selected initially and its
+setting independent from Explore. Shared plot margins, controls and scientific
+intensities remain unchanged.
+
+The dialog now uses stacked field labels, visible white input/select fields,
+aligned search controls, separated annotation/integration groups and a compact
+spectrum. Desktop and narrow-screen checks cover field spacing, containment and
+independent scale toggling.
+
+Candidate matching still uses the exact server tolerance and includes the full
+catalog. Presentation defaults to isotopes with a tabulated positive natural
+abundance and sorts by abundance, then absolute mass error. Ranged abundances use
+the interval midpoint only for ordering; the table preserves the interval and
+shows percentages. Closest m/z ordering and inclusion of entries without natural
+abundance remain explicit options. Natural abundance is relative to isotopes of
+the same element, so the interface does not label this ordering an identification
+probability or sample composition. The bundled catalog includes 3,352 masses but
+only 288 with reference natural abundances; many other entries describe
+radioactive or synthetic isotopes rather than missing acquisition measurements.
+
+At the reported 47.95924758911 Th position with 0.1 Th tolerance and charge +1,
+Ti-48 (73.72%) precedes Ca-48 (0.187%). The optional unlisted-abundance view retains
+K-48 and other catalog entries. At 0.01 Th tolerance Ti-48 is correctly excluded;
+the ranking never expands the user's matching window.
+
+Refinement validation: TypeScript and the rebuilt packaged frontend passed;
+26 frontend tests and all 70 browser workflows passed. The three identification
+browser workflows also passed after restoring ten significant digits in the
+predicted-mass display. An independent review found no remaining functional
+issues. The existing port-8765 service remains running with the user-confirmed
+local dataset directory; its health/readiness and rebuilt static asset hashes
+were verified without restarting it or opening another tab. The directory is
+recorded in private persistent agent memory, outside git.
+
+[Refined dialog and Ti-48 ordering](identification/identification-natural-abundance.png).
+
+The measured-mass field shows four decimal places while unfocused and exposes
+its full exact value on focus (also in its title), using the existing signal
+editor's focus/select pattern. Search and assignment still use the unrounded
+value. The tolerance spinner changes by 0.1; manual tolerances such as 0.01 remain
+accepted. Browser checks exercise ArrowUp/ArrowDown, compact/exact focus changes,
+and the actual unrounded candidate request. All three identification workflows,
+26 frontend tests, TypeScript and the packaged build passed after these changes.

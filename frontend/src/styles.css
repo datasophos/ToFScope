@@ -1743,14 +1743,205 @@ small {
   margin-left: 5px;
 }
 
-.identification-dialog { font-size: 13px; }
-.identification-dialog input[type="number"] { width: 140px; }
-.identification-dialog select { max-width: 330px; }
-.identification-dialog pre { white-space: pre-wrap; overflow-wrap: anywhere; }
-.identification-dialog details { margin: 8px 0; overflow-wrap: anywhere; }
-.identification-spectrum .plot-body { height: 180px; }
-.identification-spectrum .plot-panel { min-height: 260px; }
-.identification-spectrum .plot-toolbar { display: none; }
-.isotope-table-scroll { overflow-x: auto; max-height: 240px; }
-.isotope-table-scroll table { width: 100%; border-collapse: collapse; }
-.isotope-table-scroll th, .isotope-table-scroll td { padding: 8px; border-bottom: 1px solid #cbd5da; text-align: left; }
+.identification-dialog {
+  font-size: 13px;
+}
+.identification-dialog input[type="number"] {
+  width: 140px;
+}
+.identification-dialog select {
+  max-width: 330px;
+}
+.identification-dialog pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.identification-dialog details {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.isotope-table-scroll {
+  overflow-x: auto;
+  max-height: 240px;
+}
+.isotope-table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.isotope-table-scroll th,
+.isotope-table-scroll td {
+  padding: 8px;
+  border-bottom: 1px solid #cbd5da;
+  text-align: left;
+}
+
+.atomic-identification {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+.atomic-identification > * {
+  flex-shrink: 0;
+}
+.atomic-identification > .row:first-child {
+  margin-bottom: 0;
+}
+.atomic-identification p {
+  margin: 0;
+  line-height: 1.5;
+}
+.identification-intro,
+.identification-action-note,
+.identification-result-summary {
+  color: #536974;
+}
+.atomic-identification label:not(.isotope-choice, .identification-include) {
+  display: grid;
+  gap: 6px;
+}
+.atomic-identification input[type="number"],
+.atomic-identification select {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid #718a98;
+  background: #fff;
+  color: #173d4b;
+  border-radius: 5px;
+}
+.identification-search {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(100px, 0.65fr) minmax(
+      100px,
+      0.65fr
+    ) auto;
+  gap: 16px;
+  align-items: end;
+}
+.identification-search button {
+  min-height: 34px;
+}
+.atomic-identification legend {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.atomic-identification .identification-charges label,
+.atomic-identification .identification-include,
+.atomic-identification .isotope-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.identification-charges .row {
+  gap: 16px;
+}
+.atomic-identification input[type="checkbox"],
+.atomic-identification input[type="radio"] {
+  margin: 0;
+}
+.atomic-identification .identification-spectrum .plot-panel {
+  height: 250px;
+  min-height: 0;
+  border-color: #dbe4e9;
+  box-shadow: none;
+}
+.atomic-identification .identification-spectrum .plot-body {
+  height: auto;
+}
+.identification-spectrum .plot-panel header .plot-icon-button:last-child {
+  display: none;
+}
+.identification-results {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.identification-result-options {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.identification-result-options > label:first-child {
+  min-width: 180px;
+}
+.identification-result-options .identification-include {
+  padding-bottom: 8px;
+}
+.identification-result-summary,
+.identification-action-note {
+  font-size: 12px;
+}
+.atomic-identification .isotope-table-scroll {
+  max-height: 190px;
+}
+.atomic-identification .isotope-table-scroll th {
+  position: sticky;
+  top: 0;
+  background: #f0f4f6;
+}
+.atomic-identification .isotope-table-scroll td {
+  font-variant-numeric: tabular-nums;
+}
+.atomic-identification .isotope-table-scroll tr.selected {
+  background: #eaf4f8;
+}
+.atomic-identification .identification-provenance {
+  margin: 0;
+  color: #536974;
+  font-size: 12px;
+}
+.identification-provenance summary {
+  cursor: pointer;
+  color: #214858;
+}
+.identification-provenance[open] {
+  display: grid;
+  gap: 8px;
+}
+.identification-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 20px;
+  border-top: 1px solid #dbe4e9;
+  padding-top: 16px;
+}
+.atomic-identification .identification-actions fieldset {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+.atomic-identification .identification-actions legend {
+  margin-bottom: 0;
+  padding-bottom: 10px;
+}
+.identification-window {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.identification-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+@media (max-width: 650px) {
+  .atomic-identification {
+    padding: 16px;
+  }
+  .identification-search {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .identification-actions {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .atomic-identification .identification-spectrum .plot-panel {
+    height: 230px;
+  }
+  .atomic-identification .plot-heading {
+    min-width: 0;
+  }
+}

@@ -110,6 +110,7 @@ export function PlotPanel({
     onVisibility: (id: string, visible: boolean) => void;
   };
 }) {
+  const isSpectrum = name === "spectrum" || spectrumLog !== undefined;
   const body = useRef<HTMLDivElement>(null),
     element = useRef<HTMLDivElement>(null),
     chart = useRef<ChartHandle | null>(null);
@@ -190,7 +191,7 @@ export function PlotPanel({
         range: panel.intensity_range,
         palette: panel.palette,
         log: panel.log,
-        yScale: name === "spectrum" ? yScale : undefined,
+        yScale: isSpectrum ? yScale : undefined,
         relative: panel.relative,
         yReverse: panel.kind === "image",
       }
@@ -230,7 +231,7 @@ export function PlotPanel({
       data-x-axis={xLabel}
       data-y-axis={yLabel}
       data-content-version={panel?.content_version}
-      data-y-scale={name === "spectrum" ? yScale : undefined}
+      data-y-scale={isSpectrum ? yScale : undefined}
     >
       <header>
         <div className="plot-heading">
@@ -240,7 +241,7 @@ export function PlotPanel({
         <div className="row">
           {toolbarControls}
           {onAllDepths && <button onClick={onAllDepths}>All depths</button>}
-          {name === "spectrum" && (
+          {isSpectrum && (
             <button
               onClick={() => {
                 const log = yScale !== "log";
@@ -364,7 +365,7 @@ export function PlotPanel({
         )}
         <div
           className={`plot-stage ${image ? "image" : ""}`}
-          onDoubleClick={name === "spectrum" ? () => setZoom(null) : undefined}
+          onDoubleClick={isSpectrum ? () => setZoom(null) : undefined}
           data-testid={`plot-stage-${name}`}
           data-stage-ready={stageReady ? "true" : "false"}
           style={

@@ -1,3 +1,5 @@
+import { formatNumber } from "../shared/numbers";
+import { formatAbundance } from "./candidates";
 import { useEffect, useState } from "react";
 import {
   download,
@@ -223,17 +225,20 @@ export function IsotopeMeasurements({
                           <br />
                           {r.assignment?.candidate_id ?? "Unassigned"}
                         </td>
-                        <td>
-                          {r.measurement.summed_intensity ?? "Unavailable"}
+                        <td
+                          title={
+                            r.measurement.summed_intensity == null
+                              ? undefined
+                              : String(r.measurement.summed_intensity)
+                          }
+                        >
+                          {formatNumber(r.measurement.summed_intensity)}
                         </td>
+                        <td>{formatNumber(r.measurement.observed_fraction)}</td>
                         <td>
-                          {r.measurement.observed_fraction?.toPrecision(6) ??
-                            "Unavailable"}
-                        </td>
-                        <td>
-                          {r.assignment?.isotope.abundance_low == null
-                            ? "Unknown"
-                            : `${r.assignment.isotope.abundance_low}–${r.assignment.isotope.abundance_high}`}
+                          {r.assignment
+                            ? formatAbundance(r.assignment.isotope)
+                            : "Not tabulated"}
                         </td>
                         <td>
                           {r.measurement.actual_frames?.join("–") ?? "None"} ·{" "}

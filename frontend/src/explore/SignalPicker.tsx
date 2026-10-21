@@ -1,6 +1,13 @@
+import { formatNumber } from "../shared/numbers";
 import { useEffect, useRef, useState } from "react";
 
 export type SignalOption = { index: number; label: string; mass: number };
+
+export function matchesSignalOption(option: SignalOption, search: string) {
+  return `${option.label} ${option.mass} ${formatNumber(option.mass)}`
+    .toLowerCase()
+    .includes(search.trim().toLowerCase());
+}
 
 export function SignalPicker({
   options,
@@ -44,9 +51,7 @@ export function SignalPicker({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open]);
   const matches = options.filter((option) =>
-    `${option.label} ${option.mass}`
-      .toLowerCase()
-      .includes(search.trim().toLowerCase()),
+    matchesSignalOption(option, search),
   );
   const selected = options.find((option) => option.index === value);
   return (
@@ -65,7 +70,9 @@ export function SignalPicker({
         }}
       >
         <span>
-          {selected ? `${selected.label} · ${selected.mass} Th` : placeholder}
+          {selected
+            ? `${selected.label} · ${formatNumber(selected.mass)} Th`
+            : placeholder}
         </span>
         <span aria-hidden="true">▾</span>
       </button>
@@ -110,7 +117,7 @@ export function SignalPicker({
                     close();
                   }}
                 >
-                  {option.label} · {option.mass} Th
+                  {option.label} · {formatNumber(option.mass)} Th
                 </button>
               ))
             )}

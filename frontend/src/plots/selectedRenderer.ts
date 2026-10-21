@@ -1,3 +1,4 @@
+import { formatNumber } from "../shared/numbers";
 import { formatTick, formatFrameTick, plotInsets } from "./axes";
 import type { Panel } from "../api/client";
 import { rowSpans } from "../calibration/coordinates";
@@ -218,7 +219,17 @@ export function mountChart(element: HTMLElement, data: ChartData): ChartHandle {
           : d.kind === "image"
             ? { left: 40, right: 40, top: 40, bottom: 40 }
             : { left: 60, right: 20, top: 20, bottom: 40 },
-        tooltip: { trigger: "item", renderMode: "richText" },
+        tooltip: {
+          trigger: "item",
+          renderMode: "richText",
+          valueFormatter: (value: unknown) => {
+            const display = (v: unknown) =>
+              typeof v === "number" ? formatNumber(v) : String(v);
+            return Array.isArray(value)
+              ? value.map(display).join(", ")
+              : display(value);
+          },
+        },
         xAxis: {
           name: d.xLabel,
           nameLocation: "middle",

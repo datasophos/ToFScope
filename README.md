@@ -94,11 +94,19 @@ New preparations compact unused HDF5 space and use channel-oriented gzip storage
 see [raw preparation](docs/validation/raw-acquisition-preparation.md) and
 [storage measurements](docs/validation/compact-raw-preparation.md).
 
+Floating-point fields use compact values for reading and expose the full exact
+value on focus. Numeric tables and plot readouts also suppress floating-point
+tails; scientific calculations and exports retain full precision. See the
+[numeric display audit](docs/validation/numeric-display.md).
+
 See [TODO.md](TODO.md) for the current feature status and next work.
 
 Atomic identification suggests offline isotope-ion candidates with explicit charge,
 polarity, mass error and reference provenance. Use **Identify peak** beside the mass
-spectrum; click its spectrum to pick a peak or enter an exact m/z. Annotate an
+spectrum; its plot starts with log intensity. Click to pick a peak or enter an
+exact m/z. Candidates default to known natural abundances, shown as percentages
+and ordered by abundance within the mass tolerance. Closest-mass ordering and
+isotopes without tabulated natural abundance are optional. Annotate an
 existing signal, apply an exact window to a draft, or explicitly calculate a new
 comparison. Original file labels remain unchanged.
 

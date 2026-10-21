@@ -1,3 +1,5 @@
+import { PreciseNumberInput } from "../components/PreciseNumberInput";
+import { formatNumber } from "../shared/numbers";
 import { useEffect, useRef, useState } from "react";
 import { post, type Analysis, type Panel, type Job } from "../api/client";
 import type { components } from "../api/generated";
@@ -5,6 +7,11 @@ import type { Send } from "../explore/SignalDetails";
 import { ToolPopover } from "../explore/ToolPopover";
 import { PlotPanel } from "../plots/PlotPanel";
 import { snapPeak } from "./snapPeak";
+import {
+  orderCandidates,
+  formatAbundance,
+  type CandidateOrder,
+} from "./candidates";
 type Result = components["schemas"]["CandidateResult"];
 const idOf = (c: Result["candidates"][number]) =>
   `${c.isotope.symbol}-${c.isotope.mass_number}:${c.charge > 0 ? "+" : ""}${c.charge}`;
@@ -28,6 +35,9 @@ export function IdentifyDialog({
   const [tolerance, setTolerance] = useState("0.1"),
     [unit, setUnit] = useState<"Th" | "ppm">("Th");
   const [charges, setCharges] = useState([1]);
+  const [spectrumLog, setSpectrumLog] = useState(true);
+  const [order, setOrder] = useState<CandidateOrder>("abundance");
+  const [includeUnlisted, setIncludeUnlisted] = useState(false);
   const [result, setResult] = useState<Result>(),
     [selected, setSelected] = useState("");
   const [signalId, setSignalId] = useState(a.image_signal_id);
@@ -83,7 +93,12 @@ export function IdentifyDialog({
       setBusy(false);
     }
   };
-  const candidate = result?.candidates.find((c) => idOf(c) === selected);
+  const candidates = orderCandidates(
+    result?.candidates ?? [],
+    order,
+    includeUnlisted,
+  );
+  const candidate = candidates.find((c) => idOf(c) === selected);
   const annotation = a.signals.find((s) => s.id === signalId)?.assignment;
   const interval = (): [number, number] => {
     const bounds: [number, number] = [Number(low), Number(high)];
@@ -156,35 +171,41 @@ export function IdentifyDialog({
           width={850}
           placement="center"
           onClose={close}
-          className="identification-dialog"
+          className="identification-dialog atomic-identification"
         >
-          <p>
-            Atomic isotope ions, charges ±1 to ±3. Candidates are suggestions.
-            Original file labels remain available.
+          <p className="identification-intro">
+            Pick a peak in the spectrum or enter an exact m/z to find atomic
+            isotope ions.
           </p>
-          <div className="row">
+          <form
+            noValidate
+            className="identification-search"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void find();
+            }}
+          >
             <label>
               Measured m/z
-              <input
-                type="number"
-                step="any"
+              <PreciseNumberInput
+                label="Measured m/z"
                 value={mz}
-                onChange={(e) => {
+                onChange={(value) => {
                   invalidate();
-                  setMz(e.target.value);
+                  setMz(value);
                 }}
               />
             </label>
             <label>
               Tolerance
-              <input
-                type="number"
+              <PreciseNumberInput
+                label="Tolerance"
                 min="0"
-                step="any"
+                step="0.1"
                 value={tolerance}
-                onChange={(e) => {
+                onChange={(value) => {
                   invalidate();
-                  setTolerance(e.target.value);
+                  setTolerance(value);
                 }}
               />
             </label>
@@ -202,11 +223,11 @@ export function IdentifyDialog({
                 <option>ppm</option>
               </select>
             </label>
-            <button disabled={busy} onClick={() => void find()}>
+            <button type="submit" disabled={busy}>
               Find candidates
             </button>
-          </div>
-          <fieldset>
+          </form>
+          <fieldset className="identification-charges">
             <legend>Charge and polarity</legend>
             <div className="row">
               {[1, 2, 3, -1, -2, -3].map((z) => (
@@ -233,12 +254,14 @@ export function IdentifyDialog({
             <PlotPanel
               name="identification"
               title="Identification spectrum"
-              help="Click within seven display pixels of a local maximum to snap; enter exact m/z above at any time. Drag to zoom."
+              help="Click within seven display pixels of a local maximum to snap; enter exact m/z above at any time. Drag to zoom. Log y is the default; use the scale control for linear intensity."
               panel={spectrum}
               maximized={false}
               onMaximize={() => {}}
               onSelect={() => {}}
               selectionMode="zoom"
+              spectrumLog={spectrumLog}
+              onSpectrumLogChange={setSpectrumLog}
               markers={[
                 Number(mz),
                 ...(candidate ? [candidate.predicted_mz] : []),
@@ -256,70 +279,124 @@ export function IdentifyDialog({
             />
           </div>
           {result && (
-            <>
-              <div className="isotope-table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Ion</th>
-                      <th>Predicted m/z</th>
-                      <th>Error Th / ppm</th>
-                      <th>Reference abundance</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result.candidates.map((c) => (
-                      <tr key={idOf(c)}>
-                        <td>
-                          <label>
-                            <input
-                              type="radio"
-                              name="atomic-candidate"
-                              aria-label={idOf(c)}
-                              checked={selected === idOf(c)}
-                              onChange={() => {
-                                setSelected(idOf(c));
-                                setLow(
-                                  String(
-                                    Math.max(
-                                      a.mass_limits[0],
-                                      Number(mz) - 0.1,
-                                    ),
-                                  ),
-                                );
-                                setHigh(
-                                  String(
-                                    Math.min(
-                                      a.mass_limits[1],
-                                      Number(mz) + 0.1,
-                                    ),
-                                  ),
-                                );
-                              }}
-                            />
-                            {idOf(c)}
-                          </label>
-                        </td>
-                        <td>{c.predicted_mz.toPrecision(10)}</td>
-                        <td>
-                          {c.error_Th.toPrecision(4)} /{" "}
-                          {c.error_ppm.toPrecision(4)}
-                        </td>
-                        <td>
-                          {c.isotope.abundance_low == null
-                            ? "Unknown"
-                            : `${c.isotope.abundance_low}–${c.isotope.abundance_high}`}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <section
+              className="identification-results"
+              aria-label="Ion candidates"
+            >
+              <div className="identification-result-options">
+                <label>
+                  Candidate order
+                  <select
+                    aria-label="Candidate order"
+                    value={order}
+                    onChange={(e) => setOrder(e.target.value as CandidateOrder)}
+                  >
+                    <option value="abundance">Natural abundance</option>
+                    <option value="mass">Closest m/z</option>
+                  </select>
+                </label>
+                <label className="identification-include">
+                  <input
+                    type="checkbox"
+                    checked={includeUnlisted}
+                    onChange={(e) => {
+                      setIncludeUnlisted(e.target.checked);
+                      setSelected("");
+                    }}
+                  />
+                  Include isotopes without natural abundance
+                </label>
               </div>
+              <p className="identification-result-summary">
+                {candidates.length} candidate
+                {candidates.length === 1 ? "" : "s"} within {tolerance} {unit}
+                {result.candidates.length > candidates.length
+                  ? ` · ${result.candidates.length - candidates.length} without natural abundance hidden`
+                  : ""}
+              </p>
+              {!!candidates.length && (
+                <div className="isotope-table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Ion</th>
+                        <th>Predicted m/z</th>
+                        <th>Error Th / ppm</th>
+                        <th>Natural abundance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {candidates.map((c) => (
+                        <tr
+                          key={idOf(c)}
+                          className={
+                            selected === idOf(c) ? "selected" : undefined
+                          }
+                        >
+                          <td>
+                            <label className="isotope-choice">
+                              <input
+                                type="radio"
+                                name="atomic-candidate"
+                                aria-label={idOf(c)}
+                                checked={selected === idOf(c)}
+                                onChange={() => {
+                                  setSelected(idOf(c));
+                                  setLow(
+                                    String(
+                                      Math.max(
+                                        a.mass_limits[0],
+                                        Number(mz) - 0.1,
+                                      ),
+                                    ),
+                                  );
+                                  setHigh(
+                                    String(
+                                      Math.min(
+                                        a.mass_limits[1],
+                                        Number(mz) + 0.1,
+                                      ),
+                                    ),
+                                  );
+                                }}
+                              />
+                              {idOf(c)}
+                            </label>
+                          </td>
+                          <td title={`Exact m/z: ${c.predicted_mz}`}>
+                            {formatNumber(c.predicted_mz)}
+                          </td>
+                          <td>
+                            {c.error_Th.toPrecision(4)} /{" "}
+                            {c.error_ppm.toPrecision(4)}
+                          </td>
+                          <td>{formatAbundance(c.isotope)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
               {!result.candidates.length && (
                 <p>No atomic candidates within this tolerance.</p>
               )}
-              <details>
-                <summary>Catalog provenance and mass convention</summary>
+              {!!result.candidates.length && !candidates.length && (
+                <p>
+                  No matches have a tabulated natural abundance. Include
+                  isotopes without natural abundance to inspect the other
+                  masses.
+                </p>
+              )}
+              <details className="identification-provenance">
+                <summary>About natural abundance and catalog sources</summary>
+                <p>
+                  Natural abundance orders matching isotopes within your mass
+                  tolerance; it is not an identification probability or sample
+                  composition. The catalog also contains isotope masses with no
+                  tabulated CIAAW natural abundance, including radioactive and
+                  synthetic isotopes. Those entries are available with the
+                  inclusion option above.
+                </p>
                 <p>{result.catalog.convention}</p>
                 <p>
                   Retrieved {result.catalog.retrieved} · SHA-256{" "}
@@ -329,87 +406,102 @@ export function IdentifyDialog({
                 {candidate && (
                   <p>
                     Mass uncertainty:{" "}
-                    {candidate.isotope.mass_uncertainty_u ?? "Unknown"} u ·
-                    Abundance uncertainty:{" "}
-                    {candidate.isotope.abundance_uncertainty ?? "Unknown"}
+                    {candidate.isotope.mass_uncertainty_u == null
+                      ? "Not tabulated"
+                      : formatNumber(candidate.isotope.mass_uncertainty_u)}{" "}
+                    u · Abundance uncertainty:{" "}
+                    {candidate.isotope.abundance_uncertainty == null
+                      ? "Not tabulated"
+                      : formatNumber(candidate.isotope.abundance_uncertainty)}
                   </p>
                 )}
               </details>
-            </>
+            </section>
           )}
-          <div className="row">
-            <label>
-              Signal to annotate
-              <select
-                aria-label="Signal to annotate"
-                value={signalId}
-                onChange={(e) => setSignalId(e.target.value)}
-              >
-                {a.signals.map((s) => (
-                  <option value={s.id} key={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              disabled={busy || !candidate}
-              onClick={() => void act("annotate")}
-            >
-              Annotate signal
-            </button>
-            <button
-              disabled={busy || !annotation}
-              onClick={() => void act("clear")}
-            >
-              Clear annotation
-            </button>
-          </div>
-          {annotation && <p>Assigned {annotation.candidate_id}</p>}
-          <div className="row">
-            <label>
-              Window lower Th
-              <input
-                type="number"
-                step="any"
-                value={low}
-                onChange={(e) => setLow(e.target.value)}
-              />
-            </label>
-            <label>
-              Window upper Th
-              <input
-                type="number"
-                step="any"
-                value={high}
-                onChange={(e) => setHigh(e.target.value)}
-              />
-            </label>
-          </div>
-          <p>
-            Apply window opens a draft for review. Add comparison calculates a
-            new named signal across all acquisition frames.
-          </p>
-          <div className="row">
-            <button
-              disabled={busy || !candidate}
-              onClick={() => void act("draft")}
-            >
-              Apply window
-            </button>
-            <button
-              disabled={busy || !candidate}
-              onClick={() => void act("comparison")}
-            >
-              Add comparison
-            </button>
-            <button onClick={close}>Close</button>
+          <div className="identification-actions">
+            <fieldset>
+              <legend>Annotate an existing signal</legend>
+              <label>
+                Signal to annotate
+                <select
+                  aria-label="Signal to annotate"
+                  value={signalId}
+                  onChange={(e) => setSignalId(e.target.value)}
+                >
+                  {a.signals.map((s) => (
+                    <option value={s.id} key={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="row">
+                <button
+                  disabled={busy || !candidate}
+                  onClick={() => void act("annotate")}
+                >
+                  Annotate signal
+                </button>
+                <button
+                  disabled={busy || !annotation}
+                  onClick={() => void act("clear")}
+                >
+                  Clear annotation
+                </button>
+              </div>
+              {annotation && <p>Assigned {annotation.candidate_id}</p>}
+              <p className="identification-action-note">
+                Original file labels stay unchanged.
+              </p>
+            </fieldset>
+            <fieldset>
+              <legend>Create a signal from this peak</legend>
+              <div className="identification-window">
+                <label>
+                  Window lower Th
+                  <PreciseNumberInput
+                    label="Window lower Th"
+                    value={low}
+                    onChange={setLow}
+                  />
+                </label>
+                <label>
+                  Window upper Th
+                  <PreciseNumberInput
+                    label="Window upper Th"
+                    value={high}
+                    onChange={setHigh}
+                  />
+                </label>
+              </div>
+              <div className="row">
+                <button
+                  disabled={busy || !candidate}
+                  onClick={() => void act("draft")}
+                >
+                  Apply window
+                </button>
+                <button
+                  disabled={busy || !candidate}
+                  onClick={() => void act("comparison")}
+                >
+                  Add comparison
+                </button>
+              </div>
+              <p className="identification-action-note">
+                Apply opens a draft. Add comparison calculates all acquisition
+                frames.
+              </p>
+            </fieldset>
           </div>
           {error && (
-            <p role="alert" className="error">
+            <p role="alert" className="calibration-error">
               {error}
             </p>
           )}
+          <div className="identification-footer">
+            <button onClick={close}>Close</button>
+          </div>
         </ToolPopover>
       )}
     </>

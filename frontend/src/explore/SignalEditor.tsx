@@ -1,47 +1,8 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { PreciseNumberInput } from "../components/PreciseNumberInput";
 import type { Analysis } from "../api/client";
 import type { SignalEditorController } from "./useSignalEditor";
 import { HelpHeading } from "../components/HelpButton";
 import { help } from "./help";
-function MassBoundInput({
-  value,
-  label,
-  onFocus,
-  onChange,
-}: {
-  value: string;
-  label: string;
-  onFocus: () => void;
-  onChange: (value: string) => void;
-}) {
-  const [focused, setFocused] = useState(false);
-  const input = useRef<HTMLInputElement>(null);
-  useLayoutEffect(() => {
-    if (focused) input.current?.select();
-  }, [focused]);
-  const compact =
-    value.trim() && Number.isFinite(Number(value))
-      ? String(Number(Number(value).toFixed(2)))
-      : value;
-  return (
-    <input
-      ref={input}
-      type="number"
-      step="any"
-      required
-      aria-label={label}
-      title={`Exact bound: ${value} Th`}
-      value={focused ? value : compact}
-      onFocus={() => {
-        setFocused(true);
-        onFocus();
-      }}
-      onBlur={() => setFocused(false)}
-      onChange={(event) => onChange(event.target.value)}
-    />
-  );
-}
-
 export function SignalEditor({
   editor: e,
   analysis,
@@ -100,7 +61,9 @@ export function SignalEditor({
               >
                 {i + 1}
               </button>
-              <MassBoundInput
+              <PreciseNumberInput
+                decimals={2}
+                required
                 label={`Mass lower ${i + 1}`}
                 value={a}
                 onFocus={() => e.patchDraft({ selectedInterval: i })}
@@ -113,7 +76,9 @@ export function SignalEditor({
                 }
               />
               <span>–</span>
-              <MassBoundInput
+              <PreciseNumberInput
+                decimals={2}
+                required
                 label={`Mass upper ${i + 1}`}
                 value={b}
                 onFocus={() => e.patchDraft({ selectedInterval: i })}
