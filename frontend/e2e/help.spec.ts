@@ -129,3 +129,52 @@ test("SE image help follows the displayed image type", async ({ page }) => {
   await expect(tooltip).toContainText("native pixels");
   await expect(tooltip).toContainText("unregistered");
 });
+
+test("plot heading help stays clickable beside toolbars with larger text", async ({
+  page,
+}, testInfo) => {
+  // Larger text reproduces the overflow caused by Linux font metrics in CI.
+  await page.addStyleTag({
+    content: ".plot-panel header h2 { font-size: 20px; }",
+  });
+  await page
+    .getByRole("button", { name: "Image display settings", exact: true })
+    .click();
+  await page.getByLabel("Image", { exact: true }).selectOption("se");
+  await page
+    .getByRole("button", { name: "Close Image display", exact: true })
+    .click();
+  for (const label of [
+    "SE Image",
+    "Mass spectrum",
+    "Front projection",
+    "Depth profile",
+  ]) {
+    const help = page.getByRole("button", {
+      name: `${label} help`,
+      exact: true,
+    });
+    await help.scrollIntoViewIfNeeded();
+    await expect
+      .poll(
+        () =>
+          help.evaluate((button) => {
+            const box = button.getBoundingClientRect();
+            const hit = document.elementFromPoint(
+              box.x + box.width / 2,
+              box.y + box.height / 2,
+            );
+            return hit === button || button.contains(hit);
+          }),
+        { message: `${label} help must not be covered by its toolbar` },
+      )
+      .toBe(true);
+    await help.click();
+    await expect(page.getByRole("tooltip")).toBeVisible();
+    await page.keyboard.press("Escape");
+  }
+  await page.screenshot({
+    path: testInfo.outputPath("accessible-plot-headings.png"),
+    fullPage: true,
+  });
+});

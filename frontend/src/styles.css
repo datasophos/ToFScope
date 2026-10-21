@@ -1516,7 +1516,7 @@ small {
   align-items: center;
   flex-wrap: wrap;
   flex: 1;
-  min-width: 0;
+  min-width: min-content;
   gap: 6px 12px;
 }
 .plot-heading > label {

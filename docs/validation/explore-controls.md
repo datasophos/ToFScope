@@ -59,3 +59,31 @@ Follow-up verification:
 - `git diff --check`: passed.
 
 No subsequent CI run was monitored.
+
+## Confirmed plot-heading overlap fix (2026-10-21)
+
+The next [user-reported CI run](https://github.com/datasophos/ToFScope/actions/runs/39630029843)
+provided the retained screenshot and action log: ROI intercepted clicks on SE
+Image help. `.plot-heading` used `min-width: 0`, allowing its nested title/help
+group to overflow beneath the adjacent toolbar. Linux font metrics made the
+problem visible at the default CI viewport.
+
+A regression with 20 px plot headings reproduced the obstruction locally before
+the fix. It checks hit testing and normal pointer clicks for all four plot help
+buttons after selecting SE display. Changing the heading minimum width to
+`min-content` reserves enough space; the existing flex wrapping moves the controls
+to another row when needed. No forced clicks, retries, or longer timeouts are used.
+
+Evidence:
+
+- [CI screenshot showing ROI over the help button](explore-controls/ci-se-help-overlap.png).
+- [Fixed layout with larger headings](explore-controls/heading-help-layout.png).
+- New regression failed before the CSS change and passed after it.
+- `npm --prefix frontend run test:e2e -- help.spec.ts`: 5 passed.
+- `npm --prefix frontend run test:e2e`: 67 passed.
+- `npm --prefix frontend test`: 22 passed.
+- `.venv/bin/python scripts/build_frontend.py`: TypeScript check and production build passed.
+- Packaged frontend source hash matches current sources; `git diff --check` passed.
+
+This supersedes the earlier uncertainty about the CI help timeout. No subsequent
+CI run was monitored.
