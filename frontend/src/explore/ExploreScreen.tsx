@@ -23,7 +23,6 @@ import { roiFromBounds, roiBounds, frameWindow, type ROI } from "./selection";
 export function ExploreScreen({
   initial,
   active,
-  onReplace,
   onStatus,
   onSaved,
   onSaveDismiss,
@@ -31,7 +30,6 @@ export function ExploreScreen({
 }: {
   initial: Analysis;
   active: boolean;
-  onReplace: (a: Analysis) => void;
   onStatus: (a: Analysis, draft: boolean, busy: boolean) => void;
   onSaved: (a: Analysis) => void;
   onSaveDismiss: () => void;
@@ -195,7 +193,6 @@ export function ExploreScreen({
               {a.revision}
             </output>
           </small>
-          <button onClick={() => onReplace(a)}>Replace file</button>
           <SaveCopy
             analysis={a}
             active={active}

@@ -50,3 +50,11 @@ The filename input and Save copy button share a 36px height and matching font,
 with their top and bottom edges aligned. A geometry assertion catches inherited
 compact header-button styles overriding the save form. All seven save/reopen
 browser workflows and the packaged build passed after this correction.
+
+
+The redundant Replace file button and its frontend replacement flow were removed.
+The top Open button always opens a separate analysis tab; tabs can be closed with
+their existing save/discard/cancel protection. Browser coverage opens a second
+file, closes the old tab, checks clean state, and verifies closing an edited tab
+still prompts for unsaved changes. Eight file-shell/save browser workflows, 30
+frontend tests, TypeScript and the packaged build passed.

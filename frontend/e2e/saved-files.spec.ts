@@ -276,7 +276,7 @@ test("file picker and save dialog show configured folders and exact save destina
   expect(Math.abs(field.height - saveButton.height)).toBeLessThan(1);
 });
 
-test("opening and replacing files stays clean until an edit is made", async ({
+test("opening a new file and closing the old tab stays clean until an edit is made", async ({
   page,
 }) => {
   await page.setExtraHTTPHeaders({
@@ -290,11 +290,21 @@ test("opening and replacing files stays clean until an edit is made", async ({
   await expect(page.getByTestId("save-state")).toHaveText("No changes");
   await page.reload();
   await expect(page.getByTestId("save-state")).toHaveText("No changes");
-  await page.getByRole("button", { name: "Replace file", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Replace file", exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Open TOFexplorer file", exact: true })
+    .click();
   await expect(
     page.getByRole("dialog", { name: "Unsaved changes", exact: true }),
   ).toBeHidden();
   await page.getByRole("button", { name: "◫ b.h5", exact: true }).dblclick();
+  await expect(page.getByRole("tab")).toHaveCount(2);
+  await page
+    .getByRole("button", { name: "Close analysis 1", exact: true })
+    .click();
+  await expect(page.getByRole("tab")).toHaveCount(1);
   await expect(page.getByTestId("save-state")).toHaveText("No changes");
   await page
     .getByRole("button", { name: "Close analysis 1", exact: true })

@@ -86,8 +86,9 @@ hosted users stay within their private saved-files folder. The dialog shows the
 full destination before saving. **Saved files** supports navigating subfolders
 when reopening copies. Existing files are never overwritten. See the
 [save-folder validation](docs/validation/save-folders.md).
-Finish/discard drafts and finish/cancel calculations before saving. Closing an
-unsaved analysis offers Save as, Discard or Cancel. CSV exports visible ROI
+Use the top Open button to open another file in a new tab, then close any tab you
+no longer need. Finish/discard drafts and finish/cancel calculations before saving.
+Closing an unsaved analysis offers Save as, Discard or Cancel. CSV exports visible ROI
 profiles at original scale/resolution; PNG includes profile labels.
 
 TOFWERK TOFexplorer `.h5` acquisitions can contain stored ion maps or raw events.
