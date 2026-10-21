@@ -48,7 +48,6 @@ class AnalysisSnapshot:
     owner: str
     dataset: DatasetRef
     revision: int
-    loaded_frames: tuple[int, int]
     roi: tuple[int, int, int, int]
     depth: DepthSelection
     signals: tuple[SignalSnapshot, ...]

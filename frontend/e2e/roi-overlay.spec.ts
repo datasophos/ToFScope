@@ -25,8 +25,9 @@ test("ROI outline updates after drawing and exact edits without reloading the io
     steps: 5,
   });
   await page.mouse.up();
-  await expect(panel.getByRole("button", { name: /^ROI:/ })).toContainText(
-    "x 1–1",
+  await expect(panel.getByRole("button", { name: /^ROI:/ })).toHaveAttribute(
+    "aria-label",
+    /x 1–1/,
   );
   await expect(rect).toHaveAttribute("x", "50");
   await expect(rect).toHaveAttribute("width", "50");

@@ -50,7 +50,7 @@ test("a newer partial response cannot hide an omitted profile update", async ({
     }
     await route.continue();
   });
-  await page.getByRole("button", { name: "Next frame", exact: true }).click();
+  await page.getByRole("button", { name: "Single frame", exact: true }).click();
   await waiting;
   await page.getByRole("button", { name: /^ROI:/ }).click();
   await page.getByLabel("ROI x first").fill("1");
@@ -101,7 +101,7 @@ test("an expired view lease is reattached after heartbeat 404", async ({
   );
   await page.clock.fastForward(16000);
   await expect.poll(() => attaches).toBe(2);
-  await page.getByRole("button", { name: "Next frame" }).click();
+  await page.getByRole("button", { name: "Single frame" }).click();
   await expect(
     page.getByTestId("analysis-revision").filter({ visible: true }),
   ).toHaveText("1");

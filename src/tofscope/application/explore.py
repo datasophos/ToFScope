@@ -1,6 +1,6 @@
 from dataclasses import replace
 from tofscope.science.depth_calibration import DepthAnchor, validate_anchors
-from tofscope.application.commands import CommandEnvelope, AllDepth
+from tofscope.application.commands import CommandEnvelope
 from tofscope.application.models import DisplaySettings, SignalSnapshot
 from tofscope.application.signals import get_signal, normalize_view, usable_frames, valid_name
 from tofscope.application.analyses import Conflict, CapacityError
@@ -15,7 +15,7 @@ class ExploreService:
     def stored(self, s, index, frames=None):
         if not 0 <= index < len(s.peaks):
             raise ValueError("Unknown stored channel.")
-        coverage = tuple(frames) if frames is not None else s.loaded_frames
+        coverage = tuple(frames) if frames is not None else (0, s.shape[0] - 1)
         if not 0 <= coverage[0] <= coverage[1] < s.shape[0]:
             raise ValueError("Coverage outside acquisition.")
         p = s.peaks[index]
@@ -81,7 +81,7 @@ class ExploreService:
                     patch['signals'] = tuple(updated if r.id == signal.id else r for r in s.signals)
                 elif kind == 'select_image_signal':
                     if not usable_frames(s, signal):
-                        raise ValueError('Signal has no ready coverage in the analysis range.')
+                        raise ValueError('Signal has no ready coverage in the acquisition.')
                     patch['image_signal_id'] = signal.id
                 elif kind == 'set_profile_visible':
                     if signal.id == s.image_signal_id and not c.visible:
@@ -112,17 +112,12 @@ class ExploreService:
                 patch['roi'] = tuple(c.roi)
             elif kind == 'set_depth':
                 d = c.depth
-                first, last = s.loaded_frames
+                first, last = 0, s.shape[0] - 1
                 if d.mode == 'frame' and not first <= d.index <= last:
-                    raise ValueError('Frame outside analysis range.')
+                    raise ValueError('Frame outside acquisition.')
                 if d.mode == 'window' and not first <= d.first <= d.last <= last:
-                    raise ValueError('Window outside analysis range.')
+                    raise ValueError('Window outside acquisition.')
                 patch['depth'] = d
-            elif kind == 'set_analysis_frames':
-                first, last = c.frames
-                if not 0 <= first <= last < s.shape[0]:
-                    raise ValueError('Analysis range outside acquisition.')
-                patch = dict(loaded_frames=tuple(c.frames), depth=AllDepth())
             elif kind == 'set_depth_anchors':
                 anchors = validate_anchors(tuple(DepthAnchor(x.frame, x.depth_nm) for x in c.anchors), s.shape[0])
                 patch['depth_anchors'] = anchors

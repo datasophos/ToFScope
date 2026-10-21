@@ -30,15 +30,15 @@ def visible_signals(snapshot):
 def usable_frames(snapshot, signal):
     if signal.recipe is None:
         return None
-    low = max(snapshot.loaded_frames[0], signal.recipe.frames[0])
-    high = min(snapshot.loaded_frames[1], signal.recipe.frames[1])
+    low = max(0, signal.recipe.frames[0])
+    high = min(snapshot.shape[0] - 1, signal.recipe.frames[1])
     return (low, high) if low <= high else None
 
 
 def image_frames(snapshot):
     bounds = usable_frames(snapshot, image_signal(snapshot))
     if bounds is None:
-        raise ValueError('Image signal has no coverage in the analysis range.')
+        raise ValueError('Image signal has no coverage in the acquisition.')
     depth = snapshot.depth
     if depth.mode == 'all':
         return bounds
@@ -51,7 +51,7 @@ def normalize_view(snapshot):
     if usable_frames(snapshot, image_signal(snapshot)) is None:
         candidates = [s for s in snapshot.signals if usable_frames(snapshot, s)]
         if not candidates:
-            raise ValueError('At least one ready signal must cover the analysis range.')
+            raise ValueError('At least one ready signal must cover the acquisition.')
         snapshot = replace(snapshot, image_signal_id=candidates[0].id)
     low, high = image_frames(snapshot)
     depth = snapshot.depth

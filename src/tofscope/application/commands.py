@@ -70,11 +70,6 @@ class SetDepth(StrictModel):
     depth: DepthSelection
 
 
-class SetAnalysisFrames(StrictModel):
-    type: Literal['set_analysis_frames']
-    frames: tuple[StrictInt, StrictInt]
-
-
 class SetDisplay(StrictModel):
     type: Literal["set_display"]
     log: StrictBool
@@ -110,7 +105,6 @@ Command = Annotated[
         SetStoredCoverage,
         SetROI,
         SetDepth,
-        SetAnalysisFrames,
         SetDisplay,
         SetDepthAnchors,
         SetDepthDisplay,

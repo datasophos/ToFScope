@@ -18,6 +18,25 @@ test("graphical and exact calibration edits, units and original-frame navigation
   page,
 }) => {
   const dialog = await open(page);
+  const dialogBox = (await dialog.boundingBox())!;
+  const viewport = page.viewportSize()!;
+  expect(
+    Math.abs(dialogBox.x + dialogBox.width / 2 - viewport.width / 2),
+  ).toBeLessThan(2);
+  expect(
+    Math.abs(dialogBox.y + dialogBox.height / 2 - viewport.height / 2),
+  ).toBeLessThan(2);
+  const add = (await dialog
+    .getByRole("button", { name: "Add anchor", exact: true })
+    .boundingBox())!;
+  for (const label of ["Anchor frame", "Known depth"]) {
+    const input = (await dialog
+      .getByLabel(label, { exact: true })
+      .boundingBox())!;
+    expect(Math.abs(input.y + input.height - add.y - add.height)).toBeLessThan(
+      2,
+    );
+  }
   const overlay = dialog.getByLabel("Calibration profiles selection");
   await expect(overlay).toBeVisible();
   const box = (await overlay.boundingBox())!;
@@ -178,7 +197,7 @@ test("partial calibration survives save/reopen and remains independent between s
   ).toHaveValue("0.1");
 });
 
-test("single calibrated sample stays visible and unknown-only ranges stay empty", async ({
+test("partial physical profiles stay visible while viewing an uncalibrated frame", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -194,41 +213,20 @@ test("single calibrated sample stays visible and unknown-only ranges stay empty"
   await page
     .getByRole("button", { name: "Physical depth", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Analysis settings", exact: true })
-    .click();
-  await page.getByLabel("Analysis first", { exact: true }).fill("1");
-  await page
-    .getByRole("button", { name: "Set analysis range", exact: true })
-    .click();
-  await expect(
-    page.getByRole("dialog", { name: "Analysis settings", exact: true }),
-  ).toBeHidden();
   const profile = page.getByTestId("panel-profile");
-  const state = (
-    await page.evaluate(async () => (await fetch("/api/v1/analyses")).json())
-  )[0];
-  const data = await page.evaluate(
-    async (id) =>
-      (await fetch(`/api/v1/analyses/${id}/data?panels=front,profile`)).json(),
-    state.id,
-  );
-  expect(data.panels.profile.acquisition_frames).toEqual([1]);
-  expect(data.panels.profile.series[0].values).toHaveLength(1);
-  const overlay = profile.getByLabel("Depth profile selection");
-  const box = (await overlay.boundingBox())!;
-  await overlay.click({ position: { x: box.width / 2, y: box.height / 2 } });
-  await expect(page.getByLabel("Frame", { exact: true })).toHaveValue("1");
-  await page
-    .getByRole("button", { name: "Analysis settings", exact: true })
-    .click();
-  await page.getByLabel("Analysis first", { exact: true }).fill("2");
-  await page
-    .getByRole("button", { name: "Set analysis range", exact: true })
-    .click();
-  await expect(profile).toContainText("No calibrated depth in analysis range");
-  await expect(page.getByTestId("panel-front")).toContainText(
-    "No calibrated depth in analysis range",
-  );
+  await expect(profile).toContainText("1 frame with unknown depth omitted");
+  await page.getByRole("button", { name: "Single frame", exact: true }).click();
+  await page.getByLabel("Frame", { exact: true }).fill("2");
+  await expect(page.getByLabel("Frame", { exact: true })).toHaveValue("2");
+  await expect(profile).toContainText("1 frame with unknown depth omitted");
+  const data = await page.evaluate(async () => {
+    const [state] = await (await fetch("/api/v1/analyses")).json();
+    return (
+      await fetch(`/api/v1/analyses/${state.id}/data?panels=front,profile`)
+    ).json();
+  });
+  expect(data.panels.profile.acquisition_frames).toEqual([0, 1]);
+  expect(data.panels.profile.series[0].values).toHaveLength(2);
+  expect(data.panels.front.acquisition_frames).toEqual([0, 1]);
   expect(errors).toEqual([]);
 });

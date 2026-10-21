@@ -52,7 +52,7 @@ class ExplorePresenter:
 
     def curves(self, s, stack):
         x0, x1, y0, y1 = s.roi
-        start, stop = s.loaded_frames
+        start, stop = 0, s.shape[0] - 1
         result = []
         for signal in visible_signals(s):
             r = signal.recipe
@@ -84,7 +84,7 @@ class ExplorePresenter:
                 self.repository.metadata(owner, s.dataset, s.id)
             )
             nz, ny, nx, _ = s.shape
-            first, last = s.loaded_frames
+            first, last = 0, nz - 1
             # Bound all Python numeric/JSON intermediates before constructing lists.
             se_shape = (
                 self.repository.se_shape(owner, s.dataset, *selected_frames(s))
@@ -104,7 +104,7 @@ class ExplorePresenter:
             geometry_bytes = ((last - first + 1) + len(s.depth_anchors)) * 256 if panels & {"front", "profile"} else 0
             estimate = int(count * 128 + geometry_bytes + 4096)
             if estimate > self.settings.response_bytes * 4:
-                raise CapacityError("Display is too large; narrow loaded frames.")
+                raise CapacityError("Display exceeds configured capacity.")
             with (
                 self.cache.budget.reserve(owner, analysis_id, estimate),
                 ExitStack() as stack,
@@ -253,7 +253,7 @@ class ExplorePresenter:
                     > self.settings.response_bytes
                 ):
                     raise CapacityError(
-                        "Display exceeds response limit; narrow loaded frames."
+                        "Display exceeds configured response limit."
                     )
                 return payload
 

@@ -31,11 +31,11 @@ class DocumentTests(unittest.TestCase):
     def test_document_round_trip_and_fresh_service_ids(self):
         first = self.initial.signals[0]
         hidden = SignalSnapshot(str(uuid4()), 'Hidden raw', 6, SignalRecipe(intervals=((1., 2.), (3., 4.)), frames=(1, 2)))
-        s = replace(self.initial, signals=(first, hidden), loaded_frames=(1, 2), roi=(1, 1, 0, 0), depth=DepthWindow(mode='window', first=1, last=2), next_style_index=7, display=DisplaySettings(False, False, 'sims', False))
+        s = replace(self.initial, signals=(first, hidden), roi=(1, 1, 0, 0), depth=DepthWindow(mode='window', first=1, last=2), next_style_index=7, display=DisplaySettings(False, False, 'sims', False))
         doc = encode_document(s)
         payload = doc.model_dump(mode='json')
         text = json.dumps(payload)
-        for forbidden in ('workspace_id', 'owner', 'job_id', 'generation', 'relative_path'):
+        for forbidden in ('workspace_id', 'owner', 'job_id', 'generation', 'relative_path', 'loaded_frames'):
             self.assertNotIn(forbidden, text)
         read = read_document(self.write(payload), self.settings)
         fresh = replace(self.initial, id=str(uuid4()), owner='fresh-owner')
@@ -45,7 +45,6 @@ class DocumentTests(unittest.TestCase):
         self.assertEqual(restored.display, s.display)
         self.assertEqual(restored.roi, s.roi)
         self.assertEqual(restored.depth, s.depth)
-        self.assertEqual(restored.loaded_frames, s.loaded_frames)
         self.assertEqual([x.name for x in restored.signals], [x.name for x in s.signals])
         self.assertEqual([x.style_index for x in restored.signals], [x.style_index for x in s.signals])
         self.assertTrue(set(x.id for x in restored.signals).isdisjoint(x.id for x in s.signals))
@@ -59,7 +58,7 @@ class DocumentTests(unittest.TestCase):
 
     def test_invalid_metadata_fails_explicitly(self):
         base = encode_document(self.initial).model_dump(mode='json')
-        changes = [dict(schema_version=99), dict(signals=[]), dict(image_signal_id=str(uuid4())), dict(loaded_frames=[0, 999]), dict(roi=[0, 999, 0, 0]), dict(owner='injected'), dict(shape=[True, 1, 2, 2]), dict(signals=[base['signals'][0], base['signals'][0]])]
+        changes = [dict(schema_version=99), dict(signals=[]), dict(image_signal_id=str(uuid4())), dict(roi=[0, 999, 0, 0]), dict(owner='injected'), dict(shape=[True, 1, 2, 2]), dict(signals=[base['signals'][0], base['signals'][0]])]
         for change in changes:
             with self.subTest(change=change), self.assertRaises(ValueError):
                 doc = read_document(self.write(base | change), self.settings)

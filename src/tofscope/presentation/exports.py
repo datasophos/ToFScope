@@ -36,7 +36,6 @@ class ExportService:
                     scope="Explore-only",
                     relative_path=s.dataset.relative_path,
                     dataset_generation=s.dataset.generation,
-                    loaded_frames=list(s.loaded_frames),
                     selected_frames=list(selected_frames(s)),
                     depth=s.depth.model_dump(),
                     roi=list(s.roi),
@@ -60,11 +59,11 @@ class ExportService:
                 media = "application/json"
             elif format == "csv":
                 with ExitStack() as stack:
-                    estimate = (s.loaded_frames[1] - s.loaded_frames[0] + 1) * (
+                    estimate = s.shape[0] * (
                         len(visible_signals(s)) + 1
                     ) * 128 + len(s.depth_anchors) * 256 + 4096
                     if estimate > p.settings.response_bytes:
-                        raise ValueError("Export too large; narrow loaded frames.")
+                        raise ValueError("Export exceeds configured response limit.")
                     stack.enter_context(
                         p.cache.budget.reserve(owner, analysis_id, estimate)
                     )
@@ -76,7 +75,7 @@ class ExportService:
                     first, last = (
                         (s.depth.first, s.depth.last)
                         if s.depth.mode == "window"
-                        else s.loaded_frames
+                        else (0, s.shape[0] - 1)
                     )
                     depths = depth_calibration.frame_to_depth(np.arange(first, last + 1)) if depth_calibration else None
                     for offset, z in enumerate(range(first, last + 1)):
@@ -86,8 +85,8 @@ class ExportService:
                                 *([float(depths[offset]) if np.isfinite(depths[offset]) else ''] if depths is not None else []),
                                 *[
                                     ""
-                                    if c.values[z - s.loaded_frames[0]] is None
-                                    else c.values[z - s.loaded_frames[0]]
+                                    if c.values[z] is None
+                                    else c.values[z]
                                     for c in curves
                                 ],
                             ]

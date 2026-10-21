@@ -1,10 +1,12 @@
 {
   "assets": {
-    "assets/index-BKQKDmdI.js": "f6165cf530f125d68d4764eef36f2e0c010a3f6f3dbf7a8d8be01e696d1b3d53",
-    "assets/index-BeeN374B.css": "f38592ffb8a3c389e8a574c76613e3c0d2b3596b391612b5d9fee5f87e64fd8a",
-    "index.html": "c998a82ec11645ba6aa8ee71a2ca0be740df0d0aec64d09dc894f85f8670cf57",
+    "assets/datasophos-wordmark.png": "d727f11ef2aa8fe9b0d7780d28e33e0785956ca7f38a23c90c594d56253fad04",
+    "assets/favicon.svg": "dcdec3e4480df28e57a9d9fa123347d551765651ab764bb53ec7f13f74f1e3f2",
+    "assets/index-Cc9sTDdh.js": "d9de70435b1b4da2256882ed6fa6f537bfd3578acd5320ccc51c118c4e3fcd39",
+    "assets/index-ksQHh-KV.css": "bc6431f1d02b03f996c2698c9620265854580e99cef1a099f7bcc3627a6f6529",
+    "index.html": "4d7235c6c18c4e2c753b92581ec24ed01e76a3341ab0b7c3735127ca462e8bdf",
     "licenses/matplotlib.txt": "5a1a81ea301728c8bba2933da832c0cd62229daf20893a024ab3d53244468dbc"
   },
-  "source_sha256": "b498dabd7bf7f61e4831fb1da77f05be80220afc79c15d1689db82cc71a73a26",
+  "source_sha256": "7a45f7a7c2dd80fbb0ecb393f2a16833351abc30e0ec5999dbc86a5e422335d4",
   "version": "0.2.0"
 }
