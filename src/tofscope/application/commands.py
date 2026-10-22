@@ -42,6 +42,12 @@ class RenameSignal(SignalId):
     name: str
 
 
+class AnnotateSignal(SignalId):
+    type: Literal['annotate_signal']
+    candidate_id: str | None = Field(max_length=64)
+    measured_mz: Annotated[float, Field(strict=True, allow_inf_nan=False, gt=0)] | None = None
+
+
 class SelectImageSignal(SignalId):
     type: Literal['select_image_signal']
 
@@ -99,6 +105,7 @@ Command = Annotated[
     Union[
         AddStoredSignal,
         RenameSignal,
+        AnnotateSignal,
         SelectImageSignal,
         SetProfileVisible,
         RemoveSignal,

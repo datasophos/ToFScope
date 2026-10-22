@@ -46,8 +46,9 @@ depth bands preserve image colors. Relative scaling lives in the profile header,
 and log Y beside the spectrum. Spectrum drag zooms normally and edits the active
 interval while a signal editor is open. All draft intervals remain numbered on
 the spectrum. Bounds display compactly while preserving exact calculation values.
-Single clicks preserve zoom; double-click resets the spectrum view. Toggle **Pan**
-to move a zoomed spectrum/profile horizontally, or use Ctrl/Cmd-wheel to zoom.
+Single clicks preserve zoom; double-click resets the spectrum view. Hold Cmd/Ctrl
+and drag to pan any zoomed spectrum/profile horizontally; the **Pan** indicator
+lights only on the hovered plot while held. Toggle **Pan** to keep it enabled, or use Ctrl/Cmd-wheel to zoom.
 Images show their full extent. Maximize/Escape preserves the view; ordinary wheel
 scrolls the page. The compact header holds file opening and independent file tabs.
 Plots have named axes, units and tick marks. Hover over the spectrum or profile
@@ -79,11 +80,15 @@ so a 2.2-GB input needs at least that much output space plus derived results.
 The acquisition folder (`--data-root`) defaults to the current working directory.
 The saved copies folder (`--output-root`) defaults to that acquisition folder;
 set it explicitly when saving elsewhere or using read-only acquisition storage.
-Local saves go directly into the displayed saved copies folder. Hosted
-deployments keep copies in private owner subfolders. The file picker shows
-both folders, and Save as shows the exact destination in its tooltip.
-Finish/discard drafts and finish/cancel calculations before saving. Closing an
-unsaved analysis offers Save as, Discard or Cancel. CSV exports visible ROI
+In **Save as…**, use **Choose folder…** to browse or create a subfolder. Local
+users can choose within the configured acquisition or saved-files folders;
+hosted users stay within their private saved-files folder. The dialog shows the
+full destination before saving. **Saved files** supports navigating subfolders
+when reopening copies. Existing files are never overwritten. See the
+[save-folder validation](docs/validation/save-folders.md).
+Use the top Open button to open another file in a new tab, then close any tab you
+no longer need. Finish/discard drafts and finish/cancel calculations before saving.
+Closing an unsaved analysis offers Save as, Discard or Cancel. CSV exports visible ROI
 profiles at original scale/resolution; PNG includes profile labels.
 
 TOFWERK TOFexplorer `.h5` acquisitions can contain stored ion maps or raw events.
@@ -94,11 +99,37 @@ New preparations compact unused HDF5 space and use channel-oriented gzip storage
 see [raw preparation](docs/validation/raw-acquisition-preparation.md) and
 [storage measurements](docs/validation/compact-raw-preparation.md).
 
+Floating-point fields use compact values for reading and expose the full exact
+value on focus. Numeric tables and plot readouts also suppress floating-point
+tails; scientific calculations and exports retain full precision. See the
+[numeric display audit](docs/validation/numeric-display.md).
+
 See [TODO.md](TODO.md) for the current feature status and next work.
 
-This is the **Explore pilot**, not full feature parity. Calibration editors,
-atomic identification/isotope dialogs, sections, volume tools and controlled
-native saves are specified in the [completion plan](docs/superpowers/plans/2026-10-18-react-fastapi-completion.md).
+Atomic identification suggests offline isotope-ion candidates with explicit charge,
+polarity, mass error and reference provenance. Use **Identify peak** beside the mass
+spectrum; its plot starts with log intensity. Click a peak to search immediately,
+or enter an exact m/z. Tolerance defaults to 0.3 Th; changing tolerance, its unit,
+or charge and polarity refreshes candidates immediately. Candidates default to known natural abundances, shown as percentages
+and ordered by abundance within the mass tolerance. Closest-mass ordering and
+isotopes without tabulated natural abundance are optional. Assign an isotope to an
+existing signal, apply an exact window to an assigned draft, or explicitly
+calculate a new assigned comparison. The draft keeps its isotope assignment when
+you rename it. Original file labels remain unchanged.
+
+**Isotope measurements** sums selected signals at original resolution over the
+current ROI and viewing frames, using their common coverage. Overlapping windows
+suppress fractions. Results show percentage shares, a readable region/frame
+summary, and explanations for zero intensity or missing isotope assignments.
+Calculation details and provenance are expandable. Results describe selected-set
+signal ratios, not quantitative composition. Input changes mark
+captured measurements out of date until you explicitly Measure again. Isotope
+CSV and Settings JSON retain scope, mass errors, uncertainties and provenance;
+Save as/reopen also preserves isotope assignments and captured results. See
+[identification validation](docs/validation/identification.md).
+
+The application still lacks full prototype feature parity. Sections, volume
+tools and controlled native saves are specified in the [completion plan](docs/superpowers/plans/2026-10-18-react-fastapi-completion.md).
 In-place acquisition writes remain unavailable. Live tabs/jobs are in memory;
 reopen saved HDF5 copies to restore committed work after a restart. Shared use requires a trusted authenticated proxy;
 actual NFS deployment remains unqualified.

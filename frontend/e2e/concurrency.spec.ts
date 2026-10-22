@@ -13,7 +13,9 @@ test("two users, A/B/A tabs, automatic tab recovery and denied foreign downloads
   await p.goto("/");
   const open = async (page: typeof p, name: string) => {
     await page.getByRole("button", { name: "Open TOFexplorer file" }).click();
-    await page.getByRole("button", { name: "◫ " + name, exact: true }).dblclick();
+    await page
+      .getByRole("button", { name: "◫ " + name, exact: true })
+      .dblclick();
     await expect(page.getByRole("tab").last()).toHaveAttribute(
       "aria-selected",
       "true",
@@ -33,8 +35,8 @@ test("two users, A/B/A tabs, automatic tab recovery and denied foreign downloads
     .filter({ visible: true })
     .click();
   await expect(
-    p.getByTestId("analysis-revision").filter({ visible: true }),
-  ).toHaveText("1");
+    p.getByTestId("analysis").filter({ visible: true }),
+  ).toHaveAttribute("data-revision", "1");
   await p.getByRole("tab", { name: "1 · a.h5" }).click();
   await expect(
     p

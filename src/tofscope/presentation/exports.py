@@ -7,6 +7,7 @@ import io
 import json
 from tofscope.presentation.explore import selected_frames
 from dataclasses import asdict
+from tofscope.application.identification import current_result
 from tofscope.application.signals import visible_signals
 
 
@@ -33,7 +34,8 @@ class ExportService:
                     signals=[asdict(row) for row in s.signals if row.recipe is not None],
                     image_signal_id=s.image_signal_id,
                     profile_signal_ids=list(s.profile_signal_ids),
-                    scope="Explore-only",
+                    scope="Explore",
+                    isotope_measurement=asdict(current_result(s)) if s.isotope_measurement else None,
                     relative_path=s.dataset.relative_path,
                     dataset_generation=s.dataset.generation,
                     selected_frames=list(selected_frames(s)),

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { FilePicker } from "../app/FilePicker";
 import { FolderLocations } from "../app/FolderLocations";
 import { post, request, type Analysis, type Job } from "../api/client";
 
@@ -18,6 +19,11 @@ export function SaveCopy({
   onDismiss: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [choosingFolder, setChoosingFolder] = useState(false);
+  const [directory, setDirectory] = useState("");
+  const [destinationLocation, setDestinationLocation] = useState<
+    "acquisition" | "saved"
+  >("saved");
   const [name, setName] = useState(
     () =>
       (analysis.dataset.name || "acquisition.h5").replace(/\.(h5|hdf5)$/i, "") +
@@ -86,7 +92,7 @@ export function SaveCopy({
       >
         Save as…
       </button>
-      {open && active && (
+      {open && active && !choosingFolder && (
         <div className="scrim">
           <section
             className="dialog save-copy"
@@ -104,12 +110,21 @@ export function SaveCopy({
               analysis settings. The original stays unchanged.
             </p>
             <FolderLocations
+              directory={directory}
+              location={destinationLocation}
               filename={
                 job?.status === "succeeded"
                   ? job.saved_file?.name || name
                   : name
               }
             />
+            <button
+              className="choose-save-folder"
+              disabled={running || submitting}
+              onClick={() => setChoosingFolder(true)}
+            >
+              Choose folder…
+            </button>
             <form
               onSubmit={async (event) => {
                 event.preventDefault();
@@ -125,6 +140,8 @@ export function SaveCopy({
                       expected_revision: analysis.revision,
                       dataset_generation: analysis.dataset.generation,
                       filename: name,
+                      directory,
+                      destination_location: destinationLocation,
                     },
                   );
                   setJob(result);
@@ -143,7 +160,10 @@ export function SaveCopy({
                   maxLength={240}
                   required
                   disabled={running || submitting}
-                  onChange={(event) => setName(event.target.value)}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    setJob(null);
+                  }}
                 />
               </label>
               <button
@@ -188,6 +208,20 @@ export function SaveCopy({
             )}
           </section>
         </div>
+      )}
+      {choosingFolder && open && active && (
+        <FilePicker
+          initialDirectory={directory}
+          initialLocation={destinationLocation}
+          onClose={() => setChoosingFolder(false)}
+          onChooseFolder={(path, location) => {
+            setDirectory(path);
+            setDestinationLocation(location);
+            setJob(null);
+            setError("");
+            setChoosingFolder(false);
+          }}
+        />
       )}
     </>
   );

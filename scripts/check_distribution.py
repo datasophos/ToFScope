@@ -153,6 +153,22 @@ def smoke(artifact, output):
                 expect(first.get_by_role('checkbox')).not_to_be_checked()
                 page.get_by_role("button", name="Close Manage signals", exact=True).click()
                 page.get_by_role('button', name='Use linear y scale', exact=True).click()
+                page.get_by_role('button', name='Identify peak', exact=True).click()
+                identify = page.get_by_role('dialog', name='Atomic identification', exact=True)
+                identify.get_by_label('Measured m/z', exact=True).fill('2.014')
+                identify.get_by_role('button', name='Find candidates', exact=True).click()
+                identify.get_by_role('radio', name='H-2:+1', exact=True).check()
+                identify.get_by_label('Signal to annotate', exact=True).select_option(label='Package signal')
+                identify.get_by_role('button', name='Annotate signal', exact=True).click()
+                expect(identify.get_by_text('Assigned H-2:+1', exact=True)).to_be_visible()
+                identify.get_by_role('button', name='Close', exact=True).click()
+                page.get_by_role('button', name='Isotope measurements', exact=True).click()
+                measurements = page.get_by_role('dialog', name='Isotope measurements', exact=True)
+                measurements.get_by_role('checkbox', name='Package signal · H-2:+1', exact=True).check()
+                measurements.get_by_role('button', name='Measure', exact=True).click()
+                expect(measurements.get_by_test_id('isotope-results')).to_contain_text('Measured')
+                expect(measurements.get_by_test_id('isotope-results').locator('tbody td').nth(1)).to_have_text('3')
+                measurements.get_by_role('button', name='Close', exact=True).click()
                 page.get_by_role('button', name='Calibrate depth', exact=True).click()
                 dialog = page.get_by_role('dialog', name='Depth calibration', exact=True)
                 dialog.get_by_label('Anchor frame', exact=True).fill('1')
@@ -192,6 +208,12 @@ def smoke(artifact, output):
                 page.get_by_test_id('panel-profile').get_by_label('Depth profile selection').hover()
                 expect(page.get_by_test_id('panel-profile').get_by_role('tooltip')).to_contain_text('Depth =')
                 expect(page.get_by_test_id('save-state')).to_have_text('Saved')
+                page.get_by_role('button', name='Isotope measurements', exact=True).click()
+                restored_measurements = page.get_by_role('dialog', name='Isotope measurements', exact=True)
+                expect(restored_measurements.get_by_test_id('isotope-results')).to_contain_text('H-2:+1')
+                # Calibrating axes does not stale measurements made in acquisition frames.
+                expect(restored_measurements.get_by_test_id('isotope-results').locator('tbody td').nth(1)).to_have_text('3')
+                restored_measurements.get_by_role('button', name='Close', exact=True).click()
                 page.get_by_role('button', name='Image display settings', exact=True).click()
                 expect(page.get_by_label('SIMS colormap', exact=True)).to_have_value('cividis')
                 page.get_by_role('button', name='Close Image display', exact=True).click()
@@ -222,7 +244,7 @@ def smoke(artifact, output):
             return dict(artifact=artifact.name, installed_without_node=True,
                 runtime_dependencies_clean=True, offline_browser=True,
                 raw_preparation_without_scientific_runtime=True,
-                plots_integration_export=True, saved_copy_restart_source_removed=True,
+                plots_integration_export=True, identification_and_measurement_restore=True, saved_copy_restart_source_removed=True,
                 exact_restored_csv=True, calibrated_copy_roundtrip=True, scientific_axes_hover=True, colormap_roundtrip=True, optional_download=True,
                 interrupted_download_preserves_saved_file=True)
         finally:

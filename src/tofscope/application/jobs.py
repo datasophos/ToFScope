@@ -24,6 +24,8 @@ class IntegrationSpec:
     name: str
     signal_id: str | None = None
     expected_recipe_version: int | None = None
+    candidate_id: str | None = None
+    measured_mz: float | None = None
 
 
 @dataclass(frozen=True)
@@ -36,7 +38,7 @@ class JobSnapshot:
     done: int = 0
     total: int = 0
     safe_error: str | None = None
-    kind: Literal["integration", "save", "preparation"] = "integration"
+    kind: Literal["integration", "save", "preparation", "measurement"] = "integration"
     stage: str = ""
     saved_file: SavedFile | None = None
     saved_revision: int | None = None
@@ -70,6 +72,7 @@ class JobService:
         self.stopping = False
         self.save_handler = None
         self.preparation_handler = None
+        self.measurement_handler = None
         self.threads = [
             Thread(target=self._worker, daemon=True, name=f"tofscope-job-{i}")
             for i in range(settings.workers)
@@ -92,6 +95,8 @@ class JobService:
             s = e.snapshot
             name = valid_name(spec.name)
             windows = canonical_intervals(spec.intervals, s.mass_limits)
+            from tofscope.application.identification import assignment
+            atomic_assignment = assignment(spec.candidate_id, spec.measured_mz) if spec.candidate_id else None
             if spec.signal_id is not None:
                 signal = get_signal(s, spec.signal_id)
                 if signal.recipe is not None and signal.recipe.source != 'custom':
@@ -128,7 +133,7 @@ class JobService:
                 self.jobs[snap.id] = Job(snap, owner, s.dataset, recipe, signal.id, token, signal.name_revision)
                 if signal.job_id in self.jobs:
                     self.jobs[signal.job_id].referenced = False
-                updated = replace(signal, job_id=snap.id)
+                updated = replace(signal, job_id=snap.id, assignment=atomic_assignment if spec.candidate_id else signal.assignment)
                 signals = tuple(updated if r.id == signal.id else r for r in s.signals)
                 if spec.signal_id is None:
                     signals = (*signals, updated)
@@ -160,7 +165,7 @@ class JobService:
                     sum(j.snapshot.analysis_id == aid for j in active) >= self.settings.jobs_per_analysis):
                 raise CapacityError('Work queue full; wait or cancel a job.')
             snap = JobSnapshot(str(uuid4()), aid, 'queued', kind=kind, saved_revision=saved_revision)
-            source = task.snapshot.dataset if kind == 'save' else task.source
+            source = task.snapshot.dataset if kind in {'save', 'measurement'} else task.source
             self.jobs[snap.id] = Job(snap, owner, source, None, '', 0, 0, referenced=False, task=task)
             self.pending.setdefault(owner, deque()).append(snap.id)
             if owner not in self.users:
@@ -232,10 +237,10 @@ class JobService:
                     return
             lease = None
             try:
-                if j.snapshot.kind in {'save', 'preparation'}:
+                if j.snapshot.kind in {'save', 'preparation', 'measurement'}:
                     if j.cancelled.is_set():
                         raise InterruptedError()
-                    handler = self.save_handler if j.snapshot.kind == 'save' else self.preparation_handler
+                    handler = {'save': self.save_handler, 'preparation': self.preparation_handler, 'measurement': self.measurement_handler}[j.snapshot.kind]
                     result = handler(j)
                     with self.condition:
                         j.snapshot = replace(j.snapshot, status='succeeded', saved_file=result, done=j.snapshot.total)
@@ -280,6 +285,9 @@ class JobService:
                     result = normalize_view(replace(s, revision=s.revision+1,
                         signals=tuple(updated if r.id == old.id else r for r in s.signals),
                         profile_signal_ids=tuple(dict.fromkeys((*s.profile_signal_ids, old.id))) if old.recipe is None else s.profile_signal_ids))
+                    if result.isotope_measurement:
+                        from tofscope.application.identification import current_result
+                        result = replace(result, isotope_measurement=current_result(result))
                     previous = e.leases.pop(old.id, None)
                     if previous:
                         previous.release()
@@ -304,7 +312,7 @@ class JobService:
                         status="cancelled" if j.cancelled.is_set() else "obsolete"
                         if "changed" in str(exc).lower()
                         else "failed",
-                        safe_error=("Preparing raw data failed; check free space, source/calibration and output name." if j.snapshot.kind == "preparation" else "Saving failed; check free space, output name and current analysis revision." if j.snapshot.kind == "save" else "Integration failed; check source/calibration or narrow the frame range.")
+                        safe_error=("Isotope measurement failed; check source, coverage and memory limits." if j.snapshot.kind == "measurement" else "Preparing raw data failed; check free space, source/calibration and output name." if j.snapshot.kind == "preparation" else "Saving failed; check free space, output name and current analysis revision." if j.snapshot.kind == "save" else "Integration failed; check source/calibration or narrow the frame range.")
                         if not isinstance(exc, CapacityError)
                         else str(exc),
                     )

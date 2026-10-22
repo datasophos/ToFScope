@@ -85,7 +85,7 @@ class DepthApplicationTests(unittest.TestCase):
         self.assertEqual(b.depth_coordinates,'frame')
         with self.assertRaises(KeyError): self.command(dict(type='set_depth_anchors',anchors=[]),owner='b')
         document = encode_document(a)
-        self.assertEqual(document.schema_version,2)
+        self.assertEqual(document.schema_version,3)
         restored = restore_snapshot(SavedAnalysisDocument.model_validate_json(document.model_dump_json()),b)
         self.assertEqual(restored.depth_anchors,a.depth_anchors)
         self.assertEqual(restored.depth_unit,'mm')

@@ -74,6 +74,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/analyses/{aid}/candidates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Candidates */
+    post: operations["candidates_api_v1_analyses__aid__candidates_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/analyses/{aid}/commands": {
     parameters: {
       query?: never;
@@ -125,6 +142,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/analyses/{aid}/isotopes.csv": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Isotope Export */
+    get: operations["isotope_export_api_v1_analyses__aid__isotopes_csv_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/analyses/{aid}/jobs": {
     parameters: {
       query?: never;
@@ -136,6 +170,24 @@ export interface paths {
     put?: never;
     /** Job */
     post: operations["job_api_v1_analyses__aid__jobs_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/analyses/{aid}/measurements": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Isotope Results */
+    get: operations["isotope_results_api_v1_analyses__aid__measurements_get"];
+    put?: never;
+    /** Measure Isotopes */
+    post: operations["measure_isotopes_api_v1_analyses__aid__measurements_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -289,6 +341,24 @@ export interface paths {
     get: operations["folder_locations_api_v1_locations_get"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/save-folders": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Save Folders */
+    get: operations["save_folders_api_v1_save_folders_get"];
+    put?: never;
+    /** Create Save Folder */
+    post: operations["create_save_folder_api_v1_save_folders_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -468,6 +538,9 @@ export interface components {
       id: string;
       /** Image Signal Id */
       image_signal_id: string;
+      /** Isotope Job Id */
+      isotope_job_id?: string | null;
+      isotope_measurement?: components["schemas"]["MeasurementResult"] | null;
       /** Mass Limits */
       mass_limits: [number, number];
       /** Next Style Index */
@@ -506,6 +579,37 @@ export interface components {
       /** Frame */
       frame: number;
     };
+    /** AnnotateSignal */
+    AnnotateSignal: {
+      /** Candidate Id */
+      candidate_id: string | null;
+      /** Measured Mz */
+      measured_mz?: number | null;
+      /** Signal Id */
+      signal_id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "annotate_signal";
+    };
+    /** AtomicAssignment */
+    AtomicAssignment: {
+      /** Candidate Id */
+      candidate_id: string;
+      catalog: components["schemas"]["CatalogProvenance"];
+      /** Charge */
+      charge: number;
+      /** Error Th */
+      error_Th?: number | null;
+      /** Error Ppm */
+      error_ppm?: number | null;
+      isotope: components["schemas"]["IsotopeRecord"];
+      /** Measured Mz */
+      measured_mz?: number | null;
+      /** Predicted Mz */
+      predicted_mz: number;
+    };
     /** Axis */
     Axis: {
       /** Boundaries */
@@ -522,12 +626,47 @@ export interface components {
       /** Secret */
       secret: string;
     };
+    /** CandidateInput */
+    CandidateInput: {
+      /** Charges */
+      charges: number[];
+      /** Mz */
+      mz: number;
+      /** Tolerance */
+      tolerance: number;
+      /**
+       * Unit
+       * @enum {string}
+       */
+      unit: "Th" | "ppm";
+    };
+    /** CandidateResult */
+    CandidateResult: {
+      /** Candidates */
+      candidates: components["schemas"]["IonCandidate"][];
+      catalog: components["schemas"]["CatalogProvenance"];
+    };
+    /** CatalogProvenance */
+    CatalogProvenance: {
+      /**
+       * Convention
+       * @default Neutral isotope mass minus signed electron mass; binding energies omitted.
+       */
+      convention: string;
+      /** Records Sha256 */
+      records_sha256: string;
+      /** Retrieved */
+      retrieved: string;
+      /** Sources Json */
+      sources_json: string;
+    };
     /** CommandEnvelope */
     CommandEnvelope: {
       /** Command */
       command:
         | components["schemas"]["AddStoredSignal"]
         | components["schemas"]["RenameSignal"]
+        | components["schemas"]["AnnotateSignal"]
         | components["schemas"]["SelectImageSignal"]
         | components["schemas"]["SetProfileVisible"]
         | components["schemas"]["RemoveSignal"]
@@ -543,6 +682,22 @@ export interface components {
       expected_revision: number;
       /** Request Id */
       request_id: string;
+    };
+    /** CreateSaveFolder */
+    CreateSaveFolder: {
+      /**
+       * Directory
+       * @default
+       */
+      directory: string;
+      /**
+       * Location
+       * @default saved
+       * @enum {string}
+       */
+      location: "acquisition" | "saved";
+      /** Name */
+      name: string;
     };
     /** Curve */
     Curve: {
@@ -641,6 +796,11 @@ export interface components {
     FolderLocations: {
       /** Acquisitions */
       acquisitions: string;
+      /**
+       * Can Save To Acquisitions
+       * @default false
+       */
+      can_save_to_acquisitions: boolean;
       /** Save Destination */
       save_destination: string;
       /** Saved Copies */
@@ -653,16 +813,73 @@ export interface components {
     };
     /** IntegrationInput */
     IntegrationInput: {
+      /** Candidate Id */
+      candidate_id?: string | null;
       /** Expected Recipe Version */
       expected_recipe_version?: number | null;
       /** Frames */
       frames: [number, number];
       /** Intervals */
       intervals: [number, number][];
+      /** Measured Mz */
+      measured_mz?: number | null;
       /** Name */
       name: string;
       /** Signal Id */
       signal_id?: string | null;
+    };
+    /** IonCandidate */
+    IonCandidate: {
+      /** Charge */
+      charge: number;
+      /** Error Th */
+      error_Th: number;
+      /** Error Ppm */
+      error_ppm: number;
+      isotope: components["schemas"]["IsotopeRecord"];
+      /** Predicted Mz */
+      predicted_mz: number;
+    };
+    /** IsotopeMeasurement */
+    IsotopeMeasurement: {
+      /** Actual Frames */
+      actual_frames: [number, number] | null;
+      /** Ambiguous */
+      ambiguous: boolean;
+      /** Observed Fraction */
+      observed_fraction: number | null;
+      /** Recipe Id */
+      recipe_id: string;
+      /** Requested Frames */
+      requested_frames: [number, number];
+      /** Status */
+      status: string;
+      /** Summed Intensity */
+      summed_intensity: number | null;
+    };
+    /** IsotopeRecord */
+    IsotopeRecord: {
+      /** Abundance High */
+      abundance_high: number | null;
+      /** Abundance Low */
+      abundance_low: number | null;
+      /** Abundance Uncertainty */
+      abundance_uncertainty?: number | null;
+      /**
+       * Mass Estimated
+       * @default false
+       */
+      mass_estimated: boolean;
+      /** Mass Number */
+      mass_number: number;
+      /** Mass Uncertainty U */
+      mass_uncertainty_u?: number | null;
+      /** Neutral Mass U */
+      neutral_mass_u: number;
+      /** Source Id */
+      source_id: string;
+      /** Symbol */
+      symbol: string;
     };
     /** JobSnapshot */
     JobSnapshot: {
@@ -680,7 +897,7 @@ export interface components {
        * @default integration
        * @enum {string}
        */
-      kind: "integration" | "save" | "preparation";
+      kind: "integration" | "save" | "preparation" | "measurement";
       /**
        * Recipe Version
        * @default 0
@@ -708,6 +925,54 @@ export interface components {
        * @default 0
        */
       total: number;
+    };
+    /** MeasureIsotopes */
+    MeasureIsotopes: {
+      /** Dataset Generation */
+      dataset_generation: string;
+      /** Expected Revision */
+      expected_revision: number;
+      /** Request Id */
+      request_id: string;
+      /** Signal Ids */
+      signal_ids: string[];
+    };
+    /** MeasuredSignal */
+    MeasuredSignal: {
+      assignment: components["schemas"]["AtomicAssignment"] | null;
+      /** Intervals */
+      intervals: [number, number][];
+      measurement: components["schemas"]["IsotopeMeasurement"];
+      /** Name */
+      name: string;
+      /** Signal Id */
+      signal_id: string;
+    };
+    /** MeasurementResult */
+    MeasurementResult: {
+      catalog: components["schemas"]["CatalogProvenance"];
+      /** Dataset Generation */
+      dataset_generation: string;
+      /** Dependency Key */
+      dependency_key: string;
+      /** Frames */
+      frames: [number, number];
+      /**
+       * Interpretation
+       * @default Selected-set signal fractions; not quantitative composition.
+       */
+      interpretation: string;
+      /** Job Id */
+      job_id: string;
+      /**
+       * Out Of Date
+       * @default false
+       */
+      out_of_date: boolean;
+      /** Roi */
+      roi: [number, number, number, number];
+      /** Rows */
+      rows: components["schemas"]["MeasuredSignal"][];
     };
     /** OpenAcquisition */
     OpenAcquisition: {
@@ -887,6 +1152,17 @@ export interface components {
     SaveCopy: {
       /** Dataset Generation */
       dataset_generation: string;
+      /**
+       * Destination Location
+       * @default saved
+       * @enum {string}
+       */
+      destination_location: "acquisition" | "saved";
+      /**
+       * Directory
+       * @default
+       */
+      directory: string;
       /** Expected Revision */
       expected_revision: number;
       /** Filename */
@@ -1053,6 +1329,7 @@ export interface components {
     };
     /** SignalSnapshot */
     SignalSnapshot: {
+      assignment?: components["schemas"]["AtomicAssignment"] | null;
       /** Id */
       id: string;
       /** Job Id */
@@ -1307,6 +1584,41 @@ export interface operations {
       };
     };
   };
+  candidates_api_v1_analyses__aid__candidates_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        aid: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CandidateInput"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CandidateResult"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   command_api_v1_analyses__aid__commands_post: {
     parameters: {
       query?: never;
@@ -1408,6 +1720,37 @@ export interface operations {
       };
     };
   };
+  isotope_export_api_v1_analyses__aid__isotopes_csv_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        aid: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   job_api_v1_analyses__aid__jobs_post: {
     parameters: {
       query?: never;
@@ -1420,6 +1763,72 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["SubmitJob"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["JobSnapshot"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  isotope_results_api_v1_analyses__aid__measurements_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        aid: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MeasurementResult"] | null;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  measure_isotopes_api_v1_analyses__aid__measurements_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        aid: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MeasureIsotopes"];
       };
     };
     responses: {
@@ -1603,6 +2012,7 @@ export interface operations {
         directory?: string;
         location?: "acquisition" | "saved";
         query?: string;
+        folders?: boolean;
         offset?: number;
         limit?: number;
       };
@@ -1710,6 +2120,74 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["FolderLocations"];
+        };
+      };
+    };
+  };
+  save_folders_api_v1_save_folders_get: {
+    parameters: {
+      query?: {
+        directory?: string;
+        location?: "acquisition" | "saved";
+        query?: string;
+        offset?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_save_folder_api_v1_save_folders_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateSaveFolder"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };

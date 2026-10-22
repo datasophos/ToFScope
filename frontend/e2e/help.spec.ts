@@ -29,7 +29,7 @@ test("help buttons are discoverable and hover help stays within the viewport", a
   for (const label of [
     "Files and saved analyses",
     "Signals",
-    "Exports",
+    "Saving",
     "Ion map",
     "Mass spectrum",
     "Front projection",
@@ -39,6 +39,18 @@ test("help buttons are discoverable and hover help stays within the viewport", a
       page.getByRole("button", { name: `${label} help`, exact: true }),
     ).toBeVisible();
   }
+  await expect(page.locator(".analysis-heading")).not.toContainText("Revision");
+  await page.getByRole("button", { name: "Saving help", exact: true }).hover();
+  const savingTip = page.getByRole("tooltip");
+  await expect(savingTip).toContainText("new HDF5 copy");
+  await expect(savingTip).toContainText("Unsaved changes");
+  await expect(savingTip).not.toContainText("CSV");
+  await expect(savingTip).not.toContainText("PNG");
+  await savingTip.screenshot({
+    path: test.info().outputPath("saving-help.png"),
+  });
+  await page.mouse.move(0, 0);
+  await expect(savingTip).toBeHidden();
   const ionHelp = page.getByRole("button", {
     name: "Ion map help",
     exact: true,
@@ -91,7 +103,10 @@ test("keyboard and pinned help dismiss without changing analysis state", async (
   await expect(tooltip).toContainText("mean");
   await page.getByRole("heading", { name: "a.h5", exact: true }).click();
   await expect(tooltip).toBeHidden();
-  await expect(page.getByTestId("analysis-revision")).toHaveText("0");
+  await expect(page.getByTestId("analysis")).toHaveAttribute(
+    "data-revision",
+    "0",
+  );
 });
 
 test("Escape dismisses help before restoring a maximized plot", async ({
