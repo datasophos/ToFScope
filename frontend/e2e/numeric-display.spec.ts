@@ -70,7 +70,11 @@ test("mass windows and calibration show compact values while submitting exact sc
   await expect(known).toHaveValue("13.3875");
   const depth = calibration.getByLabel("Depth at frame 1", { exact: true });
   await expect(depth).toHaveValue("13.3875");
+  // Command state can arrive before the follow-up refresh releases the fieldset.
+  // focus() does not wait for an input to become enabled.
+  await expect(depth).toBeEnabled();
   await depth.focus();
+  await expect(depth).toBeFocused();
   await expect(depth).toHaveValue("13.387507820129395");
   await calibration.getByRole("heading").first().click();
   await expect(calibration.locator(".anchor-summary")).toContainText(
