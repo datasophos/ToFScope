@@ -32,6 +32,7 @@ Original-resolution values must continue to drive profiles and exports.
 
 ## Qualification and project maintenance
 
+- [ ] Undo functionality would be nice
 - [ ] Complete TOFexplorer numerical round-trip checks on disposable files.
 - [ ] Decide whether native TOFexplorer-channel export is needed beyond ToFScope saved copies.
 - [ ] Qualify the target shared-storage deployment, including permissions, locking, and durability.
