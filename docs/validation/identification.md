@@ -197,3 +197,15 @@ frontend unit tests, TypeScript and the packaged build passed.
 The measurement footer now contains only Isotope CSV and Close. Settings JSON
 was removed because it exports analysis configuration rather than measurements.
 Both measurement browser workflows and the packaged build passed after removal.
+
+
+## Installed-package check after assignment wording changes
+
+The post-merge workflow failed in check_distribution.py because its browser
+selectors still used Signal to annotate and Annotate signal. The application,
+source browser suite and Python tests had passed; the packaged smoke stalled
+before assigning an isotope. The smoke now uses Signal to assign and Assign
+isotope to signal. The original failure was reproduced against freshly built
+artifacts, then both the wheel and source distribution passed the complete
+independent-install/offline/save-reopen check with the corrected selectors.
+The local container check was unavailable because no Docker daemon was running.
