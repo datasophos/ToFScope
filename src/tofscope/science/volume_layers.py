@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 """Shared, acquisition-aligned previews with a total visible-voxel budget."""
 from collections import OrderedDict
 from dataclasses import dataclass,replace
@@ -54,7 +55,7 @@ def clear_preview_cache():
     _CACHE.clear();_CACHE_BYTES=0
 
 
-def build_layer_previews(path,layers,roi,frames,*,quality,voxel_budget=500_000,reader=None,calibration=None):
+def build_layer_previews(path,layers,roi,frames,*,quality,voxel_budget=500_000,reader=None,calibration=None,use_cache=True,reader_context=None):
     global _CACHE_BYTES
     enabled=[layer for layer in layers if layer.visible]
     if not enabled:return []
@@ -77,31 +78,35 @@ def build_layer_previews(path,layers,roi,frames,*,quality,voxel_budget=500_000,r
     fov=meta['fov_um']
     if fov:y=(y+.5)*fov/shape[1];x=(x+.5)*fov/shape[2]
     extent=((x1-x0+1)*fov/shape[2],(y1-y0+1)*fov/shape[1]) if fov else (x1-x0+1,y1-y0+1)
+    if calibration:
+        z=np.array([np.mean(calibration.frame_to_depth(np.arange(lo,hi))) for lo,hi in zip(edges[0][:-1],edges[0][1:])])
     grid=PreviewGrid(z,y,x,edges,bool(fov),extent);result=[];identity=file_key(path)
     block_sizes=np.diff(edges[0])[:,None,None]*np.diff(edges[1])[None,:,None]*np.diff(edges[2])[None,None,:]
     for layer in enabled:
         r=layer.recipe
         key=(identity,r.source,r.stored_index,r.saved_id,r.intervals,r.frames,tuple(roi),tuple(frames),tuple(steps))
-        cached=_CACHE.get(key)
+        cached=_CACHE.get(key) if use_cache else None
         if cached is None:
-            data=(reader or read_signal)(path,r)
-            if data.shape!=(r.frames[1]-r.frames[0]+1,shape[1],shape[2]):raise ValueError('Volume coverage does not match its recipe.')
-            values=np.full(tuple(counts()),np.nan,dtype=np.float32);valid_counts=np.zeros(values.shape,dtype=np.int32)
-            for i,(lo,hi) in enumerate(zip(edges[0],edges[0][1:])):
-                first=max(int(lo),r.frames[0]);last=min(int(hi)-1,r.frames[1])
-                if first>last:continue
-                part=data[first-r.frames[0]:last-r.frames[0]+1,y0:y1+1,x0:x1+1]
-                valid=np.isfinite(part);sums=np.where(valid,part,0).sum(axis=0,dtype=np.float64);numbers=valid.sum(axis=0,dtype=np.int32)
-                for axis,offset in ((0,y0),(1,x0)):
-                    idx=edges[axis+1][:-1]-offset
-                    sums=np.add.reduceat(sums,idx,axis=axis);numbers=np.add.reduceat(numbers,idx,axis=axis)
-                valid_counts[i]=numbers;np.divide(sums,numbers,out=values[i],where=numbers>0)
-            coverage=(valid_counts/block_sizes).astype(np.float32)
+            context=reader_context(r) if reader_context else nullcontext((reader or read_signal)(path,r))
+            with context as data:
+                if data.shape!=(r.frames[1]-r.frames[0]+1,shape[1],shape[2]):raise ValueError('Volume coverage does not match its recipe.')
+                values=np.full(tuple(counts()),np.nan,dtype=np.float32);valid_counts=np.zeros(values.shape,dtype=np.int32)
+                for i,(lo,hi) in enumerate(zip(edges[0],edges[0][1:])):
+                    first=max(int(lo),r.frames[0]);last=min(int(hi)-1,r.frames[1])
+                    if first>last:continue
+                    part=data[first-r.frames[0]:last-r.frames[0]+1,y0:y1+1,x0:x1+1]
+                    valid=np.isfinite(part);sums=np.where(valid,part,0).sum(axis=0,dtype=np.float64);numbers=valid.sum(axis=0,dtype=np.int32)
+                    for axis,offset in ((0,y0),(1,x0)):
+                        idx=edges[axis+1][:-1]-offset
+                        sums=np.add.reduceat(sums,idx,axis=axis);numbers=np.add.reduceat(numbers,idx,axis=axis)
+                    valid_counts[i]=numbers;np.divide(sums,numbers,out=values[i],where=numbers>0)
+                coverage=(valid_counts/block_sizes).astype(np.float32)
             cached=(values,coverage,valid_counts)
             for array in cached:array.setflags(write=False)
-            _CACHE[key]=cached;_CACHE_BYTES+=sum(a.nbytes for a in cached)
-            while _CACHE_BYTES>64*2**20 and len(_CACHE)>1:
-                _,old=_CACHE.popitem(last=False);_CACHE_BYTES-=sum(a.nbytes for a in old)
+            if use_cache:
+                _CACHE[key]=cached;_CACHE_BYTES+=sum(a.nbytes for a in cached)
+                while _CACHE_BYTES>64*2**20 and len(_CACHE)>1:
+                    _,old=_CACHE.popitem(last=False);_CACHE_BYTES-=sum(a.nbytes for a in old)
         else:_CACHE.move_to_end(key)
         result.append(VolumePreview(layer.id,r,grid,*cached))
     return result

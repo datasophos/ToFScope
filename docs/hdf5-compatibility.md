@@ -146,3 +146,15 @@ Integration `recipe_json` uses a bounded one-dimensional uint8 UTF-8 encoding
 (maximum 64 KiB), checked before allocation. Restoring an analysis admits its
 combined embedded recipe decoding scratch in addition to state JSON and frame
 scratch. Unsupported earlier experimental encodings are rejected explicitly.
+
+
+## Saved spatial views (analysis document version 4)
+
+Save as writes schema 4 with validated named-signal references for 3D layers,
+visibility/Solo, colormaps, opacity, percentile, quality, layout/page, numerical
+scale, linked/independent cameras, frame stretch and calibrated exaggeration.
+Opening a saved copy remaps spatial references to the restored signal IDs.
+Older schemas 1–3 default to Explore with no configured spatial layers. The
+preview arrays are disposable display products and are not stored as scientific
+results; saved custom arrays and original-resolution calculations are unchanged.
+This does not implement native acquisition write-back.

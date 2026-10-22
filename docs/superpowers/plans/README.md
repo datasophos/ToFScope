@@ -22,14 +22,18 @@ implemented. Depth calibration is implemented and merged through
 control/layout fixes and CI cleanup are merged through
 [PR #3](https://github.com/datasophos/ToFScope/pull/3). The completion plan's
 identification/isotope task is implemented, including durable annotations and
-captured measurements. The remaining scientific backlog starts with sections,
-followed by 3D. Controlled native vendor
-exports remain separate from the supported Save as workflow, which creates new
+captured measurements. Multi-signal 3D (Task 4) is implemented and qualified, with
+linked cross-sections deferred. Controlled native vendor exports remain separate from the supported Save as workflow, which creates new
 HDF5 copies and restores analysis state.
 
 [TODO.md](../../../TODO.md) tracks current replacement capabilities. The older
 plans below describe prototype work and remain historical context; completed
 prototype features do not imply replacement UI parity.
+
+The 2026-10-22 priority decision was implemented: multi-signal 3D visualization
+(completion Task 4) was delivered before linked XZ/YZ cross-sections (Task 3),
+which remain deferred. 3D reuses Explore's selections and calibration. See
+[spatial qualification](../../validation/spatial-renderer-decision.md).
 
 ## Prototype roadmap — 2026-10-16
 

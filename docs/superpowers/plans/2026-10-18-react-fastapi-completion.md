@@ -60,7 +60,8 @@ Depth calibration was implemented inline on the PR #1 branch and merged into
 `main` through [PR #2](https://github.com/datasophos/ToFScope/pull/2).
 [PR #3](https://github.com/datasophos/ToFScope/pull/3), merged on 2026-10-21,
 adds explicit viewing modes, centered calibration controls, and the confirmed
-heading/help overlap fix. Task 2 identification/isotopes is now implemented; Task 3 sections is next.
+heading/help overlap fix. Task 2 identification/isotopes is now implemented. Per the 2026-10-22 priority
+decision, Task 4 multi-layer 3D was implemented before Task 3, which remains deferred.
 
 The separate analysis range is now removed: profiles span the full acquisition,
 while signal calculation coverage and viewing selections remain distinct. The
@@ -129,7 +130,11 @@ Evidence: [depth calibration qualification](../../validation/depth-calibration.m
 - [x] Run `test_identification_application.py` and `identification.spec.ts` to fail. Implement separate Annotate/Apply/Add comparison actions with exact limits, graphical spectrum feedback and explicit Measure. Reuse custom integration jobs rather than recomputing in React.
 - [x] Preserve isotope CSV/settings metadata and original labels; distinguish signal ratios from quantitative composition. Run existing isotope/abundance numerical suites, new tests, resource-install smoke and API type regeneration to PASS. See [identification qualification](../../validation/identification.md) for verification and the saved-document schema-3 amendment.
 
-## Task 3: Cross-sections and shared spatial selection
+## Task 3: Cross-sections and shared spatial selection (deferred)
+
+Deferred by user priority on 2026-10-22. Retain this scope for later; it does not
+block Task 4. Reuse the existing Explore signals, ROI, canonical frame selection
+and depth calibration directly when implementing 3D.
 
 **Files:** Create `presentation/sections.py`, `frontend/src/sections/SectionsScreen.tsx`, `tests/test_section_data.py`, `frontend/e2e/sections.spec.ts`; extend data routes and panel union. Reuse numerical assertions from old `cross_section`/front-projection tests.
 
@@ -138,16 +143,26 @@ Evidence: [depth calibration qualification](../../validation/depth-calibration.m
 - [ ] Write failing tests comparing exact original-resolution slices/reductions with the reference, ROI/window cropping, both axis orientations, unknown-depth coverage, and click roundtrips after unit changes. Browser tests switch Explore/sections with maximize/restore and no lost selections.
 - [ ] Run the two new test modules to fail, implement payloads and React section screen, then run them with calibration/Explore regressions to PASS. Verify independent client zoom and cross-analysis isolation. Commit as `feat: add linked scientific cross-sections`.
 
-## Task 4: Select and implement multi-layer volume rendering
+## Task 4: Select and implement multi-layer volume rendering (implemented 2026-10-22)
+
+Implemented before Task 3. Linked cross-section screens and section-specific APIs
+are outside this task's scope; build only the shared spatial state required by
+3D, using the current Explore state and saved-analysis conventions.
 
 **Files:** Create `docs/validation/spatial-renderer-decision.md`, `frontend/evaluation/SpatialProbe.tsx`, `presentation/volumes.py`, `frontend/src/volumes/{VolumeScreen.tsx,LayerEditor.tsx,spatialRenderer.ts}`, `tests/test_volume_data.py`, `frontend/e2e/volumes.spec.ts`; extend `science/volume_layers.py` caches to use application admission and generation invalidation.
 
 **Interfaces:** `VolumePresenter.snapshot(owner, analysis_id, layer_ids, quality) -> VolumeData` wraps `build_layer_previews(..., voxel_budget=500_000, calibration=...)`. Payload includes original numerical values, validity masks, per-axis block coordinates and physical extent; styles/cameras don't trigger reconstruction. Rendering adapters consume this contract, not Python figure JSON.
 
-- [ ] Write failing tests preserving Fast limits 96×32×32 and Detailed 160×48×48, valid partial-block means, unknown-depth clipping before pooling, and average calibrated coordinates across slope changes. Missing data is not zero. Combined displayed layer voxels never exceed 500,000; intermediate allocations also obey resource admission.
-- [ ] Compare Plotly and vtk.js against the same registered-layer fixture: tiled/overlay, clipping, linked cameras, memory/latency, and exact nonuniform Z geometry. Do not map piecewise-calibrated depths to uniformly spaced voxels silently. Select an implementation that can represent supplied geometry without scientific resampling, or retain Plotly where vtk.js cannot; document evidence before the production adapter. Trame/remote rendering remains a separate architecture change if truly required.
-- [ ] Implement stable per-layer recipes, visibility, Solo, colormap, opacity, percentile threshold, tile pagination four at a time, linked/independent cameras and independent/shared numerical scales. Frame stretch and calibrated exaggeration remain distinct; 1× preserves physical proportions when X/Y are known. Thin/constant selections use points.
-- [ ] Run `test_volume_data.py`, existing `test_volume_layers.py`, new browser tests and installed-package smoke; compare real-acquisition payload/interaction measurements with the reference 32 MiB/200 ms context without claiming those figures cover every workload. Commit as `feat: add calibrated multi-layer volume visualization`.
+- [x] Write failing tests preserving Fast limits 96×32×32 and Detailed 160×48×48, valid partial-block means, unknown-depth clipping before pooling, and average calibrated coordinates across slope changes. Missing data is not zero. Combined displayed layer voxels never exceed 500,000; intermediate allocations also obey resource admission.
+- [x] Compare Plotly and vtk.js against the same registered-layer fixture: tiled/overlay, clipping, linked cameras, memory/latency, and exact nonuniform Z geometry. Do not map piecewise-calibrated depths to uniformly spaced voxels silently. Select an implementation that can represent supplied geometry without scientific resampling, or retain Plotly where vtk.js cannot; document evidence before the production adapter. Trame/remote rendering remains a separate architecture change if truly required.
+- [x] Implement stable per-layer recipes, visibility, Solo, colormap, opacity, percentile threshold, tile pagination four at a time, linked/independent cameras and independent/shared numerical scales. Frame stretch and calibrated exaggeration remain distinct; 1× preserves physical proportions when X/Y are known. Thin/constant selections use points.
+- [x] Run `test_volume_data.py`, existing `test_volume_layers.py`, new browser tests and installed-package smoke; compare real-acquisition payload/interaction measurements with the reference 32 MiB/200 ms context without claiming those figures cover every workload. Commit as `feat: add calibrated multi-layer volume visualization`.
+
+Qualification: [renderer decision and evidence](../../validation/spatial-renderer-decision.md).
+207 Python tests, 33 frontend tests, 84 browser workflows and a separate
+real-acquisition interaction benchmark passed. Fresh wheel and sdist independently
+passed offline installed smokes, including saved spatial state after restart.
+Original acquisitions were read-only. The existing local service was not restarted.
 
 ## Task 5: Controlled native saves and cross-analysis invalidation
 
@@ -179,8 +194,8 @@ groups and manual reattachment. Versioned saved HDF5 copies restore Explore sign
 custom results and selections. This is new-file output only: Task 5's controlled
 native saves remain deferred, with their original opt-ins and deployment evidence
 requirements. Calibration now extends the document to version 2 with version 1 read support.
-Future identification/3D features must extend the saved document schema and
-round-trip tests; their state is not yet implemented. Never
+Identification now uses saved document schema 3; Task 4 extends it to schema 4
+for spatial state with round-trip and installed-package tests. Never
 serialize pending drafts/jobs as completed numerical results.
 
 ### Visual conventions from Explore feedback (2026-10-20)

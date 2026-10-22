@@ -171,6 +171,7 @@ def smoke(artifact, output):
                 measurements.get_by_role('button', name='Close', exact=True).click()
                 page.get_by_role('button', name='Calibrate depth', exact=True).click()
                 dialog = page.get_by_role('dialog', name='Depth calibration', exact=True)
+                expect(dialog.get_by_label('Anchor frame', exact=True)).to_be_enabled()
                 dialog.get_by_label('Anchor frame', exact=True).fill('1')
                 dialog.get_by_label('Known depth', exact=True).fill('100')
                 dialog.get_by_role('button', name='Add anchor', exact=True).click()
@@ -182,6 +183,15 @@ def smoke(artifact, output):
                 with page.expect_download() as before_download:
                     page.get_by_role('button', name='Profile CSV', exact=True).click()
                 before_csv = Path(before_download.value.path()).read_bytes()
+                # Persist spatial controls with the full-resolution saved analysis.
+                page.get_by_role('button', name='3D volume', exact=True).click()
+                page.get_by_label('Add 3D signal', exact=True).select_option(label='Package signal')
+                expect(page.get_by_test_id('volume-status')).to_contain_text('1 layers')
+                page.get_by_label('3D colormap for Package signal', exact=True).select_option('Reds')
+                page.get_by_label('3D view mode', exact=True).select_option('tiles')
+                page.get_by_test_id('volume-canvas').locator('canvas').first.wait_for()
+                spatial_before = page.request.get(url + '/api/v1/analyses').json()[0]['spatial']
+                assert spatial_before['layers'][0]['colorscale'] == 'Reds'
                 downloads.clear()
                 page.get_by_role('button', name='Save as…', exact=True).click()
                 page.get_by_label('Saved filename', exact=True).fill('package_copy.h5')
@@ -202,12 +212,20 @@ def smoke(artifact, output):
                 page.get_by_role('button', name='Open TOFexplorer (.h5) file').click()
                 page.get_by_role('button', name='Saved files', exact=True).click()
                 page.get_by_role('button', name='◫ package_copy.h5', exact=True).dblclick()
+                expect(page.get_by_test_id('volume-status')).to_contain_text('1 layers')
+                expect(page.get_by_label('3D colormap for Package signal', exact=True)).to_have_value('Reds')
+                expect(page.get_by_label('3D view mode', exact=True)).to_have_value('tiles')
+                page.get_by_test_id('volume-canvas').locator('canvas').first.wait_for()
+                spatial_after = page.request.get(url + '/api/v1/analyses').json()[0]['spatial']
+                assert spatial_after['layers'][0]['signal_id'] != spatial_before['layers'][0]['signal_id']
+                expect(page.get_by_test_id('save-state')).to_have_text('Saved')
+                page.get_by_role('button', name='Explore', exact=True).click()
                 expect(page.get_by_test_id('panel-ion')).to_contain_text('Package signal')
                 expect(page.get_by_test_id('panel-spectrum')).to_have_attribute('data-y-scale', 'linear')
                 expect(page.get_by_test_id('panel-profile')).to_have_attribute('data-x-axis', 'Depth (µm)')
                 page.get_by_test_id('panel-profile').get_by_label('Depth profile selection').hover()
                 expect(page.get_by_test_id('panel-profile').get_by_role('tooltip')).to_contain_text('Depth =')
-                expect(page.get_by_test_id('save-state')).to_have_text('Saved')
+                expect(page.get_by_test_id('save-state')).to_have_text('Unsaved changes')
                 page.get_by_role('button', name='Isotope measurements', exact=True).click()
                 restored_measurements = page.get_by_role('dialog', name='Isotope measurements', exact=True)
                 expect(restored_measurements.get_by_test_id('isotope-results')).to_contain_text('H-2:+1')
@@ -245,6 +263,7 @@ def smoke(artifact, output):
                 runtime_dependencies_clean=True, offline_browser=True,
                 raw_preparation_without_scientific_runtime=True,
                 plots_integration_export=True, identification_and_measurement_restore=True, saved_copy_restart_source_removed=True,
+                spatial_preview_and_state_restore=True,
                 exact_restored_csv=True, calibrated_copy_roundtrip=True, scientific_axes_hover=True, colormap_roundtrip=True, optional_download=True,
                 interrupted_download_preserves_saved_file=True)
         finally:

@@ -2120,3 +2120,31 @@ small {
   white-space: normal;
   overflow-wrap: anywhere;
 }
+
+/* Spatial views retain the existing Explore controls and full-resolution profile. */
+.volume-workspace { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 16px; margin-top: 12px; }
+.volume-workspace.maximized { position: fixed; inset: 14px; z-index: 80; overflow: auto; background: var(--surface, #f6f9fa); padding: 18px; border-radius: 16px; box-shadow: 0 12px 48px #16374844; }
+.volume-layers { min-width: 0; }
+.volume-layers h2 { margin: 0 0 10px; }
+.volume-layers label { display: flex; align-items: center; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
+.volume-layer-list { max-height: 490px; overflow: auto; }
+.volume-layer-list fieldset { margin: 10px 0; border: 0; background: #eef3f6; padding: 10px; border-radius: 12px; }
+.volume-layer-list legend { font-weight: 600; }
+.volume-layer-list small { display: block; overflow-wrap: anywhere; }
+.volume-toolbar { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+.volume-toolbar label { display: flex; flex-direction: column; gap: 4px; }
+.volume-toolbar input[type=number] { width: 85px; }
+.volume-canvas { width: 100%; height: 470px; }
+.volume-status { font-size: .85rem; }
+.volume-profile-grid { display: block; }
+.volume-profile-grid > :not(:last-child) { display: none; }
+.volume-profile-grid > :last-child { min-height: 320px; }
+@media (max-width: 850px) { .volume-workspace { grid-template-columns: 1fr; } .volume-layer-list { max-height: 240px; } }
+
+.spatial-panels { display: grid; grid-template-columns: minmax(0, 1fr) 310px; align-items: start; gap: 12px; }
+.spatial-panels .volume-workspace { grid-template-columns: 220px minmax(0, 1fr); }
+.volume-profile-grid > .plot-panel:not(.maximized) { height: 700px; }
+.volume-profile-grid { margin-top: 12px; }
+.volume-profile-grid .profile-legend { flex-wrap: wrap; }
+@media (max-width: 1100px) { .spatial-panels { grid-template-columns: 1fr; } .volume-profile-grid > .plot-panel:not(.maximized) { height: 340px; } }
+@media (max-width: 650px) { .spatial-panels .volume-workspace { grid-template-columns: 1fr; } }
