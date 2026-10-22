@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { usePanModifier } from "./usePanModifier";
 import { axisTitle, plotInsets, formatPosition } from "./axes";
 import { coordinateToFrame } from "../calibration/coordinates";
 import type { Panel } from "../api/client";
@@ -87,7 +88,7 @@ export function PlotPanel({
   maximized: boolean;
   onMaximize: () => void;
   onSelect: (bounds: number[]) => void;
-  onClick?: (x: number, y: number) => void;
+  onClick?: (x: number, y: number, unitsPerPixel: number) => void;
   selection?: number[];
   selectionWindows?: Range[];
   selectedWindow?: number;
@@ -110,12 +111,16 @@ export function PlotPanel({
     onVisibility: (id: string, visible: boolean) => void;
   };
 }) {
+  const isSpectrum = name === "spectrum" || spectrumLog !== undefined;
   const body = useRef<HTMLDivElement>(null),
     element = useRef<HTMLDivElement>(null),
     chart = useRef<ChartHandle | null>(null);
   const [stageSize, setStageSize] = useState(0);
   const [zoom, setZoom] = useState<Range | null>(null);
   const [panning, setPanning] = useState(false);
+  const panModifier = usePanModifier();
+  const [hovered, setHovered] = useState(false);
+  const panActive = panning || (panModifier && hovered);
   const [yScale, setYScale] = useState<"log" | "linear">("log");
   useEffect(() => {
     if (spectrumLog !== undefined) setYScale(spectrumLog ? "log" : "linear");
@@ -190,7 +195,7 @@ export function PlotPanel({
         range: panel.intensity_range,
         palette: panel.palette,
         log: panel.log,
-        yScale: name === "spectrum" ? yScale : undefined,
+        yScale: isSpectrum ? yScale : undefined,
         relative: panel.relative,
         yReverse: panel.kind === "image",
       }
@@ -224,13 +229,24 @@ export function PlotPanel({
   return (
     <section
       className={`plot-panel ${maximized ? "maximized" : ""}`}
+      onPointerOver={(e) =>
+        setHovered(
+          (e.target as Element).closest(".plot-panel") === e.currentTarget,
+        )
+      }
+      onPointerMove={(e) =>
+        setHovered(
+          (e.target as Element).closest(".plot-panel") === e.currentTarget,
+        )
+      }
+      onPointerLeave={() => setHovered(false)}
       data-testid={`panel-${name}`}
       data-kind={panel?.kind}
       data-palette={panel?.palette}
       data-x-axis={xLabel}
       data-y-axis={yLabel}
       data-content-version={panel?.content_version}
-      data-y-scale={name === "spectrum" ? yScale : undefined}
+      data-y-scale={isSpectrum ? yScale : undefined}
     >
       <header>
         <div className="plot-heading">
@@ -240,7 +256,7 @@ export function PlotPanel({
         <div className="row">
           {toolbarControls}
           {onAllDepths && <button onClick={onAllDepths}>All depths</button>}
-          {name === "spectrum" && (
+          {isSpectrum && (
             <button
               onClick={() => {
                 const log = yScale !== "log";
@@ -261,8 +277,8 @@ export function PlotPanel({
               <button
                 className="plot-icon-button plot-pan-button"
                 aria-label="Pan"
-                aria-pressed={panning}
-                title="Pan horizontally: drag to move the view. Turn off to select or zoom."
+                aria-pressed={panActive}
+                title="Pan horizontally: drag to move the view. Hold Cmd/Ctrl for temporary pan; turn off to select or zoom."
                 onClick={() => setPanning(!panning)}
               >
                 <PlotToolbarIcon action="pan" />
@@ -364,7 +380,7 @@ export function PlotPanel({
         )}
         <div
           className={`plot-stage ${image ? "image" : ""}`}
-          onDoubleClick={name === "spectrum" ? () => setZoom(null) : undefined}
+          onDoubleClick={isSpectrum ? () => setZoom(null) : undefined}
           data-testid={`plot-stage-${name}`}
           data-stage-ready={stageReady ? "true" : "false"}
           style={
@@ -394,7 +410,9 @@ export function PlotPanel({
               mode={mode}
               image={image}
               palette={panel.palette}
-              selectionMode={image ? "select" : panning ? "pan" : selectionMode}
+              selectionMode={
+                image ? "select" : panActive ? "pan" : selectionMode
+              }
             />
           )}
           {hoverLabel && (

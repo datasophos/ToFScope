@@ -18,14 +18,12 @@ export function App() {
     [analyses, setAnalyses] = useState<Analysis[]>([]),
     [active, setActive] = useState(""),
     [picker, setPicker] = useState(false),
-    [replace, setReplace] = useState<Analysis | null>(null),
     [error, setError] = useState("");
   const [statuses, setStatuses] = useState<
     Record<string, { analysis: Analysis; draft: boolean; busy: boolean }>
   >({});
   const [pendingAction, setPendingAction] = useState<{
     id: string;
-    kind: "close" | "replace";
   } | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [startupRaw, setStartupRaw] = useState<RawSelection | null>(null);
@@ -136,29 +134,11 @@ export function App() {
       sessionStorage.setItem(`tofscope-active:${session.owner}`, active);
   }, [session, active]);
   const open = async (path: string, location: "acquisition" | "saved") => {
-    let a: Analysis;
-    if (replace) {
-      a = await post<Analysis>(`/analyses/${replace.id}/replace`, {
-        request_id: crypto.randomUUID(),
-        expected_revision: replace.revision,
-        dataset_generation: replace.dataset.generation,
-        relative_path: path,
-        location,
-      });
-      setAnalyses((old) => old.map((x) => (x.id === a.id ? a : x)));
-      setStatuses((old) => {
-        const next = { ...old };
-        delete next[a.id];
-        return next;
-      });
-      setReplace(null);
-    } else {
-      a = await post<Analysis>("/analyses", {
-        relative_path: path,
-        location,
-      });
-      setAnalyses((old) => [...old, a]);
-    }
+    const a = await post<Analysis>("/analyses", {
+      relative_path: path,
+      location,
+    });
+    setAnalyses((old) => [...old, a]);
     setActive(a.id);
     setPicker(false);
     setStartupRaw(null);
@@ -180,10 +160,7 @@ export function App() {
       setError((e as Error).message);
     }
   };
-  const perform = async (
-    action: { id: string; kind: "close" | "replace" },
-    latest?: Analysis,
-  ) => {
+  const perform = async (action: { id: string }, latest?: Analysis) => {
     const a =
       latest ||
       statuses[action.id]?.analysis ||
@@ -192,16 +169,12 @@ export function App() {
     setPendingAction(null);
     setConfirming(false);
     setSaveRequest(null);
-    if (action.kind === "close") await close(a);
-    else {
-      setReplace(a);
-      setPicker(true);
-    }
+    await close(a);
   };
-  const requestAction = (a: Analysis, kind: "close" | "replace") => {
+  const requestClose = (a: Analysis) => {
     const info = statuses[a.id];
     const latest = info?.analysis || a;
-    const action = { id: a.id, kind };
+    const action = { id: a.id };
     if (info?.draft || hasChanges(latest)) {
       setPendingAction(action);
       setConfirming(true);
@@ -233,7 +206,6 @@ export function App() {
             title="Open TOFexplorer file"
             disabled={!session}
             onClick={() => {
-              setReplace(null);
               setPicker(true);
             }}
           >
@@ -271,7 +243,7 @@ export function App() {
                 </button>
                 <button
                   aria-label={`Close analysis ${i + 1}`}
-                  onClick={() => requestAction(a, "close")}
+                  onClick={() => requestClose(a)}
                 >
                   ×
                 </button>
@@ -305,7 +277,6 @@ export function App() {
           <ExploreScreen
             initial={a}
             active={a.id === active}
-            onReplace={(current) => requestAction(current, "replace")}
             onStatus={reportStatus}
             saveRequest={saveRequest?.id === a.id ? saveRequest.serial : 0}
             onSaved={(latest) => {
@@ -392,7 +363,6 @@ export function App() {
           onOpen={open}
           onClose={() => {
             setPicker(false);
-            setReplace(null);
             setStartupRaw(null);
           }}
         />

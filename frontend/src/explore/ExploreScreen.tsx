@@ -1,3 +1,5 @@
+import { IdentifyDialog } from "../identification/IdentifyDialog";
+import { IsotopeMeasurements } from "../identification/IsotopeMeasurements";
 import { DepthEditor } from "../calibration/DepthEditor";
 import {
   frameToCoordinate,
@@ -21,7 +23,6 @@ import { roiFromBounds, roiBounds, frameWindow, type ROI } from "./selection";
 export function ExploreScreen({
   initial,
   active,
-  onReplace,
   onStatus,
   onSaved,
   onSaveDismiss,
@@ -29,7 +30,6 @@ export function ExploreScreen({
 }: {
   initial: Analysis;
   active: boolean;
-  onReplace: (a: Analysis) => void;
   onStatus: (a: Analysis, draft: boolean, busy: boolean) => void;
   onSaved: (a: Analysis) => void;
   onSaveDismiss: () => void;
@@ -174,7 +174,11 @@ export function ExploreScreen({
   const ionState = panelStates.ion ?? a;
   const ionFrames = panels?.ion.frame_range;
   return (
-    <main className="explore-screen">
+    <main
+      className="explore-screen"
+      data-testid="analysis"
+      data-revision={a.revision}
+    >
       <div className="analysis-heading">
         <div>
           <h1>{a.dataset.name || a.dataset.relative_path.split("/").pop()}</h1>
@@ -184,16 +188,6 @@ export function ExploreScreen({
           </span>
         </div>
         <div className="row">
-          <small>
-            Revision{" "}
-            <output
-              style={{ display: "inline" }}
-              data-testid="analysis-revision"
-            >
-              {a.revision}
-            </output>
-          </small>
-          <button onClick={() => onReplace(a)}>Replace file</button>
           <SaveCopy
             analysis={a}
             active={active}
@@ -212,7 +206,7 @@ export function ExploreScreen({
                 ? "Saved"
                 : "No changes"}
           </small>
-          <HelpButton label="Exports" content={help.exports} />
+          <HelpButton label="Saving" content={help.saving} />
         </div>
       </div>
       {error && (
@@ -311,7 +305,22 @@ export function ExploreScreen({
                     {d?.submittedJobId ? " · calculating" : ""}
                   </span>
                   {!d && (
-                    <button onClick={editor.openNew}>Create signal</button>
+                    <>
+                      <button onClick={editor.openNew}>Create signal</button>
+                      <IdentifyDialog
+                        analysis={a}
+                        spectrum={panels?.spectrum}
+                        send={send}
+                        active={active}
+                        onDraft={editor.openIdentified}
+                        refresh={refresh}
+                      />
+                      <IsotopeMeasurements
+                        analysis={a}
+                        active={active}
+                        refresh={refresh}
+                      />
+                    </>
                   )}
                 </>
               }

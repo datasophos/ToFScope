@@ -60,7 +60,7 @@ Depth calibration was implemented inline on the PR #1 branch and merged into
 `main` through [PR #2](https://github.com/datasophos/ToFScope/pull/2).
 [PR #3](https://github.com/datasophos/ToFScope/pull/3), merged on 2026-10-21,
 adds explicit viewing modes, centered calibration controls, and the confirmed
-heading/help overlap fix. Task 2 is the next unfinished scientific feature.
+heading/help overlap fix. Task 2 identification/isotopes is now implemented; Task 3 sections is next.
 
 The separate analysis range is now removed: profiles span the full acquisition,
 while signal calculation coverage and viewing selections remain distinct. The
@@ -125,9 +125,9 @@ Evidence: [depth calibration qualification](../../validation/depth-calibration.m
 
 **Interfaces:** `IdentificationService.candidates(owner, analysis_id, mz, tolerance, unit, charges)` uses `find_candidates`; annotation is a separate command from integration. `measure(owner, analysis_id, envelope, recipe_ids) -> JobSnapshot` uses the pilot job lifecycle and `measure_isotopes(path, recipes, roi, frames)`. Measurement records include captured scope and analysis/source dependencies.
 
-- [ ] Write failing tests for clicks snapping within seven display pixels to local maxima, exact input fallback, charges/polarity and catalog provenance. Add original intensity sums, common covered frames, unknown abundance, overlapping windows suppressing fractions, and preserved results marked out-of-date after ROI/window changes without automatic recomputation.
-- [ ] Run `test_identification_application.py` and `identification.spec.ts` to fail. Implement separate Annotate/Apply/Add comparison actions with exact limits, graphical spectrum feedback and explicit Measure. Reuse custom integration jobs rather than recomputing in React.
-- [ ] Preserve isotope CSV/settings metadata and original labels; distinguish signal ratios from quantitative composition. Run existing isotope/abundance numerical suites, new tests, resource-install smoke and API type regeneration to PASS. Commit as `feat: restore atomic assignments and isotope measurements`.
+- [x] Write failing tests for clicks snapping within seven display pixels to local maxima, exact input fallback, charges/polarity and catalog provenance. Add original intensity sums, common covered frames, unknown abundance, overlapping windows suppressing fractions, and preserved results marked out-of-date after ROI/window changes without automatic recomputation.
+- [x] Run `test_identification_application.py` and `identification.spec.ts` to fail. Implement separate Annotate/Apply/Add comparison actions with exact limits, graphical spectrum feedback and explicit Measure. Reuse custom integration jobs rather than recomputing in React.
+- [x] Preserve isotope CSV/settings metadata and original labels; distinguish signal ratios from quantitative composition. Run existing isotope/abundance numerical suites, new tests, resource-install smoke and API type regeneration to PASS. See [identification qualification](../../validation/identification.md) for verification and the saved-document schema-3 amendment.
 
 ## Task 3: Cross-sections and shared spatial selection
 

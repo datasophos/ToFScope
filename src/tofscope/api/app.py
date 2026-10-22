@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 import asyncio
 from pathlib import Path
 from fastapi import FastAPI, Request, Response, Depends, HTTPException, Query
@@ -20,6 +20,7 @@ from tofscope.application.resources import ResourceBudget
 from tofscope.application.cache import ArrayCache
 from tofscope.application.jobs import JobService, JobSnapshot, IntegrationSpec
 from tofscope.application.lifecycle import LifecycleService, ViewLease
+from tofscope.application.identification_models import CandidateResult, MeasurementResult
 from tofscope.application.models import AnalysisSnapshot
 from tofscope.application.signals import image_signal
 from tofscope.application.commands import CommandEnvelope
@@ -31,6 +32,8 @@ from tofscope.storage.acquisitions import (
 from tofscope.storage.file_browser import list_data_files
 from tofscope.api.auth import Auth
 from tofscope.api.schemas import (
+    CandidateInput,
+    MeasureIsotopes,
     Bootstrap,
     SessionInfo,
     OpenAcquisition,
@@ -39,6 +42,7 @@ from tofscope.api.schemas import (
     SubmitJob,
     SaveCopy,
     FolderLocations,
+    CreateSaveFolder,
 )
 from typing import Literal
 from tofscope.presentation.data import ExploreData
@@ -58,6 +62,7 @@ class Services:
     exports: object = None
     saves: object = None
     preparations: object = None
+    identification: object = None
 
 
 def build_services(settings):
@@ -82,6 +87,8 @@ def build_services(settings):
     )
     from tofscope.application.preparations import PreparationService
     services.preparations = PreparationService(repo, jobs, services.saves.files)
+    from tofscope.application.identification import IdentificationService
+    services.identification = IdentificationService(ws, explore, cache, jobs)
     return services
 
 
@@ -248,7 +255,26 @@ def create_app(settings, services=None, bootstrap_secret=None):
     def folder_locations(o=Depends(owner), s=Depends(svc)):
         return FolderLocations(acquisitions=str(settings.data_root),
                                saved_copies=str(settings.output_root),
-                               save_destination=str(s.saves.files.owner_path(o)))
+                               save_destination=str(s.saves.files.owner_path(o)),
+                               can_save_to_acquisitions=settings.mode == 'local' and o == 'local')
+
+    @app.get('/api/v1/save-folders')
+    def save_folders(directory: str = '', location: Literal['acquisition', 'saved'] = 'saved',
+                     query: str = '', offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100),
+                     o=Depends(owner), s=Depends(svc)):
+        try:
+            return s.saves.files.browse(o, directory, location, query=query, offset=offset, limit=limit, folders_only=True)
+        except FileNotFoundError:
+            raise HTTPException(404, 'Save folder is unavailable.') from None
+
+    @app.post('/api/v1/save-folders', status_code=201)
+    def create_save_folder(body: CreateSaveFolder, o=Depends(owner), s=Depends(svc)):
+        try:
+            return s.saves.files.create_directory(o, body.directory, body.location, body.name)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from None
+        except FileNotFoundError:
+            raise HTTPException(404, 'Save folder is unavailable.') from None
 
     @app.post('/api/v1/acquisitions/inspect', response_model=PreparationPreview)
     def inspect_acquisition(body: OpenAcquisition, o=Depends(owner), s=Depends(svc)):
@@ -300,6 +326,51 @@ def create_app(settings, services=None, bootstrap_secret=None):
     def command(aid: str, body: CommandEnvelope, o=Depends(owner), s=Depends(svc)):
         return s.explore.apply(o, aid, body)
 
+    def managed_json(o, aid, services, prepare):
+        services.analyses.get(o, aid)
+        reservation = services.cache.budget.reserve(o, aid, settings.response_bytes)
+        try:
+            value = prepare()
+            chunks = bytearray()
+            for part in json.JSONEncoder(allow_nan=False, separators=(',', ':')).iterencode(asdict(value) if value is not None else None):
+                encoded = part.encode()
+                if len(chunks) + len(encoded) > settings.response_bytes:
+                    raise CapacityError('Response exceeds configured limit; narrow the selected signals or tolerance.')
+                chunks.extend(encoded)
+            return ManagedResponse(bytes(chunks), media_type='application/json', reservation=reservation)
+        except BaseException:
+            reservation.release()
+            raise
+
+    @app.post('/api/v1/analyses/{aid}/candidates', response_model=CandidateResult)
+    def candidates(aid: str, body: CandidateInput, o=Depends(owner), s=Depends(svc)):
+        return managed_json(o, aid, s, lambda: s.identification.candidates(o, aid, body.mz, body.tolerance, body.unit, body.charges))
+
+    @app.post('/api/v1/analyses/{aid}/measurements', response_model=JobSnapshot, status_code=202)
+    def measure_isotopes(aid: str, body: MeasureIsotopes, o=Depends(owner), s=Depends(svc)):
+        return s.identification.measure(o, aid, body, body.signal_ids)
+
+    @app.get('/api/v1/analyses/{aid}/measurements', response_model=MeasurementResult | None)
+    def isotope_results(aid: str, o=Depends(owner), s=Depends(svc)):
+        return managed_json(o, aid, s, lambda: s.identification.result(o, aid))
+
+    @app.get('/api/v1/analyses/{aid}/isotopes.csv')
+    def isotope_export(aid: str, o=Depends(owner), s=Depends(svc)):
+        from tofscope.presentation.isotopes import isotope_csv
+        e = s.analyses.entry(o, aid)
+        reservation = s.cache.budget.reserve(o, aid, settings.response_bytes)
+        try:
+            with e.lock:
+                s.repository.assert_current(o, e.snapshot.dataset)
+                content = isotope_csv(e.snapshot)
+            if len(content) > settings.response_bytes:
+                raise ValueError('Export exceeds configured response limit.')
+            return ManagedResponse(content, media_type='text/csv', reservation=reservation,
+                headers={'Content-Disposition': 'attachment; filename="tofscope-isotopes.csv"'})
+        except BaseException:
+            reservation.release()
+            raise
+
     @app.post(
         "/api/v1/analyses/{aid}/jobs", response_model=JobSnapshot, status_code=202
     )
@@ -310,7 +381,7 @@ def create_app(settings, services=None, bootstrap_secret=None):
             body,
             IntegrationSpec(
                 tuple(body.spec.intervals), tuple(body.spec.frames), body.spec.name,
-                body.spec.signal_id, body.spec.expected_recipe_version
+                body.spec.signal_id, body.spec.expected_recipe_version, body.spec.candidate_id, body.spec.measured_mz
             ),
         )
 
@@ -382,14 +453,18 @@ def create_app(settings, services=None, bootstrap_secret=None):
         directory: str = "",
         location: Literal["acquisition", "saved"] = "acquisition",
         query: str = "",
+        folders: bool = False,
         offset: int = Query(0, ge=0),
         limit: int = Query(100, ge=1, le=100),
         o=Depends(owner),
         s=Depends(svc),
     ):
         if location == 'saved':
-            if directory:
-                raise ValueError('Saved files have no subdirectories.')
+            if folders or directory:
+                try:
+                    return s.saves.files.browse(o, directory, query=query, offset=offset, limit=limit)
+                except FileNotFoundError:
+                    raise HTTPException(404, 'Save folder is unavailable.') from None
             values = [f for f in s.saves.files.list(o) if query.lower() in f.name.lower()]
             entries = [dict(name=f.name, path=f.id, kind='file', size=f.size) for f in values[offset:offset + limit]]
             return dict(path='', entries=entries, total=len(values), next_offset=offset + limit if offset + limit < len(values) else None)

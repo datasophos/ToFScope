@@ -1,3 +1,4 @@
+from tofscope.application.identification_models import AtomicAssignment, MeasurementResult
 from dataclasses import dataclass
 from typing import Literal
 from tofscope.science.depth_calibration import DepthAnchor
@@ -40,6 +41,7 @@ class SignalSnapshot:
     name_revision: int = 0
     job_id: str | None = None
     materialization_id: str | None = None
+    assignment: AtomicAssignment | None = None
 
 
 @dataclass(frozen=True)
@@ -66,3 +68,5 @@ class AnalysisSnapshot:
     depth_anchors: tuple[DepthAnchor, ...] = (DepthAnchor(0, 0.),)
     depth_unit: Literal['nm', 'um', 'mm'] = 'nm'
     depth_coordinates: Literal['frame', 'depth'] = 'frame'
+    isotope_measurement: MeasurementResult | None = None
+    isotope_job_id: str | None = None

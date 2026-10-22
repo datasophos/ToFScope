@@ -1,4 +1,5 @@
 export type SignalDraft = {
+  isotope?: { candidateId: string; measuredMz: number };
   signalId?: string;
   recipeVersion?: number;
   nameRevision?: number;

@@ -1,3 +1,5 @@
+import { PreciseNumberInput } from "../components/PreciseNumberInput";
+import { formatNumber } from "../shared/numbers";
 import { useEffect, useRef, useState } from "react";
 import type { Analysis, Panel } from "../api/client";
 import type { Send } from "../explore/SignalDetails";
@@ -134,7 +136,7 @@ export function DepthEditor({
                 {a.depth_anchors
                   .map(
                     (x) =>
-                      `frame ${x.frame}: ${x.depth_nm / scale} ${a.depth_unit === "um" ? "µm" : a.depth_unit}`,
+                      `frame ${x.frame}: ${formatNumber(x.depth_nm / scale)} ${a.depth_unit === "um" ? "µm" : a.depth_unit}`,
                   )
                   .join(" · ")}
               </p>
@@ -161,13 +163,11 @@ export function DepthEditor({
               </label>
               <label>
                 Known depth ({a.depth_unit === "um" ? "µm" : a.depth_unit})
-                <input
-                  aria-label="Known depth"
-                  type="number"
-                  step="any"
+                <PreciseNumberInput
+                  label="Known depth"
                   value={depth}
                   disabled={frame === "0"}
-                  onChange={(e) => setDepth(e.target.value)}
+                  onChange={setDepth}
                 />
               </label>
               <button
@@ -288,12 +288,10 @@ function AnchorRow({
         {frame === 0 ? (
           `0 ${unit}`
         ) : (
-          <input
-            aria-label={`Depth at frame ${frame}`}
-            type="number"
-            step="any"
+          <PreciseNumberInput
+            label={`Depth at frame ${frame}`}
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={setDraft}
           />
         )}
       </td>

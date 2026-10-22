@@ -1,3 +1,4 @@
+import { formatNumber } from "../shared/numbers";
 /** Shared renderer/gesture margins keep physical selections aligned with labels. */
 export function plotInsets(kind: "image" | "line") {
   return kind === "image"
@@ -37,5 +38,5 @@ export function formatPosition(
           ),
         ),
       )
-    : String(Number(value.toPrecision(8)));
+    : formatNumber(value);
 }

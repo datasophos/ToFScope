@@ -52,7 +52,11 @@ def ion_mz(record,charge: int):
     return (record.neutral_mass_u-charge*ELECTRON_MASS_U)/abs(charge)
 
 
-def find_candidates(mz,tolerance,tolerance_unit,charges,catalog):
+class CandidateLimitExceeded(ValueError):
+    pass
+
+
+def find_candidates(mz,tolerance,tolerance_unit,charges,catalog,*,max_results=None):
     if not math.isfinite(mz) or mz<=0:raise ValueError('Measured m/z must be positive and finite.')
     if not math.isfinite(tolerance) or tolerance<0:raise ValueError('Tolerance must be finite and nonnegative.')
     if tolerance_unit not in ('Th','ppm'):raise ValueError('Tolerance units must be Th or ppm.')
@@ -64,6 +68,8 @@ def find_candidates(mz,tolerance,tolerance_unit,charges,catalog):
         for charge in sorted(set(charges)):
             predicted=ion_mz(isotope,charge);error=mz-predicted;ppm=error/predicted*1e6
             if abs(error if tolerance_unit=='Th' else ppm)<=tolerance:
+                if max_results is not None and len(candidates) >= max_results:
+                    raise CandidateLimitExceeded('Too many atomic candidates; narrow the tolerance or charge states.')
                 candidates.append(IonCandidate(isotope,charge,predicted,error,ppm))
     return sorted(candidates,key=lambda r:(abs(r.error_Th),r.isotope.symbol,r.isotope.mass_number,r.charge))
 

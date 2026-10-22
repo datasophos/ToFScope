@@ -36,6 +36,8 @@ class IntegrationInput(StrictModel):
     name: str = Field(min_length=1, max_length=128)
     signal_id: str | None = None
     expected_recipe_version: StrictInt | None = Field(default=None, ge=0)
+    candidate_id: str | None = Field(default=None, max_length=64)
+    measured_mz: FiniteStrictFloat | None = Field(default=None, gt=0)
 
 
 class SubmitJob(RevisionEnvelope):
@@ -61,9 +63,29 @@ class ErrorResponse(StrictModel):
 
 class SaveCopy(RevisionEnvelope):
     filename: str = Field(min_length=1, max_length=240)
+    directory: str = Field(default='', max_length=4096)
+    destination_location: Literal['acquisition', 'saved'] = 'saved'
+
+
+class CreateSaveFolder(StrictModel):
+    name: str = Field(min_length=1, max_length=240)
+    directory: str = Field(default='', max_length=4096)
+    location: Literal['acquisition', 'saved'] = 'saved'
 
 
 class FolderLocations(StrictModel):
     acquisitions: str
     saved_copies: str
     save_destination: str
+    can_save_to_acquisitions: bool = False
+
+
+class CandidateInput(StrictModel):
+    mz: FiniteStrictFloat = Field(gt=0)
+    tolerance: FiniteStrictFloat = Field(ge=0)
+    unit: Literal['Th', 'ppm']
+    charges: tuple[StrictInt, ...] = Field(min_length=1, max_length=6)
+
+
+class MeasureIsotopes(RevisionEnvelope):
+    signal_ids: tuple[str, ...] = Field(min_length=1, max_length=128)

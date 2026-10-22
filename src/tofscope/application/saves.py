@@ -13,6 +13,8 @@ class SaveTask:
     snapshot: object
     document: object
     name: str
+    directory: str = ''
+    destination_location: str = 'saved'
 
 
 class SaveService:
@@ -23,16 +25,22 @@ class SaveService:
 
     def submit(self, owner, analysis_id, envelope, name):
         name = filename(name)
+        directory = getattr(envelope, 'directory', '')
+        location = getattr(envelope, 'destination_location', 'saved')
         e = self.analyses.entry(owner, analysis_id)
         fingerprint = json.dumps({'kind': 'save', 'envelope': envelope.model_dump(mode='json'), 'filename': name}, sort_keys=True)
         with e.lock:
             old = self.jobs.explore.validate_envelope(e, envelope, fingerprint)
             if old is not None:
                 return old
+            try:
+                self.files.directory(owner, directory, location, writable=True)
+            except FileNotFoundError:
+                raise ValueError('Save folder is unavailable.') from None
             with self.jobs.condition:
-                if any(j.snapshot.analysis_id == analysis_id and j.snapshot.kind == 'integration' and j.snapshot.status not in {'succeeded', 'failed', 'cancelled', 'obsolete'} for j in self.jobs.jobs.values()):
+                if any(j.snapshot.analysis_id == analysis_id and j.snapshot.kind in {'integration', 'measurement'} and j.snapshot.status not in {'succeeded', 'failed', 'cancelled', 'obsolete'} for j in self.jobs.jobs.values()):
                     raise ValueError('Finish or cancel calculations before saving.')
-                task = SaveTask(e.snapshot, encode_document(e.snapshot), name)
+                task = SaveTask(e.snapshot, encode_document(e.snapshot), name, directory, location)
                 result = self.jobs.enqueue_save(owner, task)
                 self.jobs.explore.receipt(e, envelope.request_id, fingerprint, result)
                 return result
@@ -64,4 +72,4 @@ class SaveService:
         scratch = COPY_BYTES + snapshot.shape[1] * snapshot.shape[2] * 12
         with self.cache.budget.reserve(job.owner, snapshot.id, scratch):
             return self.files.publish_copy(job.owner, path, task.document, frames, task.name,
-                                           job.cancelled, progress, publish_guard)
+                                           job.cancelled, progress, publish_guard, task.directory, task.destination_location)

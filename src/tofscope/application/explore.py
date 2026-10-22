@@ -74,6 +74,11 @@ class ExploreService:
                     signal = SignalSnapshot(recipe.id, recipe.label, s.next_style_index, recipe)
                     patch = dict(signals=(*s.signals, signal), next_style_index=s.next_style_index+1,
                                  profile_signal_ids=(*s.profile_signal_ids, signal.id))
+            elif kind == 'annotate_signal':
+                from tofscope.application.identification import assignment
+                signal = get_signal(s, c.signal_id)
+                updated = replace(signal, assignment=assignment(c.candidate_id, c.measured_mz))
+                patch['signals'] = tuple(updated if r.id == signal.id else r for r in s.signals)
             elif kind in ('rename_signal', 'select_image_signal', 'set_profile_visible', 'remove_signal', 'set_stored_coverage'):
                 signal = get_signal(s, c.signal_id)
                 if kind == 'rename_signal':
@@ -130,6 +135,9 @@ class ExploreService:
             elif kind == 'set_display':
                 patch['display'] = DisplaySettings(c.log, c.relative, c.image, s.display.spectrum_log if c.spectrum_log is None else c.spectrum_log, s.display.colormap if c.colormap is None else c.colormap)
             result = normalize_view(replace(s, revision=s.revision+1, **patch))
+            if result.isotope_measurement:
+                from tofscope.application.identification import current_result
+                result = replace(result, isotope_measurement=current_result(result))
             if kind == 'remove_signal':
                 e.tokens.pop(signal.id, None)
             # Hidden and removed signals retain metadata without pinned volume leases.

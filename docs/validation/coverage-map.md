@@ -34,9 +34,9 @@ partial comparison coverage and display-invariant exports.
 | `test_interval_editor.py.txt:test_add_select_edit_remove_only_changes_the_target_draft` | selection/gesture Vitest; explore/renderer Playwright; integration union tests. Drafts are now client-local. |
 | `test_interval_editor.py.txt:test_rejected_edits_preserve_rows_and_active_signal` | selection/gesture Vitest; explore/renderer Playwright; integration union tests. Drafts are now client-local. |
 | `test_interval_editor.py.txt:test_apply_uses_all_rows_and_merges_overlap_only_when_applied` | selection/gesture Vitest; explore/renderer Playwright; integration union tests. Drafts are now client-local. |
-| `test_peak_helper.py.txt:test_candidates_annotations_and_empty_matches` | Completion Task 2; core isotope/abundance math remains in test_isotopes/test_abundance. |
-| `test_peak_helper.py.txt:test_annotation_retains_measured_error_and_csv_uncertainty` | Completion Task 2; core isotope/abundance math remains in test_isotopes/test_abundance. |
-| `test_peak_helper.py.txt:test_explicit_measurement_export_and_stale_annotation_rejection` | Completion Task 2; core isotope/abundance math remains in test_isotopes/test_abundance. |
+| `test_peak_helper.py.txt:test_candidates_annotations_and_empty_matches` | `test_identification_application.py`, `test_identification_api.py`, `identification.spec.ts`; core isotope/abundance math remains in test_isotopes/test_abundance. |
+| `test_peak_helper.py.txt:test_annotation_retains_measured_error_and_csv_uncertainty` | `test_identification_application.py`, `test_identification_api.py`, `identification.spec.ts`; core isotope/abundance math remains in test_isotopes/test_abundance. |
+| `test_peak_helper.py.txt:test_explicit_measurement_export_and_stale_annotation_rejection` | `test_identification_application.py`, `test_identification_api.py`, `identification.spec.ts`; core isotope/abundance math remains in test_isotopes/test_abundance. |
 | `test_server_config.py.txt:test_default_and_explicit_startup` | test_cli/test_acquisition_repository/test_auth/test_api; adjacent example fallback intentionally removed. |
 | `test_server_config.py.txt:test_paths_symlinks_and_sibling_prefix` | test_cli/test_acquisition_repository/test_auth/test_api; adjacent example fallback intentionally removed. |
 | `test_server_config.py.txt:test_startup_without_adjacent_example_directory` | test_cli/test_acquisition_repository/test_auth/test_api; adjacent example fallback intentionally removed. |
