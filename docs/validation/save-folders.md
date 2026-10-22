@@ -58,3 +58,18 @@ their existing save/discard/cancel protection. Browser coverage opens a second
 file, closes the old tab, checks clean state, and verifies closing an edited tab
 still prompts for unsaved changes. Eight file-shell/save browser workflows, 30
 frontend tests, TypeScript and the packaged build passed.
+
+
+The analysis header no longer displays its internal revision number. Its Saving
+help now explains Save as, destination selection, drafts, saved/unsaved status
+and reopening the copy, without unrelated CSV or PNG instructions. Browser
+state/concurrency checks read the analysis element's revision metadata rather
+than requiring an implementation detail to be shown in the interface. Help
+coverage verifies that the revision label is absent and the tooltip is specific
+to saving.
+
+The 24 relevant browser workflows passed across the focused runs, along with
+30 frontend tests, TypeScript and the packaged build. The extended hover test
+explicitly waits for one tooltip to dismiss before checking another.
+
+[Saving help](save-folders/saving-help.png)

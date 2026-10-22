@@ -24,12 +24,12 @@ test("keyboard navigation changes only the focused analysis", async ({
   await page.locator("h1").filter({ visible: true }).click();
   await page.keyboard.press("ArrowRight");
   await expect(
-    page.getByTestId("analysis-revision").filter({ visible: true }),
-  ).toHaveText("1");
+    page.getByTestId("analysis").filter({ visible: true }),
+  ).toHaveAttribute("data-revision", "1");
   await page.getByRole("tab", { name: "1 · a.h5" }).click();
   await expect(
-    page.getByTestId("analysis-revision").filter({ visible: true }),
-  ).toHaveText("0");
+    page.getByTestId("analysis").filter({ visible: true }),
+  ).toHaveAttribute("data-revision", "0");
 });
 test("a newer partial response cannot hide an omitted profile update", async ({
   page,
@@ -55,7 +55,10 @@ test("a newer partial response cannot hide an omitted profile update", async ({
   await page.getByRole("button", { name: /^ROI:/ }).click();
   await page.getByLabel("ROI x first").fill("1");
   await page.getByRole("button", { name: "Apply ROI", exact: true }).click();
-  await expect(page.getByTestId("analysis-revision")).toHaveText("2");
+  await expect(page.getByTestId("analysis")).toHaveAttribute(
+    "data-revision",
+    "2",
+  );
   release();
   await expect(profile).not.toHaveAttribute("data-content-version", version!);
 });
@@ -103,6 +106,6 @@ test("an expired view lease is reattached after heartbeat 404", async ({
   await expect.poll(() => attaches).toBe(2);
   await page.getByRole("button", { name: "Single frame" }).click();
   await expect(
-    page.getByTestId("analysis-revision").filter({ visible: true }),
-  ).toHaveText("1");
+    page.getByTestId("analysis").filter({ visible: true }),
+  ).toHaveAttribute("data-revision", "1");
 });

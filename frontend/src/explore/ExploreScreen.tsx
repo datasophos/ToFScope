@@ -174,7 +174,11 @@ export function ExploreScreen({
   const ionState = panelStates.ion ?? a;
   const ionFrames = panels?.ion.frame_range;
   return (
-    <main className="explore-screen">
+    <main
+      className="explore-screen"
+      data-testid="analysis"
+      data-revision={a.revision}
+    >
       <div className="analysis-heading">
         <div>
           <h1>{a.dataset.name || a.dataset.relative_path.split("/").pop()}</h1>
@@ -184,15 +188,6 @@ export function ExploreScreen({
           </span>
         </div>
         <div className="row">
-          <small>
-            Revision{" "}
-            <output
-              style={{ display: "inline" }}
-              data-testid="analysis-revision"
-            >
-              {a.revision}
-            </output>
-          </small>
           <SaveCopy
             analysis={a}
             active={active}
@@ -211,7 +206,7 @@ export function ExploreScreen({
                 ? "Saved"
                 : "No changes"}
           </small>
-          <HelpButton label="Exports" content={help.exports} />
+          <HelpButton label="Saving" content={help.saving} />
         </div>
       </div>
       {error && (

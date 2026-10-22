@@ -62,7 +62,10 @@ test("independent files, exact Explore state, union calculation and offline down
     steps: 5,
   });
   await page.mouse.up();
-  await expect(page.getByTestId("analysis-revision")).toHaveText("1");
+  await expect(page.getByTestId("analysis")).toHaveAttribute(
+    "data-revision",
+    "1",
+  );
   for (const name of ["b.h5", "a.h5"]) {
     await page.getByRole("button", { name: "Open TOFexplorer file" }).click();
     await page.getByRole("button", { name: `◫ ${name}` }).dblclick();
