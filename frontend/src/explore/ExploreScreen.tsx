@@ -69,7 +69,8 @@ export function ExploreScreen({
     [details, setDetails] = useState<string>();
   const act = (c: Command) => void send(c).catch(() => {});
   const bounds = availableFrames(a);
-  const frame = (value: number) =>
+  const frame = (value: number) => {
+    if (a.spatial.screen === "volume") return;
     act({
       type: "set_depth",
       depth: {
@@ -77,6 +78,11 @@ export function ExploreScreen({
         index: Math.min(bounds[1], Math.max(bounds[0], Math.round(value))),
       },
     });
+  };
+  useEffect(() => {
+    if (active && a.spatial.screen === "volume" && a.depth.mode === "frame")
+      act({ type: "set_depth", depth: { mode: "all" } });
+  }, [active, a.spatial.screen, a.depth.mode]);
   useEffect(() => {
     if (!active) return;
     const key = (e: KeyboardEvent) => {
@@ -87,7 +93,10 @@ export function ExploreScreen({
         )
       )
         return;
-      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      if (
+        a.spatial.screen !== "volume" &&
+        (e.key === "ArrowLeft" || e.key === "ArrowRight")
+      ) {
         e.preventDefault();
         frame(
           (a.depth.mode === "frame" ? a.depth.index : bounds[0]) +
@@ -188,6 +197,50 @@ export function ExploreScreen({
             pixels · {a.peaks.length} stored signals
           </span>
         </div>
+        <div
+          className="analysis-view-tabs"
+          role="tablist"
+          aria-label="Analysis view"
+          onKeyDown={(event) => {
+            const names = ["explore", "volume"] as const;
+            const index = names.indexOf(a.spatial.screen);
+            const next =
+              event.key === "ArrowRight"
+                ? (index + 1) % 2
+                : event.key === "ArrowLeft"
+                  ? (index + 1) % 2
+                  : event.key === "Home"
+                    ? 0
+                    : event.key === "End"
+                      ? 1
+                      : undefined;
+            if (next === undefined) return;
+            event.preventDefault();
+            event.currentTarget
+              .querySelectorAll<HTMLButtonElement>('[role="tab"]')
+              [next].focus();
+            act({
+              type: "set_spatial",
+              spatial: { ...a.spatial, screen: names[next] },
+            });
+          }}
+        >
+          {(["explore", "volume"] as const).map((screen) => (
+            <button
+              key={screen}
+              role="tab"
+              id={`${a.id}-${screen}-tab`}
+              aria-selected={a.spatial.screen === screen}
+              aria-controls={`${a.id}-view-panel`}
+              tabIndex={a.spatial.screen === screen ? 0 : -1}
+              onClick={() =>
+                act({ type: "set_spatial", spatial: { ...a.spatial, screen } })
+              }
+            >
+              {screen === "explore" ? "Explore" : "3D volume"}
+            </button>
+          ))}
+        </div>
         <div className="row">
           <SaveCopy
             analysis={a}
@@ -222,7 +275,12 @@ export function ExploreScreen({
           <button onClick={editor.dismissError}>Dismiss</button>
         </div>
       )}
-      <div className="signal-workspace">
+      <div
+        className="signal-workspace"
+        role="tabpanel"
+        id={`${a.id}-view-panel`}
+        aria-labelledby={`${a.id}-${a.spatial.screen}-tab`}
+      >
         <SignalTray
           active={active}
           analysis={a}
@@ -234,34 +292,10 @@ export function ExploreScreen({
         <ViewingDepths analysis={a} send={send}>
           <DepthEditor analysis={a} send={send} active={active} />
         </ViewingDepths>
-        <div className="row" role="group" aria-label="Analysis view">
-          <button
-            aria-pressed={a.spatial.screen === "explore"}
-            onClick={() =>
-              act({
-                type: "set_spatial",
-                spatial: { ...a.spatial, screen: "explore" },
-              })
-            }
-          >
-            Explore
-          </button>
-          <button
-            aria-pressed={a.spatial.screen === "volume"}
-            onClick={() =>
-              act({
-                type: "set_spatial",
-                spatial: { ...a.spatial, screen: "volume" },
-              })
-            }
-          >
-            3D volume
-          </button>
-        </div>
         <div className={a.spatial.screen === "volume" ? "spatial-panels" : ""}>
-          {a.spatial.screen === "volume" && active && (
-            <VolumeScreen analysis={a} send={send} />
-          )}
+          {a.spatial.screen === "volume" &&
+            a.depth.mode !== "frame" &&
+            active && <VolumeScreen analysis={a} send={send} />}
           <div
             className={`plot-grid ${a.spatial.screen === "volume" ? "volume-profile-grid" : ""}`}
           >

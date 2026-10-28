@@ -101,3 +101,47 @@ Synthetic fixture screenshots: [tiles](images/spatial-tiles.png) and
 Backend restart of the user's existing port-8765 service remains subject to
 saving current analyses and confirming readiness. No duplicate user service or
 browser tab was launched. Isolated disposable services were used by test harnesses.
+
+## Interaction follow-up — 2026-10-22
+
+Manual Firefox use exposed lag that the original renderer-only Chrome probe did
+not cover. Regression tests reproduced complete Plotly figure rebuilding when
+polling returned equivalent metadata, on saved-camera echoes, and on explicit
+camera changes. Rebuilding also recreated XYZ arrays and re-sorted percentiles.
+
+The adapter now caches immutable geometry/style inputs, skips unchanged updates,
+uses camera-only relayout for camera controls/linking, and skips redraw of a native
+camera echoed through saved state. Renderer mutations are serialized. Equivalent
+analysis metadata does not trigger a React update, and layer percentile statistics
+are memoized independently of camera/opacity. Tests hold the actual trace coordinate
+buffer identity across idle polling and camera persistence through the full app.
+
+Fast renders three isosurfaces instead of ten. Detailed retains ten; this changes
+rendering detail, not preview coordinates, validity, intensities or numerical limits.
+3D exposes All frames and Frame range; entering from Explore single-frame mode
+normalizes to All frames. Profile clicks and frame-arrow shortcuts no longer collapse
+3D to a single slice. Internal thin-coverage fallbacks remain scientifically valid.
+
+A new optional benchmark feeds the captured read-only real-acquisition payload
+through the actual React view and API command lifecycle using the disposable fixture
+service. It tests 30 drags, saved camera commands and idle polling, asserting the
+volume geometry remains allocated throughout. This supplements the direct adapter
+benchmark; headless Chrome results do not establish Firefox/GPU performance on all
+machines. No original acquisitions are modified and the user's service is not
+restarted for these frontend changes.
+
+
+Final follow-up verification: 38 frontend tests and typecheck passed; the full
+browser run with both acquisition benchmarks enabled passed all 89 workflows.
+The new full-application benchmark rendered 285,696 preview voxels and retained
+geometry across all 30 camera saves and subsequent polling. Fast's direct-adapter
+initial rendering measured 773 ms, camera updates p95 23.8 ms and driver-inclusive
+drags p95 103 ms. Full-app drags including saved command responses measured p95
+200 ms. These are local Chrome samples; Firefox manual confirmation is still
+needed. A final focused test passed the single-frame removal and existing shared
+range bounds after restoring their unchanged server-compatible behavior.
+
+Follow-up review confirmed renderer lifecycle handling. A proposed full-acquisition
+range UI was backed out to preserve the existing canonical Explore/server range
+rules without introducing a backend change. The 3D All frames summary reflects
+the presenter's full acquisition domain; range controls still use shared bounds.

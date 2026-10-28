@@ -42,8 +42,8 @@ Original-resolution values must continue to drive profiles and exports.
 - [x] Merge the packaged Explore migration and depth calibration into `main` ([PR #1](https://github.com/datasophos/ToFScope/pull/1), [PR #2](https://github.com/datasophos/ToFScope/pull/2)).
 - [x] Merge Explore control/layout fixes, branding, and CI cleanup ([PR #3](https://github.com/datasophos/ToFScope/pull/3)).
 
-Recorded local validation includes 207 Python tests, 33 frontend unit tests,
-and 84 browser workflows, plus the separately passed real-acquisition 3D benchmark,
+Recorded local validation includes 207 Python tests, 40 frontend unit tests,
+and 89 browser workflows including both real-acquisition 3D benchmarks,
 TypeScript checks, a rebuilt client and independently installed wheel/sdist checks.
 See [spatial qualification](docs/validation/spatial-renderer-decision.md) for renderer
 selection, numerical invariants, resource admission and saved-state restoration.

@@ -126,8 +126,15 @@ test("multi-signal overlay, tiles, Solo, styles, camera and full-resolution prof
         .getByTestId("volume-canvas")
         .evaluate(
           (e: any) =>
-            JSON.stringify(e.layout.scene.camera) ===
-            JSON.stringify(e.layout.scene2.camera),
+            ["eye", "up", "center"].every((key) =>
+              ["x", "y", "z"].every(
+                (axis) =>
+                  e.layout.scene.camera[key][axis] ===
+                  e.layout.scene2.camera[key][axis],
+              ),
+            ) &&
+            e.layout.scene.camera.projection.type ===
+              e.layout.scene2.camera.projection.type,
         ),
     )
     .toBe(true);
@@ -211,7 +218,7 @@ test("calibrated nonuniform geometry, missing coverage, original profile and sav
     fullPage: true,
   });
 });
-test("six layers page four scenes, hide/show, independent cameras and single-frame points", async ({
+test("six layers page four scenes, hide/show, independent cameras and depth ranges", async ({
   page,
 }) => {
   await open(page);
@@ -237,17 +244,14 @@ test("six layers page four scenes, hide/show, independent cameras and single-fra
   await expect(page.getByTestId("volume-status")).toContainText("5 layers");
   await first.getByRole("checkbox").check();
   await expect(page.getByTestId("volume-status")).toContainText("6 layers");
+  await expect(
+    page.getByRole("button", { name: "Single frame", exact: true }),
+  ).toHaveCount(0);
   await command(page, {
     type: "set_depth",
-    depth: { mode: "frame", index: 2 },
+    depth: { mode: "window", first: 2, last: 4 },
   });
-  await expect
-    .poll(async () =>
-      page
-        .getByTestId("volume-canvas")
-        .evaluate((e: any) => e.data?.map((t: any) => t.type)),
-    )
-    .toEqual(["scatter3d", "scatter3d", "scatter3d", "scatter3d"]);
+  await expect(page.getByTestId("volume-status")).toContainText("3 × 4 × 4");
   await expect(page.getByTestId("panel-profile")).toBeVisible();
 });
 
@@ -287,5 +291,123 @@ test("removing a named layer and rendering partial coverage keeps 3D usable", as
   await expect(page.getByTestId("volume-layer")).toHaveCount(1);
   await expect(
     page.getByTestId("volume-canvas").locator("canvas").first(),
+  ).toBeVisible();
+});
+
+test("analysis view tabs sit beside the file heading and support keyboard navigation", async ({
+  page,
+}) => {
+  await open(page);
+  const tabs = page.getByRole("tablist", { name: "Analysis view" });
+  const explore = tabs.getByRole("tab", { name: "Explore", exact: true });
+  const volume = tabs.getByRole("tab", { name: "3D volume", exact: true });
+  await expect(explore).toHaveAttribute("aria-selected", "true");
+  const bounds = (await tabs.boundingBox())!;
+  const signals = (await page
+    .getByRole("region", { name: "Signals", exact: true })
+    .boundingBox())!;
+  const heading = (await page
+    .getByRole("heading", { name: "spatial.h5", exact: true })
+    .boundingBox())!;
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(signals.y);
+  expect(bounds.x).toBeGreaterThan(heading.x + heading.width);
+  await explore.focus();
+  await explore.press("ArrowRight");
+  await expect(volume).toHaveAttribute("aria-selected", "true");
+  await expect(volume).toBeFocused();
+  await volume.press("Home");
+  await expect(explore).toHaveAttribute("aria-selected", "true");
+  await page.screenshot({
+    path: test.info().outputPath("analysis-heading-tabs.png"),
+  });
+  await page.setViewportSize({ width: 700, height: 900 });
+  const narrow = (await tabs.boundingBox())!;
+  const narrowSignals = (await page
+    .getByRole("region", { name: "Signals", exact: true })
+    .boundingBox())!;
+  expect(narrow.y + narrow.height).toBeLessThanOrEqual(narrowSignals.y);
+  expect(narrow.x + narrow.width).toBeLessThanOrEqual(700);
+});
+
+test("polling and camera persistence retain the existing volume geometry", async ({
+  page,
+}) => {
+  await open(page);
+  await setupLayers(page, 1);
+  await page.getByTestId("volume-canvas").evaluate((el: any) => {
+    (window as any).initialVolumeX = el.data[0].x;
+  });
+  for (let i = 0; i < 3; i++)
+    await page.waitForResponse(
+      (r) =>
+        /\/api\/v1\/analyses\/[^/]+$/.test(new URL(r.url()).pathname) &&
+        r.request().method() === "GET",
+    );
+  expect(
+    await page
+      .getByTestId("volume-canvas")
+      .evaluate((el: any) => el.data[0].x === (window as any).initialVolumeX),
+  ).toBe(true);
+  const before = (await state(page)).spatial.camera.eye;
+  const box = (await page.getByTestId("volume-canvas").boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.45, box.y + box.height * 0.45);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.55, box.y + box.height * 0.55, {
+    steps: 5,
+  });
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await state(page)).spatial.camera.eye)
+    .not.toEqual(before);
+  expect(
+    await page
+      .getByTestId("volume-canvas")
+      .evaluate((el: any) => el.data[0].x === (window as any).initialVolumeX),
+  ).toBe(true);
+});
+
+test("3D uses all frames or a range and does not inherit Explore single-frame navigation", async ({
+  page,
+}) => {
+  await open(page);
+  await page.getByRole("button", { name: "Single frame", exact: true }).click();
+  await expect(
+    page.getByRole("group", { name: "Frame navigation", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "3D volume", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Single frame", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("group", { name: "Frame navigation", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "All frames", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Frame range", exact: true }).click();
+  await expect(
+    page.getByRole("form", { name: "Frame range", exact: true }),
+  ).toBeVisible();
+  const a = await state(page);
+  await command(page, {
+    type: "set_stored_coverage",
+    signal_id: a.image_signal_id,
+    frames: [2, 4],
+  });
+  await expect(page.getByLabel("First frame", { exact: true })).toHaveAttribute(
+    "min",
+    "2",
+  );
+  await expect(page.getByLabel("Last frame", { exact: true })).toHaveAttribute(
+    "max",
+    "4",
+  );
+  await page.getByRole("button", { name: "All frames", exact: true }).click();
+  await expect(
+    page.getByRole("region", { name: "Viewing depths", exact: true }),
+  ).toContainText("Volume frames 0–6");
+  await page.getByRole("tab", { name: "Explore", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Single frame", exact: true }),
   ).toBeVisible();
 });

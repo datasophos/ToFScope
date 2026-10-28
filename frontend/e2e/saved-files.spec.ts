@@ -43,7 +43,7 @@ test("save a copy restores signal and display state and downloads only on reques
   await page
     .getByRole("button", { name: "Close analysis 1", exact: true })
     .click();
-  await expect(page.getByRole("tab")).toHaveCount(0);
+  await expect(page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
@@ -90,12 +90,12 @@ test("a clean saved analysis still protects an uncommitted draft on close", asyn
   });
   await expect(prompt).toBeVisible();
   await prompt.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(page.getByRole("tab")).toHaveCount(1);
+  await expect(page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab")).toHaveCount(1);
   await page
     .getByRole("button", { name: "Close analysis 1", exact: true })
     .click();
   await prompt.getByRole("button", { name: "Discard", exact: true }).click();
-  await expect(page.getByRole("tab")).toHaveCount(0);
+  await expect(page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab")).toHaveCount(0);
 });
 
 test("close can save a new copy and filename collisions retain the unsaved analysis", async ({
@@ -122,7 +122,7 @@ test("close can save a new copy and filename collisions retain the unsaved analy
     .click();
   await page.getByLabel("Saved filename", { exact: true }).fill("closed.h5");
   await page.getByRole("button", { name: "Save copy", exact: true }).click();
-  await expect(page.getByRole("tab")).toHaveCount(0);
+  await expect(page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
@@ -300,16 +300,16 @@ test("opening a new file and closing the old tab stays clean until an edit is ma
     page.getByRole("dialog", { name: "Unsaved changes", exact: true }),
   ).toBeHidden();
   await page.getByRole("button", { name: "◫ b.h5", exact: true }).dblclick();
-  await expect(page.getByRole("tab")).toHaveCount(2);
+  await expect(page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab")).toHaveCount(2);
   await page
     .getByRole("button", { name: "Close analysis 1", exact: true })
     .click();
-  await expect(page.getByRole("tab")).toHaveCount(1);
+  await expect(page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab")).toHaveCount(1);
   await expect(page.getByTestId("save-state")).toHaveText("No changes");
   await page
     .getByRole("button", { name: "Close analysis 1", exact: true })
     .click();
-  await expect(page.getByRole("tab")).toHaveCount(0);
+  await expect(page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
@@ -423,5 +423,5 @@ test("save folder picker creates a subfolder and the saved copy can be reopened 
     .getByRole("button", { name: "◫ nested.h5", exact: true })
     .dblclick();
   await expect(open).toBeHidden();
-  await expect(page.getByRole("tab")).toHaveCount(2);
+  await expect(page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab")).toHaveCount(2);
 });

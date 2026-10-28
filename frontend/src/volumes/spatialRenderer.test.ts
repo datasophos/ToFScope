@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildSpatialFigure } from "./spatialRenderer";
+import { buildSpatialFigure, volumeDisplayStats } from "./spatialRenderer";
 import type { VolumeData, SpatialView } from "./spatialRenderer";
 const camera = {
   eye: { x: 1.25, y: 1.25, z: 1.25 },
@@ -102,6 +102,55 @@ describe("spatial scientific adapter", () => {
     );
     expect(f.traces).toHaveLength(2);
     expect(f.traces.map((t) => t.uid)).toEqual(["4", "5"]);
-    expect(f.traces[0].marker.cmax).toBe(66);
+    expect(f.traces[0].marker.cmax).toBeCloseTo(64.83);
   });
+});
+
+it("Fast reduces surface rendering work while preserving preview coordinates and values", () => {
+  const complete = {
+    ...data,
+    layers: [
+      { ...data.layers[0], values: Array.from({ length: 12 }, (_, i) => i) },
+    ],
+  };
+  const fast = buildSpatialFigure(complete, view).traces[0];
+  const detailed = buildSpatialFigure(complete, {
+    ...view,
+    quality: "Detailed",
+  }).traces[0];
+  expect(fast.type).toBe("volume");
+  expect(fast.surface.count).toBe(3);
+  expect(detailed.surface.count).toBe(10);
+  expect(fast.value).toEqual(detailed.value);
+  expect(fast.z).toEqual(detailed.z);
+  expect(fast.x).toEqual(detailed.x);
+  expect(fast.y).toEqual(detailed.y);
+});
+
+it("matches prototype nonzero percentile thresholds and robust display limits", () => {
+  const values = [...Array(1000).fill(0), 1, 2, 3, 1000];
+  expect(volumeDisplayStats(values, 10, false).threshold).toBeCloseTo(1.3);
+  const outlier = volumeDisplayStats(
+    [...Array.from({ length: 1000 }, (_, i) => i + 1), 1e9],
+    70,
+    false,
+  );
+  expect(outlier.upper).toBeCloseTo(998);
+  const log = volumeDisplayStats([0, 1, 3], 50, true);
+  expect(log.lower).toBeCloseTo((Math.log(2) + Math.log(4)) / 2);
+  expect(log.threshold).toBeCloseTo(Math.sqrt(8) - 1);
+});
+it("restores dark depth-down display while retaining original hover values", () => {
+  const complete = {
+    ...data,
+    layers: [
+      { ...data.layers[0], values: Array.from({ length: 12 }, (_, i) => i) },
+    ],
+  };
+  const f = buildSpatialFigure(complete, view, { log: true });
+  expect(f.traces[0].value[5]).toBeCloseTo(Math.log1p(5));
+  expect(f.traces[0].customdata[5]).toBe(5);
+  expect(complete.layers[0].values[5]).toBe(5);
+  expect(f.layout.paper_bgcolor).toBe("#101f2e");
+  expect(f.layout.scene.zaxis.range).toEqual([0.03, 0]);
 });

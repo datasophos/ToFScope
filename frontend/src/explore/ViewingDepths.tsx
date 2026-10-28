@@ -16,8 +16,10 @@ export function ViewingDepths({
   send: Send;
   children?: ReactNode;
 }) {
+  const volume = a.spatial.screen === "volume";
   const bounds = availableFrames(a),
     current = a.depth.mode === "frame" ? a.depth.index : bounds[0];
+  const allFrames = volume ? [0, a.shape[0] - 1] : bounds;
   const [slider, setSlider] = useState(current);
   useEffect(() => setSlider(current), [current]);
   const frame = (n: number) =>
@@ -49,10 +51,10 @@ export function ViewingDepths({
   };
   const summary =
     a.depth.mode === "all"
-      ? `Summing frames ${bounds[0]}–${bounds[1]} · ${bounds[1] - bounds[0] + 1} frames`
+      ? `${volume ? "Volume frames" : "Summing frames"} ${allFrames[0]}–${allFrames[1]} · ${allFrames[1] - allFrames[0] + 1} frames`
       : a.depth.mode === "frame"
         ? `Showing frame ${a.depth.index} of ${bounds[0]}–${bounds[1]}`
-        : `Summing frames ${a.depth.first}–${a.depth.last} · ${a.depth.last - a.depth.first + 1} ${a.depth.last === a.depth.first ? "frame" : "frames"}`;
+        : `${volume ? "Volume frames" : "Summing frames"} ${a.depth.first}–${a.depth.last} · ${a.depth.last - a.depth.first + 1} ${a.depth.last === a.depth.first ? "frame" : "frames"}`;
   return (
     <section className="depth-strip" aria-label="Viewing depths">
       <HelpHeading title="Viewing depths" content={help.depth} />
@@ -67,17 +69,19 @@ export function ViewingDepths({
             ["frame", "Single frame"],
             ["window", "Frame range"],
           ] as const
-        ).map(([mode, label]) => (
-          <button
-            key={mode}
-            aria-pressed={a.depth.mode === mode}
-            onClick={() => selectMode(mode)}
-          >
-            {label}
-          </button>
-        ))}
+        )
+          .filter(([mode]) => !volume || mode !== "frame")
+          .map(([mode, label]) => (
+            <button
+              key={mode}
+              aria-pressed={a.depth.mode === mode}
+              onClick={() => selectMode(mode)}
+            >
+              {label}
+            </button>
+          ))}
       </div>
-      {a.depth.mode === "frame" && (
+      {!volume && a.depth.mode === "frame" && (
         <div
           className="depth-selection-controls"
           role="group"

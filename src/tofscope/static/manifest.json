@@ -2,12 +2,12 @@
   "assets": {
     "assets/datasophos-wordmark.png": "d727f11ef2aa8fe9b0d7780d28e33e0785956ca7f38a23c90c594d56253fad04",
     "assets/favicon.svg": "dcdec3e4480df28e57a9d9fa123347d551765651ab764bb53ec7f13f74f1e3f2",
-    "assets/index-CvizOsvt.js": "d8c8ca204f386fc1f5c8065ed487f3bdd0fff9b6a1072dcca251114e772cbf58",
-    "assets/index-GMCAQBCG.css": "b54d473bd8c528995fb32e860e1f6db7a62fd45ff7a2e3eef2c6a5c1edd49cd4",
+    "assets/index-CIgtAJ1g.css": "64cdc33f7b441e320cafe04b3191779fd9e54d161070744e51c5bcb59587d5a6",
+    "assets/index-DooHvXWS.js": "bdd97fa35618877fff72d3717a66fc02fbbb67f1bc7985da4a8ae8aced62f0bd",
     "assets/plotly.min-DThA1rfA.js": "24f8a09710132c6afcba95642244f5fb8db6ebdfb0891c6fdb938b722c6792da",
-    "index.html": "be7aaffb7242f193c77ecd3fc7fd9b309822dcf6bdd5c61deb59c84c5322ab11",
+    "index.html": "a8a1719cbaf08a01e7f3a08d3bb17067ea3633f25e19492053409465c428ed3e",
     "licenses/matplotlib.txt": "5a1a81ea301728c8bba2933da832c0cd62229daf20893a024ab3d53244468dbc"
   },
-  "source_sha256": "b27d180b7165fc56e8d4fb330901b2168de1f9d223196aaec85d710827084e50",
+  "source_sha256": "46da2d2d73058af69c99b8a96c7c996688f288afcc1a8ebc7ebef7a6466005f6",
   "version": "0.2.0"
 }

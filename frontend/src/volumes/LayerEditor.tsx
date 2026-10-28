@@ -1,8 +1,8 @@
+import { useMemo } from "react";
 import type { Analysis } from "../api/client";
 import {
   defaultLayer,
-  layerRange,
-  percentile,
+  volumeDisplayStats,
   type SpatialView,
   type SpatialLayer,
   type VolumeData,
@@ -19,6 +19,26 @@ export function LayerEditor({
   data: VolumeData | null;
   onChange: (v: SpatialView) => void;
 }) {
+  const percentileKey = JSON.stringify(
+    v.layers.map((l) => [l.signal_id, l.percentile]),
+  );
+  const stats = useMemo(
+    () =>
+      new Map(
+        (data?.layers ?? []).map((layer) => {
+          const style = v.layers.find((l) => l.signal_id === layer.signal_id);
+          return [
+            layer.signal_id,
+            volumeDisplayStats(
+              layer.values,
+              style?.percentile ?? 70,
+              a.display.log,
+            ),
+          ];
+        }),
+      ),
+    [data, percentileKey, a.display.log],
+  );
   const update = (id: string, patch: Partial<SpatialLayer>) =>
     onChange({
       ...v,
@@ -58,16 +78,8 @@ export function LayerEditor({
         {v.layers.map((l) => {
           const signal = a.signals.find((s) => s.id === l.signal_id)!;
           if (!signal) return null;
-          const values = data?.layers.find(
-            (d) => d.signal_id === l.signal_id,
-          )?.values;
-          const range = values ? layerRange(values) : null;
-          const threshold = values
-            ? percentile(
-                values.filter((x): x is number => x !== null),
-                l.percentile,
-              )
-            : null;
+          const range = stats.get(l.signal_id)?.range;
+          const threshold = stats.get(l.signal_id)?.threshold;
           return (
             <fieldset key={l.signal_id} data-testid="volume-layer">
               <legend>{signal.name}</legend>
@@ -84,6 +96,7 @@ export function LayerEditor({
                   Visible
                 </label>
                 <button
+                  aria-label={`Solo ${signal.name}`}
                   aria-pressed={v.solo === l.signal_id}
                   onClick={() =>
                     onChange({
@@ -92,7 +105,7 @@ export function LayerEditor({
                     })
                   }
                 >
-                  Solo {signal.name}
+                  Solo
                 </button>
                 <button
                   aria-label={`Remove ${signal.name} from 3D`}
@@ -106,7 +119,7 @@ export function LayerEditor({
                     })
                   }
                 >
-                  Remove
+                  ×
                 </button>
               </div>
               <small>
@@ -158,7 +171,7 @@ export function LayerEditor({
                 <output>{formatNumber(l.opacity)}</output>
               </label>
               <label>
-                Percentile threshold
+                Nonzero percentile
                 <input
                   aria-label={`3D percentile for ${signal.name}`}
                   type="range"

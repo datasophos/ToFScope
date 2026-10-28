@@ -6,7 +6,7 @@ export type SpatialView = components["schemas"]["SpatialView"];
 export type SpatialLayer = components["schemas"]["SpatialLayer"];
 export type Camera = components["schemas"]["Camera"];
 export const defaultCamera: Camera = {
-  eye: { x: 1.25, y: 1.25, z: 1.25 },
+  eye: { x: 1.5, y: 1.5, z: 0.9 },
   center: { x: 0, y: 0, z: 0 },
   up: { x: 0, y: 0, z: 1 },
   projection: "perspective",
@@ -21,13 +21,42 @@ export const defaultLayer = (signal_id: string): SpatialLayer => ({
 });
 export const enabledLayers = (v: SpatialView) =>
   v.layers.filter((l) => l.visible && (!v.solo || l.signal_id === v.solo));
-export function percentile(values: number[], p: number) {
-  const a = values.slice().sort((x, y) => x - y);
+function sortedPercentile(a: number[], p: number) {
   if (!a.length) return 0;
   const i = ((a.length - 1) * p) / 100,
     lo = Math.floor(i);
   return a[lo] + (a[Math.ceil(i)] - a[lo]) * (i - lo);
 }
+export function percentile(values: number[], p: number) {
+  return sortedPercentile(
+    values.slice().sort((a, b) => a - b),
+    p,
+  );
+}
+const displayIntensity = (v: number, log: boolean) =>
+  log ? Math.log1p(Math.max(v, 0)) : v;
+export function volumeDisplayStats(
+  values: (number | null)[],
+  p: number,
+  log = false,
+) {
+  const finite = values.filter(
+    (v): v is number => v !== null && Number.isFinite(v),
+  );
+  const positive = finite.filter((v) => v > 0);
+  const sorted = (positive.length ? positive : finite)
+    .map((v) => displayIntensity(v, log))
+    .sort((a, b) => a - b);
+  const lower = sortedPercentile(sorted, p),
+    high = sortedPercentile(sorted, 99.7);
+  return {
+    range: finite.length ? layerRange(values) : null,
+    lower,
+    upper: Math.max(high, lower + Math.max(Math.abs(lower) * 0.01, 1e-6)),
+    threshold: log ? Math.expm1(lower) : lower,
+  };
+}
+export type SpatialOptions = { log?: boolean };
 function colorscale(name: string) {
   const table = colormaps[name.toLowerCase() as keyof typeof colormaps];
   return table
@@ -51,24 +80,32 @@ const plotCamera = (c: Camera) => ({
   ...c,
   projection: { type: c.projection },
 });
-export function buildSpatialFigure(d: VolumeData, v: SpatialView) {
+export function buildSpatialFigure(
+  d: VolumeData,
+  v: SpatialView,
+  options: SpatialOptions = {},
+) {
+  const log = options.log ?? false;
   const styles = enabledLayers(v),
     all = d.layers.filter((l) =>
       styles.some((s) => s.signal_id === l.signal_id),
     );
-  let lo = Infinity,
-    hi = -Infinity;
-  for (const l of all) {
-    const r = layerRange(l.values);
-    lo = Math.min(lo, r[0]);
-    hi = Math.max(hi, r[1]);
-  }
+  const shared = volumeDisplayStats(
+    all.flatMap((l) => l.values),
+    0,
+    log,
+  );
   const page = Math.min(v.page, Math.max(0, Math.ceil(all.length / 4) - 1));
   const layers = v.mode === "tiles" ? all.slice(page * 4, page * 4 + 4) : all;
   const traces: any[] = [],
     layout: any = {
-      margin: { l: 0, r: 0, t: 35, b: 0 },
-      paper_bgcolor: "rgba(0,0,0,0)",
+      margin: { l: 12, r: 12, t: 32, b: 12 },
+      paper_bgcolor: "#101f2e",
+      font: {
+        family: "Inter, system-ui, sans-serif",
+        color: "#b7cbd8",
+        size: 11,
+      },
       showlegend: false,
       uirevision: "spatial",
       annotations: [],
@@ -88,8 +125,10 @@ export function buildSpatialFigure(d: VolumeData, v: SpatialView) {
     );
     if (!finite.length) return;
     const localRange = layerRange(l.values);
-    const [min, max] = v.scale === "shared" ? [lo, hi] : localRange;
-    const cutoff = percentile(finite, style.percentile);
+    const stats = volumeDisplayStats(l.values, style.percentile, log);
+    const [min, max] = [0, v.scale === "shared" ? shared.upper : stats.upper];
+    const cutoff = stats.lower;
+    const shownValue = (value: number) => displayIntensity(value, log);
     const x: number[] = [],
       y: number[] = [],
       z: number[] = [],
@@ -120,7 +159,7 @@ export function buildSpatialFigure(d: VolumeData, v: SpatialView) {
         volumeIndices.push(i);
     const irregular = volumeIndices.some((i) => l.values[i] === null);
     const thin =
-      cutoff >= localRange[1] ||
+      cutoff >= shownValue(localRange[1]) ||
       irregular ||
       [x, y, z].some((a) => new Set(indices.map((i) => a[i])).size < 2) ||
       layerRange(l.values)[0] === layerRange(l.values)[1];
@@ -132,7 +171,7 @@ export function buildSpatialFigure(d: VolumeData, v: SpatialView) {
       hovertemplate: `${l.label.replace(/[<>&]/g, "")}<br>X %{x}<br>Y %{y}<br>Z %{z}<br>Intensity %{customdata}<extra></extra>`,
     };
     if (thin) {
-      const keep = indices.filter((i) => l.values[i]! >= cutoff);
+      const keep = indices.filter((i) => shownValue(l.values[i]!) >= cutoff);
       traces.push({
         ...common,
         type: "scatter3d",
@@ -142,12 +181,17 @@ export function buildSpatialFigure(d: VolumeData, v: SpatialView) {
         z: keep.map((i) => z[i]),
         customdata: keep.map((i) => l.values[i]),
         marker: {
-          size: 4,
-          color: keep.map((i) => l.values[i]),
+          size: 3,
+          color: keep.map((i) => shownValue(l.values[i]!)),
           colorscale: colorscale(style.colorscale),
           cmin: min,
           cmax: max > min ? max : min + 1,
-          showscale: false,
+          showscale: layers.length === 1,
+          colorbar: {
+            title: { text: log ? "log(1+I)" : "Intensity" },
+            thickness: 10,
+            len: 0.6,
+          },
         },
       });
     } else
@@ -157,18 +201,20 @@ export function buildSpatialFigure(d: VolumeData, v: SpatialView) {
         x: volumeIndices.map((i) => x[i]),
         y: volumeIndices.map((i) => y[i]),
         z: volumeIndices.map((i) => z[i]),
-        value: volumeIndices.map((i) => l.values[i]),
+        value: volumeIndices.map((i) => shownValue(l.values[i]!)),
         customdata: volumeIndices.map((i) => l.values[i]),
         isomin: cutoff,
-        isomax:
-          localRange[1] > cutoff
-            ? localRange[1]
-            : cutoff + Math.max(Math.abs(localRange[1]) * 1e-6, 1e-6),
+        isomax: stats.upper,
         cmin: min,
         cmax: max > min ? max : min + 1,
         colorscale: colorscale(style.colorscale),
-        showscale: false,
-        surface: { count: 10 },
+        showscale: layers.length === 1,
+        colorbar: {
+          title: { text: log ? "log(1+I)" : "Intensity" },
+          thickness: 10,
+          len: 0.6,
+        },
+        surface: { count: v.quality === "Fast" ? 3 : 10 },
         caps: { x: { show: false }, y: { show: false }, z: { show: false } },
       });
     const row = Math.floor(index / 2),
@@ -201,6 +247,7 @@ export function buildSpatialFigure(d: VolumeData, v: SpatialView) {
         : [d.z[0], d.z.at(-1) === d.z[0] ? d.z[0] + 1e-12 : d.z.at(-1)!];
     layout[scene] = {
       domain,
+      bgcolor: "#101f2e",
       camera: plotCamera(
         v.mode === "overlay" || v.linked ? v.camera : style.camera,
       ),
@@ -213,10 +260,25 @@ export function buildSpatialFigure(d: VolumeData, v: SpatialView) {
           ? (Math.max(d.extent[2], 1e-12) / xymax) * exaggeration
           : exaggeration,
       },
-      xaxis: { range: xRange, title: { text: `X (${d.xy_unit})` } },
-      yaxis: { range: yRange, title: { text: `Y (${d.xy_unit})` } },
+      xaxis: {
+        range: xRange,
+        gridcolor: "#294354",
+        zerolinecolor: "#405969",
+        showbackground: false,
+        title: { text: `X (${d.xy_unit})` },
+      },
+      yaxis: {
+        range: yRange,
+        gridcolor: "#294354",
+        zerolinecolor: "#405969",
+        showbackground: false,
+        title: { text: `Y (${d.xy_unit})` },
+      },
       zaxis: {
-        range: zRange,
+        range: zRange.slice().reverse(),
+        gridcolor: "#294354",
+        zerolinecolor: "#405969",
+        showbackground: false,
         title: {
           text:
             d.z_unit === "frame" ? "Acquisition frame" : `Depth (${d.z_unit})`,
@@ -236,6 +298,65 @@ export function buildSpatialFigure(d: VolumeData, v: SpatialView) {
   return { traces, layout, scenes, page };
 }
 
+// Polling replaces metadata objects, but the numerical buffers remain immutable.
+function sameGeometry(a: VolumeData | null, b: VolumeData) {
+  return (
+    !!a &&
+    a.dataset_generation === b.dataset_generation &&
+    a.x === b.x &&
+    a.y === b.y &&
+    a.z === b.z &&
+    a.extent === b.extent &&
+    a.block_edges === b.block_edges &&
+    a.xy_unit === b.xy_unit &&
+    a.z_unit === b.z_unit &&
+    a.physical_aspect === b.physical_aspect &&
+    a.layers.length === b.layers.length &&
+    a.layers.every((l, i) => {
+      const other = b.layers[i];
+      return (
+        l.signal_id === other.signal_id &&
+        l.label === other.label &&
+        l.values === other.values
+      );
+    })
+  );
+}
+function renderKey(v: SpatialView) {
+  return JSON.stringify([
+    v.mode,
+    v.page,
+    v.quality,
+    v.scale,
+    v.solo,
+    v.frame_stretch,
+    v.depth_exaggeration,
+    v.mode === "overlay" || v.linked
+      ? v.camera.projection
+      : v.layers.map((l) => l.camera.projection),
+    v.layers.map((l) => [
+      l.signal_id,
+      l.visible,
+      l.colorscale,
+      l.opacity,
+      l.percentile,
+    ]),
+  ]);
+}
+const cameraKey = (c: Camera) =>
+  JSON.stringify([
+    c.eye.x,
+    c.eye.y,
+    c.eye.z,
+    c.center.x,
+    c.center.y,
+    c.center.z,
+    c.up.x,
+    c.up.y,
+    c.up.z,
+    c.projection,
+  ]);
+
 export async function mountSpatial(
   el: HTMLElement,
   onCamera: (id: string, c: Camera) => void,
@@ -244,6 +365,10 @@ export async function mountSpatial(
   let disposed = false,
     programmatic = false,
     scenes = new Map<string, string>();
+  let previousData: VolumeData | null = null,
+    previousRender = "";
+  let work = Promise.resolve();
+  const appliedCameras = new Map<string, string>();
   await Plotly.newPlot(
     el,
     [],
@@ -254,30 +379,75 @@ export async function mountSpatial(
     if (programmatic || disposed) return;
     for (const [scene, id] of scenes) {
       const c = event[`${scene}.camera`];
-      if (c?.eye && c?.up && c?.center)
-        onCamera(id, {
+      if (c?.eye && c?.up && c?.center) {
+        const camera: Camera = {
           eye: c.eye,
           up: c.up,
           center: c.center,
           projection: c.projection?.type ?? "perspective",
-        });
+        };
+        appliedCameras.set(scene, cameraKey(camera));
+        onCamera(id, camera);
+      }
     }
   });
   return {
-    async update(d: VolumeData, v: SpatialView) {
-      if (disposed) return;
-      const f = buildSpatialFigure(d, v);
-      scenes = f.scenes;
-      programmatic = true;
-      try {
-        await Plotly.react(el, f.traces, f.layout, {
-          displayModeBar: false,
-          responsive: true,
-          scrollZoom: true,
+    update(d: VolumeData, v: SpatialView, options: SpatialOptions = {}) {
+      // Serialize renderer mutations; completed camera saves must not race a style update.
+      work = work
+        .catch(() => {})
+        .then(async () => {
+          if (disposed) return;
+          const key = renderKey(v) + ":" + Boolean(options.log);
+          programmatic = true;
+          try {
+            if (key !== previousRender || !sameGeometry(previousData, d)) {
+              const f = buildSpatialFigure(d, v, options);
+              await Plotly.react(el, f.traces, f.layout, {
+                displayModeBar: false,
+                responsive: true,
+                scrollZoom: true,
+              });
+              if (disposed) return;
+              scenes = f.scenes;
+              previousData = d;
+              previousRender = key;
+              appliedCameras.clear();
+              for (const [scene, id] of scenes) {
+                const camera =
+                  v.mode === "overlay" || v.linked
+                    ? v.camera
+                    : v.layers.find((l) => l.signal_id === id)!.camera;
+                appliedCameras.set(scene, cameraKey(camera));
+              }
+            } else {
+              const patch: Record<string, unknown> = {};
+              for (const [scene, id] of scenes) {
+                const camera =
+                  v.mode === "overlay" || v.linked
+                    ? v.camera
+                    : v.layers.find((l) => l.signal_id === id)!.camera;
+                const key = cameraKey(camera);
+                if (appliedCameras.get(scene) !== key) {
+                  patch[`${scene}.camera`] = plotCamera(camera);
+                }
+              }
+              if (Object.keys(patch).length) {
+                await Plotly.relayout(el, patch);
+                for (const [scene, id] of scenes) {
+                  const camera =
+                    v.mode === "overlay" || v.linked
+                      ? v.camera
+                      : v.layers.find((l) => l.signal_id === id)!.camera;
+                  appliedCameras.set(scene, cameraKey(camera));
+                }
+              }
+            }
+          } finally {
+            programmatic = false;
+          }
         });
-      } finally {
-        programmatic = false;
-      }
+      return work;
     },
     resize() {
       if (!disposed) void Plotly.Plots.resize(el);

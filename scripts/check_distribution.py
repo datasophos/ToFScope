@@ -184,7 +184,7 @@ def smoke(artifact, output):
                     page.get_by_role('button', name='Profile CSV', exact=True).click()
                 before_csv = Path(before_download.value.path()).read_bytes()
                 # Persist spatial controls with the full-resolution saved analysis.
-                page.get_by_role('button', name='3D volume', exact=True).click()
+                page.get_by_role('tab', name='3D volume', exact=True).click()
                 page.get_by_label('Add 3D signal', exact=True).select_option(label='Package signal')
                 expect(page.get_by_test_id('volume-status')).to_contain_text('1 layers')
                 page.get_by_label('3D colormap for Package signal', exact=True).select_option('Reds')
@@ -219,7 +219,7 @@ def smoke(artifact, output):
                 spatial_after = page.request.get(url + '/api/v1/analyses').json()[0]['spatial']
                 assert spatial_after['layers'][0]['signal_id'] != spatial_before['layers'][0]['signal_id']
                 expect(page.get_by_test_id('save-state')).to_have_text('Saved')
-                page.get_by_role('button', name='Explore', exact=True).click()
+                page.get_by_role('tab', name='Explore', exact=True).click()
                 expect(page.get_by_test_id('panel-ion')).to_contain_text('Package signal')
                 expect(page.get_by_test_id('panel-spectrum')).to_have_attribute('data-y-scale', 'linear')
                 expect(page.get_by_test_id('panel-profile')).to_have_attribute('data-x-axis', 'Depth (µm)')

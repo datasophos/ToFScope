@@ -133,12 +133,19 @@ Save as/reopen also preserves isotope assignments and captured results. See
 an original-resolution depth profile. Add signals in the layer list, then adjust
 visibility, Solo, colormap, opacity and percentile threshold. Independent intensity
 scales are the default; Shared numerical uses one range across visible signals.
+Percentile thresholds use positive intensities, with a robust 99.7th-percentile
+upper display limit. Log colors uses log(1+intensity); hover values, depth profiles
+and exports retain original numerical intensities.
 Tiles show four layers per page and support linked or independent saved cameras.
+3D offers All frames and Frame range; single-frame navigation remains in Explore.
+Entering 3D from a single frame switches to All frames.
 Drag to orbit, scroll to zoom, or right-drag to pan; reset, orthographic projection
 and maximize controls are available. ROI and Viewing depths apply to every layer.
 
 Fast previews are capped at 96×32×32; Detailed at 160×48×48. All visible layers
-share a 500,000-voxel budget, including layers on other tile pages. Preview means
+share a 500,000-voxel budget, including layers on other tile pages. Fast draws
+three isosurfaces and Detailed draws ten, using the same preview intensities and
+coordinates. Camera movement and unchanged polling reuse existing geometry. Preview means
 use actual valid samples in partial blocks. Missing coverage remains missing;
 profiles and CSV use original resolution. Physical depth clips unknown frames
 before pooling, and block coordinates average calibrated samples across anchor

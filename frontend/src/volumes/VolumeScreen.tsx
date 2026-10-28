@@ -13,15 +13,17 @@ function Scene({
   data,
   view,
   onCamera,
+  log,
 }: {
   data: VolumeData;
   view: SpatialView;
   onCamera: (id: string, c: Camera) => void;
+  log: boolean;
 }) {
   const element = useRef<HTMLDivElement>(null),
     handle = useRef<Awaited<ReturnType<typeof mountSpatial>> | null>(null);
-  const latest = useRef({ data, view, onCamera });
-  latest.current = { data, view, onCamera };
+  const latest = useRef({ data, view, onCamera, log });
+  latest.current = { data, view, onCamera, log };
   const [error, setError] = useState("");
   useEffect(() => {
     let disposed = false;
@@ -36,7 +38,9 @@ function Scene({
           return;
         }
         handle.current = h;
-        return h.update(latest.current.data, latest.current.view);
+        return h.update(latest.current.data, latest.current.view, {
+          log: latest.current.log,
+        });
       })
       .catch((e) => {
         if (!disposed) setError(e.message);
@@ -49,8 +53,10 @@ function Scene({
     };
   }, []);
   useEffect(() => {
-    void handle.current?.update(data, view).catch((e) => setError(e.message));
-  }, [data, view]);
+    void handle.current
+      ?.update(data, view, { log })
+      .catch((e) => setError(e.message));
+  }, [data, view, log]);
   return (
     <>
       {error && <div role="alert">{error}</div>}
@@ -243,6 +249,23 @@ export function VolumeScreen({
               <option value="shared">Shared numerical</option>
             </select>
           </label>
+          <label className="volume-log-control">
+            <input
+              type="checkbox"
+              checked={a.display.log}
+              onChange={(e) =>
+                void send({
+                  type: "set_display",
+                  ...a.display,
+                  log: e.target.checked,
+                  image: a.display.image as "sims" | "se",
+                }).catch((e) => setError(e.message))
+              }
+            />
+            Log colors
+          </label>
+        </div>
+        <div className="volume-camera-toolbar">
           <label>
             <input
               type="checkbox"
@@ -366,6 +389,7 @@ export function VolumeScreen({
             key={`${draft.mode}-${page}`}
             data={displayData!}
             view={draft}
+            log={a.display.log}
             onCamera={camera}
           />
         ) : (
@@ -376,16 +400,22 @@ export function VolumeScreen({
             </p>
           )
         )}
-        <small>
-          Drag to orbit · scroll to zoom · right-drag to pan. Overlay
-          transparency is qualitative; use Solo or tiles to inspect occluded
-          signals.{" "}
-          {data?.physical_aspect
-            ? "At 1×, calibrated depth and XY use the same physical scale."
-            : "Frame stretch is a display ratio; physical proportions require calibrated depth and known XY."}{" "}
-          Missing samples remain missing. Thin, constant and irregular missing
-          coverage uses points.
-        </small>
+        <div className="volume-interaction-hint">
+          Drag to orbit · scroll to zoom · right-drag to pan
+        </div>
+        <details className="volume-rendering-notes">
+          <summary>Rendering and geometry details</summary>{" "}
+          <small>
+            Drag to orbit · scroll to zoom · right-drag to pan. Overlay
+            transparency is qualitative; use Solo or tiles to inspect occluded
+            signals.{" "}
+            {data?.physical_aspect
+              ? "At 1×, calibrated depth and XY use the same physical scale."
+              : "Frame stretch is a display ratio; physical proportions require calibrated depth and known XY."}{" "}
+            Missing samples remain missing. Thin, constant and irregular missing
+            coverage uses points.
+          </small>
+        </details>
       </div>
     </section>
   );

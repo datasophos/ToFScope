@@ -156,9 +156,9 @@ def main():
                         second_tab.wait_for(timeout=30000)
                     except Exception:
                         page.screenshot(path=str(a.output / 'multi-open-timeout.png'), full_page=True)
-                        print(json.dumps({'tabs': page.get_by_role('tab').all_text_contents(), 'alerts': page.get_by_role('alert').all_text_contents()}),flush=True)
+                        print(json.dumps({'tabs': page.get_by_role('tablist', name='Open analyses').get_by_role('tab').all_text_contents(), 'alerts': page.get_by_role('alert').all_text_contents()}),flush=True)
                         raise
-                    tabs = page.get_by_role("tab").all_text_contents()
+                    tabs = page.get_by_role('tablist', name='Open analyses').get_by_role('tab').all_text_contents()
                     if len(tabs) != 2:
                         page.screenshot(path=str(a.output / "multi-open-failure.png"), full_page=True)
                     assert len(tabs) == 2, f"Expected two independent analyses, got tabs: {tabs}"

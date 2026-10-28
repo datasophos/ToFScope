@@ -2148,3 +2148,34 @@ small {
 .volume-profile-grid .profile-legend { flex-wrap: wrap; }
 @media (max-width: 1100px) { .spatial-panels { grid-template-columns: 1fr; } .volume-profile-grid > .plot-panel:not(.maximized) { height: 340px; } }
 @media (max-width: 650px) { .spatial-panels .volume-workspace { grid-template-columns: 1fr; } }
+
+.analysis-heading { border-bottom: 1px solid #d5e0e6; }
+.analysis-view-tabs { display: flex; align-self: flex-end; gap: 0; margin: 0 auto -11px 20px; }
+.analysis-view-tabs button[role="tab"] { height: 42px; padding: 10px 16px; background: transparent; border: 0; border-bottom: 2px solid transparent; border-radius: 0; color: #526b7a; font-size: 13px; white-space: nowrap; }
+.analysis-view-tabs button[aria-selected="true"] { border-bottom-color: #34758b; color: #173e52; font-weight: 600; }
+.analysis-view-tabs button:hover { color: #173e52; background: #e4edf1; }
+@media (max-width: 850px) { .analysis-heading { flex-wrap: wrap; } .analysis-view-tabs { order: 3; flex-basis: 100%; margin: 0 0 -11px; } }
+
+/* Restore the prototype's focused dark spatial stage within the existing shell. */
+.volume-display { min-width: 0; }
+.volume-canvas { background: #101f2e; border-radius: 9px; overflow: hidden; height: clamp(480px, 60vh, 720px); }
+.volume-camera-toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.volume-camera-toolbar label { display: flex; flex-direction: column; gap: 4px; }
+.volume-camera-toolbar input[type=number] { width: 85px; }
+.volume-toolbar label:has(input[type=checkbox]), .volume-camera-toolbar label:has(input[type=checkbox]) { flex-direction: row; align-items: center; align-self: center; }
+.volume-interaction-hint { font-size: 11px; color: #688295; margin-top: 8px; }
+.volume-rendering-notes { font-size: 11px; color: #688295; margin-top: 5px; }
+.volume-rendering-notes summary { cursor: pointer; }
+.volume-rendering-notes small { display: block; margin-top: 5px; }
+.volume-layers { background: white; border-radius: 8px; padding: 12px; align-self: start; box-shadow: 0 2px 5px #213d5010; }
+.volume-layer-list { max-height: min(650px, 68vh); }
+.volume-layer-list fieldset { background: #f2f6f8; }
+.volume-layer-list .row { flex-wrap: nowrap; gap: 6px; }
+.volume-layer-list .row label { flex-direction: row; white-space: nowrap; }
+.volume-layer-list label:has(input[type=range]) { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px; }
+.volume-layer-list input[type=range] { grid-column: 1 / -1; grid-row: 2; width: 100%; min-width: 0; }
+.volume-layer-list output { grid-column: 2; grid-row: 1; font-variant-numeric: tabular-nums; }
+.volume-layer-list .row button { white-space: nowrap; }
+@media (max-width: 650px) { .volume-canvas { height: 450px; } }
+
+.volume-layers select { min-width: 0; max-width: 100%; }

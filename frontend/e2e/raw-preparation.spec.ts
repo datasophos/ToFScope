@@ -58,7 +58,7 @@ test("raw opening requires confirmation, prepares a copy and opens working plots
   await page
     .getByRole("button", { name: "Close analysis 1", exact: true })
     .click();
-  await expect(page.getByRole("tab")).toHaveCount(0);
+  await expect(page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab")).toHaveCount(0);
 });
 
 test("preparation cancellation preserves the existing analysis", async ({
@@ -137,7 +137,7 @@ test("launching with a raw filename also asks before preparing", async ({
   await expect(
     page.getByRole("dialog", { name: "Prepare raw acquisition" }),
   ).toBeVisible();
-  await expect(page.getByRole("tab")).toHaveCount(0);
+  await expect(page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab")).toHaveCount(0);
 });
 
 test("missing calibration defaults are visible and explicitly accepted before preparation", async ({
