@@ -2657,6 +2657,11 @@
             "title": "Colorscale",
             "type": "string"
           },
+          "colorscale_reversed": {
+            "default": false,
+            "title": "Colorscale Reversed",
+            "type": "boolean"
+          },
           "opacity": {
             "default": 0.12,
             "maximum": 1.0,

@@ -1507,6 +1507,11 @@ export interface components {
         | "Greens"
         | "Purples";
       /**
+       * Colorscale Reversed
+       * @default false
+       */
+      colorscale_reversed: boolean;
+      /**
        * Opacity
        * @default 0.12
        */

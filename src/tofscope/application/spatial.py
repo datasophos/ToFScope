@@ -44,6 +44,7 @@ class SpatialLayer(SpatialModel):
     colorscale: Literal[
         "Viridis", "Magma", "Plasma", "Cividis", "Reds", "Blues", "Greens", "Purples"
     ] = "Viridis"
+    colorscale_reversed: StrictBool = False
     opacity: Number = Field(default=0.12, ge=0, le=1)
     percentile: Number = Field(default=70.0, ge=0, le=100)
     camera: Camera = Camera()

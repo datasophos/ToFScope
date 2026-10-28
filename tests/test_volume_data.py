@@ -42,6 +42,7 @@ class VolumeDataTests(unittest.TestCase):
     def test_values_geometry_partial_coverage_and_owner_isolation(self):
         sid = self.a.image_signal_id
         self.configure(layers=[dict(signal_id=sid)])
+        self.assertFalse(self.s.analyses.get("a", self.a.id).spatial.layers[0].colorscale_reversed)
         result = self.s.volumes.snapshot("a", self.a.id)
         layer = result.layers[0]
         self.assertEqual(layer.values, [10, 11, 12, 13, 14, 15])
@@ -83,7 +84,7 @@ class VolumeDataTests(unittest.TestCase):
     def test_style_camera_reuse_document_remapping_and_validation(self):
         sid = self.a.image_signal_id
         a = self.configure(
-            layers=[dict(signal_id=sid, opacity=0.3, percentile=42)], screen="volume"
+            layers=[dict(signal_id=sid, opacity=0.3, percentile=42, colorscale_reversed=True)], screen="volume"
         )
         doc = encode_document(a)
         self.assertEqual(doc.schema_version, 4)
@@ -94,6 +95,7 @@ class VolumeDataTests(unittest.TestCase):
         self.assertNotEqual(restored.spatial.layers[0].signal_id, sid)
         self.assertEqual(restored.spatial.layers[0].signal_id, restored.image_signal_id)
         self.assertEqual(restored.spatial.layers[0].opacity, 0.3)
+        self.assertTrue(restored.spatial.layers[0].colorscale_reversed)
         self.assertEqual(restored.spatial.screen, "volume")
         for layers in [
             [dict(signal_id="unregistered")],
