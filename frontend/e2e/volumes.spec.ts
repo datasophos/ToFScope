@@ -190,7 +190,13 @@ test("maximizing 3D expands the canvas and restores its size", async ({
   expect(titleInset.x).toBeGreaterThanOrEqual(8);
   expect(titleInset.y).toBeGreaterThanOrEqual(8);
   const initial = (await canvas.boundingBox())!;
+  await expect(page.getByRole("button", { name: "Maximize 3D" })).toHaveText(
+    "↗",
+  );
   await page.getByRole("button", { name: "Maximize 3D" }).click();
+  await expect(page.getByRole("button", { name: "Restore 3D" })).toHaveText(
+    "↙",
+  );
   await expect
     .poll(async () => (await canvas.boundingBox())!.height)
     .toBeGreaterThan(initial.height + 100);
@@ -210,8 +216,20 @@ test("maximized 3D controls can be collapsed and restored", async ({
   await setupLayers(page, 2);
   await page.getByRole("button", { name: "Maximize 3D" }).click();
   const canvas = page.getByTestId("volume-canvas");
-  const initialWidth = (await canvas.boundingBox())!.width;
+  const canvasBox = (await canvas.boundingBox())!;
+  const initialWidth = canvasBox.width;
+  const hideBox = (await page
+    .getByRole("button", { name: "Hide controls" })
+    .boundingBox())!;
+  expect(hideBox.y).toBeGreaterThanOrEqual(canvasBox.y);
+  expect(hideBox.x + hideBox.width).toBeLessThanOrEqual(
+    canvasBox.x + canvasBox.width,
+  );
   await page.getByRole("button", { name: "Hide controls" }).click();
+  const showBox = (await page
+    .getByRole("button", { name: "Show controls" })
+    .boundingBox())!;
+  expect(showBox.y).toBeGreaterThanOrEqual((await canvas.boundingBox())!.y);
   await expect(
     page.getByRole("complementary", { name: "Volume layers" }),
   ).toBeHidden();
@@ -339,11 +357,14 @@ test("multi-signal overlay, tiles, styles and linked cameras", async ({
   await expect(page.getByTestId("volume-status")).toContainText("3 layers");
   await page.getByText("Display settings", { exact: true }).click();
   await page
-    .getByLabel("3D intensity scale", { exact: true })
-    .selectOption("shared");
+    .getByRole("switch", {
+      name: "Shared numerical intensity scale",
+      exact: true,
+    })
+    .click();
   await page.getByText("Display settings", { exact: true }).click();
   await page
-    .getByRole("button", { name: "Orthographic camera", exact: true })
+    .getByRole("switch", { name: "Orthographic projection", exact: true })
     .click();
   await expect
     .poll(async () => (await state(page)).spatial.camera.projection)
@@ -819,7 +840,7 @@ test("vtk renders a complete signal and warns when calibrated depth is resampled
   await page.getByLabel(`3D opacity for ${name}`).fill("0.8");
   await expect.poll(() => vtkColoredPixels(page)).toBeGreaterThan(100);
   await page
-    .getByRole("button", { name: "Orthographic camera", exact: true })
+    .getByRole("switch", { name: "Orthographic projection", exact: true })
     .click();
   await expect
     .poll(async () => (await state(page)).spatial.camera.projection)
@@ -1171,4 +1192,104 @@ test("transparent overlay components do not tint another signal", async ({
     [Array.from(before), Array.from(after)],
   );
   expect(meanDifference).toBeLessThan(1);
+});
+
+test("preset views and fixed rotations update saved cameras", async ({
+  page,
+}) => {
+  await open(page);
+  await setupLayers(page, 2);
+  await page.getByLabel("Camera view").selectOption("top");
+  await expect
+    .poll(async () => (await state(page)).spatial.camera.eye.z)
+    .toBeGreaterThan(0);
+  await expect
+    .poll(async () => (await state(page)).spatial.camera.eye.x)
+    .toBe(0);
+  await page.getByRole("button", { name: "Rotate clockwise 15°" }).click();
+  await expect
+    .poll(async () => Math.abs((await state(page)).spatial.camera.up.x))
+    .toBeGreaterThan(0.1);
+  await page
+    .getByRole("button", { name: "Rotate counterclockwise 15°" })
+    .click();
+  await expect
+    .poll(async () => Math.abs((await state(page)).spatial.camera.up.x))
+    .toBeLessThan(0.001);
+  await page.getByRole("button", { name: "Rotate right 15°" }).click();
+  await expect
+    .poll(async () => Math.abs((await state(page)).spatial.camera.eye.x))
+    .toBeGreaterThan(0.1);
+});
+
+test("3D controls are grouped in the sidebar while maximize stays above the canvas", async ({
+  page,
+}) => {
+  await open(page);
+  await setupLayers(page, 2);
+  const sidebar = page.getByRole("complementary", { name: "3D controls" });
+  await expect(
+    sidebar.getByRole("switch", { name: "Tiles view" }),
+  ).toBeVisible();
+  await expect(sidebar.getByLabel("Camera view")).toBeVisible();
+  await expect(
+    sidebar.getByRole("button", { name: "Rotate up 15°" }),
+  ).toBeVisible();
+  await sidebar.getByText("Display settings", { exact: true }).click();
+  await expect(
+    sidebar.getByRole("switch", { name: "Shared numerical intensity scale" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Maximize 3D" })).toBeVisible();
+});
+
+test("arrow keys rotate the 3D camera but leave form controls alone", async ({
+  page,
+}) => {
+  await open(page);
+  await setupLayers(page, 1);
+  await page.getByLabel("Camera view").selectOption("front");
+  await expect
+    .poll(async () => (await state(page)).spatial.camera.eye.x)
+    .toBe(0);
+  await page.locator("body").click({ position: { x: 5, y: 5 } });
+  await page.keyboard.press("ArrowRight");
+  await expect
+    .poll(async () => Math.abs((await state(page)).spatial.camera.eye.x))
+    .toBeGreaterThan(0.1);
+  const camera = (await state(page)).spatial.camera;
+  await page.getByText("Display settings", { exact: true }).click();
+  await page.getByLabel("Frame stretch").focus();
+  await page.keyboard.press("ArrowUp");
+  await expect
+    .poll(async () => (await state(page)).spatial.camera)
+    .toEqual(camera);
+});
+
+test("exports the 3D viewer as a PNG", async ({ page }) => {
+  await open(page);
+  await setupLayers(page, 2);
+  const viewer = page.getByTestId("volume-canvas");
+  const save = page.getByRole("button", { name: "Export 3D PNG" });
+  await expect(save).toBeVisible();
+  const box = (await viewer.boundingBox())!;
+  const button = (await save.boundingBox())!;
+  expect(button.x).toBeGreaterThan(box.x);
+  expect(button.y).toBeGreaterThanOrEqual(box.y);
+  expect(button.x + button.width).toBeLessThanOrEqual(box.x + box.width);
+  const downloadPromise = page.waitForEvent("download");
+  await save.click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("tofscope-3d.png");
+  const png = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of png!) chunks.push(chunk as Buffer);
+  const bytes = Buffer.concat(chunks);
+  expect(bytes.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+  expect(bytes.readUInt32BE(16)).toBeGreaterThan(100);
+  expect(bytes.readUInt32BE(20)).toBeGreaterThan(100);
+  await page.getByRole("switch", { name: "Tiles view" }).click();
+  await expect(page.getByTestId("vtk-tile")).toHaveCount(2);
+  const tiledDownload = page.waitForEvent("download");
+  await save.click();
+  expect((await tiledDownload).suggestedFilename()).toBe("tofscope-3d.png");
 });

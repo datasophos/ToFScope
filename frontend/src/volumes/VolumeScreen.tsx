@@ -1,6 +1,9 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { canRenderVtkStyles, prepareVtkPreview } from "./vtkPreview";
 import { vtkDisplayExtent, vtkSamplingLimited } from "./vtkGeometry";
+import { exportVolume } from "./exportVolume";
+import { PlotToolbarIcon } from "../plots/PlotPanel";
+import { presetCamera, rotateCamera } from "./vtkCamera";
 const VtkScene = lazy(() =>
   import("./VtkScene").then((m) => ({ default: m.VtkScene })),
 );
@@ -95,6 +98,7 @@ export function VolumeScreen({
         localDraft.solo && ids.has(localDraft.solo) ? localDraft.solo : null,
     };
   }, [localDraft, a.signals]);
+  const viewer = useRef<HTMLDivElement>(null);
   const current = useRef(v);
   current.current = draft;
   const pending = useRef(0);
@@ -295,32 +299,57 @@ export function VolumeScreen({
           };
     if (JSON.stringify(next) !== JSON.stringify(state)) change(next);
   };
+  const updateCameras = (transform: (camera: Camera) => Camera) => {
+    const state = current.current;
+    change({
+      ...state,
+      camera: transform(state.camera),
+      layers: state.layers.map((layer) => ({
+        ...layer,
+        camera: transform(layer.camera),
+      })),
+    });
+  };
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        (event.target instanceof Element &&
+          event.target.closest(
+            'input, select, textarea, button, [contenteditable]:not([contenteditable="false"]), [role="dialog"]',
+          ))
+      )
+        return;
+      const rotations = {
+        ArrowLeft: ["horizontal", -15],
+        ArrowRight: ["horizontal", 15],
+        ArrowUp: ["vertical", -15],
+        ArrowDown: ["vertical", 15],
+      } as const;
+      const rotation = rotations[event.key as keyof typeof rotations];
+      if (!rotation) return;
+      event.preventDefault();
+      updateCameras((camera) => rotateCamera(camera, rotation[0], rotation[1]));
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
   return (
     <section
       className={`volume-workspace ${max ? "maximized" : ""} ${max && controlsHidden ? "controls-hidden" : ""}`}
       aria-label="3D visualization"
     >
-      <LayerEditor analysis={a} view={draft} data={data} onChange={change} />
-      <div className="volume-display">
-        {max && controlsHidden && (
-          <div className="volume-compact-controls">
-            <button onClick={() => setControlsHidden(false)}>
-              Show controls
-            </button>
-            <button
-              onClick={() => {
-                setControlsHidden(false);
-                setMax(false);
-              }}
-            >
-              Restore 3D
-            </button>
-          </div>
-        )}
-        <div className="volume-controls">
+      <aside className="volume-sidebar" aria-label="3D controls">
+        <LayerEditor analysis={a} view={draft} data={data} onChange={change} />
+        <details className="volume-sidebar-section" open>
+          <summary>View</summary>
           <div className="volume-toolbar">
             <div className="volume-choice-control">
-              <span>View</span>
+              <span>Layout</span>
               <button
                 type="button"
                 role="switch"
@@ -341,6 +370,18 @@ export function VolumeScreen({
                   Tiles
                 </span>
               </button>
+              {draft.mode === "tiles" && (
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={draft.linked}
+                    onChange={(e) =>
+                      change({ ...draft, linked: e.target.checked })
+                    }
+                  />
+                  Linked cameras
+                </label>
+              )}
             </div>
             <div className="volume-choice-control">
               <span>Preview</span>
@@ -365,87 +406,74 @@ export function VolumeScreen({
                 </span>
               </button>
             </div>
-            <details className="volume-options">
-              <summary>Display settings</summary>
-              <div className="volume-options-panel">
-                <label>
-                  Intensity scale
-                  <select
-                    aria-label="3D intensity scale"
-                    value={draft.scale}
-                    onChange={(e) =>
-                      change({
-                        ...draft,
-                        scale: e.target.value as SpatialView["scale"],
-                      })
-                    }
-                  >
-                    <option value="independent">Independent</option>
-                    <option value="shared">Shared numerical</option>
-                  </select>
-                </label>
-                <label className="volume-log-control">
-                  <input
-                    type="checkbox"
-                    checked={a.display.log}
-                    onChange={(e) =>
-                      void send({
-                        type: "set_display",
-                        ...a.display,
-                        log: e.target.checked,
-                        image: a.display.image as "sims" | "se",
-                      }).catch((e) => setError(e.message))
-                    }
-                  />
-                  Log colors
-                </label>
-                {draft.mode === "tiles" && (
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={draft.linked}
-                      onChange={(e) =>
-                        change({ ...draft, linked: e.target.checked })
-                      }
-                    />
-                    Linked cameras
-                  </label>
-                )}
-                <label>
-                  {data && data.z_unit !== "frame"
-                    ? "Depth exaggeration"
-                    : "Frame stretch"}
-                  <input
-                    aria-label={
-                      data && data.z_unit !== "frame"
-                        ? "Depth exaggeration"
-                        : "Frame stretch"
-                    }
-                    type="number"
-                    min=".01"
-                    max="1000"
-                    step=".1"
-                    value={
-                      data && data.z_unit !== "frame"
-                        ? draft.depth_exaggeration
-                        : draft.frame_stretch
-                    }
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (n >= 0.01 && n <= 1000)
-                        change({
-                          ...draft,
-                          ...(data && data.z_unit !== "frame"
-                            ? { depth_exaggeration: n }
-                            : { frame_stretch: n }),
-                        });
-                    }}
-                  />
-                </label>
-              </div>
-            </details>
           </div>
+        </details>
+        <details className="volume-sidebar-section" open>
+          <summary>Camera</summary>
           <div className="volume-camera-toolbar">
+            <label>
+              Preset view
+              <select
+                aria-label="Camera view"
+                value=""
+                onChange={(e) => {
+                  const preset = e.target.value as
+                    "top" | "bottom" | "front" | "back" | "left" | "right";
+                  if (preset)
+                    updateCameras((camera) => presetCamera(camera, preset));
+                }}
+              >
+                <option value="">Choose view</option>
+                <option value="top">Top</option>
+                <option value="bottom">Bottom</option>
+                <option value="front">Front</option>
+                <option value="back">Back</option>
+                <option value="left">Left</option>
+                <option value="right">Right</option>
+              </select>
+            </label>
+            <span className="volume-control-label">Rotate 15°</span>
+            <div
+              className="volume-rotation-pad"
+              aria-label="Rotate camera by 15 degrees"
+            >
+              {(
+                [
+                  ["counterclockwise", "roll", 15],
+                  ["clockwise", "roll", -15],
+                  ["left", "horizontal", -15],
+                  ["right", "horizontal", 15],
+                  ["up", "vertical", -15],
+                  ["down", "vertical", 15],
+                ] as const
+              ).map(([label, axis, angle]) => (
+                <button
+                  aria-label={`Rotate ${label} 15°`}
+                  title={`Rotate ${label} 15°`}
+                  className={`rotate-${label}`}
+                  key={label}
+                  onClick={() =>
+                    updateCameras((camera) => rotateCamera(camera, axis, angle))
+                  }
+                >
+                  {
+                    (
+                      {
+                        left: "←",
+                        right: "→",
+                        up: "↑",
+                        down: "↓",
+                        clockwise: "↻",
+                        counterclockwise: "↺",
+                      } as const
+                    )[label]
+                  }
+                </button>
+              ))}
+            </div>
+            {draft.mode === "tiles" && (
+              <small>Controls apply to all tile cameras.</small>
+            )}
             <button
               onClick={() =>
                 change({
@@ -460,7 +488,13 @@ export function VolumeScreen({
             >
               Reset cameras
             </button>
+            <span className="volume-control-label">Projection</span>
             <button
+              type="button"
+              role="switch"
+              aria-label="Orthographic projection"
+              aria-checked={draft.camera.projection === "orthographic"}
+              className="volume-choice"
               onClick={() =>
                 change({
                   ...draft,
@@ -484,25 +518,100 @@ export function VolumeScreen({
                 })
               }
             >
-              {draft.camera.projection === "perspective"
-                ? "Orthographic"
-                : "Perspective"}{" "}
-              camera
+              <span
+                className={
+                  draft.camera.projection === "perspective" ? "active" : ""
+                }
+              >
+                Perspective
+              </span>
+              <span
+                className={
+                  draft.camera.projection === "orthographic" ? "active" : ""
+                }
+              >
+                Orthographic
+              </span>
             </button>
-            <button
-              onClick={() => {
-                setMax(!max);
-                if (max) setControlsHidden(false);
-              }}
-            >
-              {max ? "Restore 3D" : "Maximize 3D"}
-            </button>
-            {max && (
-              <button onClick={() => setControlsHidden(true)}>
-                Hide controls
-              </button>
-            )}
           </div>
+        </details>
+        <details className="volume-sidebar-section">
+          <summary>Display settings</summary>
+          <div className="volume-sidebar-fields">
+            <div className="volume-choice-control">
+              <span>Intensity scale</span>
+              <button
+                type="button"
+                role="switch"
+                aria-label="Shared numerical intensity scale"
+                aria-checked={draft.scale === "shared"}
+                className="volume-choice"
+                onClick={() =>
+                  change({
+                    ...draft,
+                    scale: draft.scale === "shared" ? "independent" : "shared",
+                  })
+                }
+              >
+                <span className={draft.scale === "independent" ? "active" : ""}>
+                  Independent
+                </span>
+                <span className={draft.scale === "shared" ? "active" : ""}>
+                  Shared
+                </span>
+              </button>
+            </div>
+            <label className="volume-log-control">
+              <input
+                type="checkbox"
+                checked={a.display.log}
+                onChange={(e) =>
+                  void send({
+                    type: "set_display",
+                    ...a.display,
+                    log: e.target.checked,
+                    image: a.display.image as "sims" | "se",
+                  }).catch((e) => setError(e.message))
+                }
+              />
+              Log colors
+            </label>
+            <label>
+              {data && data.z_unit !== "frame"
+                ? "Depth exaggeration"
+                : "Frame stretch"}
+              <input
+                aria-label={
+                  data && data.z_unit !== "frame"
+                    ? "Depth exaggeration"
+                    : "Frame stretch"
+                }
+                type="number"
+                min=".01"
+                max="1000"
+                step=".1"
+                value={
+                  data && data.z_unit !== "frame"
+                    ? draft.depth_exaggeration
+                    : draft.frame_stretch
+                }
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  if (n >= 0.01 && n <= 1000)
+                    change({
+                      ...draft,
+                      ...(data && data.z_unit !== "frame"
+                        ? { depth_exaggeration: n }
+                        : { frame_stretch: n }),
+                    });
+                }}
+              />
+            </label>
+          </div>
+        </details>
+      </aside>
+      <div className="volume-display">
+        <div className="volume-controls">
           {draft.mode === "tiles" && pages > 1 && (
             <div className="row volume-page-controls">
               <button
@@ -535,73 +644,141 @@ export function VolumeScreen({
             <button onClick={() => setVtkError("")}>Retry vtk renderer</button>
           </div>
         )}
-        {loading ? (
-          <VolumePlaceholder />
-        ) : data && data.layers.length > 0 ? (
-          draft.mode === "tiles" && vtkSource && !vtkError ? (
-            <div
-              className="volume-canvas vtk-tiles"
-              data-testid="volume-canvas"
-              data-renderer="vtk"
-              data-tile-count={
-                vtkSource.layers.slice(page * 4, page * 4 + 4).length
-              }
+        <div className="volume-viewer" ref={viewer}>
+          <div className="volume-viewer-actions">
+            {max && (
+              <button
+                className="plot-icon-button"
+                aria-label={controlsHidden ? "Show controls" : "Hide controls"}
+                title={controlsHidden ? "Show controls" : "Hide controls"}
+                onClick={() => setControlsHidden(!controlsHidden)}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="4" width="18" height="16" rx="2" />
+                  <path d="M9 4v16" />
+                  <path
+                    d={controlsHidden ? "m13 9 3 3-3 3" : "m16 9-3 3 3 3"}
+                  />
+                </svg>
+              </button>
+            )}
+            <button
+              className="plot-icon-button"
+              aria-label="Export 3D PNG"
+              title="Save plot/image as PNG"
+              disabled={loading || !data?.layers.length || !!vtkError}
+              onClick={() => {
+                void (async () => {
+                  try {
+                    const canvas = viewer.current?.querySelector<HTMLElement>(
+                      '[data-testid="volume-canvas"]',
+                    );
+                    if (!canvas)
+                      throw new Error("No 3D view is available to export.");
+                    const href = await exportVolume(canvas);
+                    const link = document.createElement("a");
+                    link.href = href;
+                    link.download = "tofscope-3d.png";
+                    link.click();
+                  } catch {
+                    setError("PNG export failed. Please try again.");
+                  }
+                })();
+              }}
             >
-              {tiles.map(({ single, preview, points }) => (
-                <VtkTile
-                  key={single.layers[0].signal_id}
-                  source={vtkSource}
-                  single={single}
-                  preview={preview}
-                  points={points}
+              <PlotToolbarIcon action="save" />
+            </button>
+            <button
+              className="plot-icon-button"
+              aria-label={max ? "Restore 3D" : "Maximize 3D"}
+              title={max ? "Restore 3D" : "Maximize 3D"}
+              onClick={() => {
+                setMax(!max);
+                if (max) setControlsHidden(false);
+              }}
+            >
+              {max ? "↙" : "↗"}
+            </button>
+          </div>
+          {loading ? (
+            <VolumePlaceholder />
+          ) : data && data.layers.length > 0 ? (
+            draft.mode === "tiles" && vtkSource && !vtkError ? (
+              <div
+                className="volume-canvas vtk-tiles"
+                data-testid="volume-canvas"
+                data-renderer="vtk"
+                data-tile-count={
+                  vtkSource.layers.slice(page * 4, page * 4 + 4).length
+                }
+              >
+                {tiles.map(({ single, preview, points }) => (
+                  <VtkTile
+                    key={single.layers[0].signal_id}
+                    source={vtkSource}
+                    single={single}
+                    preview={preview}
+                    points={points}
+                    view={draft}
+                    log={a.display.log}
+                    onCamera={camera}
+                    onError={setVtkError}
+                  />
+                ))}
+              </div>
+            ) : useVtkPoints || (useVtk && vtkPreview?.kind === "vtk") ? (
+              <Suspense fallback={<VolumePlaceholder />}>
+                <VtkScene
+                  data={
+                    useVtkPoints
+                      ? hybrid!.data
+                      : (
+                          vtkPreview as Extract<
+                            NonNullable<typeof vtkPreview>,
+                            { kind: "vtk" }
+                          >
+                        ).data
+                  }
+                  source={vtkSource!}
                   view={draft}
                   log={a.display.log}
                   onCamera={camera}
                   onError={setVtkError}
+                  pointIds={useVtkPoints ? hybrid!.pointIds : undefined}
                 />
-              ))}
-            </div>
-          ) : useVtkPoints || (useVtk && vtkPreview?.kind === "vtk") ? (
-            <Suspense fallback={<VolumePlaceholder />}>
-              <VtkScene
-                data={
-                  useVtkPoints
-                    ? hybrid!.data
-                    : (
-                        vtkPreview as Extract<
-                          NonNullable<typeof vtkPreview>,
-                          { kind: "vtk" }
-                        >
-                      ).data
-                }
-                source={vtkSource!}
-                view={draft}
-                log={a.display.log}
-                onCamera={camera}
-                onError={setVtkError}
-                pointIds={useVtkPoints ? hybrid!.pointIds : undefined}
-              />
-            </Suspense>
-          ) : null
-        ) : (
-          !loading && (
-            <p>
-              No visible covered volume. Add or show a signal, or choose frames
-              with known depth.
-            </p>
-          )
-        )}
+              </Suspense>
+            ) : null
+          ) : (
+            !loading && (
+              <p>
+                No visible covered volume. Add or show a signal, or choose
+                frames with known depth.
+              </p>
+            )
+          )}
+        </div>
         <div className="volume-footer">
           <div className="volume-footer-help">
             <div className="volume-interaction-hint">
-              Drag to orbit · scroll to zoom · shift-drag to pan
+              Drag or use arrow keys to orbit · scroll to zoom · shift-drag to
+              pan
             </div>
             <details className="volume-rendering-notes">
               <summary>Rendering and geometry details</summary>{" "}
               <small>
-                Drag to orbit · scroll to zoom · shift-drag to pan. Overlay
-                transparency is qualitative; show one signal or use tiles to
-                inspect occluded signals.{" "}
+                Drag or use arrow keys to orbit · scroll to zoom · shift-drag to
+                pan. Overlay transparency is qualitative; show one signal or use
+                tiles to inspect occluded signals.{" "}
                 {data?.physical_aspect
                   ? "At 1×, calibrated depth and XY use the same physical scale."
                   : "Frame stretch is a display ratio; physical proportions require calibrated depth and known XY."}{" "}

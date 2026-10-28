@@ -17,7 +17,7 @@ import {
   type CurveStyle,
   type LegendEntry,
 } from "./curveStyle";
-function PlotToolbarIcon({ action }: { action: "reset" | "save" | "pan" }) {
+export function PlotToolbarIcon({ action }: { action: "reset" | "save" | "pan" }) {
   return (
     <svg
       width="16"

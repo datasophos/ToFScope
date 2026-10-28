@@ -44,3 +44,62 @@ export function fromVtkCamera(v: VtkCamera, extent: Vec): Camera {
     projection: v.projection,
   };
 }
+
+type Vector = Camera["eye"];
+type Preset = "top" | "bottom" | "front" | "back" | "left" | "right";
+const cross = (a: Vector, b: Vector): Vector => ({
+  x: a.y * b.z - a.z * b.y,
+  y: a.z * b.x - a.x * b.z,
+  z: a.x * b.y - a.y * b.x,
+});
+const unit = (v: Vector): Vector => {
+  const length = Math.hypot(v.x, v.y, v.z);
+  return { x: v.x / length, y: v.y / length, z: v.z / length };
+};
+export function presetCamera(c: Camera, preset: Preset): Camera {
+  const distance = Math.hypot(c.eye.x, c.eye.y, c.eye.z);
+  const directions: Record<Preset, Vector> = {
+    top: { x: 0, y: 0, z: 1 },
+    bottom: { x: 0, y: 0, z: -1 },
+    front: { x: 0, y: -1, z: 0 },
+    back: { x: 0, y: 1, z: 0 },
+    left: { x: -1, y: 0, z: 0 },
+    right: { x: 1, y: 0, z: 0 },
+  };
+  const d = directions[preset];
+  return {
+    ...c,
+    eye: { x: d.x * distance, y: d.y * distance, z: d.z * distance },
+    up:
+      preset === "top"
+        ? { x: 0, y: 1, z: 0 }
+        : preset === "bottom"
+          ? { x: 0, y: -1, z: 0 }
+          : { x: 0, y: 0, z: 1 },
+  };
+}
+export function rotateCamera(
+  c: Camera,
+  axis: "horizontal" | "vertical" | "roll",
+  degrees: number,
+): Camera {
+  const direction = unit(c.eye);
+  const right = unit(cross(c.up, direction));
+  const up = unit(cross(direction, right));
+  const rotationAxis =
+    axis === "horizontal" ? up : axis === "vertical" ? right : direction;
+  const angle = (degrees * Math.PI) / 180;
+  const rotate = (v: Vector): Vector => {
+    const crossProduct = cross(rotationAxis, v);
+    const dot =
+      rotationAxis.x * v.x + rotationAxis.y * v.y + rotationAxis.z * v.z;
+    const cos = Math.cos(angle),
+      sin = Math.sin(angle);
+    return {
+      x: v.x * cos + crossProduct.x * sin + rotationAxis.x * dot * (1 - cos),
+      y: v.y * cos + crossProduct.y * sin + rotationAxis.y * dot * (1 - cos),
+      z: v.z * cos + crossProduct.z * sin + rotationAxis.z * dot * (1 - cos),
+    };
+  };
+  return { ...c, eye: rotate(c.eye), up: rotate(up) };
+}

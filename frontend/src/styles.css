@@ -2251,3 +2251,45 @@ small {
 .volume-footer-notes { flex: 1 1 320px; text-align: right; }
 .volume-footer-notes p { margin: 0 0 3px; font-size: inherit; }
 @media (max-width: 650px) { .volume-footer-notes { text-align: left; } }
+
+/* Keep 3D controls together and let them scroll independently of the plot. */
+.volume-sidebar { min-width: 0; align-self: start; max-height: min(720px, 75vh); overflow-y: auto; background: white; border-radius: 8px; box-shadow: 0 2px 5px #213d5010; }
+.volume-workspace.maximized .volume-sidebar { max-height: 100%; }
+.volume-workspace.controls-hidden .volume-sidebar { display: none; }
+.volume-sidebar .volume-layers { box-shadow: none; border-radius: 0; }
+.volume-sidebar .volume-signal-popover { left: 8px; right: 8px; width: auto; top: 12px; }
+.volume-sidebar-section { border-top: 1px solid #e4edf1; padding: 10px 12px; }
+.volume-sidebar-section summary { cursor: pointer; font-weight: 600; color: #294757; }
+.volume-sidebar-section[open] summary { margin-bottom: 10px; }
+.volume-sidebar .volume-toolbar, .volume-sidebar .volume-camera-toolbar, .volume-sidebar-fields { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.volume-sidebar .volume-toolbar label:has(input[type=checkbox]), .volume-sidebar-fields .volume-log-control { display: flex; flex-direction: row; align-items: center; align-self: start; gap: 6px; }
+.volume-sidebar-fields label { display: flex; flex-direction: column; gap: 4px; }
+.volume-sidebar-fields input[type=number] { width: 85px; }
+.volume-sidebar .volume-camera-toolbar small { color: #688295; }
+.volume-rotation-pad { display: grid; grid-template-columns: repeat(3, 36px); grid-template-rows: repeat(2, 32px); gap: 4px; }
+.volume-rotation-pad button { padding: 0; font-size: 18px; }
+.volume-rotation-pad .rotate-counterclockwise { grid-column: 1; grid-row: 1; }
+.volume-rotation-pad .rotate-clockwise { grid-column: 3; grid-row: 1; }
+.volume-rotation-pad .rotate-up { grid-column: 2; grid-row: 1; }
+.volume-rotation-pad .rotate-left { grid-column: 1; grid-row: 2; }
+.volume-rotation-pad .rotate-down { grid-column: 2; grid-row: 2; }
+.volume-rotation-pad .rotate-right { grid-column: 3; grid-row: 2; }
+@media (max-width: 850px) { .volume-sidebar { max-height: min(420px, 50vh); } }
+.volume-sidebar .volume-choice { align-self: flex-start; }
+.volume-sidebar .volume-camera-toolbar { align-items: stretch; }
+.volume-sidebar .volume-camera-toolbar > label { align-items: stretch; }
+.volume-sidebar .volume-camera-toolbar > label select { align-self: flex-start; }
+.volume-sidebar .volume-rotation-pad { align-self: center; }
+.volume-sidebar .volume-camera-toolbar > button:not(.volume-choice) { align-self: center; }
+.volume-sidebar .volume-camera-toolbar small { text-align: center; }
+.volume-sidebar .volume-camera-toolbar .volume-choice { align-self: flex-start; }
+.volume-sidebar .volume-control-label { margin-top: 4px; }
+.volume-controls .volume-maximize, .volume-compact-controls .volume-maximize { width: 26px; height: 26px; flex: 0 0 auto; padding: 0; }
+.volume-controls .volume-maximize { order: 2; margin-left: auto; }
+.volume-controls .volume-page-controls { margin-left: 0; }
+.volume-viewer { position: relative; min-height: 0; }
+.volume-workspace.maximized .volume-display > .volume-viewer { flex: 1 1 0; min-height: 0; }
+.volume-workspace.maximized .volume-viewer > .volume-canvas { height: 100%; }
+.volume-viewer-actions { position: absolute; top: 8px; right: 8px; z-index: 5; display: flex; gap: 6px; }
+.volume-viewer-actions .plot-icon-button { width: 26px; height: 26px; padding: 0; display: inline-flex; justify-content: center; align-items: center; }
+.volume-controls:empty { display: none; }

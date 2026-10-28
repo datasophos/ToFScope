@@ -139,8 +139,8 @@ upper display limit. Log colors uses log(1+intensity); depth profiles and export
 Tiles show four layers per page and support linked or independent saved cameras.
 3D offers All frames and Frame range; single-frame navigation remains in Explore.
 Entering 3D from a single frame switches to All frames.
-Drag to orbit, scroll to zoom, or Shift-drag to pan; reset, orthographic projection
-and maximize controls are available. ROI and Viewing depths apply to every layer.
+Drag or use arrow keys to orbit, scroll to zoom, or Shift-drag to pan; reset, orthographic projection
+and maximize controls are available. Choose an axis-aligned camera view or rotate in 15° steps for precise positioning; these controls apply to all tile cameras. ROI and Viewing depths apply to every layer.
 
 Fast previews are capped at 96×32×32; Detailed at 160×48×48. All visible layers
 share a 500,000-voxel budget, including layers on other tile pages. vtk.js

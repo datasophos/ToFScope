@@ -25,6 +25,7 @@ import {
   type VolumeData,
 } from "./spatialRenderer";
 import { toVtkCamera, fromVtkCamera, type VtkCamera } from "./vtkCamera";
+import { registerVolumeCapture } from "./exportVolume";
 import { vtkDisplayExtent, vtkSampleDistance } from "./vtkGeometry";
 
 type Props = {
@@ -42,6 +43,7 @@ type Handle = {
   resize: () => void;
   applyCamera: (c: Camera) => void;
   destroy: () => void;
+  capture: () => Promise<string>;
 };
 
 function createScene(
@@ -319,6 +321,7 @@ function createScene(
         rw.resize();
       },
       applyCamera,
+      capture: () => rw.getRenderWindow().captureImages("image/png")[0],
       destroy() {
         sub.unsubscribe();
         renderer.removeActor(axes!);
@@ -379,6 +382,7 @@ export function VtkScene(props: Props) {
     props.points,
     props.pointIds,
   ]);
+  const sceneElement = useRef<HTMLDivElement>(null);
   const cameraKey = JSON.stringify(props.view.camera);
   useEffect(() => {
     if (!el.current) return;
@@ -390,10 +394,12 @@ export function VtkScene(props: Props) {
       return;
     }
     handle.current = h;
+    const unregister = registerVolumeCapture(sceneElement.current!, h.capture);
     const observer = new ResizeObserver(() => h.resize());
     observer.observe(el.current);
     return () => {
       observer.disconnect();
+      unregister();
       h.destroy();
       handle.current = null;
     };
@@ -430,11 +436,13 @@ export function VtkScene(props: Props) {
         label: layer.label,
         upper,
         gradient: `linear-gradient(to top,${stops.join(",")})`,
+        stops: vtkColorStops(style.colorscale, style.colorscale_reversed),
       };
     });
   }, [props.data, props.source, styleKey]);
   return (
     <div
+      ref={sceneElement}
       className="volume-canvas vtk-volume-view"
       data-testid={props.tile ? "vtk-tile" : "volume-canvas"}
       data-renderer="vtk"
@@ -456,6 +464,7 @@ export function VtkScene(props: Props) {
             <div className="vtk-volume-scale">
               <span
                 className="vtk-volume-ramp"
+                data-stops={JSON.stringify(legend.stops)}
                 style={{ background: legend.gradient }}
               />
               <span className="vtk-volume-ticks">
