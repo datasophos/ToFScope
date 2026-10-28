@@ -1,6 +1,6 @@
 # Spatial renderer decision — 2026-10-22
 
-Select Plotly.js for Task 4. Keep ECharts for original-resolution profiles.
+Historical decision for Task 4: select Plotly.js (superseded by the vtk-only follow-up below). Keep ECharts for original-resolution profiles.
 The production API supplies scalar arrays and coordinates, never figure JSON.
 
 ## Reproducible geometry gate
@@ -145,3 +145,32 @@ Follow-up review confirmed renderer lifecycle handling. A proposed full-acquisit
 range UI was backed out to preserve the existing canonical Explore/server range
 rules without introducing a backend change. The 3D All frames summary reflects
 the presenter's full acquisition domain; range controls still use shared bounds.
+
+## vtk.js integration follow-up
+
+Eligible complete overlays use vtk.js GPU volume
+rendering. The admitted original preview remains unchanged. Nonuniform XY,
+frame or calibrated depth coordinates are interpolated onto a uniform display
+grid when necessary, and a warning is shown. This is a qualitative view:
+resampling may smooth narrow peaks. Profiles,
+measurements and exports use the original-resolution data. A bounded 500,000
+voxel budget applies after resampling as well.
+
+The production 3D workspace uses vtk for both overlays and tiles. Complete
+signals render as volumes; incomplete, thin, constant, negative or
+threshold-limited signals use vtk points at original preview coordinates, so
+missing samples are never filled in. Overlays group volume signals into vtk volume actors; compositing between
+groups is qualitative. The view identifies point rendering.
+For extreme aspect ratios, ray sampling is capped at 1,000 steps along the
+volume diagonal and the app warns that fine features may be missed. Intensity
+hover is not yet available. vtk volume opacity is qualitative.
+For multi-component volumes, colors are mixed in proportion to component
+opacity; transparent components do not contribute color. Plasma and Purples
+have distinct transfer functions and matching legends.
+
+Tests exercise physical-depth interpolation, input preservation, coverage
+admission, rounded coordinates, physical proportions, saved camera conversion,
+orthographic rendering, camera persistence and save/reopen, overlay visibility,
+and unchanged polling without rebuilding the canvas. A captured read-only real
+acquisition preview was also used in the renderer test. Headless Chrome evidence
+does not establish performance or GPU behavior for all Firefox configurations.

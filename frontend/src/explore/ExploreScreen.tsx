@@ -296,199 +296,207 @@ export function ExploreScreen({
           {a.spatial.screen === "volume" &&
             a.depth.mode !== "frame" &&
             active && <VolumeScreen analysis={a} send={send} />}
-          <div
-            className={`plot-grid ${a.spatial.screen === "volume" ? "volume-profile-grid" : ""}`}
-          >
-            <PlotPanel
-              {...common("ion")}
-              title={ionState.display.image === "se" ? "SE Image" : "Ion map"}
-              help={ionState.display.image === "se" ? help.se : help.ion}
-              panel={panels?.ion}
-              expectedKind="image"
-              status={
-                <span>
-                  {ionState.display.image === "se"
-                    ? "Unregistered SE · native pixels"
-                    : imageName}
-                  {ionFrames && ` · frames ${ionFrames[0]}–${ionFrames[1]}`}
-                  {pendingPanels.has("ion") ? " · Updating…" : ""}
-                </span>
-              }
-              toolbarControls={
-                <>
-                  <ROIControls analysis={a} send={send} />
-                  <ImageDisplayControls analysis={a} display={display} />
-                </>
-              }
-              mode="xy"
-              selection={
-                ionState.display.image === "sims"
-                  ? roiBounds(a.roi as ROI, a.shape, a.fov_um)
-                  : undefined
-              }
-              onSelect={(b) => {
-                if (a.display.image === "sims")
-                  act({
-                    type: "set_roi",
-                    roi: roiFromBounds(b, a.shape, a.fov_um),
-                  });
-              }}
-            />
-            <div
-              className={`spectrum-workbench ${max === "spectrum" ? "maximized" : ""} ${d ? "has-editor" : ""}`}
-            >
-              <SignalEditor editor={editor} analysis={a} />
+          {a.spatial.screen !== "volume" && (
+            <div className="plot-grid">
               <PlotPanel
-                {...common("spectrum")}
-                spectrumLog={a.display.spectrum_log}
-                onSpectrumLogChange={(log) => display({ spectrum_log: log })}
-                maximized={false}
-                expanded={max === "spectrum"}
-                title="Mass spectrum"
-                help={help.spectrum}
-                panel={panels?.spectrum}
-                selectionMode={d ? "select" : "zoom"}
-                selection={interval?.map(Number)}
-                selectionWindows={d?.intervals.map(
-                  ([low, high]) =>
-                    [Number(low), Number(high)] as [number, number],
-                )}
-                selectedWindow={d?.selectedInterval}
-                onWindowSelect={(index) =>
-                  editor.patchDraft({ selectedInterval: index })
+                {...common("ion")}
+                title={ionState.display.image === "se" ? "SE Image" : "Ion map"}
+                help={ionState.display.image === "se" ? help.se : help.ion}
+                panel={panels?.ion}
+                expectedKind="image"
+                status={
+                  <span>
+                    {ionState.display.image === "se"
+                      ? "Unregistered SE · native pixels"
+                      : imageName}
+                    {ionFrames && ` · frames ${ionFrames[0]}–${ionFrames[1]}`}
+                    {pendingPanels.has("ion") ? " · Updating…" : ""}
+                  </span>
                 }
-                onSelect={draftSelect}
-                zoomWindow={
-                  interval
-                    ? (interval.map(Number) as [number, number])
+                toolbarControls={
+                  <>
+                    <ROIControls analysis={a} send={send} />
+                    <ImageDisplayControls analysis={a} display={display} />
+                  </>
+                }
+                mode="xy"
+                selection={
+                  ionState.display.image === "sims"
+                    ? roiBounds(a.roi as ROI, a.shape, a.fov_um)
                     : undefined
                 }
-                headingControls={
-                  <>
-                    <span className="plot-status">
-                      {spectrumMode}
-                      {d?.submittedJobId ? " · calculating" : ""}
+                onSelect={(b) => {
+                  if (a.display.image === "sims")
+                    act({
+                      type: "set_roi",
+                      roi: roiFromBounds(b, a.shape, a.fov_um),
+                    });
+                }}
+              />
+              <div
+                className={`spectrum-workbench ${max === "spectrum" ? "maximized" : ""} ${d ? "has-editor" : ""}`}
+              >
+                <SignalEditor editor={editor} analysis={a} />
+                <PlotPanel
+                  {...common("spectrum")}
+                  spectrumLog={a.display.spectrum_log}
+                  onSpectrumLogChange={(log) => display({ spectrum_log: log })}
+                  maximized={false}
+                  expanded={max === "spectrum"}
+                  title="Mass spectrum"
+                  help={help.spectrum}
+                  panel={panels?.spectrum}
+                  selectionMode={d ? "select" : "zoom"}
+                  selection={interval?.map(Number)}
+                  selectionWindows={d?.intervals.map(
+                    ([low, high]) =>
+                      [Number(low), Number(high)] as [number, number],
+                  )}
+                  selectedWindow={d?.selectedInterval}
+                  onWindowSelect={(index) =>
+                    editor.patchDraft({ selectedInterval: index })
+                  }
+                  onSelect={draftSelect}
+                  zoomWindow={
+                    interval
+                      ? (interval.map(Number) as [number, number])
+                      : undefined
+                  }
+                  headingControls={
+                    <>
+                      <span className="plot-status">
+                        {spectrumMode}
+                        {d?.submittedJobId ? " · calculating" : ""}
+                      </span>
+                      {!d && (
+                        <>
+                          <button onClick={editor.openNew}>
+                            Create signal
+                          </button>
+                          <IdentifyDialog
+                            analysis={a}
+                            spectrum={panels?.spectrum}
+                            send={send}
+                            active={active}
+                            onDraft={editor.openIdentified}
+                            refresh={refresh}
+                          />
+                          <IsotopeMeasurements
+                            analysis={a}
+                            active={active}
+                            refresh={refresh}
+                          />
+                        </>
+                      )}
+                    </>
+                  }
+                />
+              </div>
+              <PlotPanel
+                {...common("front")}
+                title="Front projection"
+                help={help.front}
+                panel={panels?.front}
+                expectedKind="image"
+                status={
+                  <span>
+                    {panels?.front.signal_name ?? ""} · {coverage("front")}
+                    {pendingPanels.has("front") ? " · Updating…" : ""}
+                  </span>
+                }
+                selection={
+                  depthSelection("front")
+                    ? [0, a.fov_um ?? a.shape[2], ...depthSelection("front")!]
+                    : undefined
+                }
+                mode="y"
+                onClick={(_, y) => {
+                  const f = original("front", y);
+                  if (f !== undefined) frame(f);
+                }}
+                onSelect={(b) => {
+                  const v = b.slice(2).map((x) => original("front", x));
+                  if (v.some((x) => x === undefined)) return;
+                  const [first, last] = frameWindow(v as number[], bounds);
+                  act({
+                    type: "set_depth",
+                    depth: { mode: "window", first, last },
+                  });
+                }}
+              />
+              <PlotPanel
+                {...common("profile")}
+                title="Depth profile"
+                toolbarControls={
+                  <button
+                    className="plot-csv-button"
+                    aria-label="Profile CSV"
+                    title="Export depth profile CSV"
+                    onClick={() =>
+                      void download(a.id, "csv").catch((e) =>
+                        setError(e.message),
+                      )
+                    }
+                  >
+                    CSV
+                  </button>
+                }
+                help={help.profile}
+                panel={panels?.profile}
+                status={
+                  coverage("profile") || pendingPanels.has("profile") ? (
+                    <span>
+                      {coverage("profile")}
+                      {pendingPanels.has("profile") ? " · Updating…" : ""}
                     </span>
-                    {!d && (
-                      <>
-                        <button onClick={editor.openNew}>Create signal</button>
-                        <IdentifyDialog
-                          analysis={a}
-                          spectrum={panels?.spectrum}
-                          send={send}
-                          active={active}
-                          onDraft={editor.openIdentified}
-                          refresh={refresh}
-                        />
-                        <IsotopeMeasurements
-                          analysis={a}
-                          active={active}
-                          refresh={refresh}
-                        />
-                      </>
-                    )}
-                  </>
+                  ) : undefined
+                }
+                headingControls={
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={a.display.relative}
+                      onChange={(e) => display({ relative: e.target.checked })}
+                    />
+                    Relative profiles
+                  </label>
+                }
+                legendActions={{
+                  imageSignalId:
+                    panelStates.profile?.image_signal_id ?? a.image_signal_id,
+                  onDetails: (id) => {
+                    setDetails(id);
+                    document
+                      .querySelector(".signal-tray")
+                      ?.scrollIntoView({ block: "nearest" });
+                  },
+                  onVisibility: (id, visible) =>
+                    act({
+                      type: "set_profile_visible",
+                      signal_id: id,
+                      visible,
+                    }),
+                }}
+                selection={depthSelection("profile")}
+                onClick={(x) => {
+                  const f = original("profile", x);
+                  if (f !== undefined) frame(f);
+                }}
+                onSelect={(b) => {
+                  const v = b.map((x) => original("profile", x));
+                  if (v.some((x) => x === undefined)) return;
+                  const [first, last] = frameWindow(v as number[], bounds);
+                  act({
+                    type: "set_depth",
+                    depth: { mode: "window", first, last },
+                  });
+                }}
+                onAllDepths={() =>
+                  act({ type: "set_depth", depth: { mode: "all" } })
                 }
               />
             </div>
-            <PlotPanel
-              {...common("front")}
-              title="Front projection"
-              help={help.front}
-              panel={panels?.front}
-              expectedKind="image"
-              status={
-                <span>
-                  {panels?.front.signal_name ?? ""} · {coverage("front")}
-                  {pendingPanels.has("front") ? " · Updating…" : ""}
-                </span>
-              }
-              selection={
-                depthSelection("front")
-                  ? [0, a.fov_um ?? a.shape[2], ...depthSelection("front")!]
-                  : undefined
-              }
-              mode="y"
-              onClick={(_, y) => {
-                const f = original("front", y);
-                if (f !== undefined) frame(f);
-              }}
-              onSelect={(b) => {
-                const v = b.slice(2).map((x) => original("front", x));
-                if (v.some((x) => x === undefined)) return;
-                const [first, last] = frameWindow(v as number[], bounds);
-                act({
-                  type: "set_depth",
-                  depth: { mode: "window", first, last },
-                });
-              }}
-            />
-            <PlotPanel
-              {...common("profile")}
-              title="Depth profile"
-              toolbarControls={
-                <button
-                  className="plot-csv-button"
-                  aria-label="Profile CSV"
-                  title="Export depth profile CSV"
-                  onClick={() =>
-                    void download(a.id, "csv").catch((e) => setError(e.message))
-                  }
-                >
-                  CSV
-                </button>
-              }
-              help={help.profile}
-              panel={panels?.profile}
-              status={
-                coverage("profile") || pendingPanels.has("profile") ? (
-                  <span>
-                    {coverage("profile")}
-                    {pendingPanels.has("profile") ? " · Updating…" : ""}
-                  </span>
-                ) : undefined
-              }
-              headingControls={
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={a.display.relative}
-                    onChange={(e) => display({ relative: e.target.checked })}
-                  />
-                  Relative profiles
-                </label>
-              }
-              legendActions={{
-                imageSignalId:
-                  panelStates.profile?.image_signal_id ?? a.image_signal_id,
-                onDetails: (id) => {
-                  setDetails(id);
-                  document
-                    .querySelector(".signal-tray")
-                    ?.scrollIntoView({ block: "nearest" });
-                },
-                onVisibility: (id, visible) =>
-                  act({ type: "set_profile_visible", signal_id: id, visible }),
-              }}
-              selection={depthSelection("profile")}
-              onClick={(x) => {
-                const f = original("profile", x);
-                if (f !== undefined) frame(f);
-              }}
-              onSelect={(b) => {
-                const v = b.map((x) => original("profile", x));
-                if (v.some((x) => x === undefined)) return;
-                const [first, last] = frameWindow(v as number[], bounds);
-                act({
-                  type: "set_depth",
-                  depth: { mode: "window", first, last },
-                });
-              }}
-              onAllDepths={() =>
-                act({ type: "set_depth", depth: { mode: "all" } })
-              }
-            />
-          </div>
+          )}
         </div>
       </div>
     </main>

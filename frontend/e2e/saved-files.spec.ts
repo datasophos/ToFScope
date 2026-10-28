@@ -354,7 +354,9 @@ test("save folder picker creates a subfolder and the saved copy can be reopened 
     exact: true,
   });
   for (const name of ["Acquisitions", "Saved files"]) {
-    const location = picker.getByRole("button", { name, exact: true });
+    const location = picker
+      .getByRole("complementary", { name: "Locations" })
+      .getByRole("button", { name, exact: true });
     const bounds = (await location.boundingBox())!;
     const detail = (await location.locator("small").boundingBox())!;
     expect(detail.y + detail.height).toBeLessThanOrEqual(

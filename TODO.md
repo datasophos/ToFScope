@@ -20,7 +20,8 @@ reference behavior, not evidence that the replacement exposes those features.
 ## Next scientific features
 
 - [x] Peak identification, signal annotations, and explicit isotope measurements.
-- [x] Multi-signal 3D overlays and tiled views, including a depth profile alongside the volume.
+- [x] Multi-signal 3D overlays and tiled views; depth profiles remain available in Explore.
+- [ ] Add top, front and other preset camera views, plus fixed-angle rotation controls for precise 3D viewing.
 - [ ] Linked XZ/YZ cross-sections — deferred.
 - [x] Persist and restore identification annotations and captured isotope measurements.
 - [x] Persist and restore spatial layers, styles, layout and cameras.

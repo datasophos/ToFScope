@@ -129,29 +129,35 @@ CSV and Settings JSON retain scope, mass errors, uncertainties and provenance;
 Save as/reopen also preserves isotope assignments and captured results. See
 [identification validation](docs/validation/identification.md).
 
-**3D volume** compares existing named signals as an overlay or tiled views beside
-an original-resolution depth profile. Add signals in the layer list, then adjust
-visibility, Solo, colormap, opacity and percentile threshold. Independent intensity
+**3D volume** compares existing named signals as an overlay or tiled views. The
+signal table lists every ready named signal; the current image signal is shown
+initially. Check the signals to display and open a signal's settings to adjust
+its colormap, opacity and percentile threshold. Independent intensity
 scales are the default; Shared numerical uses one range across visible signals.
 Percentile thresholds use positive intensities, with a robust 99.7th-percentile
-upper display limit. Log colors uses log(1+intensity); hover values, depth profiles
-and exports retain original numerical intensities.
+upper display limit. Log colors uses log(1+intensity); depth profiles and exports retain original numerical intensities.
 Tiles show four layers per page and support linked or independent saved cameras.
 3D offers All frames and Frame range; single-frame navigation remains in Explore.
 Entering 3D from a single frame switches to All frames.
-Drag to orbit, scroll to zoom, or right-drag to pan; reset, orthographic projection
+Drag to orbit, scroll to zoom, or Shift-drag to pan; reset, orthographic projection
 and maximize controls are available. ROI and Viewing depths apply to every layer.
 
 Fast previews are capped at 96×32×32; Detailed at 160×48×48. All visible layers
-share a 500,000-voxel budget, including layers on other tile pages. Fast draws
-three isosurfaces and Detailed draws ten, using the same preview intensities and
-coordinates. Camera movement and unchanged polling reuse existing geometry. Preview means
+share a 500,000-voxel budget, including layers on other tile pages. vtk.js
+renders complete signals as volumes. Sparse, incomplete, thin, constant,
+negative or high-threshold selections use vtk points at the original preview
+coordinates. Overlays group volume signals into vtk volume actors; their
+compositing is qualitative. Nonuniform XY, frame or calibrated-depth preview coordinates are
+interpolated for display and a warning is shown; profiles, measurements and
+exports use original-resolution data. For extreme aspect ratios, vtk limits ray
+sampling and warns that fine features may be missed. Intensity hover is not yet
+available. Camera movement and unchanged polling reuse existing geometry. Preview means
 use actual valid samples in partial blocks. Missing coverage remains missing;
 profiles and CSV use original resolution. Physical depth clips unknown frames
 before pooling, and block coordinates average calibrated samples across anchor
 slope changes. At 1× depth exaggeration, known XY/depth geometry uses common µm
 units; Frame stretch is a separate display ratio. Thin/constant selections use
-points. Transparent overlays are qualitative; use Solo or tiles for occlusion.
+points. Transparent overlays are qualitative; show one signal or use tiles to inspect occlusion.
 Save as preserves layer styles, layout, page, scale, cameras and exaggeration.
 See [spatial qualification](docs/validation/spatial-renderer-decision.md).
 

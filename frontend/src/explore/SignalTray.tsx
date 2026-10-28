@@ -68,80 +68,82 @@ export function SignalTray({
             ))}
           </select>
         </label>
-        <div
-          className="signal-profiles"
-          role="group"
-          aria-label="Visible profiles"
-        >
-          <span>Profiles</span>
-          <div className="signal-chips">
-            {a.signals
-              .filter(
-                (row) =>
-                  row.id === a.image_signal_id ||
-                  a.profile_signal_ids.includes(row.id) ||
-                  busy(row),
-              )
-              .map((row) => {
-                const job = row.job_id ? editor.jobs[row.job_id] : undefined;
-                return (
-                  <div
-                    className="signal-chip"
-                    key={row.id}
-                    data-testid="profile-chip"
-                    data-signal-id={row.id}
-                  >
-                    <button
-                      className="signal-chip-details"
-                      title={`${label(row)} · ${row.recipe?.source === "stored" ? "Stored channel" : "Raw integration"}${row.recipe ? ` · frames ${row.recipe.frames[0]}–${row.recipe.frames[1]}` : ""}`}
-                      onClick={() => onDetails(row.id)}
+        {a.spatial.screen !== "volume" && (
+          <div
+            className="signal-profiles"
+            role="group"
+            aria-label="Visible profiles"
+          >
+            <span>Profiles</span>
+            <div className="signal-chips">
+              {a.signals
+                .filter(
+                  (row) =>
+                    row.id === a.image_signal_id ||
+                    a.profile_signal_ids.includes(row.id) ||
+                    busy(row),
+                )
+                .map((row) => {
+                  const job = row.job_id ? editor.jobs[row.job_id] : undefined;
+                  return (
+                    <div
+                      className="signal-chip"
+                      key={row.id}
+                      data-testid="profile-chip"
+                      data-signal-id={row.id}
                     >
-                      <CurveMarker style={curveStyle(row.style_index)} />
-                      <span>{label(row)}</span>
-                      {busy(row) && (
-                        <span role="status">
-                          {job?.status === "queued"
-                            ? "Queued"
-                            : `Calculating ${job?.done ?? 0}/${job?.total ?? "…"}`}
-                        </span>
+                      <button
+                        className="signal-chip-details"
+                        title={`${label(row)} · ${row.recipe?.source === "stored" ? "Stored channel" : "Raw integration"}${row.recipe ? ` · frames ${row.recipe.frames[0]}–${row.recipe.frames[1]}` : ""}`}
+                        onClick={() => onDetails(row.id)}
+                      >
+                        <CurveMarker style={curveStyle(row.style_index)} />
+                        <span>{label(row)}</span>
+                        {busy(row) && (
+                          <span role="status">
+                            {job?.status === "queued"
+                              ? "Queued"
+                              : `Calculating ${job?.done ?? 0}/${job?.total ?? "…"}`}
+                          </span>
+                        )}
+                        {job &&
+                          ["failed", "cancelled", "obsolete"].includes(
+                            job.status,
+                          ) && <span>{job.status}</span>}
+                      </button>
+                      {busy(row) ? (
+                        <button
+                          aria-label={`Cancel ${row.name} calculation`}
+                          onClick={() => void editor.cancel(row.job_id!)}
+                        >
+                          ×
+                        </button>
+                      ) : (
+                        <button
+                          aria-label={`Hide ${row.name} profile`}
+                          disabled={row.id === a.image_signal_id}
+                          title={
+                            row.id === a.image_signal_id
+                              ? "Image signal is always included"
+                              : "Hide profile; keep signal"
+                          }
+                          onClick={() =>
+                            act({
+                              type: "set_profile_visible",
+                              signal_id: row.id,
+                              visible: false,
+                            })
+                          }
+                        >
+                          ×
+                        </button>
                       )}
-                      {job &&
-                        ["failed", "cancelled", "obsolete"].includes(
-                          job.status,
-                        ) && <span>{job.status}</span>}
-                    </button>
-                    {busy(row) ? (
-                      <button
-                        aria-label={`Cancel ${row.name} calculation`}
-                        onClick={() => void editor.cancel(row.job_id!)}
-                      >
-                        ×
-                      </button>
-                    ) : (
-                      <button
-                        aria-label={`Hide ${row.name} profile`}
-                        disabled={row.id === a.image_signal_id}
-                        title={
-                          row.id === a.image_signal_id
-                            ? "Image signal is always included"
-                            : "Hide profile; keep signal"
-                        }
-                        onClick={() =>
-                          act({
-                            type: "set_profile_visible",
-                            signal_id: row.id,
-                            visible: false,
-                          })
-                        }
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+                    </div>
+                  );
+                })}
+            </div>
           </div>
-        </div>
+        )}
         <div className="signal-strip-actions">
           <SignalPicker
             options={a.peaks}

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Analysis } from "../api/client";
 import {
   defaultLayer,
@@ -8,6 +8,7 @@ import {
   type VolumeData,
 } from "./spatialRenderer";
 import { formatNumber } from "../shared/numbers";
+
 export function LayerEditor({
   analysis: a,
   view: v,
@@ -19,6 +20,15 @@ export function LayerEditor({
   data: VolumeData | null;
   onChange: (v: SpatialView) => void;
 }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  useEffect(() => {
+    if (!selected) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelected(null);
+    };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [selected]);
   const percentileKey = JSON.stringify(
     v.layers.map((l) => [l.signal_id, l.percentile]),
   );
@@ -39,167 +49,183 @@ export function LayerEditor({
       ),
     [data, percentileKey, a.display.log],
   );
-  const update = (id: string, patch: Partial<SpatialLayer>) =>
+  const signals = a.signals.filter((s) => s.recipe);
+  const signal = signals.find((s) => s.id === selected);
+  const style = signal
+    ? (v.layers.find((l) => l.signal_id === signal.id) ?? {
+        ...defaultLayer(signal.id),
+        visible: false,
+      })
+    : null;
+  const update = (
+    id: string,
+    patch: Partial<SpatialLayer>,
+    clearSolo = false,
+  ) => {
+    const existing = v.layers.find((l) => l.signal_id === id);
+    const layer = {
+      ...(existing ?? { ...defaultLayer(id), visible: false }),
+      ...patch,
+    };
     onChange({
       ...v,
-      layers: v.layers.map((l) =>
-        l.signal_id === id ? { ...l, ...patch } : l,
-      ),
+      solo: clearSolo ? null : v.solo,
+      layers: existing
+        ? v.layers.map((l) => (l.signal_id === id ? layer : l))
+        : [...v.layers, layer],
     });
+  };
+  const range = signal ? stats.get(signal.id)?.range : null;
+  const threshold = signal ? stats.get(signal.id)?.threshold : null;
   return (
     <aside className="volume-layers" aria-label="Volume layers">
       <h2>3D signals</h2>
-      <label>
-        Add 3D signal
-        <select
-          aria-label="Add 3D signal"
-          value=""
-          onChange={(e) => {
-            if (e.target.value)
-              onChange({
-                ...v,
-                layers: [...v.layers, defaultLayer(e.target.value)],
-              });
-          }}
-        >
-          <option value="">Choose a named signal…</option>
-          {a.signals
-            .filter(
-              (s) => s.recipe && !v.layers.some((l) => l.signal_id === s.id),
-            )
-            .map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-        </select>
-      </label>
       <div className="volume-layer-list">
-        {v.layers.map((l) => {
-          const signal = a.signals.find((s) => s.id === l.signal_id)!;
-          if (!signal) return null;
-          const range = stats.get(l.signal_id)?.range;
-          const threshold = stats.get(l.signal_id)?.threshold;
-          return (
-            <fieldset key={l.signal_id} data-testid="volume-layer">
-              <legend>{signal.name}</legend>
-              <div className="row">
-                <label>
-                  <input
-                    type="checkbox"
-                    aria-label={`Show ${signal.name} in 3D`}
-                    checked={l.visible}
-                    onChange={(e) =>
-                      update(l.signal_id, { visible: e.target.checked })
-                    }
-                  />
-                  Visible
-                </label>
-                <button
-                  aria-label={`Solo ${signal.name}`}
-                  aria-pressed={v.solo === l.signal_id}
-                  onClick={() =>
-                    onChange({
-                      ...v,
-                      solo: v.solo === l.signal_id ? null : l.signal_id,
-                    })
-                  }
-                >
-                  Solo
-                </button>
-                <button
-                  aria-label={`Remove ${signal.name} from 3D`}
-                  onClick={() =>
-                    onChange({
-                      ...v,
-                      layers: v.layers.filter(
-                        (x) => x.signal_id !== l.signal_id,
-                      ),
-                      solo: v.solo === l.signal_id ? null : v.solo,
-                    })
-                  }
-                >
-                  ×
-                </button>
-              </div>
-              <small>
-                Frames {signal.recipe?.frames.join("–")} ·{" "}
-                {signal.recipe?.source} ·{" "}
-                {signal.recipe?.intervals
-                  .map((w) => w.map((x) => formatNumber(x)).join("–"))
-                  .join(", ")}{" "}
-                Th
-              </small>
-              <label>
-                Colormap
-                <select
-                  aria-label={`3D colormap for ${signal.name}`}
-                  value={l.colorscale}
-                  onChange={(e) =>
-                    update(l.signal_id, {
-                      colorscale: e.target.value as SpatialLayer["colorscale"],
-                    })
-                  }
-                >
-                  {[
-                    "Viridis",
-                    "Magma",
-                    "Plasma",
-                    "Cividis",
-                    "Reds",
-                    "Blues",
-                    "Greens",
-                    "Purples",
-                  ].map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Opacity
-                <input
-                  aria-label={`3D opacity for ${signal.name}`}
-                  type="range"
-                  min="0"
-                  max="1"
-                  step=".01"
-                  value={l.opacity}
-                  onChange={(e) =>
-                    update(l.signal_id, { opacity: Number(e.target.value) })
-                  }
-                />
-                <output>{formatNumber(l.opacity)}</output>
-              </label>
-              <label>
-                Nonzero percentile
-                <input
-                  aria-label={`3D percentile for ${signal.name}`}
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={l.percentile}
-                  onChange={(e) =>
-                    update(l.signal_id, { percentile: Number(e.target.value) })
-                  }
-                />
-                <output>{l.percentile}%</output>
-              </label>
-              {range && (
-                <small>
-                  Intensity {formatNumber(range[0])}–{formatNumber(range[1])} ·
-                  cutoff {formatNumber(threshold!)} · {v.scale} scale
-                </small>
-              )}
-            </fieldset>
-          );
-        })}
+        <table className="volume-signal-table">
+          <thead>
+            <tr>
+              <th scope="col">Show</th>
+              <th scope="col">Signal</th>
+              <th scope="col">
+                <span className="visually-hidden">Settings</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {signals.map((s) => {
+              const layer = v.layers.find((l) => l.signal_id === s.id);
+              const visible = !!layer?.visible && (!v.solo || v.solo === s.id);
+              return (
+                <tr key={s.id} data-testid="volume-layer">
+                  <td>
+                    <input
+                      type="checkbox"
+                      aria-label={`Show ${s.name} in 3D`}
+                      checked={visible}
+                      onChange={(e) =>
+                        update(s.id, { visible: e.target.checked }, true)
+                      }
+                    />
+                  </td>
+                  <td>
+                    <span data-testid="volume-signal-name">{s.name}</span>
+                  </td>
+                  <td>
+                    <button
+                      className="volume-signal-settings"
+                      type="button"
+                      aria-label={`3D settings for ${s.name}`}
+                      aria-haspopup="dialog"
+                      aria-expanded={selected === s.id}
+                      onClick={() =>
+                        setSelected(selected === s.id ? null : s.id)
+                      }
+                    >
+                      ⋯
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-      {!v.layers.length && (
-        <p>
-          Add signals from the existing named collection to compare them in 3D.
-        </p>
+      {signal && style && (
+        <div
+          className="volume-signal-popover"
+          role="dialog"
+          aria-label={`3D settings for ${signal.name}`}
+        >
+          <div className="volume-popover-heading">
+            <strong>{signal.name}</strong>
+            <button
+              type="button"
+              aria-label="Close 3D signal settings"
+              onClick={() => setSelected(null)}
+            >
+              ×
+            </button>
+          </div>
+          <small>
+            Frames {signal.recipe?.frames.join("–")} · {signal.recipe?.source} ·{" "}
+            {signal.recipe?.intervals
+              .map((w) => w.map((x) => formatNumber(x)).join("–"))
+              .join(", ")}{" "}
+            Th
+          </small>
+          <label>
+            Colormap
+            <select
+              aria-label={`3D colormap for ${signal.name}`}
+              value={style.colorscale}
+              onChange={(e) =>
+                update(signal.id, {
+                  colorscale: e.target.value as SpatialLayer["colorscale"],
+                })
+              }
+            >
+              {[
+                "Viridis",
+                "Magma",
+                "Plasma",
+                "Cividis",
+                "Reds",
+                "Blues",
+                "Greens",
+                "Purples",
+              ].map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+          <label className="volume-reverse-colormap">
+            <input
+              type="checkbox"
+              aria-label={`Reverse 3D colormap for ${signal.name}`}
+              checked={style.colorscale_reversed}
+              onChange={(e) =>
+                update(signal.id, { colorscale_reversed: e.target.checked })
+              }
+            />
+            Reverse colormap
+          </label>
+          <label>
+            Opacity <output>{formatNumber(style.opacity)}</output>
+            <input
+              aria-label={`3D opacity for ${signal.name}`}
+              type="range"
+              min="0"
+              max="1"
+              step=".01"
+              value={style.opacity}
+              onChange={(e) =>
+                update(signal.id, { opacity: Number(e.target.value) })
+              }
+            />
+          </label>
+          <label>
+            Nonzero percentile <output>{style.percentile}%</output>
+            <input
+              aria-label={`3D percentile for ${signal.name}`}
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={style.percentile}
+              onChange={(e) =>
+                update(signal.id, { percentile: Number(e.target.value) })
+              }
+            />
+          </label>
+          {range && (
+            <small>
+              Intensity {formatNumber(range[0])}–{formatNumber(range[1])} ·
+              cutoff {formatNumber(threshold!)} · {v.scale} scale
+            </small>
+          )}
+        </div>
       )}
+      {!signals.length && <p>Add a signal to view it in 3D.</p>}
     </aside>
   );
 }
