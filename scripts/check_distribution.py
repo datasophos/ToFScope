@@ -185,10 +185,12 @@ def smoke(artifact, output):
                 before_csv = Path(before_download.value.path()).read_bytes()
                 # Persist spatial controls with the full-resolution saved analysis.
                 page.get_by_role('tab', name='3D volume', exact=True).click()
-                page.get_by_label('Add 3D signal', exact=True).select_option(label='Package signal')
+                expect(page.get_by_role('checkbox', name='Show Package signal in 3D', exact=True)).to_be_checked()
+                page.get_by_role('button', name='3D settings for Package signal', exact=True).click()
                 expect(page.get_by_test_id('volume-status')).to_contain_text('1 layers')
                 page.get_by_label('3D colormap for Package signal', exact=True).select_option('Reds')
-                page.get_by_label('3D view mode', exact=True).select_option('tiles')
+                page.get_by_role('button', name='Close 3D signal settings', exact=True).click()
+                page.get_by_role('switch', name='Tiles view', exact=True).click()
                 page.get_by_test_id('volume-canvas').locator('canvas').first.wait_for()
                 spatial_before = page.request.get(url + '/api/v1/analyses').json()[0]['spatial']
                 assert spatial_before['layers'][0]['colorscale'] == 'Reds'
@@ -203,6 +205,14 @@ def smoke(artifact, output):
                     page.get_by_role('link', name='Download copy', exact=True).click()
                 saved_path = next(output_root.rglob('package_copy.h5'))
                 assert Path(saved_download.value.path()).read_bytes() == saved_path.read_bytes()
+                with h5py.File(saved_path, 'r') as saved:
+                    native_table = saved['PeakData/PeakTable'][:]
+                    matches = np.flatnonzero(native_table['label'] == b'Package signal')
+                    assert len(matches) == 1
+                    stored_analysis = json.loads(saved['ToFScope/Analysis/state_json'][:].tobytes())
+                    saved_signal = next(row for row in stored_analysis['signals'] if row['name'] == 'Package signal')
+                    integration = saved[f"ToFScope/Integrations/{saved_signal['materialization_id']}/data"]
+                    np.testing.assert_array_equal(saved['PeakData/PeakData'][:, :, :, matches[0]], integration[:])
                 page.get_by_role('button', name='Close save dialog', exact=True).click()
                 expect(page.get_by_test_id('save-state')).to_have_text('Saved')
                 stop()
@@ -213,8 +223,10 @@ def smoke(artifact, output):
                 page.get_by_role('button', name='Saved files', exact=True).click()
                 page.get_by_role('button', name='◫ package_copy.h5', exact=True).dblclick()
                 expect(page.get_by_test_id('volume-status')).to_contain_text('1 layers')
+                page.get_by_role('button', name='3D settings for Package signal', exact=True).click()
                 expect(page.get_by_label('3D colormap for Package signal', exact=True)).to_have_value('Reds')
-                expect(page.get_by_label('3D view mode', exact=True)).to_have_value('tiles')
+                page.get_by_role('button', name='Close 3D signal settings', exact=True).click()
+                expect(page.get_by_role('switch', name='Tiles view', exact=True)).to_have_attribute('aria-checked', 'true')
                 page.get_by_test_id('volume-canvas').locator('canvas').first.wait_for()
                 spatial_after = page.request.get(url + '/api/v1/analyses').json()[0]['spatial']
                 assert spatial_after['layers'][0]['signal_id'] != spatial_before['layers'][0]['signal_id']

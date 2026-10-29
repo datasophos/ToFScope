@@ -89,7 +89,7 @@ when reopening copies. Existing files are never overwritten. See the
 [save-folder validation](docs/validation/save-folders.md).
 Use the top Open button to open another file in a new tab, then close any tab you
 no longer need. Finish/discard drafts and finish/cancel calculations before saving.
-Closing an unsaved analysis offers Save as, Discard or Cancel. CSV exports visible ROI
+Closing an unsaved analysis offers Save as, Discard or Cancel. Save as also attempts to add eligible named signals as TOFexplorer peaks and reports exclusions. Disjoint peaks carry enclosing native bounds and a midpoint that do not describe the gaps; ToFScope retains the exact recipe. The unified save workflow has not yet been verified in TOFexplorer. CSV exports visible ROI
 profiles at original scale/resolution; PNG includes profile labels.
 
 TOFWERK TOFexplorer `.h5` acquisitions can contain stored ion maps or raw events.

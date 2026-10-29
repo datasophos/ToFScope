@@ -69,7 +69,8 @@ class SaveService:
                 entry.snapshot = replace(entry.snapshot, saved_revision=snapshot.revision)
         self.repository.assert_current(job.owner, snapshot.dataset)
         path = self.repository.path(job.owner, snapshot.dataset)
-        scratch = COPY_BYTES + snapshot.shape[1] * snapshot.shape[2] * 12
+        # Native mass-bin validation processes bounded 65,536-element blocks.
+        scratch = COPY_BYTES + snapshot.shape[1] * snapshot.shape[2] * 12 + 4 * 1024**2
         with self.cache.budget.reserve(job.owner, snapshot.id, scratch):
             return self.files.publish_copy(job.owner, path, task.document, frames, task.name,
                                            job.cancelled, progress, publish_guard, task.directory, task.destination_location)

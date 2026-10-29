@@ -2099,6 +2099,14 @@
       },
       "SavedFile": {
         "properties": {
+          "compatibility_warnings": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Compatibility Warnings",
+            "type": "array"
+          },
           "id": {
             "title": "Id",
             "type": "string"

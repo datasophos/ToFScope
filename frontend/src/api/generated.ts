@@ -1270,6 +1270,11 @@ export interface components {
     };
     /** SavedFile */
     SavedFile: {
+      /**
+       * Compatibility Warnings
+       * @default []
+       */
+      compatibility_warnings: string[];
       /** Id */
       id: string;
       /** Name */
