@@ -7,7 +7,7 @@ import uvicorn
 import h5py
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))
-from fixtures.acquisition import make_acquisition
+from fixtures.acquisition import make_acquisition, make_spatial_acquisition
 from tofscope.config import Settings
 from tofscope.api.app import create_app
 
@@ -15,6 +15,7 @@ with tempfile.TemporaryDirectory(prefix="tofscope-e2e-") as d:
     root = Path(d)
     make_acquisition(root / "a.h5")
     make_acquisition(root / "b.h5")
+    make_spatial_acquisition(root / "spatial.h5")
     (root / "nested").mkdir()
     make_acquisition(root / "nested" / "c.h5")
     make_acquisition(root / "nested" / "raw.h5")

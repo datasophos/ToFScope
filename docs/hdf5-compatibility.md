@@ -131,18 +131,88 @@ does not claim exhaustive coverage of every vendor metadata field.
 
 ## Saved analysis copies
 
-File-centered Save as creates a byte-preserving acquisition copy, then writes a
-version-1 `/ToFScope/Analysis/state_json` uint8 document and full-resolution custom
-values under `/ToFScope/Integrations/<uuid>`. It does not rebuild vendor PeakData
-or flatten disjoint/partial integrations into native vendor channels. The document
-records committed signal relationships and selections; credentials, leases, jobs
+File-centered Save as creates an acquisition copy and stores a versioned
+`/ToFScope/Analysis/state_json` document and full-resolution custom values under
+`/ToFScope/Integrations/<uuid>`. It also attempts to add native vendor peak
+channels for renamed stored signals and full-frame custom signals, preserving
+all original native peaks. Full-frame disjoint signals are marked `Disjoint:`;
+their vendor bounds enclose the gaps and their displayed mass is the midpoint,
+while their precomputed values and ToFScope recipes retain the exact intervals.
+Partial-frame signals and other unsupported cases remain ToFScope-only and are
+listed in the save result. A bounded `native_export_json` report in the analysis
+group records exported indices, intervals and warnings. On repeated saves,
+original vendor peaks are never removed; older exported peaks can remain and are
+reported. This unified workflow has not yet been tested in commercial software.
+The document records committed signal relationships and selections; credentials, leases, jobs
 and original server paths are excluded. Unknown, incomplete, oversized or corrupt
 documents fail explicitly. Custom records are checksum-verified on open, including
 hidden results, and restored without raw reintegration. Original files remain
-unchanged. Vendor/commercial-software round trips and NFS crash durability remain
+unchanged. Commercial-software round trips for the unified workflow and NFS crash durability remain
 unverified; these outputs are supported by ToFScope's own reader.
 
 Integration `recipe_json` uses a bounded one-dimensional uint8 UTF-8 encoding
 (maximum 64 KiB), checked before allocation. Restoring an analysis admits its
 combined embedded recipe decoding scratch in addition to state JSON and frame
 scratch. Unsupported earlier experimental encodings are rejected explicitly.
+
+
+## Saved-copy observation (2026-10-28)
+
+Josh confirmed that a ToFScope saved analysis copy opens in TOFexplorer Viewer
+mode. The copied acquisition's original labeled and nominal peaks appear in its
+peak selector. The saved analysis names `Al 27`, `Ti 48`, and `Fe(?) 54` do not
+appear as labeled peaks in TOFexplorer. Read-only inspection shows that those
+three ToFScope signals refer to existing nominal peak-table indices 26, 47, and
+53; their names are stored in `/ToFScope/Analysis/state_json`. The vendor peak
+table still contains the nominal labels and its existing `[194Pt]` label.
+This observation establishes that the copy opens, not that TOFexplorer reads
+ToFScope analysis names or that numerical values agree across applications.
+
+A second saved analysis copy, observed by Josh in TOFexplorer on 2026-10-28,
+contains the custom signal `48 + 56 + 64`, which also does not appear in its
+labeled peaks. Read-only inspection shows its full-resolution float32 result
+under `/ToFScope/Integrations` and its three disjoint mass intervals in the
+ToFScope analysis document; the native peak cube and table still have 217
+channels and only the existing `[194Pt]` non-nominal label. The current native
+exporter rejects disjoint intervals, because one vendor peak-table lower/upper
+bound cannot faithfully represent the gaps. The screenshot and file inspection
+do not establish numerical agreement or whether a different vendor representation
+could support this recipe.
+
+Josh also opened a third saved analysis copy in TOFexplorer on 2026-10-28.
+Its custom `Wide 27` signal spans one continuous interval, approximately
+23.5275–34.1502 Th, over frames 0–1300. It did not appear in the vendor peak
+list. Read-only inspection confirms the full-resolution result is stored in
+`/ToFScope/Integrations` and the native peak cube and table remain at 217
+channels, with `[194Pt]` as the only non-nominal label. A continuous interval
+alone does not cause Save as to create a vendor peak; native export has other
+validation requirements and is a separate workflow.
+
+## Disjoint native-channel experiment (2026-10-28)
+
+A disposable copy of the saved `48 + 56 + 64` analysis was constructed with
+one additional native peak channel containing the exact precomputed disjoint
+signal. All added frames matched the saved ToFScope result; the original peak
+table and three original frames matched, and the source file identity was
+unchanged. TOFexplorer Viewer mode 2.9.7+3484e0dd displayed the
+`DISJOINT_TEST_48_56_64` entry under Labelled Peaks, and Josh's screenshots show
+its top and front projections and depth profile.
+
+The native peak table in this experiment used the outermost mass bounds and
+their midpoint (displayed as 57.023 Th). Those bounds include gaps that were
+not integrated: they are not an accurate description of the channel. The
+ToFScope integration metadata retains the real three intervals. These observations
+show that TOFexplorer can display this precomputed channel, not that it understands
+the disjoint recipe, would preserve it after editing, or produces numerically
+identical measurements. The artifact is an experiment, not a validated export.
+
+## Saved spatial views (analysis document version 4)
+
+Save as writes schema 4 with validated named-signal references for 3D layers,
+visibility/Solo, colormaps, opacity, percentile, quality, layout/page, numerical
+scale, linked/independent cameras, frame stretch and calibrated exaggeration.
+Opening a saved copy remaps spatial references to the restored signal IDs.
+Older schemas 1–3 default to Explore with no configured spatial layers. The
+preview arrays are disposable display products and are not stored as scientific
+results; saved custom arrays and original-resolution calculations are unchanged.
+This does not implement native acquisition write-back.

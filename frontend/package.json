@@ -18,10 +18,12 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@kitware/vtk.js": "^37.4.6",
     "@playwright/test": "^1.56.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "d3-scale": "^4.0.2",
     "openapi-typescript": "^7.10.0",
     "plotly.js-dist-min": "^3.2.0",
     "prettier": "^3.9.10",

@@ -1,4 +1,4 @@
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, ExitStack
 from dataclasses import dataclass, asdict
 import asyncio
 from pathlib import Path
@@ -63,6 +63,7 @@ class Services:
     saves: object = None
     preparations: object = None
     identification: object = None
+    volumes: object = None
 
 
 def build_services(settings):
@@ -89,6 +90,8 @@ def build_services(settings):
     services.preparations = PreparationService(repo, jobs, services.saves.files)
     from tofscope.application.identification import IdentificationService
     services.identification = IdentificationService(ws, explore, cache, jobs)
+    from tofscope.presentation.volumes import VolumePresenter
+    services.volumes = VolumePresenter(ws, repo, cache, settings)
     return services
 
 
@@ -471,6 +474,21 @@ def create_app(settings, services=None, bootstrap_secret=None):
         return list_data_files(
             settings, directory, query=query, offset=offset, limit=limit
         )
+
+    from tofscope.presentation.volumes import VolumeData
+
+    @app.get('/api/v1/analyses/{aid}/volumes', response_model=VolumeData)
+    def volumes(aid: str, o=Depends(owner), s=Depends(svc)):
+        s.analyses.get(o, aid)
+        reservation = s.cache.budget.reserve(o, aid, settings.response_bytes)
+        try:
+            with ExitStack() as preparation:
+                snapshot = s.volumes.snapshot(o, aid, preparation=preparation)
+                content = json.dumps(snapshot.to_dict(), allow_nan=False, separators=(',', ':')).encode()
+            return ManagedResponse(content, media_type='application/json', reservation=reservation)
+        except BaseException:
+            reservation.release()
+            raise
 
     @app.get("/api/v1/analyses/{aid}/data", response_model=ExploreData)
     def data(

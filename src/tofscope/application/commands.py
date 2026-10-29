@@ -1,3 +1,4 @@
+from tofscope.application.spatial import SpatialView
 from typing import Annotated, Literal, Union
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictBool, TypeAdapter
 
@@ -101,6 +102,11 @@ class SetDepthDisplay(StrictModel):
     coordinates: Literal['frame', 'depth']
 
 
+class SetSpatial(StrictModel):
+    type: Literal['set_spatial']
+    spatial: SpatialView
+
+
 Command = Annotated[
     Union[
         AddStoredSignal,
@@ -115,6 +121,7 @@ Command = Annotated[
         SetDisplay,
         SetDepthAnchors,
         SetDepthDisplay,
+        SetSpatial,
     ],
     Field(discriminator="type"),
 ]

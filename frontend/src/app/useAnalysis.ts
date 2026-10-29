@@ -29,6 +29,7 @@ export function useAnalysis(initial: Analysis) {
       a.revision < current.current.revision
     )
       return;
+    if (JSON.stringify(a) === JSON.stringify(current.current)) return;
     current.current = a;
     queue.current.observe(a);
     setState(a);

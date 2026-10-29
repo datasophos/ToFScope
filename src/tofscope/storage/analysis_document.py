@@ -1,3 +1,4 @@
+from tofscope.application.spatial import SpatialView, validate_spatial
 """Bounded, versioned analysis state, independent of service identities and plots."""
 from dataclasses import replace
 import json
@@ -83,7 +84,8 @@ class DocumentMeasurement(StrictModel):
 
 
 class SavedAnalysisDocument(StrictModel):
-    schema_version: Literal[1, 2, 3] = 3
+    schema_version: Literal[1, 2, 3, 4] = 4
+    spatial: SpatialView = SpatialView()
     isotope_measurement: DocumentMeasurement | None = None
     shape: tuple[StrictInt, StrictInt, StrictInt, StrictInt]
     signals: tuple[DocumentSignal, ...] = Field(min_length=1, max_length=129)
@@ -107,6 +109,7 @@ class SavedAnalysisDocument(StrictModel):
             raise ValueError('Saved calibration must include sorted anchors and fixed origin.')
         if self.depth_coordinates == 'depth' and len(anchors) < 2:
             raise ValueError('Saved physical coordinates require positive anchors.')
+        validate_spatial(self.spatial, self.signals)
         ids = {s.id for s in self.signals}
         if len(ids) != len(self.signals) or self.image_signal_id not in ids:
             raise ValueError('Invalid saved signal relationships.')
@@ -142,7 +145,7 @@ def encode_document(snapshot: AnalysisSnapshot) -> SavedAnalysisDocument:
     from tofscope.application.identification import current_result
     measurement = current_result(snapshot)
     captured = DocumentMeasurement(**{key: getattr(measurement, key) for key in DocumentMeasurement.model_fields}) if measurement else None
-    return SavedAnalysisDocument(shape=snapshot.shape, signals=rows, isotope_measurement=captured,
+    return SavedAnalysisDocument(spatial=snapshot.spatial, shape=snapshot.shape, signals=rows, isotope_measurement=captured,
         image_signal_id=snapshot.image_signal_id, profile_signal_ids=snapshot.profile_signal_ids,
         next_style_index=snapshot.next_style_index,
         roi=snapshot.roi, depth=snapshot.depth, display=vars(snapshot.display), depth_anchors=[vars(x) for x in snapshot.depth_anchors],
@@ -155,7 +158,7 @@ def read_document(path: Path, limits) -> SavedAnalysisDocument | None:
             if ROOT not in handle:
                 return None
             group = handle[ROOT]
-            if not isinstance(group, h5py.Group) or group.attrs.get('schema_version') not in (1, 2, 3) or group.attrs.get('complete') != np.bool_(True):
+            if not isinstance(group, h5py.Group) or group.attrs.get('schema_version') not in (1, 2, 3, 4) or group.attrs.get('complete') != np.bool_(True):
                 raise ValueError('Unsupported or incomplete saved analysis.')
             data = group['state_json']
             if not isinstance(data, h5py.Dataset) or data.ndim != 1 or data.dtype != np.uint8 or not 0 < data.size <= min(MAX_DOCUMENT_BYTES, limits.response_bytes):
@@ -182,7 +185,11 @@ def restore_snapshot(document: SavedAnalysisDocument, initial: AnalysisSnapshot)
         recipe = replace(recipe, id=str(uuid4()))
         rows.append(SignalSnapshot(ids[row.id], row.name, row.style_index, recipe,
                                    materialization_id=row.materialization_id, assignment=row.assignment))
-    restored = replace(initial, signals=tuple(rows), image_signal_id=ids[document.image_signal_id],
+    spatial = document.spatial.model_copy(update={
+        'layers': tuple(layer.model_copy(update={'signal_id': ids[layer.signal_id]}) for layer in document.spatial.layers),
+        'solo': ids[document.spatial.solo] if document.spatial.solo else None,
+    })
+    restored = replace(initial, spatial=spatial, signals=tuple(rows), image_signal_id=ids[document.image_signal_id],
         profile_signal_ids=tuple(ids[x] for x in document.profile_signal_ids),
         next_style_index=document.next_style_index,
         roi=document.roi, depth=document.depth, display=DisplaySettings(**document.display.model_dump()), saved_revision=initial.revision,

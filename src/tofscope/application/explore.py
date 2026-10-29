@@ -110,6 +110,9 @@ class ExploreService:
                         raise ValueError('Coverage outside acquisition.')
                     updated = replace(signal, recipe=replace(signal.recipe, frames=tuple(c.frames)), recipe_version=signal.recipe_version+1)
                     patch['signals'] = tuple(updated if r.id == signal.id else r for r in s.signals)
+            elif kind == 'set_spatial':
+                from tofscope.application.spatial import validate_spatial
+                patch['spatial'] = validate_spatial(c.spatial, s.signals)
             elif kind == 'set_roi':
                 x0, x1, y0, y1 = c.roi
                 if not 0 <= x0 <= x1 < s.shape[2] or not 0 <= y0 <= y1 < s.shape[1]:
@@ -134,6 +137,11 @@ class ExploreService:
                 patch.update(depth_unit=c.unit, depth_coordinates=c.coordinates)
             elif kind == 'set_display':
                 patch['display'] = DisplaySettings(c.log, c.relative, c.image, s.display.spectrum_log if c.spectrum_log is None else c.spectrum_log, s.display.colormap if c.colormap is None else c.colormap)
+            if kind == 'remove_signal':
+                patch['spatial'] = s.spatial.model_copy(update={
+                    'layers': tuple(x for x in s.spatial.layers if x.signal_id != signal.id),
+                    'solo': None if s.spatial.solo == signal.id else s.spatial.solo,
+                })
             result = normalize_view(replace(s, revision=s.revision+1, **patch))
             if result.isotope_measurement:
                 from tofscope.application.identification import current_result

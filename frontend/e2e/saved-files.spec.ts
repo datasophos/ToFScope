@@ -43,7 +43,9 @@ test("save a copy restores signal and display state and downloads only on reques
   await page
     .getByRole("button", { name: "Close analysis 1", exact: true })
     .click();
-  await expect(page.getByRole("tab")).toHaveCount(0);
+  await expect(
+    page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab"),
+  ).toHaveCount(0);
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
@@ -90,12 +92,16 @@ test("a clean saved analysis still protects an uncommitted draft on close", asyn
   });
   await expect(prompt).toBeVisible();
   await prompt.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(page.getByRole("tab")).toHaveCount(1);
+  await expect(
+    page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab"),
+  ).toHaveCount(1);
   await page
     .getByRole("button", { name: "Close analysis 1", exact: true })
     .click();
   await prompt.getByRole("button", { name: "Discard", exact: true }).click();
-  await expect(page.getByRole("tab")).toHaveCount(0);
+  await expect(
+    page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab"),
+  ).toHaveCount(0);
 });
 
 test("close can save a new copy and filename collisions retain the unsaved analysis", async ({
@@ -122,7 +128,9 @@ test("close can save a new copy and filename collisions retain the unsaved analy
     .click();
   await page.getByLabel("Saved filename", { exact: true }).fill("closed.h5");
   await page.getByRole("button", { name: "Save copy", exact: true }).click();
-  await expect(page.getByRole("tab")).toHaveCount(0);
+  await expect(
+    page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab"),
+  ).toHaveCount(0);
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
@@ -208,6 +216,9 @@ test("hidden union results reopen with exact profiles and no new integration", a
   await page.getByLabel("Saved filename", { exact: true }).fill("union.h5");
   await page.getByRole("button", { name: "Save copy", exact: true }).click();
   await expect(page.getByText("Copy saved.", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText(/Union: not available as a TOFexplorer peak/),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "Close save dialog", exact: true })
     .click();
@@ -300,16 +311,22 @@ test("opening a new file and closing the old tab stays clean until an edit is ma
     page.getByRole("dialog", { name: "Unsaved changes", exact: true }),
   ).toBeHidden();
   await page.getByRole("button", { name: "◫ b.h5", exact: true }).dblclick();
-  await expect(page.getByRole("tab")).toHaveCount(2);
+  await expect(
+    page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab"),
+  ).toHaveCount(2);
   await page
     .getByRole("button", { name: "Close analysis 1", exact: true })
     .click();
-  await expect(page.getByRole("tab")).toHaveCount(1);
+  await expect(
+    page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab"),
+  ).toHaveCount(1);
   await expect(page.getByTestId("save-state")).toHaveText("No changes");
   await page
     .getByRole("button", { name: "Close analysis 1", exact: true })
     .click();
-  await expect(page.getByRole("tab")).toHaveCount(0);
+  await expect(
+    page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab"),
+  ).toHaveCount(0);
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
@@ -354,7 +371,9 @@ test("save folder picker creates a subfolder and the saved copy can be reopened 
     exact: true,
   });
   for (const name of ["Acquisitions", "Saved files"]) {
-    const location = picker.getByRole("button", { name, exact: true });
+    const location = picker
+      .getByRole("complementary", { name: "Locations" })
+      .getByRole("button", { name, exact: true });
     const bounds = (await location.boundingBox())!;
     const detail = (await location.locator("small").boundingBox())!;
     expect(detail.y + detail.height).toBeLessThanOrEqual(
@@ -423,5 +442,50 @@ test("save folder picker creates a subfolder and the saved copy can be reopened 
     .getByRole("button", { name: "◫ nested.h5", exact: true })
     .dblclick();
   await expect(open).toBeHidden();
-  await expect(page.getByRole("tab")).toHaveCount(2);
+  await expect(
+    page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab"),
+  ).toHaveCount(2);
+});
+
+test("disjoint full-frame save explains native bounds before and after saving", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `disjoint-native-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
+  await page
+    .getByTestId("panel-spectrum")
+    .getByRole("button", { name: "Create signal", exact: true })
+    .click();
+  await page.getByLabel("Signal name", { exact: true }).fill("Union full");
+  await page.getByLabel("Mass lower 1", { exact: true }).fill("1");
+  await page.getByLabel("Mass upper 1", { exact: true }).fill("2");
+  await page.getByRole("button", { name: "Add interval", exact: true }).click();
+  await page.getByLabel("Mass lower 2", { exact: true }).fill("3");
+  await page.getByLabel("Mass upper 2", { exact: true }).fill("4");
+  await page
+    .getByRole("button", { name: "Calculate signal", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Signal editor" }),
+  ).toBeHidden();
+  await page.getByRole("button", { name: "Save as…", exact: true }).click();
+  await expect(
+    page.getByText(
+      /Disjoint signals included as TOFexplorer peaks use enclosing/,
+    ),
+  ).toBeVisible();
+  await page
+    .getByLabel("Saved filename", { exact: true })
+    .fill("union-full.h5");
+  await page.getByRole("button", { name: "Save copy", exact: true }).click();
+  await expect(page.getByText("Copy saved.", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText(/Union full: TOFexplorer peak bounds include gaps/),
+  ).toBeVisible();
 });

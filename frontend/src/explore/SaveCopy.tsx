@@ -107,8 +107,18 @@ export function SaveCopy({
             </header>
             <p>
               The new HDF5 file includes your committed signals, results and
-              analysis settings. The original stays unchanged.
+              analysis settings. Eligible signals are also included as
+              TOFexplorer peaks. The original stays unchanged.
             </p>
+            {analysis.signals.some(
+              (signal) => signal.recipe && signal.recipe.intervals.length > 1,
+            ) && (
+              <p>
+                Disjoint signals included as TOFexplorer peaks use enclosing
+                bounds and their midpoint there; the values exclude the gaps.
+                ToFScope retains the exact intervals.
+              </p>
+            )}
             <FolderLocations
               directory={directory}
               location={destinationLocation}
@@ -193,6 +203,18 @@ export function SaveCopy({
               <div>
                 <p role="status">Copy saved.</p>
                 <p>{job.saved_file.name}</p>
+                {(job.saved_file.compatibility_warnings?.length ?? 0) > 0 && (
+                  <div role="status" className="save-compatibility-notices">
+                    <strong>TOFexplorer compatibility</strong>
+                    <ul>
+                      {job.saved_file.compatibility_warnings.map(
+                        (warning, index) => (
+                          <li key={index}>{warning}</li>
+                        ),
+                      )}
+                    </ul>
+                  </div>
+                )}
                 <p className="muted">
                   Large files may take a long time to download. Downloading is
                   optional; the saved copy stays on the server.

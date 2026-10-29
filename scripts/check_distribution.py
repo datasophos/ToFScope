@@ -171,6 +171,7 @@ def smoke(artifact, output):
                 measurements.get_by_role('button', name='Close', exact=True).click()
                 page.get_by_role('button', name='Calibrate depth', exact=True).click()
                 dialog = page.get_by_role('dialog', name='Depth calibration', exact=True)
+                expect(dialog.get_by_label('Anchor frame', exact=True)).to_be_enabled()
                 dialog.get_by_label('Anchor frame', exact=True).fill('1')
                 dialog.get_by_label('Known depth', exact=True).fill('100')
                 dialog.get_by_role('button', name='Add anchor', exact=True).click()
@@ -182,6 +183,17 @@ def smoke(artifact, output):
                 with page.expect_download() as before_download:
                     page.get_by_role('button', name='Profile CSV', exact=True).click()
                 before_csv = Path(before_download.value.path()).read_bytes()
+                # Persist spatial controls with the full-resolution saved analysis.
+                page.get_by_role('tab', name='3D volume', exact=True).click()
+                expect(page.get_by_role('checkbox', name='Show Package signal in 3D', exact=True)).to_be_checked()
+                page.get_by_role('button', name='3D settings for Package signal', exact=True).click()
+                expect(page.get_by_test_id('volume-status')).to_contain_text('1 layers')
+                page.get_by_label('3D colormap for Package signal', exact=True).select_option('Reds')
+                page.get_by_role('button', name='Close 3D signal settings', exact=True).click()
+                page.get_by_role('switch', name='Tiles view', exact=True).click()
+                page.get_by_test_id('volume-canvas').locator('canvas').first.wait_for()
+                spatial_before = page.request.get(url + '/api/v1/analyses').json()[0]['spatial']
+                assert spatial_before['layers'][0]['colorscale'] == 'Reds'
                 downloads.clear()
                 page.get_by_role('button', name='Save as…', exact=True).click()
                 page.get_by_label('Saved filename', exact=True).fill('package_copy.h5')
@@ -193,6 +205,14 @@ def smoke(artifact, output):
                     page.get_by_role('link', name='Download copy', exact=True).click()
                 saved_path = next(output_root.rglob('package_copy.h5'))
                 assert Path(saved_download.value.path()).read_bytes() == saved_path.read_bytes()
+                with h5py.File(saved_path, 'r') as saved:
+                    native_table = saved['PeakData/PeakTable'][:]
+                    matches = np.flatnonzero(native_table['label'] == b'Package signal')
+                    assert len(matches) == 1
+                    stored_analysis = json.loads(saved['ToFScope/Analysis/state_json'][:].tobytes())
+                    saved_signal = next(row for row in stored_analysis['signals'] if row['name'] == 'Package signal')
+                    integration = saved[f"ToFScope/Integrations/{saved_signal['materialization_id']}/data"]
+                    np.testing.assert_array_equal(saved['PeakData/PeakData'][:, :, :, matches[0]], integration[:])
                 page.get_by_role('button', name='Close save dialog', exact=True).click()
                 expect(page.get_by_test_id('save-state')).to_have_text('Saved')
                 stop()
@@ -202,12 +222,22 @@ def smoke(artifact, output):
                 page.get_by_role('button', name='Open TOFexplorer (.h5) file').click()
                 page.get_by_role('button', name='Saved files', exact=True).click()
                 page.get_by_role('button', name='◫ package_copy.h5', exact=True).dblclick()
+                expect(page.get_by_test_id('volume-status')).to_contain_text('1 layers')
+                page.get_by_role('button', name='3D settings for Package signal', exact=True).click()
+                expect(page.get_by_label('3D colormap for Package signal', exact=True)).to_have_value('Reds')
+                page.get_by_role('button', name='Close 3D signal settings', exact=True).click()
+                expect(page.get_by_role('switch', name='Tiles view', exact=True)).to_have_attribute('aria-checked', 'true')
+                page.get_by_test_id('volume-canvas').locator('canvas').first.wait_for()
+                spatial_after = page.request.get(url + '/api/v1/analyses').json()[0]['spatial']
+                assert spatial_after['layers'][0]['signal_id'] != spatial_before['layers'][0]['signal_id']
+                expect(page.get_by_test_id('save-state')).to_have_text('Saved')
+                page.get_by_role('tab', name='Explore', exact=True).click()
                 expect(page.get_by_test_id('panel-ion')).to_contain_text('Package signal')
                 expect(page.get_by_test_id('panel-spectrum')).to_have_attribute('data-y-scale', 'linear')
                 expect(page.get_by_test_id('panel-profile')).to_have_attribute('data-x-axis', 'Depth (µm)')
                 page.get_by_test_id('panel-profile').get_by_label('Depth profile selection').hover()
                 expect(page.get_by_test_id('panel-profile').get_by_role('tooltip')).to_contain_text('Depth =')
-                expect(page.get_by_test_id('save-state')).to_have_text('Saved')
+                expect(page.get_by_test_id('save-state')).to_have_text('Unsaved changes')
                 page.get_by_role('button', name='Isotope measurements', exact=True).click()
                 restored_measurements = page.get_by_role('dialog', name='Isotope measurements', exact=True)
                 expect(restored_measurements.get_by_test_id('isotope-results')).to_contain_text('H-2:+1')
@@ -245,6 +275,7 @@ def smoke(artifact, output):
                 runtime_dependencies_clean=True, offline_browser=True,
                 raw_preparation_without_scientific_runtime=True,
                 plots_integration_export=True, identification_and_measurement_restore=True, saved_copy_restart_source_removed=True,
+                spatial_preview_and_state_restore=True,
                 exact_restored_csv=True, calibrated_copy_roundtrip=True, scientific_axes_hover=True, colormap_roundtrip=True, optional_download=True,
                 interrupted_download_preserves_saved_file=True)
         finally:

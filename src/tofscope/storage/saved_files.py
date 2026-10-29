@@ -1,8 +1,9 @@
 """Private, self-contained saved copies with bounded copying and exclusive publication."""
 import base64
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 from dataclasses import dataclass
 import hashlib
+import json
 import logging
 import os
 from pathlib import Path
@@ -28,6 +29,7 @@ class SavedFile:
     id: str
     name: str
     size: int
+    compatibility_warnings: tuple[str, ...] = ()
 
 
 def filename(value):
@@ -189,17 +191,51 @@ class SavedFileStore:
             if content_identity(now) != source_identity:
                 raise ValueError('Source changed while saving.')
         check()
+        previous_stale = ()
         with h5py.File(source, 'r') as handle:
             AcquisitionRepository.validate_layout(handle)
+            report_path = 'ToFScope/Analysis/native_export_json'
+            if report_path in handle:
+                try:
+                    report = handle[report_path]
+                    if not isinstance(report, h5py.Dataset) or report.ndim != 1 or report.dtype != np.uint8 or report.size > MAX_DOCUMENT_BYTES:
+                        raise ValueError('Invalid report encoding.')
+                    stored = json.loads(report[:].tobytes())
+                    entries = stored.get('historical_warnings', [])
+                    if not isinstance(entries, list) or len(entries) > 1024 or any(not isinstance(w, str) or len(w) > 1024 for w in entries):
+                        raise ValueError('Invalid historical notices.')
+                    previous_stale = tuple(entries)
+                except (ValueError, TypeError, AttributeError, UnicodeError, KeyError, RecursionError):
+                    previous_stale = ('Earlier TOFexplorer peaks may remain; the prior compatibility report could not be read.',)
+            peak_data = handle['PeakData/PeakData']
+            native_bytes = peak_data.size * peak_data.dtype.itemsize
+            chunk_overhead = 0
+            if peak_data.chunks:
+                from math import prod
+                largest_shape = (*peak_data.shape[:-1], peak_data.shape[-1] + len(document.signals))
+                chunk_count = prod((size + chunk - 1) // chunk for size, chunk in zip(largest_shape, peak_data.chunks))
+                chunk_overhead = chunk_count * 512
         previous = read_document(source, self.settings)
         encoded = document.model_dump_json().encode()
         if len(encoded) > MAX_DOCUMENT_BYTES:
             raise ValueError('Analysis metadata exceeds save limits.')
         custom_bytes = sum((s.recipe.frames[1] - s.recipe.frames[0] + 1) * document.shape[1] * document.shape[2] * 4 for s in document.signals if s.materialization_id)
+        # Rebuilding sparse multi-channel chunks can materialize the entire cube.
+        # Reserve for uncompressed native data and overhead, not just its current compressed size.
+        aliases = sum(1 for s in document.signals if s.recipe.source == 'stored' and s.name != s.recipe.label)
+        alias_bytes = aliases * document.shape[0] * document.shape[1] * document.shape[2] * 4
+        rebuild_bytes = native_bytes + custom_bytes + alias_bytes + chunk_overhead + initial.st_size
         needed = initial.st_size + custom_bytes + max(64 * 1024**2, custom_bytes // 10) + len(encoded) * 2
         temporary = directory / f'.tmp-{uuid4()}.h5'
         checksums = {}
-        with reserve_disk(directory, needed):
+        with ExitStack() as reservations, ExitStack() as copy_reservation:
+            copy_reservation.enter_context(reserve_disk(directory, needed))
+            def reserve_rebuild():
+                # The temporary copy is already reflected in disk_usage().
+                # Transfer the reservation atomically rather than counting it twice.
+                with _disk_lock:
+                    copy_reservation.close()
+                    reservations.enter_context(reserve_disk(directory, rebuild_bytes + max(64 * 1024**2, rebuild_bytes // 10)))
             try:
                 copied = 0
                 with source.open('rb') as src, temporary.open('xb') as out:
@@ -215,6 +251,7 @@ class SavedFileStore:
                         progress('Copying acquisition', copied, initial.st_size)
                     out.flush()
                     os.fsync(out.fileno())
+                del buffer
                 check()
                 with h5py.File(temporary, 'r+') as handle:
                     if previous:
@@ -243,6 +280,16 @@ class SavedFileStore:
                         write_integration_group(handle, record, checked_frames())
                         checksums[row.materialization_id] = digest.hexdigest()
                         handle[f'ToFScope/Integrations/{row.materialization_id}'].attrs['sha256'] = digest.hexdigest()
+                    from tofscope.storage.native_saved_copy import prepare_native_channels
+                    document, compatibility_warnings = prepare_native_channels(
+                        handle, document, check, progress, previous,
+                        reserve_rebuild, previous_stale,
+                    )
+                    encoded = document.model_dump_json().encode()
+                    if len(encoded) > MAX_DOCUMENT_BYTES:
+                        raise ValueError('Analysis metadata exceeds save limits.')
+                    del group['state_json']
+                    group.create_dataset('state_json', data=np.frombuffer(encoded, dtype='uint8'))
                     group.attrs['complete'] = True
                     handle.flush()
                 self._verify(temporary, document, checksums, check)
@@ -252,7 +299,7 @@ class SavedFileStore:
                 # The caller holds its revision lock across validation and publication.
                 # A callback may return a context manager to make that interval explicit.
                 from contextlib import nullcontext
-                result = SavedFile(self.identifier(owner, destination), name, temporary.stat().st_size)
+                result = SavedFile(self.identifier(owner, destination), name, temporary.stat().st_size, tuple(compatibility_warnings))
                 guard = before_publish()
                 with guard if guard is not None else nullcontext():
                     check()

@@ -1,0 +1,3 @@
+# Preserve literal shader text in generated third-party JavaScript bundles.
+src/tofscope/static/assets/*.js -whitespace linguist-generated=true
+src/tofscope/static/assets/*.css linguist-generated=true

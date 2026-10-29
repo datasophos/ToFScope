@@ -16,7 +16,7 @@ test("two users, A/B/A tabs, automatic tab recovery and denied foreign downloads
     await page
       .getByRole("button", { name: "◫ " + name, exact: true })
       .dblclick();
-    await expect(page.getByRole("tab").last()).toHaveAttribute(
+    await expect(page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab").last()).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -24,7 +24,7 @@ test("two users, A/B/A tabs, automatic tab recovery and denied foreign downloads
   await open(p, "a.h5");
   await open(p, "b.h5");
   await open(p, "a.h5");
-  await expect(p.getByRole("tab")).toHaveCount(3);
+  await expect(p.getByRole("tablist", { name: "Open analyses" }).getByRole("tab")).toHaveCount(3);
   await p
     .getByRole("button", { name: /^ROI:/ })
     .filter({ visible: true })
@@ -55,7 +55,7 @@ test("two users, A/B/A tabs, automatic tab recovery and denied foreign downloads
   ).toBe(404);
   const view = await a.newPage();
   await view.goto("/");
-  await expect(view.getByRole("tab")).toHaveCount(3);
+  await expect(view.getByRole("tablist", { name: "Open analyses" }).getByRole("tab")).toHaveCount(3);
   await expect(
     view
       .getByRole("region", { name: "Signals", exact: true })

@@ -1,3 +1,4 @@
+from tofscope.application.spatial import SpatialView
 from tofscope.application.identification_models import AtomicAssignment, MeasurementResult
 from dataclasses import dataclass
 from typing import Literal
@@ -70,3 +71,4 @@ class AnalysisSnapshot:
     depth_coordinates: Literal['frame', 'depth'] = 'frame'
     isotope_measurement: MeasurementResult | None = None
     isotope_job_id: str | None = None
+    spatial: SpatialView = SpatialView()

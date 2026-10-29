@@ -70,7 +70,7 @@ test("independent files, exact Explore state, union calculation and offline down
     await page.getByRole("button", { name: "Open TOFexplorer file" }).click();
     await page.getByRole("button", { name: `◫ ${name}` }).dblclick();
   }
-  await expect(page.getByRole("tab")).toHaveCount(3);
+  await expect(page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab")).toHaveCount(3);
   await page.getByRole("tab", { name: "1 · a.h5" }).click();
   await expect(
     page.getByRole("button", { name: /^ROI:/ }).filter({ visible: true }),

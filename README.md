@@ -64,15 +64,16 @@ Selection and keyboard navigation still use original acquisition frames, and
 unit changes never resample intensities. Removing positive anchors restores
 frame coordinates. CSV includes canonical `depth_nm`, blank for unknown depths,
 even when viewing in frames. A single plane's display footprint does not imply
-known thickness. Sections and 3D remain future work.
+known thickness. Linked XZ/YZ cross-sections remain deferred.
 
 **Save as…** creates a self-contained HDF5 copy with all committed signals,
 full-resolution custom results (including hidden signals), names/colors, ROI,
 frame/depth selections, calibration anchors and coordinate/unit choices, and display settings. Open it from **Saved files** to
 restore the analysis after a restart or on another machine. Saving does not
 change the input, including when the input is an earlier saved copy. New copies
-use analysis document version 2; version 1 copies open in frame coordinates with
-no positive anchors. Older application versions reject version 2 documents.
+use analysis document version 4, including isotope results and spatial view state.
+Versions 1–3 remain readable with defaults for fields absent in those versions.
+Older applications reject version 4 documents.
 
 Saving defaults to the server; **Download copy** is an explicit optional action.
 Large files may take a long time to transfer. A saved copy includes the acquisition,
@@ -88,7 +89,7 @@ when reopening copies. Existing files are never overwritten. See the
 [save-folder validation](docs/validation/save-folders.md).
 Use the top Open button to open another file in a new tab, then close any tab you
 no longer need. Finish/discard drafts and finish/cancel calculations before saving.
-Closing an unsaved analysis offers Save as, Discard or Cancel. CSV exports visible ROI
+Closing an unsaved analysis offers Save as, Discard or Cancel. Save as also attempts to add eligible named signals as TOFexplorer peaks and reports exclusions. Disjoint peaks carry enclosing native bounds and a midpoint that do not describe the gaps; ToFScope retains the exact recipe. The unified save workflow has not yet been verified in TOFexplorer. CSV exports visible ROI
 profiles at original scale/resolution; PNG includes profile labels.
 
 TOFWERK TOFexplorer `.h5` acquisitions can contain stored ion maps or raw events.
@@ -128,8 +129,40 @@ CSV and Settings JSON retain scope, mass errors, uncertainties and provenance;
 Save as/reopen also preserves isotope assignments and captured results. See
 [identification validation](docs/validation/identification.md).
 
-The application still lacks full prototype feature parity. Sections, volume
-tools and controlled native saves are specified in the [completion plan](docs/superpowers/plans/2026-10-18-react-fastapi-completion.md).
+**3D volume** compares existing named signals as an overlay or tiled views. The
+signal table lists every ready named signal; the current image signal is shown
+initially. Check the signals to display and open a signal's settings to adjust
+its colormap, opacity and percentile threshold. Independent intensity
+scales are the default; Shared numerical uses one range across visible signals.
+Percentile thresholds use positive intensities, with a robust 99.7th-percentile
+upper display limit. Log colors uses log(1+intensity); depth profiles and exports retain original numerical intensities.
+Tiles show four layers per page and support linked or independent saved cameras.
+3D offers All frames and Frame range; single-frame navigation remains in Explore.
+Entering 3D from a single frame switches to All frames.
+Drag or use arrow keys to orbit, scroll to zoom, or Shift-drag to pan; reset, orthographic projection
+and maximize controls are available. Choose an axis-aligned camera view or rotate in 15° steps for precise positioning; these controls apply to all tile cameras. ROI and Viewing depths apply to every layer.
+
+Fast previews are capped at 96×32×32; Detailed at 160×48×48. All visible layers
+share a 500,000-voxel budget, including layers on other tile pages. vtk.js
+renders complete signals as volumes. Sparse, incomplete, thin, constant,
+negative or high-threshold selections use vtk points at the original preview
+coordinates. Overlays group volume signals into vtk volume actors; their
+compositing is qualitative. Nonuniform XY, frame or calibrated-depth preview coordinates are
+interpolated for display and a warning is shown; profiles, measurements and
+exports use original-resolution data. For extreme aspect ratios, vtk limits ray
+sampling and warns that fine features may be missed. Intensity hover is not yet
+available. Camera movement and unchanged polling reuse existing geometry. Preview means
+use actual valid samples in partial blocks. Missing coverage remains missing;
+profiles and CSV use original resolution. Physical depth clips unknown frames
+before pooling, and block coordinates average calibrated samples across anchor
+slope changes. At 1× depth exaggeration, known XY/depth geometry uses common µm
+units; Frame stretch is a separate display ratio. Thin/constant selections use
+points. Transparent overlays are qualitative; show one signal or use tiles to inspect occlusion.
+Save as preserves layer styles, layout, page, scale, cameras and exaggeration.
+See [spatial qualification](docs/validation/spatial-renderer-decision.md).
+
+The application still lacks full prototype feature parity. Linked cross-sections
+and controlled native saves remain specified in the [completion plan](docs/superpowers/plans/2026-10-18-react-fastapi-completion.md).
 In-place acquisition writes remain unavailable. Live tabs/jobs are in memory;
 reopen saved HDF5 copies to restore committed work after a restart. Shared use requires a trusted authenticated proxy;
 actual NFS deployment remains unqualified.

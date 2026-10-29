@@ -270,6 +270,38 @@
             "title": "Signals",
             "type": "array"
           },
+          "spatial": {
+            "$ref": "#/components/schemas/SpatialView",
+            "default": {
+              "camera": {
+                "center": {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "z": 0.0
+                },
+                "eye": {
+                  "x": 1.25,
+                  "y": 1.25,
+                  "z": 1.25
+                },
+                "projection": "perspective",
+                "up": {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "z": 1.0
+                }
+              },
+              "depth_exaggeration": 1.0,
+              "frame_stretch": 1.2,
+              "layers": [],
+              "linked": true,
+              "mode": "overlay",
+              "page": 0,
+              "quality": "Fast",
+              "scale": "independent",
+              "screen": "explore"
+            }
+          },
           "stale": {
             "default": false,
             "title": "Stale",
@@ -473,6 +505,46 @@
         "title": "Bootstrap",
         "type": "object"
       },
+      "Camera": {
+        "additionalProperties": false,
+        "properties": {
+          "center": {
+            "$ref": "#/components/schemas/Vector",
+            "default": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "eye": {
+            "$ref": "#/components/schemas/Vector",
+            "default": {
+              "x": 1.25,
+              "y": 1.25,
+              "z": 1.25
+            }
+          },
+          "projection": {
+            "default": "perspective",
+            "enum": [
+              "perspective",
+              "orthographic"
+            ],
+            "title": "Projection",
+            "type": "string"
+          },
+          "up": {
+            "$ref": "#/components/schemas/Vector",
+            "default": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 1.0
+            }
+          }
+        },
+        "title": "Camera",
+        "type": "object"
+      },
       "CandidateInput": {
         "additionalProperties": false,
         "properties": {
@@ -578,6 +650,7 @@
                 "set_display": "#/components/schemas/SetDisplay",
                 "set_profile_visible": "#/components/schemas/SetProfileVisible",
                 "set_roi": "#/components/schemas/SetROI",
+                "set_spatial": "#/components/schemas/SetSpatial",
                 "set_stored_coverage": "#/components/schemas/SetStoredCoverage"
               },
               "propertyName": "type"
@@ -618,6 +691,9 @@
               },
               {
                 "$ref": "#/components/schemas/SetDepthDisplay"
+              },
+              {
+                "$ref": "#/components/schemas/SetSpatial"
               }
             ],
             "title": "Command"
@@ -1297,6 +1373,70 @@
         "title": "JobSnapshot",
         "type": "object"
       },
+      "LayerData": {
+        "properties": {
+          "coverage": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Coverage",
+            "type": "array"
+          },
+          "frames": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Frames",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "signal_id": {
+            "title": "Signal Id",
+            "type": "string"
+          },
+          "valid_counts": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Valid Counts",
+            "type": "array"
+          },
+          "values": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Values",
+            "type": "array"
+          }
+        },
+        "required": [
+          "signal_id",
+          "label",
+          "frames",
+          "values",
+          "coverage",
+          "valid_counts"
+        ],
+        "title": "LayerData",
+        "type": "object"
+      },
       "MeasureIsotopes": {
         "additionalProperties": false,
         "properties": {
@@ -1959,6 +2099,14 @@
       },
       "SavedFile": {
         "properties": {
+          "compatibility_warnings": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Compatibility Warnings",
+            "type": "array"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -2250,6 +2398,25 @@
         "title": "SetROI",
         "type": "object"
       },
+      "SetSpatial": {
+        "additionalProperties": false,
+        "properties": {
+          "spatial": {
+            "$ref": "#/components/schemas/SpatialView"
+          },
+          "type": {
+            "const": "set_spatial",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "spatial"
+        ],
+        "title": "SetSpatial",
+        "type": "object"
+      },
       "SetStoredCoverage": {
         "additionalProperties": false,
         "properties": {
@@ -2459,6 +2626,193 @@
         "title": "SingleFrame",
         "type": "object"
       },
+      "SpatialLayer": {
+        "additionalProperties": false,
+        "properties": {
+          "camera": {
+            "$ref": "#/components/schemas/Camera",
+            "default": {
+              "center": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "eye": {
+                "x": 1.25,
+                "y": 1.25,
+                "z": 1.25
+              },
+              "projection": "perspective",
+              "up": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 1.0
+              }
+            }
+          },
+          "colorscale": {
+            "default": "Viridis",
+            "enum": [
+              "Viridis",
+              "Magma",
+              "Plasma",
+              "Cividis",
+              "Reds",
+              "Blues",
+              "Greens",
+              "Purples"
+            ],
+            "title": "Colorscale",
+            "type": "string"
+          },
+          "colorscale_reversed": {
+            "default": false,
+            "title": "Colorscale Reversed",
+            "type": "boolean"
+          },
+          "opacity": {
+            "default": 0.12,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Opacity",
+            "type": "number"
+          },
+          "percentile": {
+            "default": 70.0,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Percentile",
+            "type": "number"
+          },
+          "signal_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Signal Id",
+            "type": "string"
+          },
+          "visible": {
+            "default": true,
+            "title": "Visible",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "signal_id"
+        ],
+        "title": "SpatialLayer",
+        "type": "object"
+      },
+      "SpatialView": {
+        "additionalProperties": false,
+        "properties": {
+          "camera": {
+            "$ref": "#/components/schemas/Camera",
+            "default": {
+              "center": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "eye": {
+                "x": 1.25,
+                "y": 1.25,
+                "z": 1.25
+              },
+              "projection": "perspective",
+              "up": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 1.0
+              }
+            }
+          },
+          "depth_exaggeration": {
+            "default": 1.0,
+            "maximum": 1000.0,
+            "minimum": 0.01,
+            "title": "Depth Exaggeration",
+            "type": "number"
+          },
+          "frame_stretch": {
+            "default": 1.2,
+            "maximum": 1000.0,
+            "minimum": 0.01,
+            "title": "Frame Stretch",
+            "type": "number"
+          },
+          "layers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SpatialLayer"
+            },
+            "maxItems": 129,
+            "title": "Layers",
+            "type": "array"
+          },
+          "linked": {
+            "default": true,
+            "title": "Linked",
+            "type": "boolean"
+          },
+          "mode": {
+            "default": "overlay",
+            "enum": [
+              "overlay",
+              "tiles"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "page": {
+            "default": 0,
+            "maximum": 128.0,
+            "minimum": 0.0,
+            "title": "Page",
+            "type": "integer"
+          },
+          "quality": {
+            "default": "Fast",
+            "enum": [
+              "Fast",
+              "Detailed"
+            ],
+            "title": "Quality",
+            "type": "string"
+          },
+          "scale": {
+            "default": "independent",
+            "enum": [
+              "independent",
+              "shared"
+            ],
+            "title": "Scale",
+            "type": "string"
+          },
+          "screen": {
+            "default": "explore",
+            "enum": [
+              "explore",
+              "volume"
+            ],
+            "title": "Screen",
+            "type": "string"
+          },
+          "solo": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solo"
+          }
+        },
+        "title": "SpatialView",
+        "type": "object"
+      },
       "SubmitJob": {
         "additionalProperties": false,
         "properties": {
@@ -2532,6 +2886,30 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "Vector": {
+        "additionalProperties": false,
+        "properties": {
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          },
+          "z": {
+            "title": "Z",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "z"
+        ],
+        "title": "Vector",
+        "type": "object"
+      },
       "ViewLease": {
         "properties": {
           "analysis_id": {
@@ -2553,6 +2931,141 @@
           "expires_at"
         ],
         "title": "ViewLease",
+        "type": "object"
+      },
+      "VolumeData": {
+        "properties": {
+          "analysis_id": {
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "block_edges": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "title": "Block Edges",
+            "type": "array"
+          },
+          "dataset_generation": {
+            "title": "Dataset Generation",
+            "type": "string"
+          },
+          "extent": {
+            "maxItems": 3,
+            "minItems": 3,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Extent",
+            "type": "array"
+          },
+          "frame_centers": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Frame Centers",
+            "type": "array"
+          },
+          "layers": {
+            "items": {
+              "$ref": "#/components/schemas/LayerData"
+            },
+            "title": "Layers",
+            "type": "array"
+          },
+          "omitted_frames": {
+            "title": "Omitted Frames",
+            "type": "integer"
+          },
+          "physical_aspect": {
+            "title": "Physical Aspect",
+            "type": "boolean"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "shape": {
+            "maxItems": 3,
+            "minItems": 3,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Shape",
+            "type": "array"
+          },
+          "total_voxels": {
+            "title": "Total Voxels",
+            "type": "integer"
+          },
+          "x": {
+            "items": {
+              "type": "number"
+            },
+            "title": "X",
+            "type": "array"
+          },
+          "xy_unit": {
+            "title": "Xy Unit",
+            "type": "string"
+          },
+          "y": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Y",
+            "type": "array"
+          },
+          "z": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Z",
+            "type": "array"
+          },
+          "z_unit": {
+            "title": "Z Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "analysis_id",
+          "revision",
+          "dataset_generation",
+          "x",
+          "y",
+          "z",
+          "frame_centers",
+          "block_edges",
+          "shape",
+          "xy_unit",
+          "z_unit",
+          "extent",
+          "physical_aspect",
+          "omitted_frames",
+          "total_voxels",
+          "layers"
+        ],
+        "title": "VolumeData",
         "type": "object"
       }
     }
@@ -3305,6 +3818,45 @@
           }
         },
         "summary": "Attach"
+      }
+    },
+    "/api/v1/analyses/{aid}/volumes": {
+      "get": {
+        "operationId": "volumes_api_v1_analyses__aid__volumes_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "aid",
+            "required": true,
+            "schema": {
+              "title": "Aid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VolumeData"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Volumes"
       }
     },
     "/api/v1/auth/bootstrap": {

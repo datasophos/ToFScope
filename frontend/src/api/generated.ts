@@ -245,6 +245,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/analyses/{aid}/volumes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Volumes */
+    get: operations["volumes_api_v1_analyses__aid__volumes_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/auth/bootstrap": {
     parameters: {
       query?: never;
@@ -567,6 +584,38 @@ export interface components {
       /** Signals */
       signals: components["schemas"]["SignalSnapshot"][];
       /**
+       * @default {
+       *       "camera": {
+       *         "center": {
+       *           "x": 0,
+       *           "y": 0,
+       *           "z": 0
+       *         },
+       *         "eye": {
+       *           "x": 1.25,
+       *           "y": 1.25,
+       *           "z": 1.25
+       *         },
+       *         "projection": "perspective",
+       *         "up": {
+       *           "x": 0,
+       *           "y": 0,
+       *           "z": 1
+       *         }
+       *       },
+       *       "depth_exaggeration": 1,
+       *       "frame_stretch": 1.2,
+       *       "layers": [],
+       *       "linked": true,
+       *       "mode": "overlay",
+       *       "page": 0,
+       *       "quality": "Fast",
+       *       "scale": "independent",
+       *       "screen": "explore"
+       *     }
+       */
+      spatial: components["schemas"]["SpatialView"];
+      /**
        * Stale
        * @default false
        */
@@ -626,6 +675,39 @@ export interface components {
       /** Secret */
       secret: string;
     };
+    /** Camera */
+    Camera: {
+      /**
+       * @default {
+       *       "x": 0,
+       *       "y": 0,
+       *       "z": 0
+       *     }
+       */
+      center: components["schemas"]["Vector"];
+      /**
+       * @default {
+       *       "x": 1.25,
+       *       "y": 1.25,
+       *       "z": 1.25
+       *     }
+       */
+      eye: components["schemas"]["Vector"];
+      /**
+       * Projection
+       * @default perspective
+       * @enum {string}
+       */
+      projection: "perspective" | "orthographic";
+      /**
+       * @default {
+       *       "x": 0,
+       *       "y": 0,
+       *       "z": 1
+       *     }
+       */
+      up: components["schemas"]["Vector"];
+    };
     /** CandidateInput */
     CandidateInput: {
       /** Charges */
@@ -675,7 +757,8 @@ export interface components {
         | components["schemas"]["SetDepth"]
         | components["schemas"]["SetDisplay"]
         | components["schemas"]["SetDepthAnchors"]
-        | components["schemas"]["SetDepthDisplay"];
+        | components["schemas"]["SetDepthDisplay"]
+        | components["schemas"]["SetSpatial"];
       /** Dataset Generation */
       dataset_generation: string;
       /** Expected Revision */
@@ -926,6 +1009,21 @@ export interface components {
        */
       total: number;
     };
+    /** LayerData */
+    LayerData: {
+      /** Coverage */
+      coverage: number[];
+      /** Frames */
+      frames: [number, number];
+      /** Label */
+      label: string;
+      /** Signal Id */
+      signal_id: string;
+      /** Valid Counts */
+      valid_counts: number[];
+      /** Values */
+      values: (number | null)[];
+    };
     /** MeasureIsotopes */
     MeasureIsotopes: {
       /** Dataset Generation */
@@ -1172,6 +1270,11 @@ export interface components {
     };
     /** SavedFile */
     SavedFile: {
+      /**
+       * Compatibility Warnings
+       * @default []
+       */
+      compatibility_warnings: string[];
       /** Id */
       id: string;
       /** Name */
@@ -1283,6 +1386,15 @@ export interface components {
        */
       type: "set_roi";
     };
+    /** SetSpatial */
+    SetSpatial: {
+      spatial: components["schemas"]["SpatialView"];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "set_spatial";
+    };
     /** SetStoredCoverage */
     SetStoredCoverage: {
       /** Frames */
@@ -1362,6 +1474,141 @@ export interface components {
        */
       mode: "frame";
     };
+    /** SpatialLayer */
+    SpatialLayer: {
+      /**
+       * @default {
+       *       "center": {
+       *         "x": 0,
+       *         "y": 0,
+       *         "z": 0
+       *       },
+       *       "eye": {
+       *         "x": 1.25,
+       *         "y": 1.25,
+       *         "z": 1.25
+       *       },
+       *       "projection": "perspective",
+       *       "up": {
+       *         "x": 0,
+       *         "y": 0,
+       *         "z": 1
+       *       }
+       *     }
+       */
+      camera: components["schemas"]["Camera"];
+      /**
+       * Colorscale
+       * @default Viridis
+       * @enum {string}
+       */
+      colorscale:
+        | "Viridis"
+        | "Magma"
+        | "Plasma"
+        | "Cividis"
+        | "Reds"
+        | "Blues"
+        | "Greens"
+        | "Purples";
+      /**
+       * Colorscale Reversed
+       * @default false
+       */
+      colorscale_reversed: boolean;
+      /**
+       * Opacity
+       * @default 0.12
+       */
+      opacity: number;
+      /**
+       * Percentile
+       * @default 70
+       */
+      percentile: number;
+      /** Signal Id */
+      signal_id: string;
+      /**
+       * Visible
+       * @default true
+       */
+      visible: boolean;
+    };
+    /** SpatialView */
+    SpatialView: {
+      /**
+       * @default {
+       *       "center": {
+       *         "x": 0,
+       *         "y": 0,
+       *         "z": 0
+       *       },
+       *       "eye": {
+       *         "x": 1.25,
+       *         "y": 1.25,
+       *         "z": 1.25
+       *       },
+       *       "projection": "perspective",
+       *       "up": {
+       *         "x": 0,
+       *         "y": 0,
+       *         "z": 1
+       *       }
+       *     }
+       */
+      camera: components["schemas"]["Camera"];
+      /**
+       * Depth Exaggeration
+       * @default 1
+       */
+      depth_exaggeration: number;
+      /**
+       * Frame Stretch
+       * @default 1.2
+       */
+      frame_stretch: number;
+      /**
+       * Layers
+       * @default []
+       */
+      layers: components["schemas"]["SpatialLayer"][];
+      /**
+       * Linked
+       * @default true
+       */
+      linked: boolean;
+      /**
+       * Mode
+       * @default overlay
+       * @enum {string}
+       */
+      mode: "overlay" | "tiles";
+      /**
+       * Page
+       * @default 0
+       */
+      page: number;
+      /**
+       * Quality
+       * @default Fast
+       * @enum {string}
+       */
+      quality: "Fast" | "Detailed";
+      /**
+       * Scale
+       * @default independent
+       * @enum {string}
+       */
+      scale: "independent" | "shared";
+      /**
+       * Screen
+       * @default explore
+       * @enum {string}
+       */
+      screen: "explore" | "volume";
+      /** Solo */
+      solo?: string | null;
+    };
     /** SubmitJob */
     SubmitJob: {
       /** Dataset Generation */
@@ -1385,6 +1632,15 @@ export interface components {
       /** Error Type */
       type: string;
     };
+    /** Vector */
+    Vector: {
+      /** X */
+      x: number;
+      /** Y */
+      y: number;
+      /** Z */
+      z: number;
+    };
     /** ViewLease */
     ViewLease: {
       /** Analysis Id */
@@ -1393,6 +1649,41 @@ export interface components {
       expires_at: number;
       /** Id */
       id: string;
+    };
+    /** VolumeData */
+    VolumeData: {
+      /** Analysis Id */
+      analysis_id: string;
+      /** Block Edges */
+      block_edges: number[][];
+      /** Dataset Generation */
+      dataset_generation: string;
+      /** Extent */
+      extent: [number, number, number];
+      /** Frame Centers */
+      frame_centers: number[];
+      /** Layers */
+      layers: components["schemas"]["LayerData"][];
+      /** Omitted Frames */
+      omitted_frames: number;
+      /** Physical Aspect */
+      physical_aspect: boolean;
+      /** Revision */
+      revision: number;
+      /** Shape */
+      shape: [number, number, number];
+      /** Total Voxels */
+      total_voxels: number;
+      /** X */
+      x: number[];
+      /** Xy Unit */
+      xy_unit: string;
+      /** Y */
+      y: number[];
+      /** Z */
+      z: number[];
+      /** Z Unit */
+      z_unit: string;
     };
   };
   responses: never;
@@ -1940,6 +2231,37 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ViewLease"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  volumes_api_v1_analyses__aid__volumes_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        aid: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["VolumeData"];
         };
       };
       /** @description Validation Error */
