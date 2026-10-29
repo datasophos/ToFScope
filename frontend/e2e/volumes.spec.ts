@@ -1,4 +1,8 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect as baseExpect, type Page } from "@playwright/test";
+
+// VTK startup and analysis polling can take longer on software-rendered CI.
+const expect = baseExpect.configure({ timeout: 15_000 });
+test.setTimeout(60_000);
 async function open(page: Page) {
   await page.setExtraHTTPHeaders({
     "x-tofscope-user": `volume-${Date.now()}-${Math.random()}`,
