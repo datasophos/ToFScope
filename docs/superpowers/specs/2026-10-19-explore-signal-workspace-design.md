@@ -13,13 +13,12 @@ what actions are available without reading contextual help.
 Josh approved this combination after considering a signal tray, plot-local
 controls, and a bottom signal workbench. This document makes the combined
 approach concrete. It supersedes the pilot's active/comparison UI and state
-model; the migration design and completion plan remain context for other features.
+model.
 
 The application remains one installable Python service with bundled offline
 frontend assets. Retain the scientific reader and renderer independence,
 read-only acquisitions, bounded resource use, owner isolation, multiple files,
-and independent analyses of the same acquisition. Keep the frozen prototype
-checkout intact. Do not publish or deploy externally.
+and independent analyses of the same acquisition.
 
 ## Problems being addressed
 

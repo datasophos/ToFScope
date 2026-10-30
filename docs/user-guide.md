@@ -93,8 +93,7 @@ In **Save as…**, use **Choose folder…** to browse or create a subfolder. Loc
 users can choose within the configured acquisition or saved-files folders;
 hosted users stay within their private saved-files folder. The dialog shows the
 full destination before saving. **Saved files** supports navigating subfolders
-when reopening copies. Existing files are never overwritten. See the
-[save-folder validation](validation/save-folders.md).
+when reopening copies. Existing files are never overwritten.
 Use the top Open button to open another file in a new tab, then close any tab you
 no longer need. Finish/discard drafts and finish/cancel calculations before saving.
 Closing an unsaved analysis offers Save as, Discard or Cancel. Save as also attempts to add eligible named signals as TOFexplorer peaks and reports exclusions. Disjoint peaks carry enclosing native bounds and a midpoint that do not describe the gaps; ToFScope retains the exact recipe. The unified save workflow has not yet been verified in TOFexplorer. CSV exports visible ROI
@@ -106,16 +105,14 @@ TOFWERK TOFexplorer `.h5` acquisitions can contain stored ion maps or raw events
 For raw files without ion maps, the app previews the required preparation and
 asks for confirmation before integrating peak windows into a new copy. Missing
 timing/channel metadata requires explicit acknowledgment of the assumptions.
-New preparations compact unused HDF5 space and use channel-oriented gzip storage;
-see [raw preparation](validation/raw-acquisition-preparation.md) and
-[storage measurements](validation/compact-raw-preparation.md).
+New preparations retain raw events and metadata in a compact copy. Channels not
+present in the raw peak table cannot be reconstructed automatically. In one
+comparison, reconstructed values were not bit-identical to a TOFexplorer-processed
+sibling; commercial numerical equivalence remains unverified.
 
 Floating-point fields use compact values for reading and expose the full exact
 value on focus. Numeric tables and plot readouts also suppress floating-point
-tails; scientific calculations and exports retain full precision. See the
-[numeric display audit](validation/numeric-display.md).
-
-See [TODO.md](../TODO.md) for the current feature status and next work.
+tails; scientific calculations and exports retain full precision.
 
 ## Atomic identification and isotope measurements
 
@@ -138,8 +135,7 @@ Calculation details and provenance are expandable. Results describe selected-set
 signal ratios, not quantitative composition. Input changes mark
 captured measurements out of date until you explicitly Measure again. Isotope
 CSV and Settings JSON retain scope, mass errors, uncertainties and provenance;
-Save as/reopen also preserves isotope assignments and captured results. See
-[identification validation](validation/identification.md).
+Save as/reopen also preserves isotope assignments and captured results.
 
 ## 3D visualization
 
@@ -173,23 +169,13 @@ slope changes. At 1× depth exaggeration, known XY/depth geometry uses common µ
 units; Frame stretch is a separate display ratio. Thin/constant selections use
 points. Transparent overlays are qualitative; show one signal or use tiles to inspect occlusion.
 Save as preserves layer styles, layout, page, scale, cameras and exaggeration.
-See [spatial qualification](validation/spatial-renderer-decision.md).
 
 ## Limitations and technical background
 
-The application still lacks full prototype feature parity. Linked cross-sections
-and controlled native saves remain specified in the [completion plan](superpowers/plans/2026-10-18-react-fastapi-completion.md).
+Linked cross-sections and controlled native saves are not currently available.
 In-place acquisition writes remain unavailable. Live tabs/jobs are in memory;
 reopen saved HDF5 copies to restore committed work after a restart. Shared use requires a trusted authenticated proxy;
 actual NFS deployment remains unqualified.
-
-Scientific readers were compared before implementation: direct h5py preserves
-selective bounded reads and exact existing NumPy integration without unused
-signal-framework lifecycle machinery. See [reader evidence](validation/reader-decision.md).
-ECharts and Plotly passed the same focused interaction probes; ECharts was chosen
-for the smaller bundle and public numerical-axis adapter. See
-[renderer evidence](validation/renderer-decision.md) and
-[pilot qualification](validation/pilot-qualification.md).
 
 ## Building and testing
 

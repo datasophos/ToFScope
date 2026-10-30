@@ -58,7 +58,7 @@ The [user guide](https://github.com/datasophos/ToFScope/blob/main/docs/user-guid
 ## Current limitations
 
 ToFScope is under active development and is in an alpha state. The application may change substantially prior to a stable 1.0.0 release.
-See the [user guide](https://github.com/datasophos/ToFScope/blob/main/docs/user-guide.md) and [project roadmap](https://github.com/datasophos/ToFScope/blob/main/TODO.md) for details.
+See the [user guide](https://github.com/datasophos/ToFScope/blob/main/docs/user-guide.md) for details.
 If you have ideas of features to add, or notice any bugs, please open an [issue](https://github.com/datasophos/ToFScope/issues)!
 
 ## Developing ToFScope
@@ -70,7 +70,7 @@ uv sync --frozen
 uv run tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 ```
 
-For frontend and Python checks, build instructions, and distribution validation, see the [developer commands](https://github.com/datasophos/ToFScope/blob/main/docs/user-guide.md#building-and-testing). Scientific and implementation evidence is available in [docs/validation](https://github.com/datasophos/ToFScope/tree/main/docs/validation/).
+For frontend and Python checks, build instructions, and distribution validation, see the [developer commands](https://github.com/datasophos/ToFScope/blob/main/docs/user-guide.md#building-and-testing).
 
 ## License
 
