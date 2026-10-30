@@ -1,4 +1,6 @@
-# Running the packaged Explore pilot
+# Running the packaged ToFScope app
+
+For a guided local installation, see the [macOS ToFScope guide](macos-tofscope.md). Build a fresh wheel with `uv build`, run the distribution checks described in the README, and supply the tested wheel to the ToFScope user. The wheel and its dependencies are not published by these instructions; installation requires network access to resolve dependencies.
 
 Install a tested wheel with `uv tool install ./dist/tofscope-0.2.0-py3-none-any.whl`
 or `python -m pip install ...`. The sdist also contains release-built assets:
@@ -51,7 +53,7 @@ by that proxy. Forward Host and Origin unchanged. Uvicorn does not trust forward
 client IPs. Requests from other peers, missing identity, foreign IDs and foreign
 origins are rejected. The configured research-group data root grants authenticated
 group members read access; repository authorization is a separate injectable
-policy. This pilot does not manage accounts or enable shared mutable editing.
+policy. ToFScope does not manage accounts or enable shared mutable editing.
 
 Open A/B/A as three independent file analyses. Refresh automatically recovers the
 owner's live file tabs; there are no workspace containers or manual analysis-ID

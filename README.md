@@ -10,6 +10,8 @@ uv sync --frozen
 uv run tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 ```
 
+For a guided first installation on macOS with uv, see the [macOS ToFScope guide](docs/macos-tofscope.md).
+
 For an installed wheel: `pip install dist/tofscope-0.2.0-py3-none-any.whl`, then
 `tofscope --data-root /path/to/acquisitions`. The launcher binds loopback and opens
 the browser after readiness. `tofscope serve --no-browser` runs a service;
