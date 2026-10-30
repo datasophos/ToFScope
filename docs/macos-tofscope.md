@@ -1,6 +1,6 @@
 # ToFScope on macOS: setup
 
-This guide is for a first installation with help from the person providing ToFScope. You need macOS, an internet connection for setup, a ToFScope wheel file, and a folder containing TOFexplorer `.h5` acquisitions. Installation downloads Python and dependencies as needed; the app itself runs locally and does not need Node.js or an account. Allow enough free space for the data and saved copies.
+To run locally on macOS, you'll need an internet connection for setup, Git, and a folder containing one or more TOFexplorer `.h5` acquisitions. Installation downloads Python and dependencies as needed; the app itself runs locally and does not need Node.js or an account. Allow enough free space for the data and saved copies.
 
 ## Install
 
@@ -11,37 +11,41 @@ This guide is for a first installation with help from the person providing ToFSc
    uv --version
    ```
 
-3. Place the supplied `tofscope-0.2.0-py3-none-any.whl` in Downloads. Install it with:
+3. Clone the repository and install ToFScope:
 
    ```sh
-   uv tool install --python 3.12 "$HOME/Downloads/tofscope-0.2.0-py3-none-any.whl"
+   git clone https://github.com/datasophos/ToFScope.git
+   cd ToFScope
+   uv tool install --python 3.12 .
    uv tool update-shell
    ```
 
-   Open a new Terminal window so the `tofscope` command is on your path. If your wheel has a different filename, replace the filename in the command. Keep the wheel in a safe place in case you need to reinstall it.
+   If Git is not installed, macOS may prompt you to install the Xcode Command Line Tools. Open a new Terminal window so the `tofscope` command is on your path.
 
 ## Start and use the app
 
-Create a writable folder for saved analyses, then start the app. Replace the acquisition path below with your actual folder; keep the quotes if its path contains spaces. You can drag a folder from Finder into Terminal to insert its path.
+Create a writable folder for saved analyses, then start the app. Replace the acquisition path below with your actual folder; keep the quotes if its path contains spaces.
 
 ```sh
 mkdir -p "$HOME/Documents/ToFScope Saved"
 tofscope --data-root "/path/to/acquisitions" --output-root "$HOME/Documents/ToFScope Saved"
 ```
 
-Leave Terminal open while you work. The launcher opens the app in your browser once it is ready. Choose an acquisition in the file picker. To stop the app, return to Terminal and press **Control-C**. To start it again later, run the same `tofscope` command. The address and launch credentials are intended for your own computer; do not share them.
+Leave Terminal open while you work. The launcher opens the app in your browser once it is ready. To stop the app, return to Terminal and press **Control-C**. To start it again later, run the same `tofscope` command.
 
-Use **Save as…** to keep your analysis before stopping the app. This creates a new HDF5 copy in the saved folder; the original acquisition is not changed. A copy contains the acquisition and can be larger than the original, so allow sufficient disk space. After restarting, open the copy through **Saved files** to resume committed work. Unsaved tabs and calculations do not survive a restart. Saved copies have not yet been verified for the unified save workflow in TOFexplorer.
+After performing some analyses, use the **Save as…** button to write your changes to a new file before stopping the app (stopping the app will cause you to lose your current changes). This creates a new HDF5 copy in the saved folder; the original acquisition is not changed. After restarting, reopening the version you saved in ToFScope will allow you to resume your analysis. Unsaved tabs and calculations will not survive a restart.
 
 ## Update or uninstall
 
-For an update, save your work and stop ToFScope first. Replace the filename with the new wheel supplied to you:
+For an update, save your work and stop ToFScope first. In the cloned repository, pull the latest changes and reinstall:
 
 ```sh
-uv tool install --force --python 3.12 "$HOME/Downloads/tofscope-NEW_VERSION-py3-none-any.whl"
+cd /path/to/ToFScope
+git pull --ff-only
+uv tool install --force --python 3.12 .
 ```
 
-To uninstall the app, run `uv tool uninstall tofscope`. This does not delete your acquisition or saved-analysis folders. Keep the previous wheel if you may need to reinstall that version.
+To uninstall the app, run `uv tool uninstall tofscope`. This does not delete your acquisition or saved-analysis folders.
 
 ## Troubleshooting
 

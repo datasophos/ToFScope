@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="324" height="94" viewBox="0 0 324 94" role="img" aria-labelledby="title">
+  <title id="title">ToFScope — FIB–SEM / TOF–SIMS</title>
+  <rect width="324" height="94" fill="#102536"/>
+  <g transform="translate(10 14) scale(1.55)">
+    <path d="M3 5h23v5h-9v21h-5V10H3z" fill="#fff"/>
+    <circle cx="30" cy="28" r="3" fill="#44bdac"/>
+  </g>
+  <text x="86" y="45" fill="#fff" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="-1.2">ToFScope</text>
+  <text x="86" y="72" fill="#a2c2cc" font-family="Arial, sans-serif" font-size="15" letter-spacing="2.1">FIB–SEM / TOF–SIMS</text>
+</svg>
