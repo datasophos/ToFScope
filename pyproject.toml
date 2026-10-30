@@ -4,8 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tofscope"
-version = "0.1.0"
+version = "0.1.1"
 description = "Multi-analysis ToF-SIMS exploration and calibrated 3D visualization"
+readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 dependencies = ["h5py>=3.11", "numpy>=2.0", "filelock>=3.16", "fastapi>=0.115", "uvicorn>=0.30", "psutil>=6"]
