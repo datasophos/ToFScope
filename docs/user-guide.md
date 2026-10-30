@@ -179,6 +179,8 @@ actual NFS deployment remains unqualified.
 
 ## Building and testing
 
+For an overview of the application and its build, see [how ToFScope works](architecture.qmd).
+
 Node is needed only for frontend development and builds:
 
 ```sh

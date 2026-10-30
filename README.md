@@ -72,6 +72,8 @@ uv run tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-a
 
 For frontend and Python checks, build instructions, and distribution validation, see the [developer commands](https://github.com/datasophos/ToFScope/blob/main/docs/user-guide.md#building-and-testing).
 
+For a diagram-led overview of the application, see [how ToFScope works](docs/architecture.qmd).
+
 ## License
 
 ToFScope is available under the [MIT License](https://github.com/datasophos/ToFScope/blob/main/LICENSE).

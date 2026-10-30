@@ -11,3 +11,9 @@ build/
 *.egg-info/
 frontend/test-results/
 frontend/playwright-report/
+
+# Quarto-generated supporting assets
+*_files/
+
+# Rendered Quarto documentation
+docs/architecture.html
