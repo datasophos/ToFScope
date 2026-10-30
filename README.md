@@ -1,14 +1,16 @@
 <p align="center">
-  <img src="docs/assets/tofscope-logo.svg" alt="ToFScope — FIB–SEM / TOF–SIMS" width="324">
+  <img src="https://raw.githubusercontent.com/datasophos/ToFScope/main/docs/assets/tofscope-logo.svg" alt="ToFScope — FIB–SEM / TOF–SIMS" width="324">
 </p>
 
 # ToFScope
+
+[![PyPI version](https://img.shields.io/pypi/v/tofscope)](https://pypi.org/project/tofscope/)
 
 ToFScope is a browser-based application for exploring time-of-flight secondary ion mass spectrometry (ToF-SIMS) data. It allows you to analyze ion images, mass spectra, and depth profiles together so you can inspect an acquisition, compare signals, and save your analysis for later.
 
 ToFScope runs locally as a Python application and opens in your browser. It reads [TOFWERK TOFexplorer](#trademark-disclaimer) HDF5 (`.h5`) acquisitions, and provides interactive tools for exploring their mass spectra, ion images, and depth profiles in two and three dimensions.
 
-![ToFScope Explore showing an ion map, mass spectrum, front projection, and depth profile from a real acquisition](docs/assets/tofscope-explore.png)
+![ToFScope Explore showing an ion map, mass spectrum, front projection, and depth profile from a real acquisition](https://raw.githubusercontent.com/datasophos/ToFScope/main/docs/assets/tofscope-explore.png)
 
 *Explore view showing an ion map, mass spectrum, front projection, and depth profile for a real acquisition.*
 
@@ -21,26 +23,26 @@ ToFScope runs locally as a Python application and opens in your browser. It read
 - **Visualize in 3D:** compare signals as volume overlays or tiled views, with controls for color, opacity, and threshold.
 - **Keep and share results:** export profiles as CSV or plots as PNG, and save data back into TOFexplorer-compatible `.h5` files.
 
-![ToFScope 3D visualizer showing an overlay of aluminum and titanium signals](docs/assets/tofscope-3d.png)
+![ToFScope 3D visualizer showing an overlay of aluminum and titanium signals](https://raw.githubusercontent.com/datasophos/ToFScope/main/docs/assets/tofscope-3d.png)
 
 *3D volume view comparing aluminum and titanium signals across acquisition frames.*
 
-![Atomic identification dialog showing an aluminum-27 isotope candidate and mass spectrum](docs/assets/tofscope-isotope-identification.png)
+![Atomic identification dialog showing an aluminum-27 isotope candidate and mass spectrum](https://raw.githubusercontent.com/datasophos/ToFScope/main/docs/assets/tofscope-isotope-identification.png)
 
 *Atomic identification compares a measured mass-to-charge ratio with candidate isotope ions.*
 
 ## Get started
 
-You need Python 3.11 or newer, [uv](https://docs.astral.sh/uv/getting-started/installation/), and a folder containing supported TOFexplorer `.h5` files. From a clone of this repository:
+You need Python 3.11 or newer, [uv](https://docs.astral.sh/uv/getting-started/installation/), and a folder containing supported TOFexplorer `.h5` files. Install from PyPI:
 
 ```sh
-uv tool install .
+uv tool install tofscope
 tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 ```
 
 Replace the example paths with your folders. The output folder must be writable and have enough space for a full copy of an acquisition. ToFScope starts a local service and opens the app in your browser. Select a file to begin; keep the terminal open while you work and press **Ctrl-C** there to stop the app.
 
-For a step-by-step installation, including folder setup and troubleshooting, see the [macOS setup guide](docs/macos-tofscope.md). For configuration, hosted use, and containers, see [deployment](docs/deployment.md).
+For a step-by-step installation, including folder setup and troubleshooting, see the [macOS setup guide](https://github.com/datasophos/ToFScope/blob/main/docs/macos-tofscope.md). For configuration, hosted use, and containers, see [deployment](https://github.com/datasophos/ToFScope/blob/main/docs/deployment.md).
 
 ## Your first analysis
 
@@ -51,12 +53,12 @@ For a step-by-step installation, including folder setup and troubleshooting, see
 
 Saving leaves the source acquisition unchanged. Unsaved tabs and in-progress calculations do not survive a restart. Some raw files require preparation into a new copy before exploration; ToFScope previews that step and asks for confirmation.
 
-The [user guide](docs/user-guide.md) covers signals, calibration, exports, isotope identification, saving, and 3D controls in more detail.
+The [user guide](https://github.com/datasophos/ToFScope/blob/main/docs/user-guide.md) covers signals, calibration, exports, isotope identification, saving, and 3D controls in more detail.
 
 ## Current limitations
 
 ToFScope is under active development and is in an alpha state. The application may change substantially prior to a stable 1.0.0 release.
-See the [user guide](docs/user-guide.md) and [project roadmap](TODO.md) for details.
+See the [user guide](https://github.com/datasophos/ToFScope/blob/main/docs/user-guide.md) and [project roadmap](https://github.com/datasophos/ToFScope/blob/main/TODO.md) for details.
 If you have ideas of features to add, or notice any bugs, please open an [issue](https://github.com/datasophos/ToFScope/issues)!
 
 ## Developing ToFScope
@@ -68,11 +70,11 @@ uv sync --frozen
 uv run tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 ```
 
-For frontend and Python checks, build instructions, and distribution validation, see the [developer commands](docs/user-guide.md#building-and-testing). Scientific and implementation evidence is available in [docs/validation](docs/validation/).
+For frontend and Python checks, build instructions, and distribution validation, see the [developer commands](https://github.com/datasophos/ToFScope/blob/main/docs/user-guide.md#building-and-testing). Scientific and implementation evidence is available in [docs/validation](https://github.com/datasophos/ToFScope/tree/main/docs/validation/).
 
 ## License
 
-ToFScope is available under the [MIT License](LICENSE).
+ToFScope is available under the [MIT License](https://github.com/datasophos/ToFScope/blob/main/LICENSE).
 
 ---
 
