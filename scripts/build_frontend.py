@@ -44,7 +44,7 @@ def main():
     }
     (target / "manifest.json").write_text(
         json.dumps(
-            dict(version="0.2.0", source_sha256=source_hash(), assets=assets),
+            dict(version="0.1.0", source_sha256=source_hash(), assets=assets),
             sort_keys=True,
             indent=2,
         )
