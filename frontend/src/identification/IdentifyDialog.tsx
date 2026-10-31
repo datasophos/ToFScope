@@ -502,12 +502,11 @@ export function IdentifyDialog({
                   disabled={busy || !candidate}
                   onClick={() => void act("comparison")}
                 >
-                  Add comparison
+                  Add signal
                 </button>
               </div>
               <p className="identification-action-note">
-                Apply opens a draft. Add comparison calculates all acquisition
-                frames.
+                <em>Apply window</em> opens a draft signal. <em>Add signal</em> adds it immediately.
               </p>
             </fieldset>
           </div>

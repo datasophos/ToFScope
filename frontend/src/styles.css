@@ -1985,6 +1985,13 @@ small {
   margin: 0;
   line-height: 1.5;
 }
+.identification-prealpha {
+  padding: 10px 12px;
+  border: 1px solid #b47b22;
+  border-radius: 6px;
+  background: #fff6e2;
+  color: #553800;
+}
 .measurement-intro,
 .measurement-secondary,
 .measurement-context span,

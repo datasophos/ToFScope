@@ -133,6 +133,9 @@ export function IsotopeMeasurements({
           onClose={() => setOpen(false)}
           className="identification-dialog isotope-measurements"
         >
+          <p className="identification-prealpha">
+            Pre-alpha: isotope measurements have not been thoroughly tested.
+          </p>
           <p className="measurement-intro">
             Compare signal intensities within the current region and viewing
             frames.

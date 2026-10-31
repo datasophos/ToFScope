@@ -16,6 +16,7 @@ test("atomic annotation preserves labels and explicit measurement becomes stale"
     .getByRole("button", { name: "Identify peak", exact: true })
     .click();
   const dialog = page.getByRole("dialog", { name: "Atomic identification" });
+  await expect(dialog.getByText(/pre-alpha/i)).toHaveCount(0);
   await expect(dialog.getByLabel("Tolerance unit")).toHaveValue("Th");
   await expect(dialog.getByRole("option", { name: "Absolute m/z difference" })).toBeAttached();
   await dialog.getByLabel("Measured m/z", { exact: true }).fill("26.981");
@@ -40,6 +41,7 @@ test("atomic annotation preserves labels and explicit measurement becomes stale"
     name: "Isotope measurements",
     exact: true,
   });
+  await expect(measurements.getByText(/pre-alpha: isotope measurements have not been thoroughly tested/i)).toBeVisible();
   await measurements.getByRole("checkbox").first().check();
   await measurements
     .getByRole("button", { name: "Measure", exact: true })
@@ -82,7 +84,7 @@ test("exact identification window creates an assigned raw comparison and exports
   await dialog.getByLabel("Lower m/z", { exact: true }).fill("1");
   await dialog.getByLabel("Upper m/z", { exact: true }).fill("2");
   await dialog
-    .getByRole("button", { name: "Add comparison", exact: true })
+    .getByRole("button", { name: "Add signal", exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
   await expect(page.locator(".profile-legend")).toContainText("H-2:+1");
