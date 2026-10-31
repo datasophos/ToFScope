@@ -148,10 +148,9 @@ export function LayerEditor({
           </div>
           <small>
             Frames {signal.recipe?.frames.join("–")} · {signal.recipe?.source} ·{" "}
-            {signal.recipe?.intervals
+            m/z {signal.recipe?.intervals
               .map((w) => w.map((x) => formatNumber(x)).join("–"))
-              .join(", ")}{" "}
-            Th
+              .join(", ")}
           </small>
           <label>
             Colormap

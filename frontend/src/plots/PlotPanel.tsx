@@ -176,7 +176,7 @@ export function PlotPanel({
   const hoverLabel =
     cursor === null || !axis || !axis.values.length
       ? ""
-      : `${axis.name === "m/z" ? "m/z" : axis.name === "depth" ? "Depth" : "Frame"} = ${formatPosition(cursor, axis)}${axis.unit === "frame" ? "" : ` ${axis.unit}`}${hoverFrame !== undefined ? ` · nearest frame ${Math.round(hoverFrame)}` : ""}`;
+      : `${axis.name === "m/z" ? "m/z" : axis.name === "depth" ? "Depth" : "Frame"} = ${formatPosition(cursor, axis)}${axis.name === "m/z" || axis.unit === "frame" || !axis.unit ? "" : ` ${axis.unit}`}${hoverFrame !== undefined ? ` · nearest frame ${Math.round(hoverFrame)}` : ""}`;
   const data: ChartData | undefined = panel
     ? {
         kind: panel.kind,

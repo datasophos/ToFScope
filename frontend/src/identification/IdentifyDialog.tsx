@@ -236,7 +236,7 @@ export function IdentifyDialog({
                   void find(mz, { unit: value });
                 }}
               >
-                <option>Th</option>
+                <option value="Th">Absolute m/z difference</option>
                 <option>ppm</option>
               </select>
             </label>
@@ -338,7 +338,7 @@ export function IdentifyDialog({
                       <tr>
                         <th>Ion</th>
                         <th>Predicted m/z</th>
-                        <th>Error Th / ppm</th>
+                        <th>Δm/z / ppm</th>
                         <th>Natural abundance</th>
                       </tr>
                     </thead>
@@ -475,17 +475,17 @@ export function IdentifyDialog({
               <legend>Create a signal from this peak</legend>
               <div className="identification-window">
                 <label>
-                  Window lower Th
+                  Lower m/z
                   <PreciseNumberInput
-                    label="Window lower Th"
+                    label="Lower m/z"
                     value={low}
                     onChange={setLow}
                   />
                 </label>
                 <label>
-                  Window upper Th
+                  Upper m/z
                   <PreciseNumberInput
-                    label="Window upper Th"
+                    label="Upper m/z"
                     value={high}
                     onChange={setHigh}
                   />

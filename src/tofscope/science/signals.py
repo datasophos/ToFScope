@@ -17,7 +17,7 @@ def _integer(value):
 
 
 def interval_label(intervals):
-    return ' ∪ '.join(f'{low:.4f}–{high:.4f}' for low,high in intervals)+' Th'
+    return 'm/z ' + ' ∪ '.join(f'{low:.4f}–{high:.4f}' for low,high in intervals)
 
 
 @dataclass(frozen=True)

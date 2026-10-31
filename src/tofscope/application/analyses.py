@@ -2,6 +2,8 @@ from collections import OrderedDict
 from dataclasses import dataclass, field, replace
 from threading import RLock
 from uuid import uuid4
+
+import numpy as np
 from tofscope.storage.acquisitions import SourceChanged
 from tofscope.application.models import (
     AnalysisSnapshot,
@@ -11,6 +13,31 @@ from tofscope.application.models import (
 )
 from tofscope.application.commands import AllDepth
 from tofscope.science.signals import SignalRecipe
+
+
+DEFAULT_MIN_MZ = 20.0
+
+
+def strongest_spectral_peak(peaks, mass_axis, spectrum):
+    """Estimate stored-channel intensity from its inclusive spectrum window.
+
+    The sum spectrum is a fast proxy; it need not match stored ion-map totals.
+    Peaks below m/z 20 are excluded unless no peak meets that threshold.
+    Nonfinite spectrum samples are ignored, and ties retain peak-table order.
+    """
+    axis = np.asarray(mass_axis, dtype=np.float64)
+    finite = np.isfinite(spectrum)
+    eligible = [peak for peak in peaks if peak["mass"] >= DEFAULT_MIN_MZ] or peaks
+    best = eligible[0]
+    best_score = float("-inf")
+    for peak in eligible:
+        included = finite & (axis >= peak["low"]) & (axis <= peak["high"])
+        if not included.any():
+            continue
+        score = np.sum(spectrum, where=included, dtype=np.float64)
+        if score > best_score:
+            best, best_score = peak, score
+    return best
 
 
 class CapacityError(ValueError):
@@ -90,10 +117,10 @@ class AnalysisService:
     def initial(self, owner, dataset, aid=None, revision=0):
         with self.repository.metadata(owner, dataset, aid) as m:
             nz, ny, nx, _ = m.shape
-            default = min(m.peaks, key=lambda p: abs(p["mass"] - 27))
+            default = strongest_spectral_peak(m.peaks, m.mass_axis, m.sum_spectrum)
             frames = (0, nz - 1)
             recipe = SignalRecipe(
-                label=f"{default['label']} · {default['mass']:g} Th",
+                label=f"{default['label']} · m/z {default['mass']:g}",
                 source="stored",
                 stored_index=default["index"],
                 intervals=((default["low"], default["high"]),),

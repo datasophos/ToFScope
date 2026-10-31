@@ -7,6 +7,7 @@ export function plotInsets(kind: "image" | "line") {
 }
 export function axisTitle(axis: { name: string; unit: string }) {
   if (axis.name === "frame") return "Frame";
+  if (axis.name === "m/z") return "m/z";
   const name =
     axis.name === "m/z"
       ? "m/z"

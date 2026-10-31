@@ -71,7 +71,7 @@ export function SignalPicker({
       >
         <span>
           {selected
-            ? `${selected.label} · ${formatNumber(selected.mass)} Th`
+            ? `${selected.label} · m/z ${formatNumber(selected.mass)}`
             : placeholder}
         </span>
         <span aria-hidden="true">▾</span>
@@ -117,7 +117,7 @@ export function SignalPicker({
                     close();
                   }}
                 >
-                  {option.label} · {formatNumber(option.mass)} Th
+                  {option.label} · m/z {formatNumber(option.mass)}
                 </button>
               ))
             )}
