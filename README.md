@@ -5,6 +5,7 @@
 # ToFScope
 
 [![PyPI version](https://img.shields.io/pypi/v/tofscope)](https://pypi.org/project/tofscope/)
+[![Documentation](https://img.shields.io/badge/docs-read-blue)](https://datasophos.github.io/ToFScope/)
 
 ToFScope is a browser-based application for exploring time-of-flight secondary ion mass spectrometry (ToF-SIMS) data. It allows you to analyze ion images, mass spectra, and depth profiles together so you can inspect an acquisition, compare signals, and save your analysis for later.
 
