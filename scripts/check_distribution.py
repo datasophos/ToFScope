@@ -8,14 +8,54 @@ import shutil
 import socket
 import subprocess
 import sys
+import tarfile
 import tempfile
 import time
+import tomllib
 import urllib.request
+import zipfile
+from email.parser import BytesParser
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tests"))
 from fixtures.acquisition import make_acquisition
 from playwright.sync_api import sync_playwright
+
+
+def validate_artifact_versions(artifacts):
+    """Reject distributions built for a different version of this checkout."""
+    with (ROOT / "pyproject.toml").open("rb") as project:
+        expected = tomllib.load(project)["project"]["version"]
+    for artifact in artifacts:
+        if artifact.suffix == ".whl":
+            with zipfile.ZipFile(artifact) as wheel:
+                metadata_paths = [
+                    name for name in wheel.namelist() if name.endswith(".dist-info/METADATA")
+                ]
+                if len(metadata_paths) != 1:
+                    raise ValueError(f"Expected one METADATA file in {artifact.name}.")
+                metadata = wheel.read(metadata_paths[0])
+        else:
+            with tarfile.open(artifact, "r:gz") as source:
+                metadata_paths = [
+                    member
+                    for member in source.getmembers()
+                    if len(Path(member.name).parts) == 2
+                    and member.name.endswith("/PKG-INFO")
+                    and member.isfile()
+                ]
+                if len(metadata_paths) != 1:
+                    raise ValueError(f"Expected one top-level PKG-INFO in {artifact.name}.")
+                metadata_file = source.extractfile(metadata_paths[0])
+                if metadata_file is None:
+                    raise ValueError(f"Cannot read PKG-INFO in {artifact.name}.")
+                metadata = metadata_file.read()
+        version = BytesParser().parsebytes(metadata, headersonly=True).get("Version")
+        if version != expected:
+            raise ValueError(
+                f"{artifact.name} has version {version!r}, which does not match this checkout's "
+                f"version {expected!r}. Build fresh artifacts into an empty directory and pass it with --artifacts."
+            )
 
 
 def smoke(artifact, output):
@@ -289,8 +329,9 @@ def main():
     a = p.parse_args()
     a.output.mkdir(parents=True, exist_ok=True)
     artifacts = [*a.artifacts.glob("*.whl"), *a.artifacts.glob("*.tar.gz")]
-    if len(artifacts) != 2:
+    if len(artifacts) != 2 or sum(path.suffix == ".whl" for path in artifacts) != 1:
         raise ValueError("Expect one wheel and one sdist.")
+    validate_artifact_versions(artifacts)
     results = [smoke(path.resolve(), a.output) for path in artifacts]
     (a.output / "distribution.json").write_text(json.dumps(results, indent=2))
     print(json.dumps(results))
