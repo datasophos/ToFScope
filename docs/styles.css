@@ -8,6 +8,17 @@
   scroll-margin-top: 8rem;
 }
 
+sup > a[href$="#trademark-notice"] {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* A footnote link in a heading is not a separate table-of-contents entry. */
+#TOC a[href$="#trademark-notice"],
+.gd-otp-panel-list li:has(> a[href$="#trademark-notice"]) {
+  display: none;
+}
+
 /* Clickable targets sit over the numbered markers in the Explore screenshot. */
 .explore-overview {
   position: relative;

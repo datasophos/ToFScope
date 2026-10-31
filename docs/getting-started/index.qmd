@@ -19,7 +19,7 @@ the first steps. The installation guide also covers updates, uninstalling, and t
 
 ## Technical documentation
 
-The [architecture guide](../technical-documentation/30-architecture.qmd) explains the browser, service, calculations, and files through diagrams. [File compatibility](../technical-documentation/31-file-compatibility.qmd) describes the current limits, and the [HDF5 compatibility guide](../technical-documentation/32-hdf5-validation.qmd) explains how saved copies can be used in ToF-SIMS software. Developers and administrators can continue to [building and testing](../technical-documentation/40-building-and-testing.qmd) and [deployment](../technical-documentation/41-deployment.qmd).
+The [architecture guide](../technical-documentation/30-architecture.qmd) explains the browser, service, calculations, and files through diagrams. [File compatibility and limitations](../technical-documentation/31-file-compatibility.qmd) describes supported files and how saved copies can be used in ToF-SIMS software. Developers and administrators can continue to [building and testing](../technical-documentation/40-building-and-testing.qmd) and [deployment](../technical-documentation/41-deployment.qmd).
 
 ::: {.callout-note}
 ## Saving before stopping the service
