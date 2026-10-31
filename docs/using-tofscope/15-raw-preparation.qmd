@@ -36,3 +36,21 @@ incorrect counts.
 
 Only channels present in the raw peak table can be reconstructed automatically. Note: strict numerical equivalence with the
 commercial software is not guaranteed.
+
+::: {#next-technical-documentation}
+[<span class="nav-page-text">Technical documentation</span><i class="bi bi-arrow-right-short" aria-hidden="true"></i>](../technical-documentation/30-architecture.qmd){.pagination-link}
+:::
+
+```{=html}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const fallback = document.getElementById("next-technical-documentation");
+  const link = fallback?.querySelector("a");
+  const next = document.querySelector("nav.page-navigation .nav-page-next");
+  if (link && next) {
+    next.appendChild(link);
+    fallback.remove();
+  }
+});
+</script>
+```

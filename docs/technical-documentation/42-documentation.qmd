@@ -38,3 +38,9 @@ The source pages, assets, configuration, workflow, and dependency lockfile are c
 The Documentation workflow builds pull requests for review and builds and deploys pushes to `main`. It uses the locked documentation dependencies and pinned Quarto version, and uploads `great-docs/_site/` to GitHub Pages.
 
 To activate publishing, a repository administrator must select **GitHub Actions** in **Settings → Pages → Build and deployment → Source**. Once the workflow is merged and deployed, the site will be available at <https://datasophos.github.io/ToFScope/>. Local builds do not change repository settings or publish the site.
+
+### Pull request previews
+
+The Git-connected Cloudflare Pages project `tofscope-docs` builds branch previews separately from the GitHub Pages production site. Its root directory is the repository root, build command is `sh scripts/build_cloudflare_docs.sh`, and output directory is `great-docs/_site`. Its build variables are `PYTHON_VERSION=3.12` and `SKIP_DEPENDENCY_INSTALL=1`. The script installs Quarto 1.10.20 and the locked documentation dependencies, checks local links, and adds a `noindex` header. Automatic Cloudflare production deployments are disabled; GitHub Pages remains the canonical production site.
+
+Preview builds watch `docs/*`, `great-docs.yml`, `index.qmd`, the documentation build and checking scripts, `pyproject.toml`, and `uv.lock`. Cloudflare evaluates these paths for each push, so a code-only push to an existing documentation pull request does not refresh the preview. Cloudflare attaches preview URLs to pull requests from branches in the same repository; it does not automatically create them for pull requests from forks. Its preview deployments remain available after a pull request is merged unless explicitly removed. Custom domains and automatic cleanup require additional configuration.
