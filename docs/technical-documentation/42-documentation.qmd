@@ -48,3 +48,5 @@ Preview builds watch `docs/*`, `great-docs.yml`, `index.qmd`, the documentation 
 Cloudflare posts its `pages.dev` preview links directly to pull requests. When a pull request closes, the cleanup workflow requests deletion of its branch's preview deployments, unless another open pull request uses that branch. It runs on pull request events and every 15 minutes to retry cleanup. Cloudflare documents restrictions on deleting the latest branch deployment; check the workflow if deletion is rejected. Preview URLs remain available until their deployments are deleted. They are public and return a `noindex` header.
 
 The cleanup workflow uses trusted code from the default branch, never code from a pull request, and requires the GitHub Actions repository secret `CLOUDFLARE_PREVIEW_TOKEN` with account **Pages Write** permission. The Cloudflare account and project are defined in `scripts/cloudflare_previews.py`; update them there if the hosting account changes. To troubleshoot, inspect the Pages deployment and the cleanup workflow separately. The workflow becomes active after it is merged into the default branch.
+
+<!-- Disposable Cloudflare preview cleanup test. -->
