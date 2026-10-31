@@ -203,9 +203,9 @@ export function LayerEditor({
             />
           </label>
           <label>
-            Nonzero percentile <output>{style.percentile}%</output>
+            Intensity threshold <output>{style.percentile}%</output>
             <input
-              aria-label={`3D percentile for ${signal.name}`}
+              aria-label={`3D intensity threshold for ${signal.name}`}
               type="range"
               min="0"
               max="100"
