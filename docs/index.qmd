@@ -52,8 +52,6 @@ in your default browser (similar to how [Jupyter](https://jupyter.org) operates)
 
 The developer and administrator guides cover [building and testing](docs/technical-documentation/building-and-testing.qmd), [configuration and deployment](docs/technical-documentation/deployment.qmd), and [maintaining this site](docs/technical-documentation/documentation.qmd).
 
-ToFScope supports *TOFWERK TOFexplorer* HDF5 acquisitions. The [file compatibility and limitations guide](docs/technical-documentation/file-compatibility.qmd) describes supported workflows and current validation boundaries.
+ToFScope supports *TOFWERK TOFexplorer*[^trademark] HDF5 acquisitions. The [file compatibility and limitations guide](docs/technical-documentation/file-compatibility.qmd) describes supported workflows and current validation boundaries.
 
-## Disclaimer
-
-*TOFWERK* and *TOFexplorer* are names owned by [*TOFWERK AG*](https://www.tofwerk.com/). ToFScope is an independent project and is not affiliated with, endorsed by, or sponsored by *TOFWERK AG*.
+[^trademark]: *TOFWERK* and *TOFexplorer* are names owned by [*TOFWERK AG*](https://www.tofwerk.com/). ToFScope is an independent project and is not affiliated with, endorsed by, or sponsored by *TOFWERK AG*.

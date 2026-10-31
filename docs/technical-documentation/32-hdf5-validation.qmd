@@ -2,7 +2,7 @@
 title: "HDF5 compatibility"
 ---
 
-ToFScope reads supported [*TOFWERK*](#trademark-notice) *TOFexplorer* HDF5 acquisitions and saves analyses as new HDF5 copies. The original acquisition remains unchanged. The [file compatibility guide](31-file-compatibility.qmd) describes supported files and preparation.
+ToFScope reads supported *TOFWERK* *TOFexplorer*[^trademark] HDF5 acquisitions and saves analyses as new HDF5 copies. The original acquisition remains unchanged. The [file compatibility guide](31-file-compatibility.qmd) describes supported files and preparation.
 
 ## Reopening an analysis
 
@@ -18,6 +18,4 @@ For a signal made from disjoint mass intervals, vendor peak bounds may span the 
 
 Opening a file in *TOFexplorer* does not establish that all metadata is interchangeable or that the applications produce identical numerical results. Numerical agreement, commercial editing and resaving, and a complete *TOFexplorer* round trip of the current **Save as** workflow remain unverified.
 
-## Trademark notice
-
-*TOFWERK* and *TOFexplorer* are names owned by [*TOFWERK AG*](https://www.tofwerk.com/). ToFScope is an independent project and is not affiliated with, endorsed by, or sponsored by *TOFWERK AG*.
+[^trademark]: *TOFWERK* and *TOFexplorer* are names owned by [*TOFWERK AG*](https://www.tofwerk.com/). ToFScope is an independent project and is not affiliated with, endorsed by, or sponsored by *TOFWERK AG*.

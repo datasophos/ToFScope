@@ -9,7 +9,7 @@
 
 ToFScope is a browser-based application for exploring time-of-flight secondary ion mass spectrometry (ToF-SIMS) data. It allows you to analyze ion images, mass spectra, and depth profiles together so you can inspect an acquisition, compare signals, and save your analysis for later.
 
-ToFScope runs locally as a Python application and opens in your browser. It reads [TOFWERK TOFexplorer](#trademark-disclaimer) HDF5 (`.h5`) acquisitions, and provides interactive tools for exploring their mass spectra, ion images, and depth profiles in two and three dimensions.
+ToFScope runs locally as a Python application and opens in your browser. It reads TOFWERK TOFexplorer[^trademark] HDF5 (`.h5`) acquisitions, and provides interactive tools for exploring their mass spectra, ion images, and depth profiles in two and three dimensions.
 
 **[Read the ToFScope documentation](https://datasophos.github.io/ToFScope/)** for installation, user guides, deployment, and developer information. Start with [Install and launch](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html) or [Your first analysis](https://datasophos.github.io/ToFScope/docs/getting-started/first-analysis.html).
 
@@ -85,6 +85,4 @@ ToFScope is available under the [MIT License](https://github.com/datasophos/ToFS
 
 ---
 
-### Trademark disclaimer
-
-TOFWERK and TOFexplorer are names owned by [TOFWERK AG](https://www.tofwerk.com/). They are used here solely to identify the products and file formats supported by ToFScope. ToFScope is an independent project and is not affiliated with, endorsed by, or sponsored by TOFWERK AG.
+[^trademark]: TOFWERK and TOFexplorer are names owned by [TOFWERK AG](https://www.tofwerk.com/). They are used here solely to identify the products and file formats supported by ToFScope. ToFScope is an independent project and is not affiliated with, endorsed by, or sponsored by TOFWERK AG.
