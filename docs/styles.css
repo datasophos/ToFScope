@@ -1,0 +1,47 @@
+/* The homepage hero already displays the application name. */
+.gd-homepage #title-block-header {
+  display: none;
+}
+
+/* Quarto wraps diagrams in an extra div; let it fill the flex container
+   instead of falling back to the SVG's 300px intrinsic width. */
+.cell-output-display:has(svg.mermaid-js) > div {
+  width: 100%;
+  min-width: 0;
+}
+
+svg.mermaid-js {
+  width: 100%;
+  height: auto;
+}
+
+/* Guide links are prose, not API identifiers. */
+.gd-homepage #feature-guides-table .table a {
+  color: var(--bs-link-color);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  text-decoration-thickness: auto;
+  text-underline-offset: auto;
+}
+
+.gd-homepage #feature-guides-table .table a:hover {
+  color: var(--bs-link-hover-color);
+}
+
+/* Keep troubleshooting guidance readable without horizontal scrolling. */
+#troubleshooting .gd-table-scroll > table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+#troubleshooting table th:first-child {
+  width: 32%;
+}
+
+#troubleshooting table th,
+#troubleshooting table td,
+#troubleshooting table code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

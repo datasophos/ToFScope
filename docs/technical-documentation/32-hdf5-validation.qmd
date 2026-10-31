@@ -1,0 +1,23 @@
+---
+title: "HDF5 compatibility"
+---
+
+ToFScope reads supported [*TOFWERK*](#trademark-notice) *TOFexplorer* HDF5 acquisitions and saves analyses as new HDF5 copies. The original acquisition remains unchanged. The [file compatibility guide](31-file-compatibility.qmd) describes supported files and preparation.
+
+## Reopening an analysis
+
+A saved copy contains the acquisition, committed analysis settings, and full-resolution custom results. ToFScope can reopen the copy and restore the analysis, including its signals and display settings. The [saving guide](../using-tofscope/14-saving-and-exports.qmd) describes what a copy preserves.
+
+## Using a copy in *TOFexplorer*
+
+Some saved copies have opened in *TOFexplorer*, but ToFScope analysis names and custom signals may not appear as vendor peak channels. ToFScope stores its analysis metadata separately, and *TOFexplorer* is not known to interpret all of it.
+
+For a signal made from disjoint mass intervals, vendor peak bounds may span the gaps between intervals. Those bounds do not fully describe the signal; ToFScope retains the exact intervals in its analysis metadata.
+
+## Limits of compatibility
+
+Opening a file in *TOFexplorer* does not establish that all metadata is interchangeable or that the applications produce identical numerical results. Numerical agreement, commercial editing and resaving, and a complete *TOFexplorer* round trip of the current **Save as** workflow remain unverified.
+
+## Trademark notice
+
+*TOFWERK* and *TOFexplorer* are names owned by [*TOFWERK AG*](https://www.tofwerk.com/). ToFScope is an independent project and is not affiliated with, endorsed by, or sponsored by *TOFWERK AG*.

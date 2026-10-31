@@ -12,8 +12,13 @@ build/
 frontend/test-results/
 frontend/playwright-report/
 
+*.h5
+
 # Quarto-generated supporting assets
 *_files/
 
-# Rendered Quarto documentation
-docs/architecture.html
+# Generated Great Docs site and standalone Quarto previews
+/great-docs/
+/docs/**/*.html
+/.quarto/
+/docs/**/.quarto/

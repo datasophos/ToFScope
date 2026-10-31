@@ -42,7 +42,7 @@ tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 
 Replace the example paths with your folders. The output folder must be writable and have enough space for a full copy of an acquisition. ToFScope starts a local service and opens the app in your browser. Select a file to begin; keep the terminal open while you work and press **Ctrl-C** there to stop the app.
 
-For a step-by-step installation, including folder setup and troubleshooting, see the [macOS setup guide](https://github.com/datasophos/ToFScope/blob/main/docs/macos-tofscope.md). For configuration, hosted use, and containers, see [deployment](https://github.com/datasophos/ToFScope/blob/main/docs/deployment.md).
+For step-by-step installation, folder setup, and troubleshooting, see [Install and launch](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html). For configuration, hosted use, and containers, see [deployment](https://datasophos.github.io/ToFScope/docs/technical-documentation/deployment.html).
 
 ## Your first analysis
 
@@ -53,13 +53,15 @@ For a step-by-step installation, including folder setup and troubleshooting, see
 
 Saving leaves the source acquisition unchanged. Unsaved tabs and in-progress calculations do not survive a restart. Some raw files require preparation into a new copy before exploration; ToFScope previews that step and asks for confirmation.
 
-The [user guide](https://github.com/datasophos/ToFScope/blob/main/docs/user-guide.md) covers signals, calibration, exports, isotope identification, saving, and 3D controls in more detail.
+The [user guide](https://datasophos.github.io/ToFScope/docs/getting-started/index.html) covers signals, calibration, exports, isotope identification, saving, and 3D controls in more detail.
 
 ## Current limitations
 
 ToFScope is under active development and is in an alpha state. The application may change substantially prior to a stable 1.0.0 release.
-See the [user guide](https://github.com/datasophos/ToFScope/blob/main/docs/user-guide.md) for details.
+See the [user guide](https://datasophos.github.io/ToFScope/docs/getting-started/index.html) for details.
 If you have ideas of features to add, or notice any bugs, please open an [issue](https://github.com/datasophos/ToFScope/issues)!
+
+Read the [documentation site](https://datasophos.github.io/ToFScope/) for guides, architecture diagrams, and deployment instructions.
 
 ## Developing ToFScope
 
@@ -70,9 +72,11 @@ uv sync --frozen
 uv run tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 ```
 
-For frontend and Python checks, build instructions, and distribution validation, see the [developer commands](https://github.com/datasophos/ToFScope/blob/main/docs/user-guide.md#building-and-testing).
+For frontend and Python checks, build instructions, and distribution validation, see the [developer commands](https://datasophos.github.io/ToFScope/docs/technical-documentation/building-and-testing.html).
 
-For a diagram-led overview of the application, see [how ToFScope works](docs/architecture.qmd).
+For a diagram-led overview of the application, see [how ToFScope works](https://datasophos.github.io/ToFScope/docs/technical-documentation/architecture.html).
+
+To build or preview the documentation site, see [maintaining the documentation](https://datasophos.github.io/ToFScope/docs/technical-documentation/documentation.html).
 
 ## License
 

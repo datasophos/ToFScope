@@ -1,0 +1,34 @@
+---
+title: "Building and testing"
+---
+
+These commands run from the repository root. Python dependencies are managed with `uv`; Node is needed to develop or rebuild the frontend.
+
+```sh
+git clone https://github.com/datasophos/ToFScope.git
+cd ToFScope
+uv sync --frozen
+```
+
+
+[How ToFScope works](30-architecture.qmd) provides an overview of the application and its build.
+
+The following commands run the frontend checks and build, followed by the Python and distribution checks:
+
+```sh
+npm --prefix frontend ci
+npm --prefix frontend run generate:api
+npm --prefix frontend run typecheck
+npm --prefix frontend test
+npm --prefix frontend run test:e2e
+uv run python scripts/build_frontend.py
+uv run python -m unittest discover -s tests -v
+uv build
+uv run python scripts/check_distribution.py --artifacts dist --output /tmp/tofscope-distribution
+uv run python scripts/check_container.py
+```
+
+Prebuilt assets are included in both the wheel and source distribution. A source build fails if assets are missing or stale. CI checks generated API drift, scientific and service tests, frontend behavior, the installed package offline, and the container.
+
+
+[Maintaining the documentation](42-documentation.qmd) covers building and previewing this site.

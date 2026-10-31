@@ -1,0 +1,81 @@
+---
+title: "Install and launch"
+---
+
+## What you'll need
+
+- Python 3.11 or newer and [*uv*](https://docs.astral.sh/uv/getting-started/installation/) to install and manage the application (you can also use `pip` directly, but *uv* makes things easy!).
+- A folder containing supported *TOFWERK* *TOFexplorer* HDF5 (`.h5`) acquisitions.
+- A writable folder with enough space for saved acquisition copies.
+
+## Installation
+
+After installing `uv` using the instructions for your operating system at the link above, you can open a new terminal window and check that it is available:
+
+```sh
+uv --version
+```
+
+The following command installs ToFScope from PyPI:
+
+```sh
+uv tool install tofscope
+```
+
+If your shell cannot find `tofscope`, you can run `uv tool update-shell` and open a new terminal window.
+
+## Folder selection and launch
+
+By default, ToFScope will only have access to whatever files are in the folder that you launch it from
+(or any subfolders). You can use the `--data-root` argument to allow read-only access to another folder
+(such as a network mount containing your instruments' data) and the `--output-root` argument to allow
+for saving analysis results to a separate folder.
+
+The example paths in this command should be replaced with your acquisition and saved-copy folders;
+paths containing spaces need quotation marks:
+
+```sh
+tofscope --data-root "/path/to/acquisitions" --output-root "/path/to/saved-analyses"
+```
+
+The local service will start in your terminal and the app should open automatically in your browser.
+The terminal process needs to remain open while you work. After saving your analysis, you can stop the
+service by returning to the terminal and pressing **Ctrl-C**.
+
+::: {.callout-warning}
+## Saving before stopping the service
+
+Heads up! Open analyses and in-progress jobs are held in memory until you explicitly save them.
+Use the **Save as** feature to save your analysis before stopping the ToFScope process, or you will
+lose your data!
+:::
+
+Original acquisitions opened by ToFScope are never edited directly; the applicaiton will only save copies
+to protect the original integrity of the collected data.
+
+## Updates and removal
+
+Using *uv*, the app can be updated with the following command:
+
+```sh
+uv tool upgrade tofscope
+```
+
+The command `uv tool uninstall tofscope` uninstalls the app. This does not delete your acquisition or saved-analysis folders.
+
+## Troubleshooting
+
+| Problem | What to check |
+| --- | --- |
+| **`uv: command not found`** | A new terminal window and the PATH instructions printed by the uv installer may resolve the problem. |
+| **`tofscope: command not found`** | You can run `uv tool update-shell`, open a new terminal window, and try again. `uv tool list` shows installed tools. |
+| **No files in the picker** | `--data-root` must point to the folder containing the `.h5` files, and the service needs permission to read it. If `--data-root` is not given, ToFScope can only see files within the folder from which it was run. |
+| **Browser did not open** | The terminal may contain an error message. If the service is running, `tofscope open` in another terminal window opens the existing local service. |
+| **Cannot save** | The output folder must exist, be writable, and have enough free space for a full copy. Calculations must be finished or canceled and drafts finished or discarded before saving. ToFScope also will not overwrite a file, currently, so check if there is a duplicate file name in the selected folder. |
+| **Port already in use** | The previous ToFScope process may need to be stopped before trying again. |
+
+For help with startup problems, `tofscope doctor` loads the configuration and verifies the packaged frontend assets. It reports an error if either check fails; it does not diagnose every startup problem:
+
+```sh
+tofscope doctor --data-root "/path/to/acquisitions" --output-root "/path/to/saved-analyses"
+```

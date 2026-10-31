@@ -1,0 +1,40 @@
+---
+title: "Maintaining the documentation"
+---
+
+The site is built with [Great Docs](https://posit-dev.github.io/great-docs/) and Quarto. Narrative pages live in the section directories under `docs/`; `docs/index.qmd` is the homepage. The root `index.qmd` is a symbolic link that lets Great Docs find it. The root `great-docs.yml` configures branding and navigation. Python API reference generation is disabled because ToFScope's internal modules are not a public library interface.
+
+## Building and previewing
+
+The site requires Quarto **1.10.20**, available from the [Quarto installation instructions](https://quarto.org/docs/get-started/). From the repository root, the following commands install the locked documentation dependencies and build the site:
+
+```sh
+uv sync --frozen --only-group docs
+uv run --frozen --only-group docs great-docs build
+```
+
+For rapid editing, the local preview script watches documentation sources, rebuilds the site, and refreshes the browser after a successful build:
+
+```sh
+uv run --frozen --only-group docs python scripts/preview_docs.py
+```
+
+The preview opens at `http://127.0.0.1:3000/`. The `--port` option selects another port, and `--no-browser` starts the server without opening a tab. Pressing **Ctrl-C** stops the preview. If a build fails, the script reports the error and waits for the next source change.
+
+For a static preview of an existing build, `uv run --frozen --only-group docs great-docs preview` remains available. After a build, `python scripts/check_docs.py great-docs/_site` checks local links, anchors, and image paths.
+
+The pinned Great Docs release **0.17.0** uses a root-level `great-docs.yml`. Its generated Quarto project is `great-docs/`, with the deployable site in `great-docs/_site/`. The pre-render hook `scripts/prepare_docs.py` copies shared images into that generated project and creates narrative `llms.txt` and `llms-full.txt` exports. This fills a gap in that release when API reference generation is disabled.
+
+## Editing a page
+
+Section pages use `.qmd` files with a `title` in their YAML frontmatter. Numeric filename prefixes control order; Great Docs removes them from published URLs. Links between guide pages use the original prefixed filename, such as `30-architecture.qmd`; Great Docs rewrites those links during the build.
+
+Diagrams use `{mermaid}` code fences. Rendered diagrams require inspection in the browser in both light and dark modes; successful HTML generation alone does not prove Mermaid syntax is valid. Shared screenshots and logos live in `docs/assets/` and can be referenced from guide pages with `../assets/` paths.
+
+The source pages, assets, configuration, workflow, and dependency lockfile are committed to the repository. Generated `great-docs/`, standalone HTML previews, and Quarto `*_files/` folders are ignored.
+
+## Publishing
+
+The Documentation workflow builds pull requests for review and builds and deploys pushes to `main`. It uses the locked documentation dependencies and pinned Quarto version, and uploads `great-docs/_site/` to GitHub Pages.
+
+To activate publishing, a repository administrator must select **GitHub Actions** in **Settings → Pages → Build and deployment → Source**. Once the workflow is merged and deployed, the site will be available at <https://datasophos.github.io/ToFScope/>. Local builds do not change repository settings or publish the site.

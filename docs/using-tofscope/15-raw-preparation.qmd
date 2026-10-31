@@ -1,0 +1,14 @@
+---
+title: "Preparing raw acquisitions"
+---
+
+*TOFWERK* *TOFexplorer* `.h5` acquisitions can contain stored ion maps or raw events.
+For raw files without ion maps, the app previews the required preparation and
+asks for confirmation before integrating peak windows into a new copy. If timing or channel metadata is missing, you must acknowledge the assumptions used for reconstruction.
+New preparations retain raw events and metadata in a compact copy. Channels not
+present in the raw peak table cannot be reconstructed automatically. In one
+comparison, reconstructed values were not bit-identical to a *TOFexplorer*-processed
+sibling; numerical equivalence with the commercial software remains unverified.
+
+Floating-point fields use compact values and show the full exact value on focus. Numeric tables and plot readouts also suppress floating-point
+tails; scientific calculations and exports retain full precision.

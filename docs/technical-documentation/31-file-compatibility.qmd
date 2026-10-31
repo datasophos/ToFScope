@@ -1,0 +1,25 @@
+---
+title: "File compatibility and limitations"
+---
+
+## Supported files and preparation
+
+ToFScope reads supported *TOFWERK* *TOFexplorer* HDF5 (`.h5`) acquisitions. A file can contain stored ion maps or raw events. For raw files without ion maps, [preparation](../using-tofscope/15-raw-preparation.qmd) creates a new copy with integrated peak data while retaining raw events and metadata. Missing timing or channel metadata requires explicit acknowledgment of reconstruction assumptions.
+
+## What a saved copy preserves
+
+[Save as](../using-tofscope/14-saving-and-exports.qmd) stores committed analysis settings and full-resolution custom results in a new HDF5 copy. It also attempts to add eligible named signals as vendor peaks and reports exclusions. ToFScope restores its own analysis metadata when the saved copy is reopened.
+
+A file opening in *TOFexplorer* does not establish that *TOFexplorer* understands all ToFScope metadata or that both applications produce identical numerical results. Disjoint mass windows can be represented by precomputed values, but enclosing vendor mass bounds do not describe the gaps. The current unified save workflow has not been verified through a commercial-software round trip.
+
+ToFScope's analysis document uses schema version 4. Versions 1–3 remain readable with defaults for missing fields; older applications may reject newer documents. 3D preview arrays are display products, while saved custom data and scientific calculations retain original resolution.
+
+## Current limitations
+
+Linked cross-sections and in-place acquisition writes are unavailable. Live analyses and jobs are held in memory and do not survive a service restart. Shared use requires a trusted authenticated proxy; self-hosted authentication and container deployment remain under development, and NFS deployment has not been qualified. The [deployment guide](41-deployment.qmd) covers hosted configurations.
+
+3D rendering is qualitative and uses bounded display previews. The [3D guide](../using-tofscope/13-3d-visualization.qmd) explains pooling, coverage, interpolation, and rendering limits. Profiles, measurements, and CSV exports use original-resolution data.
+
+## HDF5 compatibility
+
+The [HDF5 compatibility](32-hdf5-validation.qmd) page describes how saved copies work in ToFScope and the limits of their use in *TOFexplorer*.

@@ -1,0 +1,20 @@
+---
+title: "Peak identification and isotope measurements"
+---
+
+![The identification dialog compares a measured peak with isotope candidates.](../assets/tofscope-isotope-identification.png)
+
+
+Atomic identification searches an offline list of isotope-ion candidates and reports charge, polarity, mass error, and reference provenance. **Identify peak** is beside the mass
+spectrum; its plot starts with log intensity. Clicking a peak starts a search immediately; an exact m/z can also be entered. The default absolute tolerance is 0.3 in m/z; changing tolerance, its unit,
+or charge and polarity refreshes candidates immediately. By default, candidates have known natural abundances, shown as percentages, and are ordered by abundance within the mass tolerance. Closest-mass ordering and
+isotopes without tabulated natural abundance are optional. An isotope can be assigned to an existing signal, an exact window applied to an assigned draft, or a new assigned comparison calculated. The draft keeps its isotope assignment when
+you rename it. Original file labels remain unchanged.
+
+**Isotope measurements** sums selected signals at original resolution over the
+current ROI and viewing frames, using their common coverage. Fractions are suppressed when windows overlap. Results show percentage shares, a region and frame summary, and explanations for zero intensity or missing isotope assignments.
+Calculation details and provenance are expandable. Results describe selected-set
+signal ratios, not quantitative composition. Input changes mark
+captured measurements out of date until you select **Measure** again. Isotope
+CSV and Settings JSON retain scope, mass errors, uncertainties, and provenance;
+Save as/reopen also preserves isotope assignments and captured results.

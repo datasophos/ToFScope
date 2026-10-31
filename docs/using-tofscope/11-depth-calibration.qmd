@@ -1,0 +1,12 @@
+---
+title: "Depth calibration"
+---
+
+**Depth calibration…** opens an editor beside the viewing
+controls. An anchor can be added by clicking an original-frame profile position or entering an exact frame and
+known depth; frame 0 at depth 0 is fixed. Anchors must increase strictly. The editor provides a choice of display units (nm, µm, or mm); the **Frames / Physical depth** buttons are in the main **Viewing depths** strip. Physical profiles and front
+projections show only frames between anchors; later depths remain unknown.
+Selection and keyboard navigation still use original acquisition frames, and
+unit changes never resample intensities. Removing positive anchors restores
+frame coordinates. CSV includes canonical `depth_nm`, blank for unknown depths,
+even when viewing in frames. The display footprint of a single plane does not imply a known thickness. Linked XZ and YZ cross-sections are not yet available.

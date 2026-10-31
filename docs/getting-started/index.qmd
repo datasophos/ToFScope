@@ -1,0 +1,28 @@
+---
+title: "ToFScope user guide"
+---
+
+ToFScope allows you to explore ToF-SIMS acquisitions using linked plots, named signals, and 3D views.
+It runs as a headless Python service in your terminal with an interface in your browser.
+
+The guides for [installation](01-installation.qmd) and [your first analysis](03-first-analysis.qmd) cover
+the first steps. The installation guide also covers updates, uninstalling, and troubleshooting.
+
+## Using ToFScope
+
+- [Signals and views](../using-tofscope/10-signals-and-views.qmd): choosing ion channels, defining mass windows, and exploring regions and frame ranges.
+- [Depth calibration](../using-tofscope/11-depth-calibration.qmd): connecting acquisition frames with known physical depths.
+- [Peak identification](../using-tofscope/12-identification.qmd): searching isotope candidates and measuring selected signals.
+- [3D visualization](../using-tofscope/13-3d-visualization.qmd): comparing spatial signals as overlays or tiles.
+- [Saving and exports](../using-tofscope/14-saving-and-exports.qmd): preserving an analysis or sharing CSV and image results.
+- [Preparing raw acquisitions](../using-tofscope/15-raw-preparation.qmd): creating initial ion maps when a file contains raw events.
+
+## Technical documentation
+
+The [architecture guide](../technical-documentation/30-architecture.qmd) explains the browser, service, calculations, and files through diagrams. [File compatibility](../technical-documentation/31-file-compatibility.qmd) describes the current limits, and the [HDF5 compatibility guide](../technical-documentation/32-hdf5-validation.qmd) explains how saved copies can be used in ToF-SIMS software. Developers and administrators can continue to [building and testing](../technical-documentation/40-building-and-testing.qmd) and [deployment](../technical-documentation/41-deployment.qmd).
+
+::: {.callout-note}
+## Saving before stopping the service
+
+Open analyses and in-progress jobs are held in memory. **Save as** creates a copy that can be reopened after a restart.
+:::

@@ -1,0 +1,59 @@
+---
+title: "ToFScope"
+---
+
+ToFScope is a local, browser-based application for exploring time-of-flight secondary ion mass spectrometry
+(ToF-SIMS) data. It allows you to compare mass spectra, ion images, and depth profiles, inspect peaks, and
+explore signals in three dimensions.
+
+![Explore shows an ion image, mass spectrum, front projection, and depth profile together.](docs/assets/tofscope-explore.png)
+
+## Quick Start
+
+ToFScope can be easily installed from [PyPI](https://pypi.org/project/tofscope/) using [uv](https://docs.astral.sh/uv/getting-started/installation/):
+
+```sh
+uv tool install tofscope
+```
+
+That command will put the `tofscope` executable on your path. Run `tofscope` to launch the application.
+By default, ToFScope will only have access to whatever files are in the folder that you launch it from
+(or any subfolders). You can use the `--data-root` argument to allow read-only access to another folder
+(such as a network mount containing your instruments' data) and the `--output-root` argument to allow
+for saving analysis results to a separate folder. For example:
+
+```sh
+tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
+```
+
+When running in this manner, the ToFScope process will run in the terminal and then open the main interface
+in your default browser (similar to how [Jupyter](https://jupyter.org) operates). For more detail, see:
+
+- [Install and launch](docs/getting-started/installation.qmd): requirements, folder setup, and starting the app.
+- [Your first analysis](docs/getting-started/first-analysis.qmd): opening a file, comparing signals, and saving your work.
+- [Troubleshooting](docs/getting-started/installation.qmd#troubleshooting): help with startup, file access, and saving.
+
+## Feature Guides
+
+::: {#feature-guides-table}
+
+| What you want to do | Where to start |
+| --- | --- |
+| Exploring an acquisition and comparing ion signals | [Signals and views](docs/using-tofscope/signals-and-views.qmd) |
+| Relating acquisition frames to measured depth | [Depth calibration](docs/using-tofscope/depth-calibration.qmd) |
+| Comparing peaks with isotope candidates | [Peak identification](docs/using-tofscope/identification.qmd) |
+| Viewing the spatial distribution of signals | [3D visualization](docs/using-tofscope/3d-visualization.qmd) |
+| Sharing results or resuming an analysis | [Saving and exports](docs/using-tofscope/saving-and-exports.qmd) |
+| Understanding the frontend, backend, and files | [How ToFScope works](docs/technical-documentation/architecture.qmd) |
+
+:::
+
+## For developers and administrators
+
+The developer and administrator guides cover [building and testing](docs/technical-documentation/building-and-testing.qmd), [configuration and deployment](docs/technical-documentation/deployment.qmd), and [maintaining this site](docs/technical-documentation/documentation.qmd).
+
+ToFScope supports *TOFWERK TOFexplorer* HDF5 acquisitions. The [file compatibility and limitations guide](docs/technical-documentation/file-compatibility.qmd) describes supported workflows and current validation boundaries.
+
+## Disclaimer
+
+*TOFWERK* and *TOFexplorer* are names owned by [*TOFWERK AG*](https://www.tofwerk.com/). ToFScope is an independent project and is not affiliated with, endorsed by, or sponsored by *TOFWERK AG*.

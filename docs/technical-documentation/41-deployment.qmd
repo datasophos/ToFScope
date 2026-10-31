@@ -1,0 +1,101 @@
+---
+title: "Configuration and deployment"
+---
+
+These instructions cover local, server, and Docker deployments of ToFScope.
+
+[Install and launch](../getting-started/01-installation.qmd) covers installation from PyPI and local setup.
+
+## Local desktop
+
+The following commands clone the ToFScope repository and install ToFScope from the checkout:
+
+```sh
+git clone https://github.com/datasophos/ToFScope.git
+cd ToFScope
+uv tool install .
+```
+
+The repository includes built frontend assets, so installation does not require Node or JavaScript tooling. One Uvicorn API process
+serves React, chart scripts, scientific data, and downloads from one port. No CDN,
+external account service, or runtime Node is used in local mode.
+
+The desktop launcher can be started with:
+
+```sh
+tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
+```
+
+The default address is `http://127.0.0.1:8765`. An empty configured root opens the
+file-picker empty state. The acquisition folder defaults to the current working directory; the saved
+copies folder defaults to the acquisition folder unless `--output-root` is set.
+The `TOF_FILE` environment variable specifies a file to open on first launch. The path must be relative to `data-root`.
+
+### Local service without automatic browser launch
+
+This mode starts the service without opening a browser immediately,
+for example when starting it from a script or using an API client. You can open its
+local interface later from another terminal while the service is running:
+
+```sh
+tofscope serve --no-browser --data-root /path/to/acquisitions --runtime-dir /path/to/private/runtime
+tofscope open --runtime-dir /path/to/private/runtime
+```
+
+The second command opens the running service on the same computer. A randomly generated launch secret protects the local web server. The runtime folder and launch address should remain private. If you switch browsers or access expires after 24 hours, the service needs to be restarted before it can be opened again.
+
+## Self-hosted service
+
+*Self-hosted, multi-user deployment is under development and will be documented
+further when it is ready.*
+
+## Configuration and storage
+
+Command-line options take precedence over `TOFSCOPE_*` environment variables,
+then `[tofscope]` settings in a TOML file. The available options are listed in `tofscope.example.toml`.
+The `tofscope doctor` command loads the configuration and verifies packaged frontend assets. The `--json` option prints the effective settings as JSON. It reports configuration and asset errors but does not diagnose every startup problem. The `/healthz` and `/readyz` endpoints provide service health checks.
+
+**Save as…** writes a new HDF5 copy containing the acquisition and committed analysis;
+the original file is not changed. The `--output-root` option specifies a writable folder, which is particularly useful when acquisitions are read-only. Saved copies will require at least as much space as the original,
+and the output filesystem must support hard links. Unsaved analyses and jobs are lost on restart; saving preserves the analysis. The [user guide](../using-tofscope/14-saving-and-exports.qmd) covers working with files and analyses.
+
+ToFScope supports one API process; analysis state is held in memory. Its managed
+memory limits do not include all Python, HDF5, or browser memory, so the system needs extra memory headroom. Acquisition reads use a writable lock directory; processes accessing the
+same files through ToFScope must share it.
+
+## Docker container
+
+> **Untested:** This container deployment workflow has not been verified end to end.
+> Self-hosted authentication and proxy configuration are still under development.
+
+The container serves ToFScope behind an authenticating reverse proxy. The image can be built from a clone of the repository using Docker and `uv`:
+
+```sh
+git clone https://github.com/datasophos/ToFScope.git
+cd ToFScope
+uv build
+docker build -t tofscope .
+```
+
+The following example starts it with the acquisition folder mounted read-only and a persistent volume for saved analyses. The acquisition path, public URL, and proxy address are placeholders for your setup:
+
+```sh
+docker volume create tofscope-saved
+docker run -d --name tofscope \
+  -p 127.0.0.1:8765:8765 \
+  --mount type=bind,src=/path/to/acquisitions,dst=/data,readonly \
+  --mount type=volume,src=tofscope-saved,dst=/saved \
+  -e TOFSCOPE_TRUSTED_PROXIES="<proxy-peer-ip>" \
+  -e TOFSCOPE_PUBLIC_ORIGIN=https://tofscope.example.org \
+  tofscope
+```
+
+The `<proxy-peer-ip>` value is the proxy's IP address **as seen by the container**; it may differ from the proxy's host address. The proxy must provide HTTPS, authenticate users, overwrite `X-ToFScope-User` with the authenticated username, and forward the original `Host` and `Origin` headers. The configured public URL opens the application in a browser. ToFScope grants authenticated users access to the mounted acquisition
+folder; it does not manage accounts.
+
+The `docker logs tofscope` command shows startup errors, and `docker stop tofscope` stops the service. The named volume preserves saved analyses when the container is
+removed. Restarting discards unsaved work.
+
+## NFS-backed acquisitions
+
+NFS deployments have not been validated. An NFS mount requires testing with representative data and workloads, including concurrent reads and file replacement. Acquisition files should remain read-only, and processes should use a shared lock directory.

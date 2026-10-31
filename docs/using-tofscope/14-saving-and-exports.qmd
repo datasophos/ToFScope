@@ -1,0 +1,26 @@
+---
+title: "Saving and exporting results"
+---
+
+**Save as…** creates a self-contained HDF5 copy with all committed signals,
+full-resolution custom results (including hidden signals), names and colors, ROI,
+frame/depth selections, calibration anchors, coordinate and unit choices, and display settings. It can be opened from **Saved files** to restore the analysis after a restart or on another machine. Saving does not
+change the input, including when the input is an earlier saved copy. New copies
+use analysis document version 4, including isotope results and spatial view state.
+Versions 1–3 remain readable with defaults for fields absent in those versions.
+Older applications reject version 4 documents.
+
+Saving defaults to the server; **Download copy** is an explicit optional action.
+Large files may take a long time to transfer. A saved copy includes the acquisition,
+so a 2.2-GB input needs at least that much output space plus derived results.
+The acquisition folder (`--data-root`) defaults to the current working directory.
+The saved copies folder (`--output-root`) defaults to that acquisition folder;
+an explicit setting is needed when saving elsewhere or using read-only acquisition storage.
+In **Save as…**, **Choose folder…** allows you to browse or create a subfolder. Local
+users can choose within the configured acquisition or saved-files folders;
+hosted users stay within their private saved-files folder. The dialog shows the
+full destination before saving. **Saved files** supports navigating subfolders
+when reopening copies. Existing files are never overwritten.
+The top Open button opens another file in a new tab; tabs can be closed when no longer needed. Drafts must be finished or discarded and calculations finished or canceled before saving.
+Closing an unsaved analysis offers Save as, Discard, or Cancel. Save as also attempts to add eligible named signals as *TOFexplorer* peaks and reports exclusions. Disjoint peaks carry enclosing native bounds and a midpoint that do not describe the gaps; ToFScope retains the exact recipe. The unified save workflow has not yet been verified in *TOFexplorer*. CSV exports visible ROI
+profiles at original scale and resolution; PNG includes profile labels.
