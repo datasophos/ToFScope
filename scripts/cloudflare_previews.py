@@ -52,15 +52,16 @@ def request(url, token, method="GET", body=None):
 
 def pages(url, token, cloudflare=False):
     results = []
+    per_page = 25 if cloudflare else 100
     for page in range(1, 1001):
         sep = "&" if "?" in url else "?"
-        data = request(f"{url}{sep}per_page=100&page={page}", token)
+        data = request(f"{url}{sep}per_page={per_page}&page={page}", token)
         items = data["result"] if cloudflare else data
         results.extend(items)
         if cloudflare and data.get("result_info", {}).get("total_pages") is not None:
             if page >= data["result_info"]["total_pages"]:
                 return results
-        elif len(items) < 100:
+        elif len(items) < per_page:
             return results
     raise RuntimeError(f"Pagination limit reached: {url}")
 
