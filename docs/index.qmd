@@ -44,7 +44,7 @@ in your default browser (similar to how [Jupyter](https://jupyter.org) operates)
 | Comparing peaks with isotope candidates | [Peak identification](docs/using-tofscope/identification.qmd) |
 | Viewing the spatial distribution of signals | [3D visualization](docs/using-tofscope/3d-visualization.qmd) |
 | Sharing results or resuming an analysis | [Saving and exports](docs/using-tofscope/saving-and-exports.qmd) |
-| Understanding the frontend, backend, and files | [How ToFScope works](docs/technical-documentation/architecture.qmd) |
+| Understanding the frontend, backend, and files | [ToFScope architecture](docs/technical-documentation/architecture.qmd) |
 
 :::
 

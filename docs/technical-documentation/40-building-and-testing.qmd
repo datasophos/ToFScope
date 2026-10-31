@@ -11,7 +11,7 @@ uv sync --frozen
 ```
 
 
-[How ToFScope works](30-architecture.qmd) provides an overview of the application and its build.
+[ToFScope architecture](30-architecture.qmd) provides an overview of the application and its build.
 
 The following commands run the frontend checks and build, followed by the Python and distribution checks:
 

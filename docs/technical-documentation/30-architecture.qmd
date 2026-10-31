@@ -1,10 +1,16 @@
 ---
-title: "How ToFScope works"
+title: "ToFScope architecture"
 mermaid:
   theme: neutral
 ---
 
-ToFScope analyzes ToF-SIMS acquisitions through a browser interface. This guide follows data through the major parts of the application and explains how the application is built.
+## Technical documentation
+
+This section is for developers, administrators, and other readers who want to understand how ToFScope is built, deployed, and maintained. It covers the application architecture, file compatibility, building and testing, deployment, and documentation maintenance. For instructions on using the application, start with the [user guide](../getting-started/index.qmd).
+
+## Architecture overview
+
+ToFScope analyzes ToF-SIMS acquisitions through a browser interface. This page follows data through the major parts of the application and explains how the application is built.
 
 An **acquisition** is an HDF5 (`.h5`) file containing measurements from an instrument. A **signal** describes the ion data being viewed; it can come from a stored channel or a custom mass window. An **analysis** is the current set of signals, selections, calibration, and display settings for an open file.
 

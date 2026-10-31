@@ -75,7 +75,7 @@ uv run tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-a
 
 For frontend and Python checks, build instructions, and distribution validation, see the [developer commands](https://datasophos.github.io/ToFScope/docs/technical-documentation/building-and-testing.html).
 
-For a diagram-led overview of the application, see [how ToFScope works](https://datasophos.github.io/ToFScope/docs/technical-documentation/architecture.html).
+For a diagram-led overview of the application, see [ToFScope architecture](https://datasophos.github.io/ToFScope/docs/technical-documentation/architecture.html).
 
 To build or preview the documentation site, see [maintaining the documentation](https://datasophos.github.io/ToFScope/docs/technical-documentation/documentation.html).
 
