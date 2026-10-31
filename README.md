@@ -10,6 +10,8 @@ ToFScope is a browser-based application for exploring time-of-flight secondary i
 
 ToFScope runs locally as a Python application and opens in your browser. It reads [TOFWERK TOFexplorer](#trademark-disclaimer) HDF5 (`.h5`) acquisitions, and provides interactive tools for exploring their mass spectra, ion images, and depth profiles in two and three dimensions.
 
+**[Read the ToFScope documentation](https://datasophos.github.io/ToFScope/)** for installation, user guides, deployment, and developer information. Start with [Install and launch](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html) or [Your first analysis](https://datasophos.github.io/ToFScope/docs/getting-started/first-analysis.html).
+
 ![ToFScope Explore showing an ion map, mass spectrum, front projection, and depth profile from a real acquisition](https://raw.githubusercontent.com/datasophos/ToFScope/main/docs/assets/tofscope-explore.png)
 
 *Explore view showing an ion map, mass spectrum, front projection, and depth profile for a real acquisition.*
@@ -60,8 +62,6 @@ The [user guide](https://datasophos.github.io/ToFScope/docs/getting-started/inde
 ToFScope is under active development and is in an alpha state. The application may change substantially prior to a stable 1.0.0 release.
 See the [user guide](https://datasophos.github.io/ToFScope/docs/getting-started/index.html) for details.
 If you have ideas of features to add, or notice any bugs, please open an [issue](https://github.com/datasophos/ToFScope/issues)!
-
-Read the [documentation site](https://datasophos.github.io/ToFScope/) for guides, architecture diagrams, and deployment instructions.
 
 ## Developing ToFScope
 
