@@ -3,6 +3,11 @@
   display: none;
 }
 
+/* Keep the preparation paragraph visible below the sticky navigation bar. */
+#preparing-raw-acquisitions {
+  scroll-margin-top: 8rem;
+}
+
 /* Clickable targets sit over the numbered markers in the Explore screenshot. */
 .explore-overview {
   position: relative;

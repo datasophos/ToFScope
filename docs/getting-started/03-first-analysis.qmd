@@ -9,7 +9,7 @@ You can also open a previous analysis through **Saved files**, which shows the f
 `output-root` you used when running ToFScope. You can open multiple files simultaneously, and they will show in
 separate tabs with their own separate analyses.
 
-If the acqusition file was never examined in the commercial software, it will contain only raw TOF events without
+[]{#preparing-raw-acquisitions}If the acqusition file was never examined in the commercial software, it will contain only raw TOF events without
 any stored ion maps. If this is the case, ToFScope will warn you upon opening the file and allow you to
 [prepare](../using-tofscope/15-raw-preparation.qmd) the file before opening. The preview requires confirmation
 before ToFScope creates a new copy for exploration, as it can potentially take a few minutes depending on the size

@@ -4,21 +4,29 @@ mermaid:
   theme: neutral
 ---
 
+::: {.callout-tip}
 ## Technical documentation
 
-This section is for developers, administrators, and other readers who want to understand how ToFScope is built, deployed, and maintained. It covers the application architecture, file compatibility, building and testing, deployment, and documentation maintenance. For instructions on using the application, start with the [user guide](../getting-started/index.qmd).
+This section is for developers, administrators, and other readers who want to understand more details about how ToFScope is built,
+deployed, and maintained. It covers the application architecture, file compatibility, building and testing, deployment,
+and documentation maintenance. For instructions on actually using the application, start with the
+[user guide](../getting-started/index.qmd).
+:::
 
 ## Architecture overview
 
-ToFScope analyzes ToF-SIMS acquisitions through a browser interface. This page follows data through the major parts of the application and explains how the application is built.
+ToFScope allows users to analyze ToF-SIMS acquisitions through a convenient browser interface. This page describes how data
+flows through the major parts of the application and explains how the application is built.
 
-An **acquisition** is an HDF5 (`.h5`) file containing measurements from an instrument. A **signal** describes the ion data being viewed; it can come from a stored channel or a custom mass window. An **analysis** is the current set of signals, selections, calibration, and display settings for an open file.
+An **acquisition** is an HDF5 (`.h5`) file containing measurements from an instrument. A **signal** describes the ion data
+being viewed; it can come from a stored channel in the original acquisition, or from a custom mass window. An **analysis**
+is the current collection of signals, selections, calibration, and display settings for an open file.
 
 ## The whole system
 
 ```{mermaid}
 flowchart TD
-    Person[Person] -->|selects and explores| Browser[Browser interface]
+    User[User] -->|selects and explores| Browser[Browser interface]
     Browser <-->|requests and results| Service[ToFScope Python service]
     Service -->|reads| Source[Acquisition HDF5 files]
     Service -->|creates| Saved[Prepared or saved HDF5 copies]
@@ -26,11 +34,17 @@ flowchart TD
     Browser -->|renders| Views[Plots and 3D views]
 ```
 
-In the usual local setup, the Python service and browser run on the same computer. The service also supplies the browser's application files; no JavaScript development environment (Node) is needed to run the packaged app. The browser displays results and communicates with the Python service, which runs the calculations. The service reads acquisitions, coordinates calculations, and can create separate copies or exports. It keeps the original acquisition unchanged.
+In the usual local setup, the Python service (run via `tofscope`) and browser interface run on the same computer. This
+server/client design will allow for future versions of ToFScope to run remotely while users access the tool with their local
+browser. The service also supplies the browser's application files; no JavaScript development environment (Node) is needed
+to run the packaged app. The browser displays results and communicates with the Python service, which runs the calculations.
+The service reads acquisitions, coordinates calculations, and can create separate copies or exports. It keeps the original
+acquisition unchanged.
 
-ToFScope can also be configured for other deployments. Self-hosted use is under development, and the container workflow is untested. The [deployment guide](41-deployment.qmd) describes the current boundaries and setup.
+ToFScope can also be configured for other deployments. Self-hosted server use is under development, and the container workflow is
+untested. The [deployment guide](41-deployment.qmd) describes the current boundaries and setup.
 
-## From acquisition to analysis
+## Typical analysis pipeline
 
 ```{mermaid}
 flowchart TD
@@ -47,11 +61,19 @@ flowchart TD
     Output --> Reopen[Reopen a saved copy later]
 ```
 
-Some acquisition files need initial ion maps created from raw measurement events before they can be explored. ToFScope previews that operation and creates a copy after the user confirms the action. In the *Explore* view, an ion image, mass spectrum, front projection, and depth profile provide different perspectives on the same acquisition. A user can select a region of interest, change the depth frame range, or compare signals; the views update to reflect those choices.
+Some acquisition files need [preparation](../getting-started/03-first-analysis.qmd#preparing-raw-acquisitions) to create
+initial ion maps from raw measurement events before they can be explored. ToFScope previews that operation and creates a
+copy after the user confirms the action. In the *Explore* view, an ion image, mass spectrum, front projection, and depth
+profile provide different perspectives on the same acquisition. A user can select a region of interest, change the depth
+frame range, or compare signals; the views update to reflect those choices.
 
-*Depth calibration* relates acquisition frames to physical depth when those depths are known. *Identify peak* helps compare measured peaks with isotope candidates. The *3D volume* view shows spatial signal data. The [user guide](../getting-started/index.qmd) provides instructions and limitations.
+*Depth calibration* relates acquisition frames to physical depth when those depths are known. *Identify peak* helps
+compare measured peaks with isotope candidates. The *3D volume* view shows spatial signal data. See the
+[user guide](../getting-started/index.qmd) for much more detail on these points.
 
 ## Inside the application
+
+The following diagram explains how the browser frontend communicates with the Python backend process:
 
 ```{mermaid}
 flowchart TD
@@ -80,13 +102,29 @@ flowchart TD
     Storage <--> Files[HDF5 files]
 ```
 
-The **frontend** is the interface in the browser. It manages screens and interactions, sends requests, and draws plots and 3D scenes using data returned by the service. The **API** handles requests and session access between the browser and service. The application layer manages open analyses, commands, background jobs, and cached arrays. Presentation code prepares data for displays and exports, science code implements calculations, and storage code works with acquisition and saved files. Arrows show major relationships, not every dependency.
+The **frontend** is the interface in the browser that a user interacts with. It manages screens and interactions, sends
+requests, and draws plots and 3D scenes using data returned by the service. The **API** handles requests and session
+access between the browser and service. The application layer manages open analyses, commands, background jobs,
+and cached arrays. Presentation code prepares data for displays and exports, science code implements calculations,
+and storage code works with acquisition and saved files. Arrows in this figure show major relationships, not every dependency.
 
-Readers who want to follow the code can start with [frontend screens](https://github.com/datasophos/ToFScope/tree/main/frontend/src/app), [frontend API code](https://github.com/datasophos/ToFScope/tree/main/frontend/src/api), and the backend's [API](https://github.com/datasophos/ToFScope/tree/main/src/tofscope/api), [application](https://github.com/datasophos/ToFScope/tree/main/src/tofscope/application), [presentation](https://github.com/datasophos/ToFScope/tree/main/src/tofscope/presentation), [science](https://github.com/datasophos/ToFScope/tree/main/src/tofscope/science), and [storage](https://github.com/datasophos/ToFScope/tree/main/src/tofscope/storage) directories.
+Readers who want to follow the code can start with the
+[frontend screens](https://github.com/datasophos/ToFScope/tree/main/frontend/src/app),
+[frontend API code](https://github.com/datasophos/ToFScope/tree/main/frontend/src/api),
+and the backend's [API](https://github.com/datasophos/ToFScope/tree/main/src/tofscope/api),
+[application](https://github.com/datasophos/ToFScope/tree/main/src/tofscope/application),
+[presentation](https://github.com/datasophos/ToFScope/tree/main/src/tofscope/presentation),
+[science](https://github.com/datasophos/ToFScope/tree/main/src/tofscope/science), and
+[storage](https://github.com/datasophos/ToFScope/tree/main/src/tofscope/storage) modules.
 
 ## Following a selection
 
-This example follows a change to an Explore selection, such as the region of interest. It shows the common path; individual actions can use different endpoints.
+This example follows the data flows that cascade from a change to an Explore selection, such as the region of interest.
+It shows the common path; individual actions can use different endpoints.
+After a change, the service sends the browser an **analysis snapshot**: a record of the analysis settings at that
+moment, including the selected signals, region, depth range, and display settings. It also includes a revision number
+that identifies that version of the analysis. The snapshot describes the current state; the plotted data is requested
+separately.
 
 ```{mermaid}
 sequenceDiagram
@@ -105,9 +143,12 @@ sequenceDiagram
     Data->>Data: Calculate views
     Data-->>UI: Panel data and revision
     UI->>UI: Check revision and redraw
+    UI-->>Person: Display updated views
 ```
 
-An analysis snapshot describes the current choices and has a revision number. The browser uses it to decide which panels need fresh data and avoids displaying a response for an older revision. The service may reuse arrays from a memory cache to avoid repeated work; the cache is bounded and is not permanent storage.
+The browser uses the snapshot to decide which panels need fresh data and avoids displaying a response for an older
+revision. The service may reuse arrays from a memory cache to avoid repeated work; the cache is bounded and is not
+permanent storage.
 
 Some operations take longer and use a background job instead of this immediate display path. Examples include custom signal integration, raw preparation, isotope measurements, and saving. The interface can report job progress and results while the service schedules the work.
 
@@ -125,9 +166,14 @@ flowchart TD
     Session -->|browser plot export| Image[PNG image]
 ```
 
-The open analysis and in-progress jobs live in the service's memory; unsaved work is lost when it restarts. **Save as** creates a new HDF5 copy with the acquisition and committed analysis, so it can be reopened later. If the opened file is itself a prepared or saved copy, that file is the source for the new copy. CSV and image exports can be used to share results; **Save as** preserves the analysis for further work. [Configuration and storage](41-deployment.qmd#configuration-and-storage) covers space and filesystem requirements.
+The open analysis and in-progress jobs live in the service's memory; unsaved work is lost when it restarts.
+The **Save as** action creates a new HDF5 copy with the acquisition and committed analysis, so it can be reopened
+later. If the opened file is itself a prepared or saved copy, that file is the source for the new copy.
+CSV and image exports are sent directly through the browser to the user's Downlods and can be used to share results;
+**Save as** preserves the analysis for further work.
+[Configuration and storage](41-deployment.qmd#configuration-and-storage) covers space and filesystem requirements.
 
-## From source code to a running app
+## Building a development version
 
 ```{mermaid}
 flowchart TD
@@ -139,4 +185,11 @@ flowchart TD
     Server -->|serves assets and API| Browser[Browser]
 ```
 
-Developers use Node to build the frontend. The build script copies the resulting files into `src/tofscope/static/`, where they are included in the Python distribution alongside the service. At runtime, the local service serves those prebuilt assets and the API; the browser runs the interface. The [building and testing instructions](40-building-and-testing.qmd) list the commands, and [deployment](41-deployment.qmd) describes other configurations.
+Developers can use the [`scripts/build_frontend.py`](https://github.com/datasophos/ToFScope/blob/main/scripts/build_frontend.py)
+script via `uv run python scripts/build_frontend.py`. It runs the frontend build defined in
+[`frontend/package.json`](https://github.com/datasophos/ToFScope/blob/main/frontend/package.json), copies the resulting
+files into `src/tofscope/static/`, and records a manifest. Running `uv build` creates the Python distributions;
+[`setup.py`](https://github.com/datasophos/ToFScope/blob/main/setup.py) checks the bundled assets during the package build.
+At runtime, the local service serves those prebuilt assets and the API; the browser runs the interface.
+The [building and testing instructions](40-building-and-testing.qmd) list the commands, and
+[deployment](41-deployment.qmd) describes other configurations.
