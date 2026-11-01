@@ -69,10 +69,10 @@ export function SignalDetails({
           </p>
           <p
             data-mass-intervals
-            title={recipe.intervals.map(([a, b]) => `${a}–${b} Th`).join(" ∪ ")}
+            title={`m/z ${recipe.intervals.map(([a, b]) => `${a}–${b}`).join(" ∪ ")}`}
           >
-            {recipe.intervals
-              .map(([a, b]) => `${a.toFixed(2)}–${b.toFixed(2)} Th`)
+            m/z {recipe.intervals
+              .map(([a, b]) => `${a.toFixed(2)}–${b.toFixed(2)}`)
               .join(" ∪ ")}
           </p>
           {recipe.source === "stored" && (

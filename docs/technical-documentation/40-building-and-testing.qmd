@@ -1,0 +1,121 @@
+---
+title: "Building and testing"
+---
+
+This page will help you get started developing on ToFScope. All commands should be run from the repository root.
+Python dependencies are managed with [`uv`](https://docs.astral.sh/uv/); [Node](https://nodejs.org/en) is needed
+to develop or rebuild the frontend. For more details on how the application is designed, see
+[ToFScope architecture](30-architecture.qmd) for an overview of the application's architecture and its build.
+
+## Install the development version of the Python package
+
+```sh
+git clone https://github.com/datasophos/ToFScope.git
+cd ToFScope
+uv sync --frozen
+```
+
+## Install frontend dependencies
+
+Install the exact versions in `frontend/package-lock.json` before working on the React and TypeScript interface:
+
+```sh
+npm --prefix frontend ci
+```
+
+This installs the frontend tools and dependencies into `frontend/node_modules/`. You will need to run it again
+if the lockfile changes.
+
+## Update the frontend API types
+
+When the Python API changes, regenerate its OpenAPI schema and the TypeScript types used by the frontend:
+
+```sh
+npm --prefix frontend run generate:api
+```
+
+This updates `frontend/openapi.json` and `frontend/src/api/generated.ts`. Review and commit the generated changes with
+the API change. The command uses the Python environment created by `uv sync` above.
+
+## Check and test the frontend
+
+```sh
+npm --prefix frontend run typecheck
+npm --prefix frontend test
+```
+
+The first command checks TypeScript without producing files; the second runs the Vitest frontend tests.
+
+For browser workflows, run the Playwright suite:
+
+```sh
+npm --prefix frontend run test:e2e
+```
+
+These tests use Google Chrome and start local frontend and test backend servers by default. Install Chrome if it is not
+already available; the CI setup uses `npm --prefix frontend exec -- playwright install --with-deps chrome` on Linux.
+
+## Build the packaged frontend
+
+The frontend application is bundled into the Python package, so users only need to install from PyPI and run `tofscope`
+to start the app. On the developer side, this requires rebuilding the frontend assets into the Python package
+and committing these files:
+
+```sh
+uv run python scripts/build_frontend.py
+```
+
+This script runs the frontend TypeScript and Vite build, replaces the generated files in `src/tofscope/static/`, and writes an
+asset manifest. Rebuild after changing frontend sources so the Python package includes up-to-date browser assets.
+During development, you will need to run this script to update what you see in the browser when testing manually.
+
+## Test the Python application
+
+```sh
+uv run python -m unittest discover -s tests -v
+```
+
+This discovers and runs the Python test suite, including scientific calculations, storage, the API, and service behavior.
+
+## Build and check distributions
+
+After building the frontend assets, create the wheel and source distribution using `uv`. This example uses a
+temporary directory to ensure a fresh context separate from the source directory:
+
+```sh
+artifact_dir=$(mktemp -d)
+uv build --out-dir "$artifact_dir"
+```
+
+The wheel and source distribution both include the prebuilt browser assets. A source build will fail if those assets are
+missing or stale. In the same terminal, install each artifact in a temporary environment and exercise the packaged
+service and browser without Node:
+
+```sh
+uv run python scripts/check_distribution.py --artifacts "$artifact_dir" --output /tmp/tofscope-distribution
+```
+
+The script checks each artifact's version against the checkout, installs it in a temporary Python environment, and
+creates disposable test acquisitions. It starts the installed service and uses Chrome to exercise preparation, plots,
+identification, calibration, saving, reopening, and exports. It also checks that the packaged app runs without Node and
+that the browser makes no unexpected external requests. These are smoke tests, not a replacement for the full test suites.
+The goal of the script is to build ToFScope as a user would install it, then test both package formats in clean environments,
+catching packaging problems that ordinary tests run from the source checkout might miss.
+
+The temporary installations and test data are removed afterward. Results in `distribution.json` and screenshots are
+written to the specified output directory; use a disposable location.
+
+## Check the container
+
+Container deployment is in early stages, but the `check_container.py` script will build a local Docker image and
+run a non-root smoke test with read-only acquisition files and writable temporary
+storage. It requires Docker and uses disposable test data:
+
+```sh
+uv run python scripts/check_container.py
+```
+
+The repository's CI workflow runs these checks and verifies that regenerated API files have no unexpected changes.
+
+See [Maintaining the documentation](42-documentation.qmd) for information on building and previewing the documentation
+site.

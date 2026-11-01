@@ -1,0 +1,194 @@
+/* The homepage hero already displays the application name. */
+.gd-homepage #title-block-header {
+  display: none;
+}
+
+/* Keep the main navigation labels at regular weight. */
+#navbarCollapse .navbar-nav.navbar-nav-scroll.me-auto > .nav-item > .nav-link {
+  font-weight: 400;
+}
+
+/* Keep the preparation paragraph visible below the sticky navigation bar. */
+#preparing-raw-acquisitions {
+  scroll-margin-top: 8rem;
+}
+
+sup > a[href$="#trademark-notice"] {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* A footnote link in a heading is not a separate table-of-contents entry. */
+#TOC a[href$="#trademark-notice"],
+.gd-otp-panel-list li:has(> a[href$="#trademark-notice"]) {
+  display: none;
+}
+
+/* Clickable targets sit over the numbered markers in the Explore screenshot. */
+.explore-overview {
+  position: relative;
+  width: 100%;
+}
+
+.explore-overview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.explore-marker {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.explore-marker:hover,
+.explore-marker:focus {
+  z-index: 2;
+}
+
+.explore-marker:hover,
+.explore-marker:focus-visible {
+  outline: 3px solid #e47700;
+  outline-offset: 2px;
+}
+
+.explore-marker [role="tooltip"] {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: min(18rem, 70vw);
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.35rem;
+  background: #102536;
+  color: white;
+  box-shadow: 0 2px 8px #0005;
+  text-align: left;
+  font-size: 0.9rem;
+  font-weight: normal;
+  line-height: 1.4;
+}
+
+.explore-marker-right [role="tooltip"] {
+  right: 50%;
+  left: auto;
+}
+
+.explore-marker:hover [role="tooltip"],
+.explore-marker:focus [role="tooltip"] {
+  display: block;
+}
+
+.explore-highlight {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 4px;
+  scroll-margin-top: 6rem;
+}
+
+.explore-highlight:target {
+  outline: 4px solid #d44900;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 7px white;
+}
+
+.plot-navigation table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.plot-navigation table th,
+.plot-navigation table td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.profile-comparison label {
+  margin-right: 1rem;
+}
+
+.profile-comparison figure {
+  display: none;
+  margin-top: 0.75rem;
+}
+
+#profiles-relative:checked ~ .profile-comparison-relative,
+#profiles-mean:checked ~ .profile-comparison-mean {
+  display: block;
+}
+
+.profile-comparison img {
+  width: 100%;
+  height: auto;
+}
+
+/* Quarto wraps diagrams in an extra div; let it fill the flex container
+   instead of falling back to the SVG's 300px intrinsic width. */
+.cell-output-display:has(svg.mermaid-js) > div {
+  width: 100%;
+  min-width: 0;
+}
+
+svg.mermaid-js {
+  width: 100%;
+  height: auto;
+}
+
+/* Guide links are prose, not API identifiers. */
+.gd-homepage #feature-guides-table .table a {
+  color: var(--bs-link-color);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  text-decoration-thickness: auto;
+  text-underline-offset: auto;
+}
+
+.gd-homepage #feature-guides-table .table a:hover {
+  color: var(--bs-link-hover-color);
+}
+
+/* Keep troubleshooting guidance readable without horizontal scrolling. */
+#troubleshooting .gd-table-scroll > table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+#troubleshooting table th:first-child {
+  width: 32%;
+}
+
+#troubleshooting table th,
+#troubleshooting table td,
+#troubleshooting table code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Keep configuration settings and their descriptions within the page. */
+:is(#paths-and-networking, #resource-limits-and-lifecycle) .gd-table-scroll > table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+:is(#paths-and-networking, #resource-limits-and-lifecycle) table th:first-child {
+  width: 28%;
+}
+
+:is(#paths-and-networking, #resource-limits-and-lifecycle) table th:nth-child(2) {
+  width: 24%;
+}
+
+:is(#paths-and-networking, #resource-limits-and-lifecycle) table th,
+:is(#paths-and-networking, #resource-limits-and-lifecycle) table td,
+:is(#paths-and-networking, #resource-limits-and-lifecycle) table code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

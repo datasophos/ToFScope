@@ -5,10 +5,13 @@
 # ToFScope
 
 [![PyPI version](https://img.shields.io/pypi/v/tofscope)](https://pypi.org/project/tofscope/)
+[![Documentation](https://img.shields.io/badge/docs-read-blue)](https://datasophos.github.io/ToFScope/)
 
 ToFScope is a browser-based application for exploring time-of-flight secondary ion mass spectrometry (ToF-SIMS) data. It allows you to analyze ion images, mass spectra, and depth profiles together so you can inspect an acquisition, compare signals, and save your analysis for later.
 
-ToFScope runs locally as a Python application and opens in your browser. It reads [TOFWERK TOFexplorer](#trademark-disclaimer) HDF5 (`.h5`) acquisitions, and provides interactive tools for exploring their mass spectra, ion images, and depth profiles in two and three dimensions.
+ToFScope runs locally as a Python application and opens in your browser. It reads TOFWERK TOFexplorer[^trademark] HDF5 (`.h5`) acquisitions, and provides interactive tools for exploring their mass spectra, ion images, and depth profiles in two and three dimensions.
+
+**[Read the ToFScope documentation](https://datasophos.github.io/ToFScope/)** for installation, user guides, deployment, and developer information. Start with [Install and launch](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html) or [Your first analysis](https://datasophos.github.io/ToFScope/docs/getting-started/first-analysis.html).
 
 ![ToFScope Explore showing an ion map, mass spectrum, front projection, and depth profile from a real acquisition](https://raw.githubusercontent.com/datasophos/ToFScope/main/docs/assets/tofscope-explore.png)
 
@@ -42,7 +45,7 @@ tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 
 Replace the example paths with your folders. The output folder must be writable and have enough space for a full copy of an acquisition. ToFScope starts a local service and opens the app in your browser. Select a file to begin; keep the terminal open while you work and press **Ctrl-C** there to stop the app.
 
-For a step-by-step installation, including folder setup and troubleshooting, see the [macOS setup guide](https://github.com/datasophos/ToFScope/blob/main/docs/macos-tofscope.md). For configuration, hosted use, and containers, see [deployment](https://github.com/datasophos/ToFScope/blob/main/docs/deployment.md).
+For step-by-step installation, folder setup, and troubleshooting, see [Install and launch](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html). See the [configuration reference](https://datasophos.github.io/ToFScope/docs/technical-documentation/configuration.html) for settings, and [deployment](https://datasophos.github.io/ToFScope/docs/technical-documentation/deployment.html) for hosted use and containers.
 
 ## Your first analysis
 
@@ -53,12 +56,12 @@ For a step-by-step installation, including folder setup and troubleshooting, see
 
 Saving leaves the source acquisition unchanged. Unsaved tabs and in-progress calculations do not survive a restart. Some raw files require preparation into a new copy before exploration; ToFScope previews that step and asks for confirmation.
 
-The [user guide](https://github.com/datasophos/ToFScope/blob/main/docs/user-guide.md) covers signals, calibration, exports, isotope identification, saving, and 3D controls in more detail.
+The [user guide](https://datasophos.github.io/ToFScope/docs/getting-started/index.html) covers signals, calibration, exports, isotope identification, saving, and 3D controls in more detail.
 
 ## Current limitations
 
 ToFScope is under active development and is in an alpha state. The application may change substantially prior to a stable 1.0.0 release.
-See the [user guide](https://github.com/datasophos/ToFScope/blob/main/docs/user-guide.md) and [project roadmap](https://github.com/datasophos/ToFScope/blob/main/TODO.md) for details.
+See the [user guide](https://datasophos.github.io/ToFScope/docs/getting-started/index.html) for details.
 If you have ideas of features to add, or notice any bugs, please open an [issue](https://github.com/datasophos/ToFScope/issues)!
 
 ## Developing ToFScope
@@ -70,7 +73,11 @@ uv sync --frozen
 uv run tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 ```
 
-For frontend and Python checks, build instructions, and distribution validation, see the [developer commands](https://github.com/datasophos/ToFScope/blob/main/docs/user-guide.md#building-and-testing). Scientific and implementation evidence is available in [docs/validation](https://github.com/datasophos/ToFScope/tree/main/docs/validation/).
+For frontend and Python checks, build instructions, and distribution validation, see the [developer commands](https://datasophos.github.io/ToFScope/docs/technical-documentation/building-and-testing.html).
+
+For a diagram-led overview of the application, see [ToFScope architecture](https://datasophos.github.io/ToFScope/docs/technical-documentation/architecture.html).
+
+To build or preview the documentation site, see [maintaining the documentation](https://datasophos.github.io/ToFScope/docs/technical-documentation/documentation.html).
 
 ## License
 
@@ -78,6 +85,4 @@ ToFScope is available under the [MIT License](https://github.com/datasophos/ToFS
 
 ---
 
-### Trademark disclaimer
-
-TOFWERK and TOFexplorer are names owned by [TOFWERK AG](https://www.tofwerk.com/). They are used here solely to identify the products and file formats supported by ToFScope. ToFScope is an independent project and is not affiliated with, endorsed by, or sponsored by TOFWERK AG.
+[^trademark]: TOFWERK and TOFexplorer are names owned by [TOFWERK AG](https://www.tofwerk.com/). They are used here solely to identify the products and file formats supported by ToFScope. ToFScope is an independent project and is not affiliated with, endorsed by, or sponsored by TOFWERK AG.

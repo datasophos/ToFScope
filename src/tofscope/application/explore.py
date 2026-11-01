@@ -20,7 +20,7 @@ class ExploreService:
             raise ValueError("Coverage outside acquisition.")
         p = s.peaks[index]
         return SignalRecipe(
-            label=f"{p.label} · {p.mass:g} Th",
+            label=f"{p.label} · m/z {p.mass:g}",
             source="stored",
             stored_index=index,
             intervals=((p.low, p.high),),

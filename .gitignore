@@ -11,3 +11,14 @@ build/
 *.egg-info/
 frontend/test-results/
 frontend/playwright-report/
+
+*.h5
+
+# Quarto-generated supporting assets
+*_files/
+
+# Generated Great Docs site and standalone Quarto previews
+/great-docs/
+/docs/**/*.html
+/.quarto/
+/docs/**/.quarto/

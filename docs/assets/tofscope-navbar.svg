@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="36" viewBox="0 0 180 36" role="img" aria-labelledby="title">
+  <title id="title">ToFScope</title>
+  <path d="M3 5h23v5h-9v21h-5V10H3z" fill="#fff"/>
+  <circle cx="30" cy="28" r="3" fill="#44bdac"/>
+  <text x="43" y="28" fill="#fff" font-family="Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="-0.8">ToFScope</text>
+</svg>

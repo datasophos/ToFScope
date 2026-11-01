@@ -9,7 +9,7 @@ def make_acquisition(path):
         f.attrs['NbrWaveforms']=2
         f.attrs['Configuration File Contents']=b'Ch1Record=1\nCh2Record=1'
         fs=f.create_group('FullSpectra');fs.attrs['SampleInterval']=64.;fs.attrs['ClockPeriod']=1.
-        fs.create_dataset('MassAxis',data=np.arange(6.));fs.create_dataset('SumSpectrum',data=np.ones(6))
+        fs.create_dataset('MassAxis',data=np.arange(6.));fs.create_dataset('SumSpectrum',data=np.array([1.,1.,1.,1.,2.,2.]))
         raw=fs.create_dataset('EventList',(4,1,2),dtype=h5py.vlen_dtype(np.dtype('uint32')))
         for z in range(4):
             raw[z,0,0]=np.array([1,2,2,3,4],dtype=np.uint32)*64

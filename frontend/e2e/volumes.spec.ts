@@ -345,7 +345,7 @@ test("multi-signal overlay, tiles, styles and linked cameras", async ({
     .getByLabel(`3D colormap for ${name}`, { exact: true })
     .selectOption("Reds");
   await page.getByLabel(`3D opacity for ${name}`).fill("0.4");
-  await page.getByLabel(`3D percentile for ${name}`).fill("35");
+  await page.getByLabel(`3D intensity threshold for ${name}`).fill("35");
   await page.getByRole("button", { name: "Close 3D signal settings" }).click();
   await expect
     .poll(async () => {

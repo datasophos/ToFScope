@@ -72,9 +72,9 @@ test("all draft intervals remain visible and compact bounds preserve exact value
     name: "Signal details: Two windows",
     exact: true,
   });
-  await expect(details).toContainText("1.12–2.23 Th ∪ 3.35–4.46 Th");
+  await expect(details).toContainText("m/z 1.12–2.23 ∪ 3.35–4.46");
   await expect(details.locator("[data-mass-intervals]")).toHaveAttribute(
     "title",
-    "1.123456789–2.234567891 Th ∪ 3.345678912–4.456789123 Th",
+    "m/z 1.123456789–2.234567891 ∪ 3.345678912–4.456789123",
   );
 });

@@ -1,12 +1,9 @@
 """One Python service/port, loopback by default; Node is build-time only."""
 
 import argparse
-from dataclasses import asdict
 import hashlib
-from importlib.resources import files
 import json
 import os
-from pathlib import Path
 import secrets
 import socket
 import sys
@@ -14,7 +11,12 @@ import threading
 import time
 import urllib.request
 import webbrowser
+from dataclasses import asdict
+from importlib.resources import files
+from pathlib import Path
+
 import uvicorn
+
 from tofscope import __version__
 from tofscope.api.app import create_app
 from tofscope.config import load_settings
@@ -56,6 +58,9 @@ def run_service(settings, browser=False):
         socket.AF_INET6 if ":" in settings.host else socket.AF_INET, socket.SOCK_STREAM
     )
     try:
+        if os.name != "nt":
+            # Rebind promptly after closed connections leave the port in TIME_WAIT.
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((settings.host, settings.port))
         sock.listen(128)
     except OSError:
@@ -106,8 +111,11 @@ def main(argv=None):
     p.add_argument("--port", type=int)
     p.add_argument("--mode", choices=["local", "proxy"])
     p.add_argument("--no-browser", action="store_true")
+    p.add_argument("--json", action="store_true", help="Print the doctor report as JSON")
     p.add_argument("--version", action="version", version=__version__)
     a = p.parse_args(argv)
+    if a.json and a.command != "doctor":
+        p.error("--json is only available with doctor")
     try:
         settings = load_settings(
             a.config,
@@ -126,16 +134,19 @@ def main(argv=None):
         )
         if a.command == "doctor":
             assets = asset_status()
-            public = asdict(settings)
-            public.update(
-                version=__version__,
-                asset_version=assets["version"],
-                scope="Explore-only",
-                writes_available=False,
-                save_copies_available=True,
-                notes="Managed array budget excludes Python/HDF5/browser allocator overhead; one API process.",
-            )
-            print(json.dumps(public, default=str, indent=2))
+            if a.json:
+                public = asdict(settings)
+                public.update(
+                    version=__version__,
+                    asset_version=assets["version"],
+                    scope="Explore-only",
+                    writes_available=False,
+                    save_copies_available=True,
+                    notes="Managed array budget excludes Python/HDF5/browser allocator overhead; one API process.",
+                )
+                print(json.dumps(public, default=str, indent=2))
+            else:
+                print("Everything looks good: configuration loaded and frontend assets verified.")
             return 0
         if a.command == "open":
             credential = json.loads((settings.runtime_dir / "launch.json").read_text())

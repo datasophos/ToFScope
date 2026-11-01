@@ -6,7 +6,7 @@ test("scientific axes identify frame, depth and spatial units", () => {
   expect(axisTitle({ name: "x", unit: "native pixel" })).toBe(
     "X (native pixel)",
   );
-  expect(axisTitle({ name: "m/z", unit: "Th" })).toBe("m/z (Th)");
+  expect(axisTitle({ name: "m/z", unit: "Th" })).toBe("m/z");
 });
 test("tick formatting stays compact without changing the value domain", () => {
   expect(formatTick(216.725151)).toBe("216.73");

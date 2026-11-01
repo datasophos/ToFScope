@@ -1,0 +1,49 @@
+---
+title: "File compatibility and limitations"
+---
+
+## Supported files and preparation
+
+ToFScope reads acquisitions from the *TOFWERK* *TOFexplorer*[^trademark] software in the HDF5 (`.h5`) format.
+These files may contain stored ion maps or raw events, depending on the analysis history in the vendor software.
+For raw files without ion maps, the [preparation](../using-tofscope/15-raw-preparation.qmd) process creates
+a new copy with integrated peak data while retaining raw events and metadata.
+If the file has missing timing or channel metadata, it requires explicit acknowledgment of reconstruction assumptions.
+
+## Saving files with ToFScope
+
+ToFScope's [Save as](../using-tofscope/14-saving-and-exports.qmd) functionality stores the original acquisition,
+committed analysis settings, and full-resolution custom results in a new HDF5 file. The original acquisition remains
+unchanged. ToFScope restores its own analysis metadata, including signals and display settings, when the saved copy is
+reopened.
+
+## Using a ToFScope file in *TOFexplorer*<sup><a href="#trademark-notice">1</a></sup>
+
+ToFScope attempts to add eligible named signals as vendor peaks and reports any exclusions. Some saved copies have
+opened in *TOFexplorer*<sup><a href="#trademark-notice">1</a></sup>, but ToFScope analysis names and custom signals may
+not appear in the vendor interface. ToFScope stores its analysis metadata separately, and the vendor software does not
+necessarily interpret it.
+
+For a signal made from disjoint mass intervals, vendor peak bounds may span the gaps between intervals. Those bounds do
+not fully describe the signal; ToFScope retains the exact intervals in its analysis metadata.
+
+::: {.callout-warning}
+## Limits of compatibility
+
+Opening a file in *TOFexplorer*<sup><a href="#trademark-notice">1</a></sup> does not necessarily mean that all metadata
+is interchangeable or that the applications produce identical numerical results. ToFScope does not claim full
+interoperability with *TOFexplorer*.
+:::
+
+## Current limitations
+
+Live analyses are held in memory and do not survive a service restart unless the data is saved to disk.
+Shared use requires a trusted authenticated proxy; self-hosted authentication and container deployment remain
+under development, and NFS deployment has not yet been tested or qualified. The [deployment guide](41-deployment.qmd)
+covers different hosted configurations.
+
+3D rendering is qualitative and uses bounded display previews. The [3D guide](../using-tofscope/13-3d-visualization.qmd)
+explains pooling, coverage, interpolation, and rendering limits. Profiles, measurements, and CSV exports use
+original-resolution data.
+
+[^trademark]: []{#trademark-notice}*TOFWERK* and *TOFexplorer* are names owned by [*TOFWERK AG*](https://www.tofwerk.com/). ToFScope is an independent project and is not affiliated with, endorsed by, or sponsored by *TOFWERK AG*.

@@ -20,8 +20,8 @@ test("mass windows and calibration show compact values while submitting exact sc
     .getByRole("button", { name: "Find candidates", exact: true })
     .click();
   await dialog.getByRole("radio", { name: "H-2:+1", exact: true }).check();
-  const lower = dialog.getByLabel("Window lower Th", { exact: true });
-  const upper = dialog.getByLabel("Window upper Th", { exact: true });
+  const lower = dialog.getByLabel("Lower m/z", { exact: true });
+  const upper = dialog.getByLabel("Upper m/z", { exact: true });
   await lower.fill("1.387507820129395");
   await upper.fill("1.587507820129394");
   await dialog.getByRole("heading").first().click();
