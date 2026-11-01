@@ -27,7 +27,6 @@ test("help buttons are discoverable and hover help stays within the viewport", a
   page,
 }) => {
   for (const label of [
-    "Files and saved analyses",
     "Signals",
     "Saving",
     "Ion map",
@@ -91,7 +90,7 @@ test("keyboard and pinned help dismiss without changing analysis state", async (
     exact: true,
   });
   await massHelp.focus();
-  await expect(tooltip).toContainText("vendor-summed");
+  await expect(tooltip).toContainText("spectrum stored in the file");
   await page.keyboard.press("Escape");
   await expect(tooltip).toBeHidden();
   await expect(massHelp).toBeFocused();
@@ -141,8 +140,7 @@ test("SE image help follows the displayed image type", async ({ page }) => {
   await page
     .getByRole("button", { name: "SE Image help", exact: true })
     .click();
-  await expect(tooltip).toContainText("native pixels");
-  await expect(tooltip).toContainText("unregistered");
+  await expect(tooltip).toContainText("not aligned with the SIMS image");
 });
 
 test("plot heading help stays clickable beside toolbars with larger text", async ({

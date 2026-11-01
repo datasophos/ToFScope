@@ -11,8 +11,6 @@ import { hasChanges } from "./changes";
 import { FilePicker } from "./FilePicker";
 import type { RawSelection, PreparationPreview } from "./RawPreparation";
 import { ExploreScreen } from "../explore/ExploreScreen";
-import { HelpButton } from "../components/HelpButton";
-import { help } from "../explore/help";
 export function App() {
   const [session, setSession] = useState<Session | null>(null),
     [analyses, setAnalyses] = useState<Analysis[]>([]),
@@ -250,7 +248,46 @@ export function App() {
               </div>
             ))}
           </div>
-          <HelpButton label="Files and saved analyses" content={help.files} />
+          <a
+            className="documentation-link"
+            aria-label="Documentation"
+            title="Open documentation"
+            href="https://datasophos.github.io/ToFScope/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 6.5C9.5 4.5 6.5 4.5 3 5.5v13c3.5-1 6.5-1 9 1m0-13c2.5-2 5.5-2 9-1v13c-3.5-1-6.5-1-9 1m0-13v13" />
+            </svg>
+          </a>
+          <a
+            className="documentation-link"
+            href="https://github.com/datasophos/ToFScope"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="GitHub repository"
+            title="Open GitHub repository"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.55.1.76-.24.76-.53v-2.06c-3.09.67-3.74-1.31-3.74-1.31-.5-1.28-1.23-1.62-1.23-1.62-1.01-.69.08-.68.08-.68 1.12.08 1.71 1.15 1.71 1.15.99 1.7 2.6 1.21 3.23.92.1-.72.39-1.21.71-1.49-2.47-.28-5.07-1.24-5.07-5.5 0-1.22.43-2.21 1.15-2.99-.12-.28-.5-1.41.11-2.95 0 0 .94-.3 3.05 1.14a10.6 10.6 0 0 1 5.56 0c2.11-1.44 3.04-1.14 3.04-1.14.61 1.54.23 2.67.11 2.95.72.78 1.15 1.77 1.15 2.99 0 4.27-2.6 5.21-5.08 5.49.4.35.75 1.02.75 2.06v3.04c0 .29.2.64.76.53A11.1 11.1 0 0 0 12 .9Z" />
+            </svg>
+          </a>
         </nav>
       </header>
       {error && (
@@ -313,6 +350,13 @@ export function App() {
             width="98"
             height="28"
           />
+        </a>
+        <a
+          href="https://datasophos.github.io/ToFScope/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Documentation
         </a>
         <a
           href="https://github.com/datasophos/ToFScope/issues"
