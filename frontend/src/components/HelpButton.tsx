@@ -120,7 +120,15 @@ export function HelpButton({
             onMouseEnter={show}
             onMouseLeave={hide}
           >
-            {content}
+            {content
+              .split(/(\*[^*]+\*)/g)
+              .map((part, index) =>
+                part.startsWith("*") && part.endsWith("*") ? (
+                  <em key={index}>{part.slice(1, -1)}</em>
+                ) : (
+                  part
+                ),
+              )}
           </div>,
           document.body,
         )}

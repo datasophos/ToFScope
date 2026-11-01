@@ -41,8 +41,8 @@ test("help buttons are discoverable and hover help stays within the viewport", a
   await expect(page.locator(".analysis-heading")).not.toContainText("Revision");
   await page.getByRole("button", { name: "Saving help", exact: true }).hover();
   const savingTip = page.getByRole("tooltip");
-  await expect(savingTip).toContainText("new HDF5 copy");
-  await expect(savingTip).toContainText("Unsaved changes");
+  await expect(savingTip).toContainText("new HDF5 file");
+  await expect(savingTip.locator("em", { hasText: "Save as" })).toBeVisible();
   await expect(savingTip).not.toContainText("CSV");
   await expect(savingTip).not.toContainText("PNG");
   await savingTip.screenshot({
@@ -56,7 +56,7 @@ test("help buttons are discoverable and hover help stays within the viewport", a
   });
   await ionHelp.hover();
   const tooltip = page.getByRole("tooltip");
-  await expect(tooltip).toContainText("Draw a rectangle");
+  await expect(tooltip).toContainText("draw a rectangle");
   expect(await ionHelp.getAttribute("aria-describedby")).toBe(
     await tooltip.getAttribute("id"),
   );
@@ -90,7 +90,9 @@ test("keyboard and pinned help dismiss without changing analysis state", async (
     exact: true,
   });
   await massHelp.focus();
-  await expect(tooltip).toContainText("spectrum stored in the file");
+  await expect(tooltip).toContainText(
+    "mass spectrum stored in the data acquisition",
+  );
   await page.keyboard.press("Escape");
   await expect(tooltip).toBeHidden();
   await expect(massHelp).toBeFocused();
