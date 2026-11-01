@@ -72,7 +72,35 @@ test("favicon uses the header logo and is served as SVG", async ({ page }) => {
 
 test("Datasophos credit displays the supplied wordmark", async ({ page }) => {
   await page.goto("/");
+  const navDocs = page
+    .getByRole("navigation", { name: "Files and open analyses" })
+    .getByRole("link", { name: "Documentation", exact: true });
+  await expect(navDocs).toBeVisible();
+  await expect(navDocs.locator("svg")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Files and saved analyses help" }),
+  ).toHaveCount(0);
+  await expect(navDocs).toHaveAttribute(
+    "href",
+    "https://datasophos.github.io/ToFScope/",
+  );
+  const repo = page
+    .getByRole("navigation", { name: "Files and open analyses" })
+    .getByRole("link", { name: "GitHub repository" });
+  await expect(repo).toBeVisible();
+  await expect(repo).toHaveAttribute(
+    "href",
+    "https://github.com/datasophos/ToFScope",
+  );
+  await expect(repo).toHaveAttribute("target", "_blank");
   const footer = page.getByRole("contentinfo");
+  const docs = footer.getByRole("link", { name: "Documentation", exact: true });
+  await expect(docs).toBeVisible();
+  await expect(docs).toHaveAttribute(
+    "href",
+    "https://datasophos.github.io/ToFScope/",
+  );
+  await expect(docs).toHaveAttribute("target", "_blank");
   await expect(
     footer.getByRole("link", { name: "Made by Datasophos", exact: true }),
   ).toHaveAttribute("href", "https://datasophos.co");

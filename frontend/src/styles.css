@@ -2300,3 +2300,18 @@ small {
 .volume-viewer-actions { position: absolute; top: 8px; right: 8px; z-index: 5; display: flex; gap: 6px; }
 .volume-viewer-actions .plot-icon-button { width: 26px; height: 26px; padding: 0; display: inline-flex; justify-content: center; align-items: center; }
 .volume-controls:empty { display: none; }
+
+.documentation-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  color: #d5e4e9;
+  border-radius: 6px;
+}
+.documentation-link:hover {
+  background: #254354;
+  color: white;
+}
