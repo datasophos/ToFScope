@@ -109,7 +109,8 @@ written to the specified output directory; use a disposable location.
 
 The repository includes a [`tofscope-release` agent skill](https://github.com/datasophos/ToFScope/blob/main/.agents/skills/tofscope-release/SKILL.md)
 for preparing and publishing releases. Ask a compatible coding agent to use the skill when preparing a ToFScope release.
-It updates the version and generated assets, writes release notes, runs the relevant checks, and opens a draft pull request.
+The agent proposes a version based on semantic versioning and asks for confirmation before updating the version and
+generated assets, writing release notes, running the relevant checks, and opening a draft pull request.
 
 The agent waits for release approval at the draft pull request. Once approved, it completes the merge, tags the merged
 commit to trigger PyPI publishing, creates the GitHub Release from the prepared notes, and starts a documentation rebuild

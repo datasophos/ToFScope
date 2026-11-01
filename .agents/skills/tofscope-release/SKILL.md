@@ -5,11 +5,17 @@ description: Use when preparing or publishing a ToFScope release, changing its p
 
 # ToFScope releases
 
-Prepare the release on a branch based on current `main`. Inspect the working tree, existing tags and commits since the previous release; choose a version appropriate to the actual changes and the user's instructions. A documentation-only change does not require a package release.
+Prepare the release on a branch based on current `main`. Inspect the working tree, published releases, tags, and changes since the previous release. A documentation-only change does not require a package release.
+
+## Choose the version
+
+Review the complete changes since the previous release, including application changes bundled in documentation PRs. Propose a version using semantic versioning: patch for backward-compatible fixes, minor for backward-compatible functionality, and major for incompatible changes. For a `0.y.z` release, recognize that SemVer treats the public API as unstable; explain how the proposed increment communicates the actual changes without assuming stable-release compatibility guarantees. Check that the proposed version has not already been released or tagged.
+
+Present the proposed version and a concise rationale to the user and ask for confirmation before proceeding. Wait for confirmation before changing versioned files or preparing the release PR. If the user chooses a different version, use that version after checking that it is available. Version confirmation is separate from the later approval to publish.
 
 ## Prepare
 
-- Review the complete changes since the previous release, including application changes bundled in documentation PRs. Draft accurate user-facing release notes for a GitHub Release; do not claim a change was released before publication.
+- Draft accurate user-facing release notes for a GitHub Release; do not claim a change was released before publication.
 - Update the version in `pyproject.toml`, the ToFScope entry in `uv.lock`, `src/tofscope/__init__.py`, `frontend/package.json`, `frontend/package-lock.json`, `scripts/build_frontend.py`, `tests/test_distribution.py`, and `Dockerfile`. Search for the previous version to find any additional references; inspect matches before changing them. Confirm the lock is consistent and the version is not already tagged.
 - Regenerate the API schema with `npm --prefix frontend run generate:api`, then rebuild packaged assets with `uv run python scripts/build_frontend.py`. The asset manifest records the version and a hash of frontend sources and package metadata.
 - Run checks appropriate to the changes and the release. The source, browser, distribution, and container checks are described in `docs/technical-documentation/40-building-and-testing.qmd` and `.github/workflows/ci.yml`. Build fresh wheel and sdist artifacts, check their versions, and run the distribution smoke test when practical. Report checks that could not run and why.
