@@ -1,0 +1,88 @@
+---
+title: "Configuration"
+---
+
+This reference describes ToFScope configuration sources, environment variables, and defaults. For launch methods and
+storage requirements, see [deployment](41-deployment.qmd). Most users won't need to change any of these settings,
+and many are mostly intended for multi-user deployments, which are not completely tested yet. Regardless,
+they are all documented here.
+
+## Configuration sources
+
+Settings can come from command-line options, environment variables, or a TOML file supplied with `--config`.
+When more than one source sets the same option, command-line options take precedence over environment variables,
+which take precedence over the TOML file; otherwise the defaults below apply. ToFScope does not automatically load
+a configuration file. For example, to use the following config:
+
+```toml
+# tofscope.toml
+[tofscope]
+data_root = "/path/to/acquisitions"
+output_root = "/path/to/saved-analyses"
+port = 8765
+```
+
+You must explicitly pass `--config` when you start ToFScope:
+
+```sh
+tofscope --config tofscope.toml
+```
+
+Every TOML setting below also has an environment variable formed by uppercasing its name and adding `TOFSCOPE_`;
+for example, `data_root` corresponds to `TOFSCOPE_DATA_ROOT`. Boolean environment variables accept `true` or `false`.
+`trusted_proxies` is an array of strings in TOML and a comma-separated list in the environment. `TOF_FILE` is an
+additional name for `initial_file` and takes precedence over `TOFSCOPE_INITIAL_FILE` when both are set. The repository's
+[`tofscope.example.toml`](https://github.com/datasophos/ToFScope/blob/main/tofscope.example.toml) provides a starting
+point for configuration.
+
+For example, to use environment variables instead of a TOML file:
+
+```sh
+export TOFSCOPE_DATA_ROOT=/path/to/acquisitions
+export TOFSCOPE_OUTPUT_ROOT=/path/to/saved-analyses
+tofscope
+```
+
+These variables apply to the current shell and programs started from it. A command-line option such as
+`--data-root /another/path` overrides the corresponding environment variable.
+
+## Paths and networking
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `data_root` | Current working directory | Root folder the file picker uses for acquisitions; must be accessible. CLI: `--data-root`. |
+| `output_root` | `data_root` | Root folder for saved copies; its filesystem must support hard links. CLI: `--output-root`. |
+| `runtime_dir` | `tofscope-<user ID>` in the system temporary directory | Private runtime files for the local service. CLI: `--runtime-dir`. |
+| `lock_dir` | `locks` inside `runtime_dir` | Writable directory for acquisition locks. CLI: `--lock-dir`. |
+| `initial_file` | None | Acquisition to open at launch; its resolved path must be inside `data_root`. Also settable via `TOF_FILE`. |
+| `host`, `port` | `127.0.0.1`, `8765` | Service bind address and port. CLI: `--host`, `--port`. Local mode requires a loopback host. |
+| `mode` | `local` | `local` for desktop use or `proxy` for the experimental trusted-proxy setup. CLI: `--mode`. |
+| `trusted_proxies` | Empty | Proxy peer IP addresses accepted in `proxy` mode; at least one is required in that mode. |
+| `identity_header` | `x-tofscope-user` | Header containing the authenticated user identity in proxy mode. |
+| `public_origin` | None | Public origin used for hosted access, such as `https://tofscope.example.org`. |
+
+## Resource limits and lifecycle
+
+Numeric values are positive integers. Byte limits govern managed arrays and response buffers, not total process or
+browser memory; allow additional headroom.
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `global_bytes` | `4294967296` (4 GiB) | Global managed-memory budget. |
+| `user_bytes` | `2147483648` (2 GiB) | Managed-memory budget per user. |
+| `analysis_bytes` | `1073741824` (1 GiB) | Managed-memory budget per analysis. |
+| `response_bytes` | `33554432` (32 MiB) | Limit used for response and transport buffers. |
+| `analyses_per_user`, `analyses_global` | `8`, `32` | Limits on open analyses per user and across the service. |
+| `signals_per_analysis`, `signals_per_user`, `signals_global` | `129`, `512`, `2048` | Limits on signals per analysis, per user, and across the service. |
+| `jobs_per_analysis`, `jobs_per_user`, `jobs_global` | `4`, `8`, `32` | Limits on active jobs per analysis, per user, and across the service. |
+| `workers` | `2` | Number of background job worker threads. |
+| `lease_seconds` | `45` | Lifetime of a browser-view lease without a heartbeat, in seconds. |
+| `reconnect_seconds` | `120` | Time without a live view before the service closes the analysis's jobs, in seconds. |
+| `idle_seconds` | `900` | Time without a live view before an analysis is closed, in seconds. |
+
+The `allow_writes` and `allow_unverified_native` settings both default to `false`. They guard experimental native
+acquisition writes; the supported **Save as…** workflow creates a separate copy instead.
+
+## Inspect the effective configuration
+
+The `tofscope doctor` command loads the configuration and verifies packaged frontend assets. The `--json` option prints the effective settings as JSON. It reports configuration and asset errors but does not diagnose every startup problem. The `/healthz` and `/readyz` endpoints provide service health checks.

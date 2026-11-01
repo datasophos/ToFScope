@@ -106,7 +106,7 @@ def make_server(site: Path, state: PreviewState, port: int) -> http.server.Threa
 def build() -> bool:
     print("\nBuilding documentation...", flush=True)
     result = subprocess.run(
-        ["uv", "run", "--frozen", "--only-group", "docs", "great-docs", "build"],
+        ["uv", "run", "--frozen", "--group", "docs", "great-docs", "build"],
         cwd=ROOT,
         check=False,
     )

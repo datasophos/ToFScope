@@ -1,8 +1,9 @@
 ---
-title: "Configuration and deployment"
+title: "Deployment"
 ---
 
-These instructions cover local, server, and Docker deployments of ToFScope.
+These instructions cover local, server, and Docker deployments of ToFScope. Currently, only local deployment
+is fully supported, but the server and Docker approaches are in *testing* status.
 
 [Install and launch](../getting-started/01-installation.qmd) covers installation from PyPI and local setup.
 
@@ -16,9 +17,11 @@ cd ToFScope
 uv tool install .
 ```
 
-The repository includes built frontend assets, so installation does not require Node or JavaScript tooling. One Uvicorn API process
-serves React, chart scripts, scientific data, and downloads from one port. No CDN,
+The repository includes built frontend assets, so installation does not require Node or JavaScript tooling.
+One Uvicorn API process serves React, chart scripts, scientific data, and downloads from one port. No CDN,
 external account service, or runtime Node is used in local mode.
+
+To install from PyPI instead of from source, you can use `uv tool install tofscope`.
 
 The desktop launcher can be started with:
 
@@ -26,14 +29,16 @@ The desktop launcher can be started with:
 tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 ```
 
-The default address is `http://127.0.0.1:8765`. An empty configured root opens the
-file-picker empty state. The acquisition folder defaults to the current working directory; the saved
-copies folder defaults to the acquisition folder unless `--output-root` is set.
-The `TOF_FILE` environment variable specifies a file to open on first launch. The path must be relative to `data-root`.
+The default launch address is `http://127.0.0.1:8765`. If the acquisition folder contains no `.h5` files,
+the file picker will show “No `.h5` files in this folder.” The acquisition folder defaults to the current
+working directory if `--data-root` is not supplied; the saved copies folder defaults to whatever is set as
+the acquisition folder unless `--output-root` is set (meaning the default for both is the current working directory
+if neither are set. You can use the `TOF_FILE` environment variable to specify a file to open on first launch.
+The path may be relative to `data-root` or absolute, but must resolve inside `data-root`.
 
 ### Local service without automatic browser launch
 
-This mode starts the service without opening a browser immediately,
+The `--no-browser` flag starts the service without opening a browser immediately,
 for example when starting it from a script or using an API client. You can open its
 local interface later from another terminal while the service is running:
 
@@ -42,7 +47,9 @@ tofscope serve --no-browser --data-root /path/to/acquisitions --runtime-dir /pat
 tofscope open --runtime-dir /path/to/private/runtime
 ```
 
-The second command opens the running service on the same computer. A randomly generated launch secret protects the local web server. The runtime folder and launch address should remain private. If you switch browsers or access expires after 24 hours, the service needs to be restarted before it can be opened again.
+The second command opens the running service on the same computer. A randomly generated launch secret
+protects the local web server. The runtime folder and launch address should remain private. If you switch browsers or
+access expires after 24 hours, the service needs to be restarted before it can be opened again.
 
 ## Self-hosted service
 
@@ -51,13 +58,9 @@ further when it is ready.*
 
 ## Configuration and storage
 
-Command-line options take precedence over `TOFSCOPE_*` environment variables,
-then `[tofscope]` settings in a TOML file. The available options are listed in `tofscope.example.toml`.
-The `tofscope doctor` command loads the configuration and verifies packaged frontend assets. The `--json` option prints the effective settings as JSON. It reports configuration and asset errors but does not diagnose every startup problem. The `/healthz` and `/readyz` endpoints provide service health checks.
-
-**Save as…** writes a new HDF5 copy containing the acquisition and committed analysis;
-the original file is not changed. The `--output-root` option specifies a writable folder, which is particularly useful when acquisitions are read-only. Saved copies will require at least as much space as the original,
-and the output filesystem must support hard links. Unsaved analyses and jobs are lost on restart; saving preserves the analysis. The [user guide](../using-tofscope/14-saving-and-exports.qmd) covers working with files and analyses.
+See the [configuration reference](39-configuration.qmd) for command-line options, environment variables, TOML settings,
+and defaults. The `tofscope doctor` command checks configuration and packaged frontend assets; `/healthz` and `/readyz`
+provide service health checks.
 
 ToFScope supports one API process; analysis state is held in memory. Its managed
 memory limits do not include all Python, HDF5, or browser memory, so the system needs extra memory headroom. Acquisition reads use a writable lock directory; processes accessing the

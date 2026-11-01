@@ -171,7 +171,7 @@ The **Save as** action creates a new HDF5 copy with the acquisition and committe
 later. If the opened file is itself a prepared or saved copy, that file is the source for the new copy.
 CSV and image exports are sent directly through the browser to the user's Downlods and can be used to share results;
 **Save as** preserves the analysis for further work.
-[Configuration and storage](41-deployment.qmd#configuration-and-storage) covers space and filesystem requirements.
+[Configuration and storage](41-deployment.qmd#configuration-and-storage) covers service resources and locking.
 
 ## Building a development version
 

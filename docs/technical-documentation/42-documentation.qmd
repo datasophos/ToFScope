@@ -2,49 +2,112 @@
 title: "Maintaining the documentation"
 ---
 
-The site is built with [Great Docs](https://posit-dev.github.io/great-docs/) and Quarto. Narrative pages live in the section directories under `docs/`; `docs/index.qmd` is the homepage. The root `index.qmd` is a symbolic link that lets Great Docs find it. The root `great-docs.yml` configures branding and navigation. Python API reference generation is disabled because ToFScope's internal modules are not a public library interface.
+The site is built with [Great Docs](https://posit-dev.github.io/great-docs/) and Quarto. Narrative pages live in the
+directories under `docs/`; `docs/index.qmd` is the homepage. The root `index.qmd` is a symbolic link that lets Great
+Docs find it (since it requires the index in the repo root). The root `great-docs.yml` configures branding and navigation.
+Python API reference generation is disabled because ToFScope's internal modules are not intended as a public library interface.
 
 ## Building and previewing
 
-The site requires Quarto **1.10.20**, available from the [Quarto installation instructions](https://quarto.org/docs/get-started/). From the repository root, the following commands install the locked documentation dependencies and build the site:
+From the repository root, the following commands install the regular dependencies together with the documentation
+group and build the site:
 
 ```sh
-uv sync --frozen --only-group docs
-uv run --frozen --only-group docs great-docs build
+uv sync --group docs
+uv run great-docs build
 ```
 
-For rapid editing, the local preview script watches documentation sources, rebuilds the site, and refreshes the browser after a successful build:
+For rapid editing, the local preview script watches documentation sources, rebuilds the site automatically,
+and refreshes the browser after a successful build:
 
 ```sh
-uv run --frozen --only-group docs python scripts/preview_docs.py
+uv run scripts/preview_docs.py
 ```
 
-The preview opens at `http://127.0.0.1:3000/`. The `--port` option selects another port, and `--no-browser` starts the server without opening a tab. Pressing **Ctrl-C** stops the preview. If a build fails, the script reports the error and waits for the next source change.
+The docs preview should open at `http://127.0.0.1:3000/`. The `--port` option selects another port,
+and `--no-browser` starts the server without opening a tab. Pressing **Ctrl-C** stops the preview.
+If a build fails, the script reports the error and waits for the next source change.
 
-For a static preview of an existing build, `uv run --frozen --only-group docs great-docs preview` remains available. After a build, `python scripts/check_docs.py great-docs/_site` checks local links, anchors, and image paths.
+For a static preview of an existing build, `uv run --group docs great-docs preview` remains available. After a build,
+`python scripts/check_docs.py great-docs/_site` can be used to check local links, anchors, and image paths.
 
-The pinned Great Docs release **0.17.0** uses a root-level `great-docs.yml`. Its generated Quarto project is `great-docs/`, with the deployable site in `great-docs/_site/`. The pre-render hook `scripts/prepare_docs.py` copies shared images into that generated project and creates narrative `llms.txt` and `llms-full.txt` exports. This fills a gap in that release when API reference generation is disabled.
+The pinned version of Great Docs (*0.17.0*) uses a root-level `great-docs.yml`. Its generated Quarto project
+is `great-docs/`, with the deployable site in `great-docs/_site/`. The pre-render hook `scripts/prepare_docs.py`
+copies shared images into that generated project and creates narrative `llms.txt` and `llms-full.txt` exports.
+This fills a gap in that release when API reference generation is disabled.
 
 ## Editing a page
 
-Section pages use `.qmd` files with a `title` in their YAML frontmatter. Numeric filename prefixes control order; Great Docs removes them from published URLs. Links between guide pages use the original prefixed filename, such as `30-architecture.qmd`; Great Docs rewrites those links during the build.
+Section pages use `.qmd` files with a `title` in their YAML frontmatter. Numeric filename prefixes control order;
+Great Docs removes them from published URLs. Links between guide pages use the original prefixed filename,
+such as `30-architecture.qmd`; Great Docs rewrites those links during the build.
 
-Diagrams use `{mermaid}` code fences. Rendered diagrams require inspection in the browser in both light and dark modes; successful HTML generation alone does not prove Mermaid syntax is valid. Shared screenshots and logos live in `docs/assets/` and can be referenced from guide pages with `../assets/` paths.
+Diagrams use `{mermaid}` code fences. Rendered diagrams should be inspected in the browser in both light and
+dark modes to ensure they look okay. Shared screenshots and logos live in `docs/assets/` and can be referenced
+from guide pages with `../assets/` paths.
 
-The source pages, assets, configuration, workflow, and dependency lockfile are committed to the repository. Generated `great-docs/`, standalone HTML previews, and Quarto `*_files/` folders are ignored.
+### Interactive screenshots
+
+Some user-guide screenshots link explanatory text to a highlighted area of the image. The page places an image and
+empty, uniquely identified `explore-highlight` spans inside an `explore-overview` container using a raw HTML block.
+Each span's `left`, `top`, `width`, and `height` are percentages of the image container. A regular Markdown link to
+the span's ID scrolls to that area; `docs/styles.css` uses `:target` to draw the highlight.
+
+For example, a guide can use this pattern:
+
+~~~~markdown
+[Open the control](#example-control).
+
+```{=html}
+<div class="explore-overview">
+  <img src="../assets/example.png" alt="Description of the interface.">
+  <span id="example-control" class="explore-highlight" style="left:10%;top:20%;width:15%;height:5%" aria-hidden="true"></span>
+</div>
+```
+~~~~
+
+The numbered Explore overview in [Signals and views](../using-tofscope/10-signals-and-views.qmd) also overlays
+`explore-marker` buttons on the image. These provide descriptions on hover or keyboard focus. Make sure to give
+each button an accessible label and associate its tooltip with `aria-describedby`. When replacing an image,
+update the percentage positions and check the links, highlights, and
+tooltips at different viewport sizes and with keyboard navigation. Keep useful alt text and written instructions so the
+guide does not depend on the image alone.
+
+The source pages, assets, configuration, workflow, and dependency lockfile are committed to the repository.
+Generated `great-docs/`, standalone HTML previews, and Quarto `*_files/` folders are ignored.
 
 ## Publishing
 
-The Documentation workflow builds pull requests for review and builds and deploys pushes to `main`. It uses the locked documentation dependencies and pinned Quarto version, and uploads `great-docs/_site/` to GitHub Pages.
+The Documentation workflow (`.github/workflows/docs.yml`) builds documentation previews on pull requests and builds and
+deploys on merges or pushes to `main`. It uses the locked documentation dependencies and pinned Quarto version, and uploads
+`great-docs/_site/` to GitHub Pages.
 
-To activate publishing, a repository administrator must select **GitHub Actions** in **Settings → Pages → Build and deployment → Source**. Once the workflow is merged and deployed, the site will be available at <https://datasophos.github.io/ToFScope/>. Local builds do not change repository settings or publish the site.
+To activate publishing, a repository administrator must select **GitHub Actions** in
+**Settings → Pages → Build and deployment → Source**. Once the workflow is merged and deployed, the site will be available
+at <https://datasophos.github.io/ToFScope/>. Local builds do not change repository settings or publish the site.
 
 ### Pull request previews
 
-The Git-connected Cloudflare Pages project `tofscope-docs` builds branch previews separately from the GitHub Pages production site. Its root directory is the repository root, build command is `sh scripts/build_cloudflare_docs.sh`, and output directory is `great-docs/_site`. Its build variables are `PYTHON_VERSION=3.12` and `SKIP_DEPENDENCY_INSTALL=1`. The script installs Quarto 1.10.20 and the locked documentation dependencies, checks local links, and adds a `noindex` header. Automatic Cloudflare production deployments are disabled; GitHub Pages remains the canonical production site.
+The Git-connected Cloudflare Pages project `tofscope-docs` builds branch previews separately from the GitHub Pages
+production site. These builds are controlled by the workflow in `.github/workflows/cloudflare-previews.yml`. Its root
+directory is the repository root, build command is `sh scripts/build_cloudflare_docs.sh`, and
+output directory is `great-docs/_site`. Its build variables are `PYTHON_VERSION=3.12` and `SKIP_DEPENDENCY_INSTALL=1`.
+The script installs documentation dependencies, checks local links, and adds a `noindex` header. Automatic Cloudflare
+production deployments are disabled; GitHub Pages remains the canonical production site.
 
-Preview builds watch `docs/*`, `great-docs.yml`, `index.qmd`, the documentation build and checking scripts, `pyproject.toml`, and `uv.lock`. Cloudflare evaluates these paths for each push, so a code-only push to an existing documentation pull request does not refresh the preview. Cloudflare attaches preview URLs to pull requests from branches in the same repository; it does not automatically create them for pull requests from forks.
+Preview builds watch `docs/*`, `great-docs.yml`, `index.qmd`, the documentation build and checking scripts,
+`pyproject.toml`, and `uv.lock`. Cloudflare evaluates these paths for each push, so a code-only push to an existing
+documentation pull request does not refresh the preview. Cloudflare attaches preview URLs to pull requests from
+branches in the same repository; it does not automatically create them for pull requests from forks.
 
-Cloudflare posts its `pages.dev` preview links directly to pull requests. When a pull request closes, the cleanup workflow requests deletion of its branch's preview deployments, unless another open pull request uses that branch. It runs on pull request events and every 15 minutes to retry cleanup. Cloudflare documents restrictions on deleting the latest branch deployment; check the workflow if deletion is rejected. Preview URLs remain available until their deployments are deleted. They are public and return a `noindex` header.
+Cloudflare posts its `pages.dev` preview links directly to pull requests. When a pull request closes, the cleanup
+workflow requests deletion of its branch's preview deployments, unless another open pull request uses that branch.
+It runs on pull request events and every 15 minutes to retry cleanup. Cloudflare documents restrictions on deleting
+the latest branch deployment; check the workflow if deletion is rejected. Preview URLs remain available until their
+deployments are deleted. They are public and return a `noindex` header.
 
-The cleanup workflow uses trusted code from the default branch, never code from a pull request, and requires the GitHub Actions repository secret `CLOUDFLARE_PREVIEW_TOKEN` with account **Pages Write** permission. The Cloudflare account and project are defined in `scripts/cloudflare_previews.py`; update them there if the hosting account changes. To troubleshoot, inspect the Pages deployment and the cleanup workflow separately. The workflow becomes active after it is merged into the default branch.
+The cleanup workflow uses trusted code from the default branch, never code from a pull request, and requires
+the GitHub Actions repository secret `CLOUDFLARE_PREVIEW_TOKEN` with account **Pages Write** permission.
+The Cloudflare account and project are defined in `scripts/cloudflare_previews.py`; update them there if
+the hosting account changes. To troubleshoot, inspect the Pages deployment and the cleanup workflow separately.
+The workflow becomes active after it is merged into the default branch.

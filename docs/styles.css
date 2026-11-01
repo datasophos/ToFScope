@@ -166,3 +166,24 @@ svg.mermaid-js {
   white-space: normal;
   overflow-wrap: anywhere;
 }
+
+/* Keep configuration settings and their descriptions within the page. */
+:is(#paths-and-networking, #resource-limits-and-lifecycle) .gd-table-scroll > table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+:is(#paths-and-networking, #resource-limits-and-lifecycle) table th:first-child {
+  width: 28%;
+}
+
+:is(#paths-and-networking, #resource-limits-and-lifecycle) table th:nth-child(2) {
+  width: 24%;
+}
+
+:is(#paths-and-networking, #resource-limits-and-lifecycle) table th,
+:is(#paths-and-networking, #resource-limits-and-lifecycle) table td,
+:is(#paths-and-networking, #resource-limits-and-lifecycle) table code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

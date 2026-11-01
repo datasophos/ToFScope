@@ -50,7 +50,7 @@ in your default browser (similar to how [Jupyter](https://jupyter.org) operates)
 
 ## For developers and administrators
 
-The developer and administrator guides cover [building and testing](docs/technical-documentation/building-and-testing.qmd), [configuration and deployment](docs/technical-documentation/deployment.qmd), and [maintaining this site](docs/technical-documentation/documentation.qmd).
+The developer and administrator guides cover [configuration](docs/technical-documentation/configuration.qmd), [deployment](docs/technical-documentation/deployment.qmd), [building and testing](docs/technical-documentation/building-and-testing.qmd), and [maintaining this site](docs/technical-documentation/documentation.qmd).
 
 ToFScope supports *TOFWERK TOFexplorer*[^trademark] HDF5 acquisitions. The [file compatibility and limitations guide](docs/technical-documentation/file-compatibility.qmd) describes supported workflows and current validation boundaries.
 
