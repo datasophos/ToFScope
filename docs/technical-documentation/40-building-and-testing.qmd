@@ -105,6 +105,17 @@ catching packaging problems that ordinary tests run from the source checkout mig
 The temporary installations and test data are removed afterward. Results in `distribution.json` and screenshots are
 written to the specified output directory; use a disposable location.
 
+## Prepare a release
+
+The repository includes a [`tofscope-release` agent skill](https://github.com/datasophos/ToFScope/blob/main/.agents/skills/tofscope-release/SKILL.md)
+for preparing and publishing releases. Ask a compatible coding agent to use the skill when preparing a ToFScope release.
+The agent proposes a version based on semantic versioning and asks for confirmation before updating the version and
+generated assets, writing release notes, running the relevant checks, and opening a draft pull request.
+
+The agent waits for release approval at the draft pull request. Once approved, it completes the merge, tags the merged
+commit to trigger PyPI publishing, creates the GitHub Release from the prepared notes, and starts a documentation rebuild
+so the changelog includes the release. A tag triggers publication; it does not by itself confirm that publishing succeeded.
+
 ## Check the container
 
 Container deployment is in early stages, but the `check_container.py` script will build a local Docker image and
