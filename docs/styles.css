@@ -3,6 +3,11 @@
   display: none;
 }
 
+/* Keep the main navigation labels at regular weight. */
+#navbarCollapse .navbar-nav.navbar-nav-scroll.me-auto > .nav-item > .nav-link {
+  font-weight: 400;
+}
+
 /* Keep the preparation paragraph visible below the sticky navigation bar. */
 #preparing-raw-acquisitions {
   scroll-margin-top: 8rem;
