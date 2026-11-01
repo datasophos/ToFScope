@@ -2,6 +2,7 @@ module: tofscope
 display_name: ToFScope
 repo: https://github.com/datasophos/ToFScope
 site_url: https://datasophos.github.io/ToFScope/
+pypi: https://pypi.org/project/tofscope/
 sections:
   - title: Getting started
     dir: docs/getting-started
@@ -9,6 +10,11 @@ sections:
     dir: docs/using-tofscope
   - title: Technical documentation
     dir: docs/technical-documentation
+navbar_order:
+  - Getting started
+  - Using ToFScope
+  - Technical documentation
+  - Changelog
 pre_render:
   - scripts/prepare_docs.py
 
@@ -21,7 +27,7 @@ mcp:
 skill:
   enabled: false
 changelog:
-  enabled: false
+  enabled: true
 
 logo: docs/assets/tofscope-navbar.svg
 favicon: docs/assets/favicon.png
@@ -55,7 +61,7 @@ hero:
   badges: true
 accent_color: "#147d80"
 navbar_color: "#102536"
-github_style: icon
+github_style: widget
 dark_mode_toggle: true
 source:
   branch: main
@@ -67,3 +73,10 @@ site:
   css: docs/styles.css
   toc: true
   toc-depth: 2
+authors:
+  - name: Josh Taillon
+    role: Author
+    affiliation: datasophos LLC
+    github: datasophos
+    homepage: https://datasophos.co/
+    orcid: 0000-0002-5185-4503
