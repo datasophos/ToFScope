@@ -93,3 +93,24 @@ describe("precise camera controls", () => {
     expect(restored.up.z).toBeCloseTo(1);
   });
 });
+
+it("orbits the depth axis without changing elevation, center, or camera roll", async () => {
+  const { orbitDepthAxis } = await import("./vtkCamera");
+  const camera = {
+    ...defaultCamera,
+    center: { x: 0.2, y: -0.1, z: 0.3 },
+    eye: { x: 1, y: 2, z: 3 },
+    up: { x: 0.4, y: -0.2, z: 0.8 },
+  };
+  const rotated = orbitDepthAxis(camera, 90);
+  expect(rotated.eye.x).toBeCloseTo(-2);
+  expect(rotated.eye.y).toBeCloseTo(1);
+  expect(rotated.eye.z).toBe(3);
+  expect(rotated.up.x).toBeCloseTo(0.2);
+  expect(rotated.up.y).toBeCloseTo(0.4);
+  expect(rotated.up.z).toBe(0.8);
+  expect(rotated.center).toEqual(camera.center);
+  const top = orbitDepthAxis(presetCamera(camera, "top"), 90);
+  expect(top.eye.z).toBeCloseTo(Math.hypot(1, 2, 3));
+  expect(top.up.x).toBeCloseTo(-1);
+});

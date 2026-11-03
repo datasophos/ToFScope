@@ -1297,3 +1297,140 @@ test("exports the 3D viewer as a PNG", async ({ page }) => {
   await save.click();
   expect((await tiledDownload).suggestedFilename()).toBe("tofscope-3d.png");
 });
+
+test("animated camera rotation persists its orientation when stopped", async ({
+  page,
+}) => {
+  await open(page);
+  await setupLayers(page, 2);
+  const before = (await state(page)).spatial.camera;
+  await page
+    .getByRole("complementary", { name: "3D controls" })
+    .getByRole("button", { name: "Play camera rotation" })
+    .click();
+  await expect(
+    page
+      .getByRole("complementary", { name: "3D controls" })
+      .getByRole("button", { name: "Pause camera rotation" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.waitForTimeout(500);
+  expect((await state(page)).spatial.camera).toEqual(before);
+  await page
+    .getByRole("complementary", { name: "3D controls" })
+    .getByRole("button", { name: "Pause camera rotation" })
+    .click();
+  await expect
+    .poll(async () => JSON.stringify((await state(page)).spatial.camera))
+    .not.toBe(JSON.stringify(before));
+  const stopped = (await state(page)).spatial.camera;
+  await page.waitForTimeout(300);
+  expect((await state(page)).spatial.camera).toEqual(stopped);
+});
+
+test("leaving 3D during animation does not reopen it", async ({ page }) => {
+  await open(page);
+  await setupLayers(page, 2);
+  await page
+    .getByRole("complementary", { name: "3D controls" })
+    .getByRole("button", { name: "Play camera rotation" })
+    .click();
+  await page.getByRole("tab", { name: "Explore" }).click();
+  await expect(page.getByTestId("panel-ion")).toBeVisible();
+  await expect
+    .poll(async () => (await state(page)).spatial.screen)
+    .toBe("explore");
+  await page.waitForTimeout(400);
+  expect((await state(page)).spatial.screen).toBe("explore");
+});
+
+test("rotation controls share play and pause state beside preset and on the view", async ({
+  page,
+}) => {
+  await open(page);
+  await setupLayers(page, 2);
+  const sidebar = page.getByRole("complementary", { name: "3D controls" });
+  const viewer = page.locator(".volume-viewer-actions");
+  const playCamera = sidebar.getByRole("button", {
+    name: "Play camera rotation",
+  });
+  const playViewer = viewer.getByRole("button", {
+    name: "Play camera rotation",
+  });
+  await expect(playCamera).toHaveAttribute("title", "Play camera rotation");
+  await expect(playViewer).toHaveAttribute("title", "Play camera rotation");
+  const preset = (await page.getByLabel("Camera view").boundingBox())!;
+  const play = (await playCamera.boundingBox())!;
+  expect(play.x).toBeGreaterThanOrEqual(preset.x + preset.width);
+  expect(Math.abs(play.y - preset.y)).toBeLessThan(10);
+  await playViewer.click();
+  await expect(
+    sidebar.getByRole("button", { name: "Pause camera rotation" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await sidebar.getByRole("button", { name: "Pause camera rotation" }).click();
+  await expect(playViewer).toHaveAttribute("aria-pressed", "false");
+});
+
+test("dragging pauses animation until the gesture ends and then resumes", async ({
+  page,
+}) => {
+  await open(page);
+  await setupLayers(page, 2);
+  const canvas = page.getByTestId("volume-canvas");
+  await expect(canvas).toHaveAttribute("data-renderer", "vtk");
+  await page
+    .locator(".volume-viewer-actions")
+    .getByRole("button", { name: "Play camera rotation" })
+    .click();
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(
+    box.x + box.width / 2 + 30,
+    box.y + box.height / 2 + 15,
+    { steps: 4 },
+  );
+  await page.waitForTimeout(100);
+  const during = await canvas.getAttribute("data-camera");
+  await page.waitForTimeout(300);
+  expect(await canvas.getAttribute("data-camera")).toBe(during);
+  await page.mouse.move(
+    box.x + box.width / 2 + 60,
+    box.y + box.height / 2 + 25,
+    { steps: 4 },
+  );
+  await page.mouse.up();
+  await expect.poll(() => canvas.getAttribute("data-camera")).not.toBe(during);
+  await expect(
+    page
+      .locator(".volume-viewer-actions")
+      .getByRole("button", { name: "Pause camera rotation" }),
+  ).toBeVisible();
+});
+
+test("zooming changes the camera distance while animation is active", async ({
+  page,
+}) => {
+  await open(page);
+  await setupLayers(page, 2);
+  const canvas = page.getByTestId("volume-canvas");
+  await expect(canvas).toHaveAttribute("data-renderer", "vtk");
+  await page
+    .locator(".volume-viewer-actions")
+    .getByRole("button", { name: "Play camera rotation" })
+    .click();
+  const distance = async () => {
+    const camera = JSON.parse((await canvas.getAttribute("data-camera"))!);
+    return Math.hypot(camera.eye.x, camera.eye.y, camera.eye.z);
+  };
+  const before = await distance();
+  const viewport = canvas.locator(".vtk-volume-viewport canvas");
+  await expect(viewport).toBeVisible();
+  await viewport.hover();
+  await page.mouse.wheel(0, -200);
+  await expect.poll(distance).not.toBeCloseTo(before, 3);
+  await expect(
+    page
+      .locator(".volume-viewer-actions")
+      .getByRole("button", { name: "Pause camera rotation" }),
+  ).toBeVisible();
+});

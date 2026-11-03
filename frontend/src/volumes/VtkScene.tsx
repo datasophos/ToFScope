@@ -27,6 +27,8 @@ import {
 import { toVtkCamera, fromVtkCamera, type VtkCamera } from "./vtkCamera";
 import { registerVolumeCapture } from "./exportVolume";
 import { vtkDisplayExtent, vtkSampleDistance } from "./vtkGeometry";
+import { animationQuality } from "./animationQuality";
+import { cameraInteraction } from "./cameraInteraction";
 
 type Props = {
   data: VtkVolumeData;
@@ -34,6 +36,8 @@ type Props = {
   view: SpatialView;
   log: boolean;
   onCamera: (id: string, c: Camera) => void;
+  onInteraction?: (id: string, active: boolean) => void;
+  rotating?: boolean;
   onError: (message: string) => void;
   points?: boolean;
   pointIds?: string[];
@@ -42,13 +46,23 @@ type Props = {
 type Handle = {
   resize: () => void;
   applyCamera: (c: Camera) => void;
+  setAnimating: (active: boolean) => void;
   destroy: () => void;
   capture: () => Promise<string>;
 };
 
 function createScene(
   el: HTMLDivElement,
-  { data, source, view, log, onCamera, points, pointIds = [] }: Props,
+  {
+    data,
+    source,
+    view,
+    log,
+    onCamera,
+    onInteraction,
+    points,
+    pointIds = [],
+  }: Props,
 ): Handle {
   const styles = enabledLayers(view),
     layers = data.layers.filter((l) =>
@@ -112,6 +126,7 @@ function createScene(
       volumeObjects.push({ image, mapper, volume });
       mapper.setInputData(image);
       mapper.setSampleDistance(vtkSampleDistance(extent));
+      mapper.setInitialInteractionScale(2.25);
       if (group.length > 1) {
         // vtk's default independent-component mix adds colors even for fully
         // transparent components. Weight each color by its opacity instead.
@@ -273,6 +288,8 @@ function createScene(
       return { ticks, tickStrings };
     });
     renderer.addActor(axes);
+    const interactor = rw.getRenderWindow().getInteractor();
+    const quality = animationQuality(interactor);
     const applyCamera = (c: Camera) => {
       const v = toVtkCamera(c, extent);
       camera.setFocalPoint(...v.focalPoint);
@@ -284,46 +301,63 @@ function createScene(
           Math.hypot(...v.position.map((x, i) => x - v.focalPoint[i])) * 0.4,
         );
       renderer.resetCameraClippingRange();
-      rw.getRenderWindow().render();
+      if (!interactor.isAnimating()) rw.getRenderWindow().render();
     };
     applyCamera(view.camera);
-    const sub = rw
+    const cameraUpdates = cameraInteraction(applyCamera);
+    const interactorStyle = rw
       .getRenderWindow()
       .getInteractor()
-      .getInteractorStyle()
-      .onEndInteractionEvent(() => {
-        const projection = camera.getParallelProjection()
-          ? "orthographic"
-          : "perspective";
-        const pos = camera.getPosition() as [number, number, number],
-          focal = camera.getFocalPoint() as [number, number, number],
-          up = camera.getViewUp() as [number, number, number];
-        let position = pos;
-        if (projection === "orthographic") {
-          const dist = Math.hypot(...pos.map((n, i) => n - focal[i])),
-            ratio = camera.getParallelScale() / (dist * 0.4);
-          position = pos.map((n, i) => focal[i] + (n - focal[i]) * ratio) as [
-            number,
-            number,
-            number,
-          ];
-        }
-        const c: VtkCamera = {
-          position,
-          focalPoint: focal,
-          viewUp: up,
-          projection,
-        };
-        onCamera(layers[0].signal_id, fromVtkCamera(c, extent));
-      });
+      .getInteractorStyle();
+    let interacting = false;
+    const startSub = interactorStyle.onStartInteractionEvent(() => {
+      interacting = true;
+      cameraUpdates.start();
+      onInteraction?.(layers[0].signal_id, true);
+    });
+    const sub = interactorStyle.onEndInteractionEvent(() => {
+      const projection = camera.getParallelProjection()
+        ? "orthographic"
+        : "perspective";
+      const pos = camera.getPosition() as [number, number, number],
+        focal = camera.getFocalPoint() as [number, number, number],
+        up = camera.getViewUp() as [number, number, number];
+      let position = pos;
+      if (projection === "orthographic") {
+        const dist = Math.hypot(...pos.map((n, i) => n - focal[i])),
+          ratio = camera.getParallelScale() / (dist * 0.4);
+        position = pos.map((n, i) => focal[i] + (n - focal[i]) * ratio) as [
+          number,
+          number,
+          number,
+        ];
+      }
+      const c: VtkCamera = {
+        position,
+        focalPoint: focal,
+        viewUp: up,
+        projection,
+      };
+      onCamera(layers[0].signal_id, fromVtkCamera(c, extent));
+      interacting = false;
+      cameraUpdates.end();
+      onInteraction?.(layers[0].signal_id, false);
+    });
     return {
       resize() {
         rw.resize();
       },
-      applyCamera,
-      capture: () => rw.getRenderWindow().captureImages("image/png")[0],
+      applyCamera: cameraUpdates.update,
+      setAnimating: quality.set,
+      capture: () =>
+        quality.withFullQuality(
+          () => rw.getRenderWindow().captureImages("image/png")[0],
+        ),
       destroy() {
+        quality.dispose();
         sub.unsubscribe();
+        startSub.unsubscribe();
+        if (interacting) onInteraction?.(layers[0].signal_id, false);
         renderer.removeActor(axes!);
         axes!.delete();
         volumeObjects.forEach(({ image, mapper, volume }) => {
@@ -404,6 +438,9 @@ export function VtkScene(props: Props) {
       handle.current = null;
     };
   }, [props.data, props.source, styleKey]);
+  useEffect(() => {
+    handle.current?.setAnimating(!!props.rotating);
+  }, [props.rotating, props.data, props.source, styleKey]);
   useEffect(() => {
     handle.current?.applyCamera(latest.current.view.camera);
   }, [cameraKey]);

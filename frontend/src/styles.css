@@ -2318,3 +2318,7 @@ small {
   background: #254354;
   color: white;
 }
+
+.volume-camera-preset { display: flex; align-items: end; gap: 8px; }
+.volume-camera-preset label { min-width: 0; }
+.volume-camera-preset .volume-rotation-toggle { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }

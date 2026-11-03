@@ -78,7 +78,10 @@ what frames are shown in the 3D preview.
 Click and drag or use the arrow keys to orbit the [volume](#volume-preview), scroll to zoom, and Shift-drag to pan.
 The [**Camera** controls](#volume-camera) offer axis-aligned preset views, rotations in 15° steps,
 a **Reset camera** feature, and a toggle between perspective or orthographic projection. Camera controls apply to all
-tile cameras. The viewer also has a [maximize button](#volume-maximize) to increase the screen area of the 3D view.
+tile cameras. Use the play/pause button next to the preset selector or on the viewer to animate rotation around the depth axis.
+Drag, pan, or zoom while animation is active: rotation pauses during the gesture and resumes from the adjusted view. During
+animation, preview resolution can adjust to keep motion responsive; pausing restores full display detail. The viewer also has a
+[maximize button](#volume-maximize) to increase the screen area of the 3D view.
 
 ## Technical details of the 3D preview
 
