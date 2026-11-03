@@ -138,3 +138,55 @@ test("double-clicking the mass spectrum restores its full horizontal range", asy
     "2.75",
   );
 });
+
+test("SE image selection updates the SIMS ROI and display controls reset", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({ "x-tofscope-user": `se-roi-${Date.now()}` });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: /Open TOFexplorer/ })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+  const panel = page.getByTestId("panel-ion");
+  await panel.getByRole("button", { name: "Image display settings" }).click();
+  await page.getByLabel("Image", { exact: true }).selectOption("se");
+  await expect(page.getByLabel("SE brightness")).toBeVisible();
+  const imageBox = (await panel
+    .getByTestId("selection-overlay")
+    .boundingBox())!;
+  const dialog = page.getByRole("dialog", { name: "Image display" });
+  const dialogBox = (await dialog.boundingBox())!;
+  expect(dialogBox.x).toBeGreaterThanOrEqual(imageBox.x + imageBox.width);
+  const contrastBox = (await page.getByLabel("SE contrast").boundingBox())!;
+  const resetBox = (await page
+    .getByRole("button", { name: "Reset SE display" })
+    .boundingBox())!;
+  expect(
+    resetBox.y - (contrastBox.y + contrastBox.height),
+  ).toBeGreaterThanOrEqual(8);
+  await expect(
+    page.getByLabel("Image", { exact: true }).locator('option[value="se"]'),
+  ).toHaveText("SE");
+  await page.getByLabel("SE brightness").fill("0.5");
+  await page.getByLabel("SE contrast").fill("2");
+  await page.getByRole("button", { name: "Reset SE display" }).click();
+  await expect(page.getByLabel("SE brightness")).toHaveValue("0");
+  await expect(page.getByLabel("SE contrast")).toHaveValue("1");
+  await page.getByRole("button", { name: "Close Image display" }).click();
+  await expect(panel.getByRole("heading", { name: /SE Image/ })).toBeVisible();
+  const overlay = panel.getByTestId("selection-overlay");
+  await overlay.scrollIntoViewIfNeeded();
+  const b = (await overlay.boundingBox())!;
+  await page.mouse.move(b.x + b.width * 0.6, b.y + b.height * 0.25);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.width * 0.9, b.y + b.height * 0.75, {
+    steps: 5,
+  });
+  await page.mouse.up();
+  await expect(panel.getByRole("button", { name: /^ROI:/ })).toHaveAttribute(
+    "aria-label",
+    /x 1–1/,
+  );
+});

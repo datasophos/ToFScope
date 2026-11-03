@@ -1519,6 +1519,9 @@ small {
 .image-display-settings > label:has(input[type="checkbox"]) {
   justify-content: flex-start;
 }
+.image-display-settings .se-display-reset {
+  margin-top: 16px;
+}
 .image-display-settings select {
   max-width: 190px;
   min-width: 0;

@@ -17,7 +17,11 @@ import {
   type CurveStyle,
   type LegendEntry,
 } from "./curveStyle";
-export function PlotToolbarIcon({ action }: { action: "reset" | "save" | "pan" }) {
+export function PlotToolbarIcon({
+  action,
+}: {
+  action: "reset" | "save" | "pan";
+}) {
   return (
     <svg
       width="16"
@@ -225,7 +229,14 @@ export function PlotPanel({
       return;
     if (!chart.current) chart.current = mountChart(element.current, data);
     else chart.current.update(data);
-  }, [panel?.content_version, zoom, stageSize, yScale]);
+  }, [
+    panel?.content_version,
+    panel?.intensity_range[0],
+    panel?.intensity_range[1],
+    zoom,
+    stageSize,
+    yScale,
+  ]);
   return (
     <section
       className={`plot-panel ${maximized ? "maximized" : ""}`}

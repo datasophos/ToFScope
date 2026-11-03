@@ -20,3 +20,17 @@ test("ROI tie rounding matches the Python reference", () =>
   expect(roiFromBounds([0.5, 0.5, 0, 0], [1, 1, 2, 1], null)).toEqual([
     0, 0, 0, 0,
   ]));
+
+test("SE selection maps pixel edges to the SIMS grid and back", async () => {
+  const { seBoundsToRoi, roiToSeBounds } = await import("./selection");
+  const shape = [1, 100, 200, 1];
+  expect(roiToSeBounds([20, 39, 10, 19], shape, [400, 300])).toEqual([
+    39.5, 79.5, 29.5, 59.5,
+  ]);
+  expect(seBoundsToRoi([79.5, 39.5, 59.5, 29.5], shape, [400, 300])).toEqual([
+    20, 39, 10, 19,
+  ]);
+  expect(seBoundsToRoi([-100, 999, -100, 999], shape, [400, 300])).toEqual([
+    0, 199, 0, 99,
+  ]);
+});
