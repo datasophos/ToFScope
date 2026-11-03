@@ -28,6 +28,7 @@ import { toVtkCamera, fromVtkCamera, type VtkCamera } from "./vtkCamera";
 import { registerVolumeCapture } from "./exportVolume";
 import { vtkDisplayExtent, vtkSampleDistance } from "./vtkGeometry";
 import { animationQuality } from "./animationQuality";
+import { cameraInteraction } from "./cameraInteraction";
 
 type Props = {
   data: VtkVolumeData;
@@ -303,6 +304,7 @@ function createScene(
       if (!interactor.isAnimating()) rw.getRenderWindow().render();
     };
     applyCamera(view.camera);
+    const cameraUpdates = cameraInteraction(applyCamera);
     const interactorStyle = rw
       .getRenderWindow()
       .getInteractor()
@@ -310,6 +312,7 @@ function createScene(
     let interacting = false;
     const startSub = interactorStyle.onStartInteractionEvent(() => {
       interacting = true;
+      cameraUpdates.start();
       onInteraction?.(layers[0].signal_id, true);
     });
     const sub = interactorStyle.onEndInteractionEvent(() => {
@@ -337,13 +340,14 @@ function createScene(
       };
       onCamera(layers[0].signal_id, fromVtkCamera(c, extent));
       interacting = false;
+      cameraUpdates.end();
       onInteraction?.(layers[0].signal_id, false);
     });
     return {
       resize() {
         rw.resize();
       },
-      applyCamera,
+      applyCamera: cameraUpdates.update,
       setAnimating: quality.set,
       capture: () =>
         quality.withFullQuality(

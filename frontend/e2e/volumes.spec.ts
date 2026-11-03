@@ -1423,8 +1423,9 @@ test("zooming changes the camera distance while animation is active", async ({
     return Math.hypot(camera.eye.x, camera.eye.y, camera.eye.z);
   };
   const before = await distance();
-  const box = (await canvas.boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  const viewport = canvas.locator(".vtk-volume-viewport canvas");
+  await expect(viewport).toBeVisible();
+  await viewport.hover();
   await page.mouse.wheel(0, -200);
   await expect.poll(distance).not.toBeCloseTo(before, 3);
   await expect(
