@@ -13,7 +13,7 @@ export function ToolPopover({
   children: ReactNode;
   onClose: () => void;
   width?: number;
-  placement?: "anchor" | "top" | "center";
+  placement?: "anchor" | "top" | "center" | "beside-image";
 }) {
   const root = useRef<HTMLElement>(null);
   const [viewport, setViewport] = useState({
@@ -28,12 +28,18 @@ export function ToolPopover({
   }, []);
   const [anchor] = useState(() => {
     const b = document.activeElement?.getBoundingClientRect();
+    const image = document.activeElement
+      ?.closest(".plot-panel")
+      ?.querySelector('[data-testid="selection-overlay"]')
+      ?.getBoundingClientRect();
     return {
       left: Math.max(
         12,
         Math.min(b?.left ?? 20, window.innerWidth - width - 20),
       ),
       top: Math.max(12, Math.min(b?.bottom ?? 80, window.innerHeight - 360)),
+      imageLeft: image?.left,
+      imageRight: image?.right,
     };
   });
   useEffect(() => {
@@ -53,13 +59,23 @@ export function ToolPopover({
         left:
           placement === "center"
             ? viewport.width / 2
-            : Math.max(
-                12,
-                Math.min(
-                  anchor.left,
-                  viewport.width - Math.min(width, viewport.width - 24) - 12,
-                ),
-              ),
+            : placement === "beside-image" &&
+                anchor.imageRight !== undefined &&
+                anchor.imageRight + width + 24 <= viewport.width
+              ? anchor.imageRight + 12
+              : placement === "beside-image" &&
+                  anchor.imageLeft !== undefined &&
+                  anchor.imageLeft >= width + 24
+                ? anchor.imageLeft - width - 12
+                : Math.max(
+                    12,
+                    Math.min(
+                      anchor.left,
+                      viewport.width -
+                        Math.min(width, viewport.width - 24) -
+                        12,
+                    ),
+                  ),
         top: placement === "center" ? viewport.height / 2 : top,
         transform: placement === "center" ? "translate(-50%, -50%)" : undefined,
         maxHeight:

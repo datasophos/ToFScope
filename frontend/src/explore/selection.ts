@@ -46,3 +46,27 @@ export function frameWindow(
     Math.max(frames[0], Math.min(frames[1], Math.round(Math.max(...bounds)))),
   ];
 }
+
+/** Map SE native-pixel coordinates assuming equal physical image extents. */
+export function seBoundsToRoi(
+  bounds: number[],
+  shape: number[],
+  seSize: [number, number],
+): ROI {
+  return roiFromBounds(
+    bounds.map(
+      (v, i) =>
+        ((v + 0.5) * shape[i < 2 ? 2 : 1]) / seSize[i < 2 ? 0 : 1] - 0.5,
+    ),
+    shape,
+  );
+}
+export function roiToSeBounds(
+  roi: ROI,
+  shape: number[],
+  seSize: [number, number],
+): ROI {
+  return roiBounds(roi, shape).map(
+    (v, i) => ((v + 0.5) * seSize[i < 2 ? 0 : 1]) / shape[i < 2 ? 2 : 1] - 0.5,
+  ) as ROI;
+}

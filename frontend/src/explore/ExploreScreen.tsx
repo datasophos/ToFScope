@@ -20,7 +20,15 @@ import { useSignalEditor } from "./useSignalEditor";
 import { ViewingDepths, availableFrames } from "./ViewingDepths";
 import { ROIControls } from "./ROIControls";
 import { ImageDisplayControls } from "./ImageDisplayControls";
-import { roiFromBounds, roiBounds, frameWindow, type ROI } from "./selection";
+import { seIntensityRange } from "./seDisplay";
+import {
+  roiFromBounds,
+  roiBounds,
+  roiToSeBounds,
+  seBoundsToRoi,
+  frameWindow,
+  type ROI,
+} from "./selection";
 export function ExploreScreen({
   initial,
   active,
@@ -65,6 +73,8 @@ export function ExploreScreen({
     () => onStatus(a, !!editor.draft, busy),
     [a, !!editor.draft, busy, onStatus],
   );
+  const [seBrightness, setSeBrightness] = useState(0);
+  const [seContrast, setSeContrast] = useState(1);
   const [max, setMax] = useState<string | null>(null),
     [details, setDetails] = useState<string>();
   const act = (c: Command) => void send(c).catch(() => {});
@@ -121,6 +131,10 @@ export function ExploreScreen({
       image: (patch.image ?? a.display.image) as "sims" | "se",
     });
   const panels = data?.panels;
+  const seSize: [number, number] | undefined =
+    panels?.ion?.axes.length === 2
+      ? [panels.ion.axes[0].values.length, panels.ion.axes[1].values.length]
+      : undefined;
   const d = editor.draft;
   const interval = d?.intervals[d.selectedInterval];
   const spectrumMode = d
@@ -302,12 +316,23 @@ export function ExploreScreen({
                 {...common("ion")}
                 title={ionState.display.image === "se" ? "SE Image" : "Ion map"}
                 help={ionState.display.image === "se" ? help.se : help.ion}
-                panel={panels?.ion}
+                panel={
+                  panels?.ion && ionState.display.image === "se"
+                    ? {
+                        ...panels.ion,
+                        intensity_range: seIntensityRange(
+                          panels.ion.intensity_range,
+                          seBrightness,
+                          seContrast,
+                        ),
+                      }
+                    : panels?.ion
+                }
                 expectedKind="image"
                 status={
                   <span>
                     {ionState.display.image === "se"
-                      ? "Unregistered SE · native pixels"
+                      ? "SE · native pixels"
                       : imageName}
                     {ionFrames && ` · frames ${ionFrames[0]}–${ionFrames[1]}`}
                     {pendingPanels.has("ion") ? " · Updating…" : ""}
@@ -316,20 +341,36 @@ export function ExploreScreen({
                 toolbarControls={
                   <>
                     <ROIControls analysis={a} send={send} />
-                    <ImageDisplayControls analysis={a} display={display} />
+                    <ImageDisplayControls
+                      analysis={a}
+                      display={display}
+                      brightness={seBrightness}
+                      contrast={seContrast}
+                      onBrightness={setSeBrightness}
+                      onContrast={setSeContrast}
+                    />
                   </>
                 }
                 mode="xy"
                 selection={
                   ionState.display.image === "sims"
                     ? roiBounds(a.roi as ROI, a.shape, a.fov_um)
-                    : undefined
+                    : seSize && seSize.every((n) => n > 0)
+                      ? roiToSeBounds(a.roi as ROI, a.shape, seSize)
+                      : undefined
                 }
                 onSelect={(b) => {
-                  if (a.display.image === "sims")
+                  if (ionState.display.image !== a.display.image) return;
+                  if (
+                    a.display.image === "sims" ||
+                    (seSize && seSize.every((n) => n > 0))
+                  )
                     act({
                       type: "set_roi",
-                      roi: roiFromBounds(b, a.shape, a.fov_um),
+                      roi:
+                        a.display.image === "sims"
+                          ? roiFromBounds(b, a.shape, a.fov_um)
+                          : seBoundsToRoi(b, a.shape, seSize!),
                     });
                 }}
               />

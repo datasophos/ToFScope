@@ -142,7 +142,7 @@ test("SE image help follows the displayed image type", async ({ page }) => {
   await page
     .getByRole("button", { name: "SE Image help", exact: true })
     .click();
-  await expect(tooltip).toContainText("not aligned with the SIMS image");
+  await expect(tooltip).toContainText("alignment is not verified");
 });
 
 test("plot heading help stays clickable beside toolbars with larger text", async ({
