@@ -103,3 +103,16 @@ export function rotateCamera(
   };
   return { ...c, eye: rotate(c.eye), up: rotate(up) };
 }
+
+/** Orbit the camera about the volume's depth (z) direction through its focal point. */
+export function orbitDepthAxis(c: Camera, degrees: number): Camera {
+  const angle = (degrees * Math.PI) / 180;
+  const cos = Math.cos(angle),
+    sin = Math.sin(angle);
+  const rotate = (v: Vector): Vector => ({
+    x: v.x * cos - v.y * sin,
+    y: v.x * sin + v.y * cos,
+    z: v.z,
+  });
+  return { ...c, eye: rotate(c.eye), up: rotate(c.up) };
+}

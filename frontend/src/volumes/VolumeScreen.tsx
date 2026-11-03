@@ -3,7 +3,8 @@ import { canRenderVtkStyles, prepareVtkPreview } from "./vtkPreview";
 import { vtkDisplayExtent, vtkSamplingLimited } from "./vtkGeometry";
 import { exportVolume } from "./exportVolume";
 import { PlotToolbarIcon } from "../plots/PlotPanel";
-import { presetCamera, rotateCamera } from "./vtkCamera";
+import { orbitDepthAxis, presetCamera, rotateCamera } from "./vtkCamera";
+import { startRotation } from "./rotationAnimation";
 const VtkScene = lazy(() =>
   import("./VtkScene").then((m) => ({ default: m.VtkScene })),
 );
@@ -37,6 +38,8 @@ function VtkTile({
   view,
   log,
   onCamera,
+  onInteraction,
+  rotating,
   onError,
 }: {
   source: VolumeData;
@@ -46,6 +49,8 @@ function VtkTile({
   view: SpatialView;
   log: boolean;
   onCamera: (id: string, c: Camera) => void;
+  onInteraction: (id: string, active: boolean) => void;
+  rotating: boolean;
   onError: (message: string) => void;
 }) {
   const style = view.layers.find(
@@ -65,6 +70,8 @@ function VtkTile({
           view={tileView}
           log={log}
           onCamera={onCamera}
+          onInteraction={onInteraction}
+          rotating={rotating}
           onError={onError}
           points={points}
           tile
@@ -73,6 +80,40 @@ function VtkTile({
     </div>
   );
 }
+function RotationButton({
+  rotating,
+  onToggle,
+}: {
+  rotating: boolean;
+  onToggle: () => void;
+}) {
+  const label = rotating ? "Pause camera rotation" : "Play camera rotation";
+  return (
+    <button
+      type="button"
+      className="plot-icon-button volume-rotation-toggle"
+      aria-label={label}
+      title={label}
+      aria-pressed={rotating}
+      onClick={onToggle}
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        {rotating ? (
+          <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+        ) : (
+          <path d="M7 4v16l13-8z" />
+        )}
+      </svg>
+    </button>
+  );
+}
+
 export function VolumeScreen({
   analysis: a,
   send,
@@ -88,6 +129,7 @@ export function VolumeScreen({
     [max, setMax] = useState(false),
     [controlsHidden, setControlsHidden] = useState(false),
     [vtkError, setVtkError] = useState("");
+  const [rotating, setRotating] = useState(false);
   const [localDraft, setDraft] = useState<SpatialView>(v);
   const draft = useMemo(() => {
     const ids = new Set(a.signals.filter((s) => s.recipe).map((s) => s.id));
@@ -102,9 +144,14 @@ export function VolumeScreen({
   const current = useRef(v);
   current.current = draft;
   const pending = useRef(0);
+  const interactions = useRef(new Set<string>());
+  const onInteraction = (id: string, active: boolean) => {
+    if (active) interactions.current.add(id);
+    else interactions.current.delete(id);
+  };
   useEffect(() => {
-    if (!pending.current) setDraft(v);
-  }, [v]);
+    if (!pending.current && !rotating) setDraft(v);
+  }, [v, rotating]);
   const change = (next: SpatialView) => {
     current.current = next;
     setDraft(next);
@@ -311,6 +358,29 @@ export function VolumeScreen({
     });
   };
   useEffect(() => {
+    if (!rotating) return;
+    const stop = startRotation((angle) => {
+      if (interactions.current.size) return;
+      const state = current.current;
+      const transform = (camera: Camera) => orbitDepthAxis(camera, angle);
+      const next = {
+        ...state,
+        camera: transform(state.camera),
+        layers: state.layers.map((layer) => ({
+          ...layer,
+          camera: transform(layer.camera),
+        })),
+      };
+      current.current = next;
+      setDraft(next);
+    });
+    return stop;
+  }, [rotating]);
+  const toggleRotation = () => {
+    if (rotating) change(current.current);
+    setRotating(!rotating);
+  };
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (
         event.defaultPrevented ||
@@ -411,27 +481,30 @@ export function VolumeScreen({
         <details className="volume-sidebar-section" open>
           <summary>Camera</summary>
           <div className="volume-camera-toolbar">
-            <label>
-              Preset view
-              <select
-                aria-label="Camera view"
-                value=""
-                onChange={(e) => {
-                  const preset = e.target.value as
-                    "top" | "bottom" | "front" | "back" | "left" | "right";
-                  if (preset)
-                    updateCameras((camera) => presetCamera(camera, preset));
-                }}
-              >
-                <option value="">Choose view</option>
-                <option value="top">Top</option>
-                <option value="bottom">Bottom</option>
-                <option value="front">Front</option>
-                <option value="back">Back</option>
-                <option value="left">Left</option>
-                <option value="right">Right</option>
-              </select>
-            </label>
+            <div className="volume-camera-preset">
+              <label>
+                Preset view
+                <select
+                  aria-label="Camera view"
+                  value=""
+                  onChange={(e) => {
+                    const preset = e.target.value as
+                      "top" | "bottom" | "front" | "back" | "left" | "right";
+                    if (preset)
+                      updateCameras((camera) => presetCamera(camera, preset));
+                  }}
+                >
+                  <option value="">Choose view</option>
+                  <option value="top">Top</option>
+                  <option value="bottom">Bottom</option>
+                  <option value="front">Front</option>
+                  <option value="back">Back</option>
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                </select>
+              </label>
+              <RotationButton rotating={rotating} onToggle={toggleRotation} />
+            </div>
             <span className="volume-control-label">Rotate 15°</span>
             <div
               className="volume-rotation-pad"
@@ -646,6 +719,7 @@ export function VolumeScreen({
         )}
         <div className="volume-viewer" ref={viewer}>
           <div className="volume-viewer-actions">
+            <RotationButton rotating={rotating} onToggle={toggleRotation} />
             {max && (
               <button
                 className="plot-icon-button"
@@ -732,6 +806,8 @@ export function VolumeScreen({
                     view={draft}
                     log={a.display.log}
                     onCamera={camera}
+                    onInteraction={onInteraction}
+                    rotating={rotating}
                     onError={setVtkError}
                   />
                 ))}
@@ -753,6 +829,8 @@ export function VolumeScreen({
                   view={draft}
                   log={a.display.log}
                   onCamera={camera}
+                  onInteraction={onInteraction}
+                  rotating={rotating}
                   onError={setVtkError}
                   pointIds={useVtkPoints ? hybrid!.pointIds : undefined}
                 />
