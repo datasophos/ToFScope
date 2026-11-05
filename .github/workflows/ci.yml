@@ -17,6 +17,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --frozen
       - run: uv run python -m unittest discover -s tests -p test_windows_startup.py -v
+      - run: uv run python -m unittest discover -s tests -p test_distribution.py -v
       - run: uv run python -m unittest discover -s tests -p test_cli.py -v
       - run: uv run python -m unittest discover -s tests -p test_saved_files.py -v
       - run: uv run python -m unittest discover -s tests -p test_dataset_writeback.py -v
