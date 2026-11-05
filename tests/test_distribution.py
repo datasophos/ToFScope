@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 from tofscope.cli import asset_status
@@ -27,3 +28,9 @@ class DistributionTests(unittest.TestCase):
             for name, expected in manifest["assets"].items():
                 with self.subTest(asset=name):
                     self.assertEqual(hashlib.sha256((static / name).read_bytes()).hexdigest(), expected)
+            script = Path(directory) / "scripts" / "build_frontend.py"
+            result = subprocess.run(
+                [sys.executable, "-c", "import runpy,sys; print(runpy.run_path(sys.argv[1])['source_hash']())", str(script)],
+                check=True, capture_output=True, text=True,
+            )
+            self.assertEqual(result.stdout.strip(), manifest["source_sha256"])
