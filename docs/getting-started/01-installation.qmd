@@ -2,6 +2,8 @@
 title: "Install and launch"
 ---
 
+ToFScope supports Windows, macOS, and Linux.
+
 ## What you'll need
 
 - Python 3.11 through 3.14 and [*uv*](https://docs.astral.sh/uv/getting-started/installation/) to install and manage the application (you can also use `pip` directly, but *uv* makes things easy!).
@@ -37,6 +39,15 @@ paths containing spaces need quotation marks:
 ```sh
 tofscope --data-root "/path/to/acquisitions" --output-root "/path/to/saved-analyses"
 ```
+
+On Windows, for example, use paths appropriate to your system in PowerShell:
+
+```powershell
+tofscope --data-root "C:\Data\Acquisitions" --output-root "C:\Data\Saved Analyses"
+```
+
+On Windows, the runtime directory inherits permissions from its parent. Keep it within a directory
+restricted to your Windows account.
 
 The local service will start in your terminal and the app should open automatically in your browser.
 The terminal process needs to remain open while you work. After saving your analysis, you can stop the

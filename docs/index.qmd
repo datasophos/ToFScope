@@ -3,7 +3,7 @@ title: "ToFScope"
 ---
 
 ToFScope is a local, browser-based application for exploring time-of-flight secondary ion mass spectrometry
-(ToF-SIMS) data. It allows you to compare mass spectra, ion images, and depth profiles, inspect peaks, and
+(ToF-SIMS) data on Windows, macOS, and Linux. It allows you to compare mass spectra, ion images, and depth profiles, inspect peaks, and
 explore signals in three dimensions.
 
 ![Explore shows an ion image, mass spectrum, front projection, and depth profile together.](docs/assets/tofscope-explore.png)

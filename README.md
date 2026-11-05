@@ -9,7 +9,7 @@
 
 ToFScope is a browser-based application for exploring time-of-flight secondary ion mass spectrometry (ToF-SIMS) data. It allows you to analyze ion images, mass spectra, and depth profiles together so you can inspect an acquisition, compare signals, and save your analysis for later.
 
-ToFScope runs locally as a Python application and opens in your browser. It reads TOFWERK TOFexplorer[^trademark] HDF5 (`.h5`) acquisitions, and provides interactive tools for exploring their mass spectra, ion images, and depth profiles in two and three dimensions.
+ToFScope runs locally on Windows, macOS, and Linux as a Python application and opens in your browser. It reads TOFWERK TOFexplorer[^trademark] HDF5 (`.h5`) acquisitions, and provides interactive tools for exploring their mass spectra, ion images, and depth profiles in two and three dimensions.
 
 **[Read the ToFScope documentation](https://datasophos.github.io/ToFScope/)** for installation, user guides, deployment, and developer information. Start with [Install and launch](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html) or [Your first analysis](https://datasophos.github.io/ToFScope/docs/getting-started/first-analysis.html).
 
@@ -43,9 +43,7 @@ uv tool install tofscope
 tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 ```
 
-On Windows, use Python 3.11 through 3.14. If uv selects Python 3.15 or newer,
-install with `uv tool install tofscope --python 3.12`. The Windows runtime
-directory inherits its permissions from its parent; keep it within a directory
+On Windows, the runtime directory inherits its permissions from its parent; keep it within a directory
 restricted to your Windows account.
 
 Replace the example paths with your folders. The output folder must be writable and have enough space for a full copy of an acquisition. ToFScope starts a local service and opens the app in your browser. Select a file to begin; keep the terminal open while you work and press **Ctrl-C** there to stop the app.
