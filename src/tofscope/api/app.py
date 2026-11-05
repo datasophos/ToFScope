@@ -282,7 +282,10 @@ def create_app(settings, services=None, bootstrap_secret=None):
 
     @app.post('/api/v1/acquisitions/inspect', response_model=PreparationPreview)
     def inspect_acquisition(body: OpenAcquisition, o=Depends(owner), s=Depends(svc)):
-        return s.preparations.inspect(o, body.relative_path, body.location)
+        try:
+            return s.preparations.inspect(o, body.relative_path, body.location)
+        except OSError:
+            raise HTTPException(422, 'Cannot read acquisition. Check the file and drive; try a local copy if it is on a network drive.') from None
 
     @app.post('/api/v1/acquisitions/prepare', response_model=JobSnapshot, status_code=202)
     def prepare_acquisition(body: PrepareAcquisition, o=Depends(owner), s=Depends(svc)):

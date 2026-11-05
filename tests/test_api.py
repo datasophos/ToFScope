@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 from service_fixture import setup_case
 from tofscope.api.app import create_app
@@ -17,6 +18,13 @@ class APITests(unittest.TestCase):
         self.addCleanup(self.client.__exit__, None, None, None)
         self.a = {"x-tofscope-user": "a", "Origin": "http://testserver"}
         self.b = {"x-tofscope-user": "b", "Origin": "http://testserver"}
+
+    def test_unreadable_acquisition_reports_actionable_error(self):
+        with patch('tofscope.storage.raw_preparation.h5py.File', side_effect=OSError(22, 'Invalid argument')):
+            response = self.client.post('/api/v1/acquisitions/inspect', headers=self.a, json={'relative_path': 'a.h5'})
+        self.assertEqual(response.status_code, 422)
+        self.assertIn('local copy', response.json()['message'])
+        self.assertNotIn(str(self.settings.data_root), response.text)
 
     def test_ownership_revisions_and_safe_errors(self):
         c = self.client
