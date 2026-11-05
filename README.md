@@ -36,7 +36,7 @@ ToFScope runs locally as a Python application and opens in your browser. It read
 
 ## Get started
 
-You need Python 3.11 or newer, [uv](https://docs.astral.sh/uv/getting-started/installation/), and a folder containing supported TOFexplorer `.h5` files. Install from PyPI:
+You need Python 3.11 through 3.14, [uv](https://docs.astral.sh/uv/getting-started/installation/), and a folder containing supported TOFexplorer `.h5` files. Install from PyPI:
 
 ```sh
 uv tool install tofscope

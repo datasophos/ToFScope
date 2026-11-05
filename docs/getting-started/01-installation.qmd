@@ -4,7 +4,7 @@ title: "Install and launch"
 
 ## What you'll need
 
-- Python 3.11 or newer and [*uv*](https://docs.astral.sh/uv/getting-started/installation/) to install and manage the application (you can also use `pip` directly, but *uv* makes things easy!).
+- Python 3.11 through 3.14 and [*uv*](https://docs.astral.sh/uv/getting-started/installation/) to install and manage the application (you can also use `pip` directly, but *uv* makes things easy!).
 - A folder containing supported *TOFWERK* *TOFexplorer* HDF5 (`.h5`) acquisitions.
 - A writable folder with enough space for saved acquisition copies.
 
