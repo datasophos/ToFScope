@@ -9,6 +9,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.staticfiles import StaticFiles
 import json
 from tofscope import __version__
+from tofscope.storage.safe_open import open_saved_file
 from tofscope.storage.saved_files import SavedFile
 from tofscope.storage.raw_preparation import PreparationPreview
 from urllib.parse import quote
@@ -406,9 +407,8 @@ def create_app(settings, services=None, bootstrap_secret=None):
         reservation = s.cache.budget.reserve(o, 'download:' + fid, 128 * 1024)
         stream = None
         try:
-            descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
-            stream = os.fdopen(descriptor, 'rb')
-            actual = os.fstat(descriptor)
+            stream = open_saved_file(path)
+            actual = os.fstat(stream.fileno())
             if (expected.st_dev, expected.st_ino, expected.st_size, expected.st_mtime_ns) != (actual.st_dev, actual.st_ino, actual.st_size, actual.st_mtime_ns):
                 raise SourceChanged('Saved file changed before download.')
             def chunks():

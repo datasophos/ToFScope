@@ -4,6 +4,43 @@ on:
     branches: [main]
   pull_request:
 jobs:
+  windows-startup:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --frozen
+      - run: uv run python -m unittest discover -s tests -p test_windows_startup.py -v
+      - run: uv run python -m unittest discover -s tests -p test_cli.py -v
+      - run: uv run python -m unittest discover -s tests -p test_saved_files.py -v
+      - run: uv run python -m unittest discover -s tests -p test_dataset_writeback.py -v
+      - run: uv run python -m unittest discover -s tests -p test_raw_preparation.py -v
+      - run: uv build --wheel
+      - name: Install built wheel as a tool
+        run: |
+          uv tool install --python ${{ matrix.python-version }} (Get-ChildItem dist/*.whl).FullName
+          & "$(uv tool dir --bin)/tofscope.exe" doctor
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm --prefix frontend ci
+      - run: npm --prefix frontend exec -- playwright install chrome
+      - name: Exercise Windows analysis, saving and download in Chrome
+        run: npm --prefix frontend run test:e2e -- saved-files.spec.ts -g "save a copy restores signal"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: windows-browser-test-failures-${{ matrix.python-version }}
+          path: frontend/test-results/
+          if-no-files-found: ignore
   pilot:
     runs-on: ubuntu-latest
     steps:

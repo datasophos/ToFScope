@@ -43,6 +43,11 @@ uv tool install tofscope
 tofscope --data-root /path/to/acquisitions --output-root /path/to/saved-analyses
 ```
 
+On Windows, use Python 3.11 through 3.14. If uv selects Python 3.15 or newer,
+install with `uv tool install tofscope --python 3.12`. The Windows runtime
+directory inherits its permissions from its parent; keep it within a directory
+restricted to your Windows account.
+
 Replace the example paths with your folders. The output folder must be writable and have enough space for a full copy of an acquisition. ToFScope starts a local service and opens the app in your browser. Select a file to begin; keep the terminal open while you work and press **Ctrl-C** there to stop the app.
 
 For step-by-step installation, folder setup, and troubleshooting, see [Install and launch](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html). See the [configuration reference](https://datasophos.github.io/ToFScope/docs/technical-documentation/configuration.html) for settings, and [deployment](https://datasophos.github.io/ToFScope/docs/technical-documentation/deployment.html) for hosted use and containers.

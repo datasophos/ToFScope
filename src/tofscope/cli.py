@@ -70,8 +70,9 @@ def run_service(settings, browser=False):
     stop = threading.Event()
     if settings.mode == "local":
         descriptor = os.open(secret_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        os.fchmod(descriptor, 0o600)
         with os.fdopen(descriptor, "w") as out:
+            if hasattr(os, "fchmod"):
+                os.fchmod(out.fileno(), 0o600)
             json.dump({"url": url, "secret": secret}, out)
     if browser and settings.mode == "local":
         threading.Thread(

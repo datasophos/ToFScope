@@ -3,7 +3,8 @@ import { test, expect } from "@playwright/test";
 test("save a copy restores signal and display state and downloads only on request", async ({
   page,
 }) => {
-  await page.setExtraHTTPHeaders({ "x-tofscope-user": `saved-${Date.now()}` });
+  const owner = `saved-${Date.now()}`;
+  await page.setExtraHTTPHeaders({ "x-tofscope-user": owner });
   await page.goto("/");
   await page
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
@@ -33,8 +34,17 @@ test("save a copy restores signal and display state and downloads only on reques
   await expect(
     page.getByText(/Large files may take a long time to download/),
   ).toBeVisible();
+  const downloadLink = page.getByRole("link", { name: "Download copy", exact: true });
+  const response = await page.request.get((await downloadLink.getAttribute("href"))!, {
+    headers: { "x-tofscope-user": owner },
+  });
+  expect(response.ok()).toBeTruthy();
+  const downloadedBytes = await response.body();
+  expect([...downloadedBytes.subarray(0, 8)]).toEqual([
+    0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a,
+  ]);
   const download = page.waitForEvent("download");
-  await page.getByRole("link", { name: "Download copy", exact: true }).click();
+  await downloadLink.click();
   expect((await download).suggestedFilename()).toBe("aluminium.h5");
   await page
     .getByRole("button", { name: "Close save dialog", exact: true })
