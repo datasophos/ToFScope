@@ -32,6 +32,15 @@ class RawPreparationTests(unittest.TestCase):
     def submit(self, name='prepared.h5'):
         return self.s.preparations.submit('a', 'a.h5', 'acquisition', self.preview().generation, name)
 
+    def test_preparation_syncs_writable_handle(self):
+        sync = os.fsync
+        def require_writable(fd):
+            os.write(fd, b'')
+            sync(fd)
+        with patch('tofscope.storage.raw_preparation.os.fsync', side_effect=require_writable):
+            done = self.s.jobs.wait('a', self.submit().id, 5)
+        self.assertEqual(done.status, 'succeeded', done.safe_error)
+
     def test_confirmation_preflight_does_not_modify_or_start_work(self):
         p = self.preview()
         self.assertTrue(p.requires_preparation)

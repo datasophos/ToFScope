@@ -178,7 +178,7 @@ def prepare_copy(repository, files, owner, source, name, required_bytes, cancell
                         progress('Verifying integrated data', z + 1, shape[0])
                     if verified.hexdigest() != digest.hexdigest() or not np.array_equal(output['PeakData/PeakTable'][:], table):
                         raise ValueError('Prepared peak data verification failed.')
-            with temporary.open('rb') as stream:
+            with temporary.open('r+b') as stream:
                 os.fsync(stream.fileno())
             check()
             result = SavedFile(file_id(name), name, temporary.stat().st_size)
