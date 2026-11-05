@@ -19,7 +19,8 @@ def source_hash():
             ROOT / "frontend/vite.config.ts",
             ROOT / "frontend/tsconfig.json",
             ROOT / "frontend/index.html",
-        ]
+        ],
+        key=lambda p: p.relative_to(ROOT).as_posix(),
     ):
         if p.is_file():
             h.update(p.relative_to(ROOT).as_posix().encode())
