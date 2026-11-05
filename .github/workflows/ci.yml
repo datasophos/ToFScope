@@ -20,6 +20,7 @@ jobs:
       - run: uv run python -m unittest discover -s tests -p test_distribution.py -v
       - run: uv run python -m unittest discover -s tests -p test_cli.py -v
       - run: uv run python -m unittest discover -s tests -p test_saved_files.py -v
+      - run: uv run python -m unittest discover -s tests -p test_bounded_events.py -v
       - run: uv run python -m unittest discover -s tests -p test_dataset_writeback.py -v
       - run: uv run python -m unittest discover -s tests -p test_raw_preparation.py -v
       - run: uv build --wheel
