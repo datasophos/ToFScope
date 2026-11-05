@@ -36,6 +36,15 @@ class SavedFilesTests(unittest.TestCase):
     def save(self, name='result.h5', **kwargs):
         return self.store.publish_copy('a', self.source, self.document, lambda sid: iter(self.values), name, kwargs.pop('cancel', Event()), lambda *args: None, kwargs.pop('before_publish', lambda: None))
 
+    def test_saved_copy_syncs_writable_handles(self):
+        sync = os.fsync
+        def require_writable(fd):
+            os.write(fd, b'')
+            sync(fd)
+        with patch('tofscope.storage.saved_files.os.fsync', side_effect=require_writable):
+            result = self.save()
+        self.assertTrue(self.store.path('a', result.id).is_file())
+
     def test_saved_copy_preserves_source_vendor_data_and_hidden_custom_result(self):
         result = self.save()
         dest = self.store.path('a', result.id)

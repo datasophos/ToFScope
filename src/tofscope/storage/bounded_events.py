@@ -7,6 +7,8 @@ objects, malloc/free calls or NumPy arrays. No on-disk format parsing is used.
 
 from contextlib import contextmanager, ExitStack
 import ctypes as C
+import os
+from pathlib import Path
 import h5py
 from h5py._objects import phil
 import numpy as np
@@ -18,6 +20,13 @@ class VLen(C.Structure):
     _fields_ = [("length", C.c_size_t), ("pointer", C.c_void_p)]
 
 
+def _hdf5_library():
+    # Windows extension modules do not re-export imported HDF5 symbols. Load
+    # the exact DLL bundled beside h5py so its identifiers use the same HDF5.
+    library = Path(h5py.__file__).parent / "hdf5.dll" if os.name == "nt" else h5py.h5d.__file__
+    return C.CDLL(str(library))
+
+
 @contextmanager
 def admitted_events(raw, frame, reserve):
     """Borrow a packed event batch until the context exits, with bounded scratch."""
@@ -26,7 +35,7 @@ def admitted_events(raw, frame, reserve):
         raise ValueError("Raw event type cannot be safely bounded.")
     base = np.dtype(base)
     try:
-        library = C.CDLL(h5py.h5d.__file__)
+        library = _hdf5_library()
         set_manager = library.H5Pset_vlen_mem_manager
         read = library.H5Dread
     except (OSError, AttributeError):
@@ -138,7 +147,7 @@ def write_events(target, frame, events, reserve):
             or not events.samples.flags.c_contiguous):
         raise ValueError('Event batch does not match the destination dataset.')
     try:
-        write = C.CDLL(h5py.h5d.__file__).H5Dwrite
+        write = _hdf5_library().H5Dwrite
     except (OSError, AttributeError):
         raise ValueError('This HDF5 build lacks bounded raw-event writing.') from None
     hid = C.c_int64

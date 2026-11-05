@@ -18,7 +18,7 @@ export default defineConfig({
           reuseExistingServer: false,
         },
         {
-          command: "../.venv/bin/python ../scripts/e2e_server.py",
+          command: "uv run --no-dev --project .. python ../scripts/e2e_server.py",
           url: "http://127.0.0.1:18764/healthz",
           reuseExistingServer: false,
         },

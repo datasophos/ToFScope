@@ -1,11 +1,86 @@
-name: Packaged Explore
+name: CI
 on:
   push:
     branches: [main]
   pull_request:
 jobs:
-  pilot:
-    runs-on: ubuntu-latest
+  windows:
+    name: Windows (Python ${{ matrix.python-version }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --frozen
+      - run: uv run python -m unittest discover -s tests -p test_windows_startup.py -v
+      - run: uv run python -m unittest discover -s tests -p test_distribution.py -v
+      - run: uv run python -m unittest discover -s tests -p test_cli.py -v
+      - run: uv run python -m unittest discover -s tests -p test_saved_files.py -v
+      - run: uv run python -m unittest discover -s tests -p test_bounded_events.py -v
+      - run: uv run python -m unittest discover -s tests -p test_dataset_writeback.py -v
+      - run: uv run python -m unittest discover -s tests -p test_raw_preparation.py -v
+      - run: uv build --wheel
+      - name: Install built wheel as a tool
+        run: |
+          uv tool install --python ${{ matrix.python-version }} (Get-ChildItem dist/*.whl).FullName
+          & "$(uv tool dir --bin)/tofscope.exe" doctor
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm --prefix frontend ci
+      - run: npm --prefix frontend exec -- playwright install chrome
+      - name: Exercise Windows analysis, saving and download in Chrome
+        run: npm --prefix frontend run test:e2e -- saved-files.spec.ts -g "save a copy restores signal"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: windows-browser-test-failures-${{ matrix.python-version }}
+          path: frontend/test-results/
+          if-no-files-found: ignore
+  python-compatibility:
+    name: ${{ matrix.platform }} (Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: Linux
+            python-version: '3.11'
+          - os: ubuntu-latest
+            platform: Linux
+            python-version: '3.14'
+          - os: macos-latest
+            platform: macOS
+            python-version: '3.11'
+          - os: macos-latest
+            platform: macOS
+            python-version: '3.14'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --frozen
+      - run: uv run python -m unittest discover -s tests -v
+  full-suite:
+    name: ${{ matrix.platform }} (full suite)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: Linux
+          - os: macos-latest
+            platform: macOS
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -18,7 +93,12 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: uv sync --frozen
       - run: npm --prefix frontend ci
-      - run: npm --prefix frontend exec -- playwright install --with-deps chrome
+      - name: Install Chrome and Linux dependencies
+        if: runner.os == 'Linux'
+        run: npm --prefix frontend exec -- playwright install --with-deps chrome
+      - name: Install Chrome
+        if: runner.os == 'macOS'
+        run: npm --prefix frontend exec -- playwright install chrome
       - run: npm --prefix frontend run generate:api
       - run: git diff --exit-code -- frontend/openapi.json frontend/src/api/generated.ts
       - run: npm --prefix frontend run typecheck
@@ -27,7 +107,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: browser-test-failures
+          name: browser-test-failures-${{ matrix.platform }}
           path: frontend/test-results/
           if-no-files-found: ignore
           retention-days: 7
@@ -35,5 +115,7 @@ jobs:
       - run: uv run python -m unittest discover -s tests -v
       - run: uv build
       - run: uv run python scripts/check_distribution.py --artifacts dist --output /tmp/tofscope-distribution
-      - run: uv run python scripts/check_container.py
+      - name: Check container
+        if: runner.os == 'Linux'
+        run: uv run python scripts/check_container.py
       - run: git diff --check

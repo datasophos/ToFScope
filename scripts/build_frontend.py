@@ -19,10 +19,11 @@ def source_hash():
             ROOT / "frontend/vite.config.ts",
             ROOT / "frontend/tsconfig.json",
             ROOT / "frontend/index.html",
-        ]
+        ],
+        key=lambda p: p.relative_to(ROOT).as_posix(),
     ):
         if p.is_file():
-            h.update(str(p.relative_to(ROOT)).encode())
+            h.update(p.relative_to(ROOT).as_posix().encode())
             h.update(p.read_bytes())
     return h.hexdigest()
 

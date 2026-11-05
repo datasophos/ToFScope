@@ -9,7 +9,6 @@ from pathlib import Path
 from threading import Lock
 from contextvars import ContextVar
 import hashlib
-import tempfile
 from uuid import uuid4
 import os
 import shutil
@@ -19,6 +18,7 @@ import h5py
 import numpy as np
 from filelock import FileLock
 
+from tofscope.config import default_runtime_dir
 from tofscope.storage.vendor_export import export_native_copy,validate_native_recipe,validate_native_layout
 
 _LOCKS={}
@@ -30,7 +30,7 @@ def write_integration_group(*args,**kwargs):
     return write(*args,**kwargs)
 
 
-LOCK_DIR=ContextVar('tofscope_lock_dir',default=Path(tempfile.gettempdir())/f'tofscope-{os.getuid()}'/'locks')
+LOCK_DIR=ContextVar('tofscope_lock_dir',default=default_runtime_dir()/'locks')
 
 def dataset_lock(path,timeout=30):
     canonical=Path(path).expanduser().resolve()
@@ -148,7 +148,7 @@ def save_to_acquisition(settings,relative_path,record,frame_data_factory,expecte
                 write_integration_group(h5,record,iter(values));h5.attrs['ToFScopeGeneration']=generation
             verify_saved_copy(target,temporary,record,frame_data_factory)
             os.chmod(temporary,stat.S_IMODE(info.st_mode))
-            with temporary.open('rb') as stream:os.fsync(stream.fileno())
+            with temporary.open('r+b') as stream:os.fsync(stream.fileno())
             if resolve_data_path(settings,relative_path,require_file=True)!=target or file_identity(target)!=expected_identity:
                 raise ValueError('Acquisition changed before publication. Reload acquisition.')
             os.replace(temporary,target)
@@ -157,9 +157,10 @@ def save_to_acquisition(settings,relative_path,record,frame_data_factory,expecte
             raise
         warning=None
         try:
-            descriptor=os.open(target.parent,os.O_RDONLY)
-            try:os.fsync(descriptor)
-            finally:os.close(descriptor)
+            if os.name != 'nt':
+                descriptor=os.open(target.parent,os.O_RDONLY)
+                try:os.fsync(descriptor)
+                finally:os.close(descriptor)
             clear_dataset_caches()
         except Exception as exc:
             warning=f'Saved successfully; reload required. Post-save housekeeping: {exc}'

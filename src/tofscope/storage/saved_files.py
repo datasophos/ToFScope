@@ -293,7 +293,7 @@ class SavedFileStore:
                     group.attrs['complete'] = True
                     handle.flush()
                 self._verify(temporary, document, checksums, check)
-                with temporary.open('rb') as stream:
+                with temporary.open('r+b') as stream:
                     os.fsync(stream.fileno())
                 check()
                 # The caller holds its revision lock across validation and publication.

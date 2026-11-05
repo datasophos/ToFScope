@@ -1,3 +1,12 @@
 # Preserve literal shader text in generated third-party JavaScript bundles.
 src/tofscope/static/assets/*.js -whitespace linguist-generated=true
 src/tofscope/static/assets/*.css linguist-generated=true
+
+# Keep packaged asset bytes stable for manifest verification on every platform.
+src/tofscope/static/** -text
+
+# Frontend source hashes must be identical in Windows and Unix checkouts.
+frontend/src/** text eol=lf
+frontend/*.json text eol=lf
+frontend/vite.config.ts text eol=lf
+frontend/index.html text eol=lf

@@ -13,6 +13,33 @@ from tofscope.config import load_settings
 
 
 class CLITests(unittest.TestCase):
+    def test_service_starts_without_fchmod(self):
+        from tofscope.cli import run_service
+        from tofscope.config import Settings
+
+        with tempfile.TemporaryDirectory() as d, socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            port = probe.getsockname()[1]
+            probe.close()
+            settings = Settings(Path(d), runtime_dir=Path(d) / "runtime", port=port)
+
+            def serve(*, sockets):
+                credential = json.loads((settings.runtime_dir / "launch.json").read_text())
+                self.assertTrue(credential["secret"])
+
+            with (
+                patch.dict(os.__dict__),
+                patch("tofscope.cli.asset_status"),
+                patch("tofscope.cli.create_app"),
+                patch("tofscope.cli.uvicorn.Config"),
+                patch("tofscope.cli.uvicorn.Server") as server,
+                redirect_stdout(io.StringIO()),
+            ):
+                os.__dict__.pop("fchmod", None)
+                server.return_value.run.side_effect = serve
+                run_service(settings)
+            self.assertFalse((settings.runtime_dir / "launch.json").exists())
+
     def test_precedence_and_booleans(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d)

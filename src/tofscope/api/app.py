@@ -9,6 +9,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.staticfiles import StaticFiles
 import json
 from tofscope import __version__
+from tofscope.storage.safe_open import open_saved_file
 from tofscope.storage.saved_files import SavedFile
 from tofscope.storage.raw_preparation import PreparationPreview
 from urllib.parse import quote
@@ -281,7 +282,10 @@ def create_app(settings, services=None, bootstrap_secret=None):
 
     @app.post('/api/v1/acquisitions/inspect', response_model=PreparationPreview)
     def inspect_acquisition(body: OpenAcquisition, o=Depends(owner), s=Depends(svc)):
-        return s.preparations.inspect(o, body.relative_path, body.location)
+        try:
+            return s.preparations.inspect(o, body.relative_path, body.location)
+        except OSError:
+            raise HTTPException(422, 'Cannot read acquisition. Check the file and drive; try a local copy if it is on a network drive.') from None
 
     @app.post('/api/v1/acquisitions/prepare', response_model=JobSnapshot, status_code=202)
     def prepare_acquisition(body: PrepareAcquisition, o=Depends(owner), s=Depends(svc)):
@@ -406,9 +410,8 @@ def create_app(settings, services=None, bootstrap_secret=None):
         reservation = s.cache.budget.reserve(o, 'download:' + fid, 128 * 1024)
         stream = None
         try:
-            descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
-            stream = os.fdopen(descriptor, 'rb')
-            actual = os.fstat(descriptor)
+            stream = open_saved_file(path)
+            actual = os.fstat(stream.fileno())
             if (expected.st_dev, expected.st_ino, expected.st_size, expected.st_mtime_ns) != (actual.st_dev, actual.st_ino, actual.st_size, actual.st_mtime_ns):
                 raise SourceChanged('Saved file changed before download.')
             def chunks():

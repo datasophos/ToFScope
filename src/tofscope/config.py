@@ -8,12 +8,16 @@ import tomllib
 from typing import Mapping
 
 
+def default_runtime_dir() -> Path:
+    """Use a per-user temp directory, retaining the UID suffix on Unix."""
+    name = f"tofscope-{os.getuid()}" if hasattr(os, "getuid") else "tofscope"
+    return Path(tempfile.gettempdir()) / name
+
+
 @dataclass(frozen=True)
 class Settings:
     data_root: Path = field(default_factory=lambda: Path.cwd())
-    runtime_dir: Path = field(
-        default_factory=lambda: Path(tempfile.gettempdir()) / f"tofscope-{os.getuid()}"
-    )
+    runtime_dir: Path = field(default_factory=default_runtime_dir)
     lock_dir: Path | None = None
     output_root: Path | None = None
     mode: str = "local"
