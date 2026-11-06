@@ -93,24 +93,10 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: uv sync --frozen
       - run: npm --prefix frontend ci
-      - name: Install Chrome and Linux dependencies
-        if: runner.os == 'Linux'
-        run: npm --prefix frontend exec -- playwright install --with-deps chrome
-      - name: Install Chrome
-        if: runner.os == 'macOS'
-        run: npm --prefix frontend exec -- playwright install chrome
       - run: npm --prefix frontend run generate:api
       - run: git diff --exit-code -- frontend/openapi.json frontend/src/api/generated.ts
       - run: npm --prefix frontend run typecheck
       - run: npm --prefix frontend test
-      - run: npm --prefix frontend run test:e2e
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: browser-test-failures-${{ matrix.platform }}
-          path: frontend/test-results/
-          if-no-files-found: ignore
-          retention-days: 7
       - run: uv run python scripts/build_frontend.py
       - run: uv run python -m unittest discover -s tests -v
       - run: uv build
@@ -119,3 +105,37 @@ jobs:
         if: runner.os == 'Linux'
         run: uv run python scripts/check_container.py
       - run: git diff --check
+  browser-tests:
+    name: Browser tests (${{ matrix.os }}, shard ${{ matrix.shard }}/3)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: uv sync --frozen
+      - run: npm --prefix frontend ci
+      - name: Install Chrome and Linux dependencies
+        if: runner.os == 'Linux'
+        run: npm --prefix frontend exec -- playwright install --with-deps chrome
+      - name: Install Chrome
+        if: runner.os == 'macOS'
+        run: npm --prefix frontend exec -- playwright install chrome
+      - run: npm --prefix frontend run test:e2e -- --shard=${{ matrix.shard }}/3
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-failures-${{ matrix.os }}-shard-${{ matrix.shard }}
+          path: frontend/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
