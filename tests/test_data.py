@@ -1,6 +1,7 @@
 """Numerical checks for custom mass-window reconstruction."""
 import unittest
 import tempfile
+from unittest.mock import patch
 from pathlib import Path
 import h5py
 import numpy as np
@@ -9,6 +10,27 @@ from tofscope.storage.explorer import integrate_events, preview_grid, roi_from_b
 
 
 class IntegrationTests(unittest.TestCase):
+    def test_parallel_se_mean_preserves_native_pixels_and_missing_coverage(self):
+        from tofscope.science.se_preview import prepare_se_mean
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'se.h5'
+            names = [f'Image{i:04}' for i in range(9)]
+            with h5py.File(path, 'w') as f:
+                for i, name in enumerate(names):
+                    image = np.full((2 if i % 2 else 3, 3 if i % 3 else 2), i, dtype=float)
+                    image[0, 0] = np.nan if i < 5 else i
+                    f.create_dataset(f'FIBImages/{name}/Data', data=image)
+            serial, serial_count = prepare_se_mean(path, names, 1, 12, workers=1)
+            parallel, parallel_count = prepare_se_mean(path, names, 1, 12, workers=4)
+            self.assertEqual((serial_count, parallel_count), (8, 8))
+            np.testing.assert_allclose(parallel, serial, equal_nan=True)
+            np.testing.assert_allclose(parallel, [[6.5, 4.5, 4.5], [4.5, 4.5, 4.5], [5., 5., 14 / 3]])
+            with patch('tofscope.science.se_preview._subprocess', side_effect=OSError('worker unavailable')):
+                fallback, count = prepare_se_mean(path, names, 1, 12, workers=4)
+            self.assertEqual(count, 8)
+            np.testing.assert_allclose(fallback, serial, equal_nan=True)
+
     def test_inclusive_window_empty_pixels_and_invalid_timestamps(self):
         events = np.empty((2, 2), dtype=object)
         events[0, 0] = np.array([0, 64, 128, 192, 99999], dtype=np.uint32)

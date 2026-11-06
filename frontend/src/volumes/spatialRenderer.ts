@@ -1,5 +1,7 @@
 /** Shared 3D view types and intensity statistics. */
 import type { components } from "../api/generated";
+import { layerRange } from "../shared/levels";
+export { histogram, layerRange } from "../shared/levels";
 export type VolumeData = components["schemas"]["VolumeData"];
 export type SpatialView = components["schemas"]["SpatialView"];
 export type SpatialLayer = components["schemas"]["SpatialLayer"];
@@ -13,10 +15,11 @@ export const defaultCamera: Camera = {
 export const defaultLayer = (signal_id: string): SpatialLayer => ({
   signal_id,
   visible: true,
-  colorscale: "Viridis",
+  colorscale: signal_id === "@se" ? "Gray" : "Viridis",
   colorscale_reversed: false,
   opacity: 0.12,
   percentile: 70,
+  levels: null,
   camera: defaultCamera,
 });
 export const enabledLayers = (v: SpatialView) =>
@@ -56,13 +59,20 @@ export function volumeDisplayStats(
     threshold: log ? Math.expm1(lower) : lower,
   };
 }
-export function layerRange(values: (number | null)[]) {
-  let min = Infinity,
-    max = -Infinity;
-  for (const v of values)
-    if (v !== null && Number.isFinite(v)) {
-      min = Math.min(min, v);
-      max = Math.max(max, v);
-    }
-  return min === Infinity ? [0, 0] : [min, max];
+export function levelStats(
+  values: (number | null)[],
+  style: SpatialLayer,
+  log = false,
+) {
+  const fallback = volumeDisplayStats(values, style.percentile, log);
+  if (!style.levels) return fallback;
+  const [lo, hi] = style.levels;
+  const lower = displayIntensity(lo, log),
+    upper = displayIntensity(hi, log);
+  return {
+    ...fallback,
+    lower,
+    upper: Math.max(upper, lower + 1e-6),
+    threshold: lo,
+  };
 }

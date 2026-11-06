@@ -16,6 +16,7 @@ with tempfile.TemporaryDirectory(prefix="tofscope-e2e-") as d:
     make_acquisition(root / "a.h5")
     make_acquisition(root / "b.h5")
     make_spatial_acquisition(root / "spatial.h5")
+    make_spatial_acquisition(root / "spatial-many.h5", count=16)
     (root / "nested").mkdir()
     make_acquisition(root / "nested" / "c.h5")
     make_acquisition(root / "nested" / "raw.h5")

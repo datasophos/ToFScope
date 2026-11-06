@@ -133,13 +133,14 @@ export function VolumeScreen({
   const [localDraft, setDraft] = useState<SpatialView>(v);
   const draft = useMemo(() => {
     const ids = new Set(a.signals.filter((s) => s.recipe).map((s) => s.id));
+    if (a.has_se) ids.add("@se");
     return {
       ...localDraft,
       layers: localDraft.layers.filter((l) => ids.has(l.signal_id)),
       solo:
         localDraft.solo && ids.has(localDraft.solo) ? localDraft.solo : null,
     };
-  }, [localDraft, a.signals]);
+  }, [localDraft, a.signals, a.has_se]);
   const viewer = useRef<HTMLDivElement>(null);
   const current = useRef(v);
   current.current = draft;
@@ -261,7 +262,7 @@ export function VolumeScreen({
     [vtkSource, draft.mode],
   );
   const styleKey = JSON.stringify(
-    styles.map((style) => [style.signal_id, style.percentile]),
+    styles.map((style) => [style.signal_id, style.percentile, style.levels]),
   );
   const vtkStylesSupported = useMemo(
     () =>
@@ -316,23 +317,26 @@ export function VolumeScreen({
         : vtkSource;
     return { data, pointIds, preview };
   }, [vtkSource, useVtkPoints, styleKey, a.display.log]);
-  const pages = Math.max(1, Math.ceil(styles.length / 4)),
+  const pageSize = draft.tile_columns * draft.tile_rows;
+  const pages = Math.max(1, Math.ceil(styles.length / pageSize)),
     page = Math.min(draft.page, pages - 1);
   const tiles = useMemo(() => {
     if (!vtkSource || draft.mode !== "tiles") return [];
-    return vtkSource.layers.slice(page * 4, page * 4 + 4).map((layer) => {
-      const single = { ...vtkSource, layers: [layer] };
-      const preview = prepareVtkPreview(single);
-      const style = styles.find((s) => s.signal_id === layer.signal_id)!;
-      return {
-        single,
-        preview,
-        points:
-          preview.kind !== "vtk" ||
-          !canRenderVtkStyles(single, [style], a.display.log, preview.data),
-      };
-    });
-  }, [vtkSource, draft.mode, page, styleKey, a.display.log]);
+    return vtkSource.layers
+      .slice(page * pageSize, page * pageSize + pageSize)
+      .map((layer) => {
+        const single = { ...vtkSource, layers: [layer] };
+        const preview = prepareVtkPreview(single);
+        const style = styles.find((s) => s.signal_id === layer.signal_id)!;
+        return {
+          single,
+          preview,
+          points:
+            preview.kind !== "vtk" ||
+            !canRenderVtkStyles(single, [style], a.display.log, preview.data),
+        };
+      });
+  }, [vtkSource, draft.mode, page, pageSize, styleKey, a.display.log]);
   const camera = (id: string, c: Camera) => {
     const state = current.current;
     const next =
@@ -441,7 +445,7 @@ export function VolumeScreen({
                 </span>
               </button>
               {draft.mode === "tiles" && (
-                <label>
+                <label className="volume-linked-control">
                   <input
                     type="checkbox"
                     checked={draft.linked}
@@ -453,6 +457,50 @@ export function VolumeScreen({
                 </label>
               )}
             </div>
+            {draft.mode === "tiles" && (
+              <div className="volume-tile-grid-settings">
+                <label>
+                  Tiles per row
+                  <select
+                    aria-label="Tiles per row"
+                    value={draft.tile_columns}
+                    onChange={(e) =>
+                      change({
+                        ...draft,
+                        tile_columns: Number(e.target.value),
+                        page: 0,
+                      })
+                    }
+                  >
+                    {[1, 2, 3, 4].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Rows per page
+                  <select
+                    aria-label="Rows per page"
+                    value={draft.tile_rows}
+                    onChange={(e) =>
+                      change({
+                        ...draft,
+                        tile_rows: Number(e.target.value),
+                        page: 0,
+                      })
+                    }
+                  >
+                    {[1, 2, 3, 4].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
             <div className="volume-choice-control">
               <span>Preview</span>
               <button
@@ -792,9 +840,11 @@ export function VolumeScreen({
                 className="volume-canvas vtk-tiles"
                 data-testid="volume-canvas"
                 data-renderer="vtk"
-                data-tile-count={
-                  vtkSource.layers.slice(page * 4, page * 4 + 4).length
-                }
+                data-tile-count={tiles.length}
+                style={{
+                  gridTemplateColumns: `repeat(${Math.max(1, Math.min(draft.tile_columns, tiles.length))}, minmax(0, 1fr))`,
+                  gridTemplateRows: `repeat(${Math.max(1, Math.ceil(tiles.length / draft.tile_columns))}, minmax(0, 1fr))`,
+                }}
               >
                 {tiles.map(({ single, preview, points }) => (
                   <VtkTile

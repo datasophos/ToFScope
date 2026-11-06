@@ -7,6 +7,7 @@ import numpy as np
 from tofscope.storage.explorer import inspect_file,file_key
 from tofscope.science.signals import SignalRecipe,read_signal
 from tofscope.science.depth_calibration import calibrated_window
+from tofscope.science.se_preview import prepare_se_preview
 
 COLORSCALES=('Viridis','Magma','Plasma','Cividis','Reds','Blues','Greens','Purples')
 
@@ -14,7 +15,7 @@ COLORSCALES=('Viridis','Magma','Plasma','Cividis','Reds','Blues','Greens','Purpl
 @dataclass
 class VolumeLayer:
     id: str
-    recipe: SignalRecipe
+    recipe: SignalRecipe | None
     visible: bool = True
     colorscale: str = 'Viridis'
     opacity: float = .12
@@ -40,7 +41,7 @@ class PreviewGrid:
 @dataclass(frozen=True)
 class VolumePreview:
     layer_id: str
-    recipe: SignalRecipe
+    recipe: SignalRecipe | None
     grid: PreviewGrid
     values: np.ndarray
     coverage: np.ndarray
@@ -55,7 +56,7 @@ def clear_preview_cache():
     _CACHE.clear();_CACHE_BYTES=0
 
 
-def build_layer_previews(path,layers,roi,frames,*,quality,voxel_budget=500_000,reader=None,calibration=None,use_cache=True,reader_context=None):
+def build_layer_previews(path,layers,roi,frames,*,quality,voxel_budget=500_000,reader=None,calibration=None,use_cache=True,reader_context=None,se_workers=None):
     global _CACHE_BYTES
     enabled=[layer for layer in layers if layer.visible]
     if not enabled:return []
@@ -84,6 +85,14 @@ def build_layer_previews(path,layers,roi,frames,*,quality,voxel_budget=500_000,r
     block_sizes=np.diff(edges[0])[:,None,None]*np.diff(edges[1])[None,:,None]*np.diff(edges[2])[None,None,:]
     for layer in enabled:
         r=layer.recipe
+        if r is None:
+            names=meta['image_names']
+            workers=se_workers if se_workers is not None else (4 if frames[1]-frames[0]+1 >= 64 else 1)
+            values,valid_counts=prepare_se_preview(path,names,edges,shape[1:3],workers=workers)
+            coverage=np.clip(valid_counts/block_sizes,0.,1.).astype(np.float32)
+            coverage[np.isclose(coverage,1.,rtol=0.,atol=1e-6)]=1.
+            result.append(VolumePreview(layer.id,None,grid,values,coverage,valid_counts))
+            continue
         key=(identity,r.source,r.stored_index,r.saved_id,r.intervals,r.frames,tuple(roi),tuple(frames),tuple(steps))
         cached=_CACHE.get(key) if use_cache else None
         if cached is None:

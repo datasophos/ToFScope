@@ -152,28 +152,36 @@ test("SE image selection updates the SIMS ROI and display controls reset", async
   const panel = page.getByTestId("panel-ion");
   await panel.getByRole("button", { name: "Image display settings" }).click();
   await page.getByLabel("Image", { exact: true }).selectOption("se");
-  await expect(page.getByLabel("SE brightness")).toBeVisible();
+  await expect(page.getByLabel("Preview intensity histogram")).toBeVisible();
   const imageBox = (await panel
     .getByTestId("selection-overlay")
     .boundingBox())!;
   const dialog = page.getByRole("dialog", { name: "Image display" });
   const dialogBox = (await dialog.boundingBox())!;
   expect(dialogBox.x).toBeGreaterThanOrEqual(imageBox.x + imageBox.width);
-  const contrastBox = (await page.getByLabel("SE contrast").boundingBox())!;
-  const resetBox = (await page
-    .getByRole("button", { name: "Reset SE display" })
-    .boundingBox())!;
-  expect(
-    resetBox.y - (contrastBox.y + contrastBox.height),
-  ).toBeGreaterThanOrEqual(8);
   await expect(
     page.getByLabel("Image", { exact: true }).locator('option[value="se"]'),
   ).toHaveText("SE");
-  await page.getByLabel("SE brightness").fill("0.5");
-  await page.getByLabel("SE contrast").fill("2");
-  await page.getByRole("button", { name: "Reset SE display" }).click();
-  await expect(page.getByLabel("SE brightness")).toHaveValue("0");
-  await expect(page.getByLabel("SE contrast")).toHaveValue("1");
+  const lower = page.getByLabel("Lower level value");
+  const defaultLower = await lower.inputValue();
+  const canvas = panel.locator("canvas").first();
+  const before = await canvas.evaluate((c) =>
+    (c as HTMLCanvasElement).toDataURL(),
+  );
+  await lower.fill("6");
+  await lower.press("Enter");
+  await expect(lower).toHaveValue("6");
+  await expect
+    .poll(() => canvas.evaluate((c) => (c as HTMLCanvasElement).toDataURL()))
+    .not.toBe(before);
+  await page.getByRole("button", { name: "Single frame", exact: true }).click();
+  await expect(panel).toContainText("frames 0–0");
+  await expect(lower).toHaveValue("6");
+  await dialog.getByRole("button", { name: "Reset", exact: true }).click();
+  await expect(lower).not.toHaveValue(defaultLower);
+  await page.getByRole("button", { name: "All frames", exact: true }).click();
+  await expect(panel).toContainText("frames 0–2");
+  await expect(lower).toHaveValue(defaultLower);
   await page.getByRole("button", { name: "Close Image display" }).click();
   await expect(panel.getByRole("heading", { name: /SE Image/ })).toBeVisible();
   const overlay = panel.getByTestId("selection-overlay");

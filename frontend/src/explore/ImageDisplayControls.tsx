@@ -1,23 +1,27 @@
-import { useState } from "react";
-import type { Analysis } from "../api/client";
+import { useMemo, useState } from "react";
+import type { Analysis, Panel } from "../api/client";
 import { ToolPopover } from "./ToolPopover";
+import { ColormapPicker } from "../shared/ColormapPicker";
+import { LevelsControl } from "../shared/LevelsControl";
 
 export function ImageDisplayControls({
   analysis: a,
   display,
-  brightness,
-  contrast,
-  onBrightness,
-  onContrast,
+  sePanel,
+  seLevels,
+  onSeLevels,
 }: {
   analysis: Analysis;
-  brightness: number;
-  contrast: number;
-  onBrightness: (value: number) => void;
-  onContrast: (value: number) => void;
+  sePanel?: Panel;
+  seLevels: [number, number] | null;
+  onSeLevels: (value: [number, number] | null) => void;
   display: (patch: Partial<Analysis["display"]>) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const values = useMemo(
+    () => (open ? (sePanel?.values?.flat() ?? []) : []),
+    [open, sePanel?.values],
+  );
   return (
     <>
       <button
@@ -45,27 +49,26 @@ export function ImageDisplayControls({
             />
             Log colors
           </label>
-          <label>
-            SIMS colormap{" "}
-            <select
-              aria-label="SIMS colormap"
+          <div className="image-display-colormap">
+            <span>SIMS colormap</span>
+            <ColormapPicker
+              label="SIMS colormap"
               value={
                 a.display.colormap === "ion"
                   ? "viridis"
                   : (a.display.colormap ?? "viridis")
               }
-              onChange={(e) =>
-                display({
-                  colormap: e.target.value as Analysis["display"]["colormap"],
-                })
+              options={[
+                { value: "viridis", label: "Viridis", palette: "Viridis" },
+                { value: "cividis", label: "Cividis", palette: "Cividis" },
+                { value: "magma", label: "Magma", palette: "Magma" },
+                { value: "gray", label: "Grayscale", palette: "Gray" },
+              ]}
+              onChange={(value) =>
+                display({ colormap: value as Analysis["display"]["colormap"] })
               }
-            >
-              <option value="viridis">Viridis</option>
-              <option value="cividis">Cividis</option>
-              <option value="magma">Magma</option>
-              <option value="gray">Grayscale</option>
-            </select>
-          </label>
+            />
+          </div>
           <label>
             Image{" "}
             <select
@@ -77,43 +80,17 @@ export function ImageDisplayControls({
               {a.has_se && <option value="se">SE</option>}
             </select>
           </label>
-          {a.display.image === "se" && (
-            <>
-              <label>
-                Brightness{" "}
-                <input
-                  aria-label="SE brightness"
-                  type="range"
-                  min="-1"
-                  max="1"
-                  step="0.01"
-                  value={brightness}
-                  onChange={(e) => onBrightness(Number(e.target.value))}
-                />
-              </label>
-              <label>
-                Contrast{" "}
-                <input
-                  aria-label="SE contrast"
-                  type="range"
-                  min="0.25"
-                  max="4"
-                  step="0.05"
-                  value={contrast}
-                  onChange={(e) => onContrast(Number(e.target.value))}
-                />
-              </label>
-              <button
-                className="se-display-reset"
-                onClick={() => {
-                  onBrightness(0);
-                  onContrast(1);
-                }}
-              >
-                Reset SE display
-              </button>
-            </>
-          )}
+          {a.display.image === "se" &&
+            (sePanel && values.length ? (
+              <LevelsControl
+                values={values}
+                levels={seLevels ?? sePanel.intensity_range}
+                onChange={onSeLevels}
+                onReset={() => onSeLevels(null)}
+              />
+            ) : (
+              <small>Loading SE image…</small>
+            ))}
         </ToolPopover>
       )}
     </>

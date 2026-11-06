@@ -20,7 +20,6 @@ import { useSignalEditor } from "./useSignalEditor";
 import { ViewingDepths, availableFrames } from "./ViewingDepths";
 import { ROIControls } from "./ROIControls";
 import { ImageDisplayControls } from "./ImageDisplayControls";
-import { seIntensityRange } from "./seDisplay";
 import {
   roiFromBounds,
   roiBounds,
@@ -73,8 +72,7 @@ export function ExploreScreen({
     () => onStatus(a, !!editor.draft, busy),
     [a, !!editor.draft, busy, onStatus],
   );
-  const [seBrightness, setSeBrightness] = useState(0);
-  const [seContrast, setSeContrast] = useState(1);
+  const [seLevels, setSeLevels] = useState<[number, number] | null>(null);
   const [max, setMax] = useState<string | null>(null),
     [details, setDetails] = useState<string>();
   const act = (c: Command) => void send(c).catch(() => {});
@@ -205,7 +203,11 @@ export function ExploreScreen({
     >
       <div className="analysis-heading">
         <div>
-          <h1>{a.dataset.name || a.dataset.relative_path.split("/").pop()}</h1>
+          <h1
+            title={a.dataset.name || a.dataset.relative_path.split("/").pop()}
+          >
+            {a.dataset.name || a.dataset.relative_path.split("/").pop()}
+          </h1>
           <span>
             {a.shape[0].toLocaleString()} frames · {a.shape[2]} × {a.shape[1]}{" "}
             pixels · {a.peaks.length} stored signals
@@ -320,11 +322,7 @@ export function ExploreScreen({
                   panels?.ion && ionState.display.image === "se"
                     ? {
                         ...panels.ion,
-                        intensity_range: seIntensityRange(
-                          panels.ion.intensity_range,
-                          seBrightness,
-                          seContrast,
-                        ),
+                        intensity_range: seLevels ?? panels.ion.intensity_range,
                       }
                     : panels?.ion
                 }
@@ -344,10 +342,13 @@ export function ExploreScreen({
                     <ImageDisplayControls
                       analysis={a}
                       display={display}
-                      brightness={seBrightness}
-                      contrast={seContrast}
-                      onBrightness={setSeBrightness}
-                      onContrast={setSeContrast}
+                      sePanel={
+                        ionState.display.image === "se"
+                          ? panels?.ion
+                          : undefined
+                      }
+                      seLevels={seLevels}
+                      onSeLevels={setSeLevels}
                     />
                   </>
                 }

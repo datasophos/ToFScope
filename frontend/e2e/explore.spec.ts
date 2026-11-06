@@ -2,6 +2,49 @@ import { manageSignals, addSignal } from "./signal-controls";
 import { test, expect } from "@playwright/test";
 test.use({ extraHTTPHeaders: { "x-tofscope-user": "browser-a" } });
 test.setTimeout(60000);
+test("image loading indicator is centered on the image while switching to SE", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `image-loader-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
+  const panel = page.getByTestId("panel-ion");
+  const image = panel.getByTestId("selection-overlay");
+  await expect(image).toBeVisible();
+  await page.route("**/analyses/*/data?*", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await route.continue();
+  });
+  await panel.getByRole("button", { name: "Image display settings" }).click();
+  await page.getByLabel("Image", { exact: true }).selectOption("se");
+  const loader = panel.getByRole("status", { name: "Loading image plot" });
+  await expect(loader).toBeVisible();
+  await expect(loader.locator(".plot-loading-message")).toHaveCSS(
+    "background-color",
+    "rgba(16, 31, 46, 0.9)",
+  );
+  await expect(loader.locator(".plot-loading-message")).toHaveCSS(
+    "color",
+    "rgb(255, 255, 255)",
+  );
+  const spinner = (await loader.locator(".plot-spinner").boundingBox())!;
+  const label = (await loader.getByText("Loading image…").boundingBox())!;
+  const box = (await image.boundingBox())!;
+  expect(
+    Math.abs(spinner.x + spinner.width / 2 - (box.x + box.width / 2)),
+  ).toBeLessThan(2);
+  expect(
+    Math.abs(
+      (spinner.y + label.y + label.height) / 2 - (box.y + box.height / 2),
+    ),
+  ).toBeLessThan(2);
+});
 test("independent files, exact Explore state, union calculation and offline downloads", async ({
   page,
 }) => {
@@ -70,7 +113,9 @@ test("independent files, exact Explore state, union calculation and offline down
     await page.getByRole("button", { name: "Open TOFexplorer file" }).click();
     await page.getByRole("button", { name: `◫ ${name}` }).dblclick();
   }
-  await expect(page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab")).toHaveCount(3);
+  await expect(
+    page.getByRole("tablist", { name: "Open analyses" }).getByRole("tab"),
+  ).toHaveCount(3);
   await page.getByRole("tab", { name: "1 · a.h5" }).click();
   await expect(
     page.getByRole("button", { name: /^ROI:/ }).filter({ visible: true }),

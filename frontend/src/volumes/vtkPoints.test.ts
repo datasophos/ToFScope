@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { buildVtkPoints } from "./vtkPoints";
+import { buildVtkPoints, pointColors } from "./vtkPoints";
 import { defaultLayer, type VolumeData } from "./spatialRenderer";
 
 describe("vtk point preview", () => {
+  it("ramps point transparency and clamps the upper level", () => {
+    const colors = pointColors([0, 5, 10, 20], 0, 10, "Gray", false);
+    expect(Array.from(colors)).toEqual([
+      0, 0, 0, 0, 128, 128, 128, 128, 255, 255, 255, 255, 255, 255, 255, 255,
+    ]);
+  });
   it("keeps only finite covered samples at the original coordinates and cutoff", () => {
     const data = {
       x: [0, 2],

@@ -176,7 +176,7 @@ def read_document(path: Path, limits) -> SavedAnalysisDocument | None:
 
 
 def restore_snapshot(document: SavedAnalysisDocument, initial: AnalysisSnapshot) -> AnalysisSnapshot:
-    if document.shape != initial.shape or (document.display.image == 'se' and not initial.has_se):
+    if document.shape != initial.shape or ((document.display.image == 'se' or any(layer.signal_id == '@se' for layer in document.spatial.layers)) and not initial.has_se):
         raise ValueError('Saved analysis does not match acquisition metadata.')
     ids = {s.id: str(uuid4()) for s in document.signals}
     rows = []
@@ -186,8 +186,8 @@ def restore_snapshot(document: SavedAnalysisDocument, initial: AnalysisSnapshot)
         rows.append(SignalSnapshot(ids[row.id], row.name, row.style_index, recipe,
                                    materialization_id=row.materialization_id, assignment=row.assignment))
     spatial = document.spatial.model_copy(update={
-        'layers': tuple(layer.model_copy(update={'signal_id': ids[layer.signal_id]}) for layer in document.spatial.layers),
-        'solo': ids[document.spatial.solo] if document.spatial.solo else None,
+        'layers': tuple(layer.model_copy(update={'signal_id': ids.get(layer.signal_id, layer.signal_id)}) for layer in document.spatial.layers),
+        'solo': ids.get(document.spatial.solo, document.spatial.solo) if document.spatial.solo else None,
     })
     restored = replace(initial, spatial=spatial, signals=tuple(rows), image_signal_id=ids[document.image_signal_id],
         profile_signal_ids=tuple(ids[x] for x in document.profile_signal_ids),

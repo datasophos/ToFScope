@@ -23,7 +23,7 @@ ToFScope runs locally on Windows, macOS, and Linux as a Python application and o
 - **Compare signals:** use stored ion channels or define custom mass windows from the spectrum, then compare their profiles.
 - **Work with depth:** add calibration anchors to display profiles and projections in physical depth where calibration is known.
 - **Inspect peaks and isotopes:** find candidate atomic isotope ions and measure selected signals over a region and frame range.
-- **Visualize in 3D:** compare signals as volume overlays or tiled views, with controls for color, opacity, and threshold.
+- **Visualize in 3D:** compare SIMS signals and secondary electron images as volume overlays or tiled views, with histogram-based levels, color, and opacity controls.
 - **Keep and share results:** export profiles as CSV or plots as PNG, and save data back into TOFexplorer-compatible `.h5` files.
 
 ![ToFScope 3D visualizer showing an overlay of aluminum and titanium signals](https://raw.githubusercontent.com/datasophos/ToFScope/main/docs/assets/tofscope-3d.png)

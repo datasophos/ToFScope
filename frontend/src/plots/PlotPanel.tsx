@@ -17,6 +17,7 @@ import {
   type CurveStyle,
   type LegendEntry,
 } from "./curveStyle";
+const imageInsets = plotInsets("image");
 export function PlotToolbarIcon({
   action,
 }: {
@@ -384,9 +385,14 @@ export function PlotPanel({
             className="plot-loading"
             role="status"
             aria-label="Loading image plot"
+            style={{
+              transform: `translate(${(imageInsets.left - imageInsets.right) / 2}px, ${(imageInsets.top - imageInsets.bottom) / 2}px)`,
+            }}
           >
-            <span className="plot-spinner" aria-hidden="true" />
-            <span>Loading image…</span>
+            <div className="plot-loading-message">
+              <span className="plot-spinner" aria-hidden="true" />
+              <span>Loading image…</span>
+            </div>
           </div>
         )}
         <div

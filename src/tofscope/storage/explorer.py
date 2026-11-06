@@ -137,28 +137,10 @@ def se_mean(path, names, first, last):
 
 
 @lru_cache(maxsize=2)
-def _se_mean(key, names, first, last):
+def _se_mean(key, names, first, last, workers=1):
     """Stream an unregistered SE mean, averaging only valid pixel coverage."""
-    total=np.zeros((0,0),dtype=np.float64)
-    counts=np.zeros((0,0),dtype=np.uint32)
-    used=0
-    with h5py.File(key[0],'r') as f:
-        for z in range(max(0,first),min(last+1,len(names))):
-            data=f[f'FIBImages/{names[z]}/Data'][:]
-            ny,nx=data.shape
-            if ny>total.shape[0] or nx>total.shape[1]:
-                padding=((0,max(0,ny-total.shape[0])),(0,max(0,nx-total.shape[1])))
-                total=np.pad(total,padding)
-                counts=np.pad(counts,padding)
-            valid=np.isfinite(data)
-            total[:ny,:nx]+=np.where(valid,data,0)
-            counts[:ny,:nx]+=valid
-            used+=1
-    if not used:
-        return None,0
-    result=np.divide(total,counts,out=np.full_like(total,np.nan),where=counts>0)
-    result.setflags(write=False)
-    return result,used
+    from tofscope.science.se_preview import prepare_se_mean
+    return prepare_se_mean(key[0], names, first, last, workers=workers)
 
 
 def roi_from_bounds(bounds, shape, fov=None):

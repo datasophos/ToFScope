@@ -299,7 +299,9 @@
               "page": 0,
               "quality": "Fast",
               "scale": "independent",
-              "screen": "explore"
+              "screen": "explore",
+              "tile_columns": 2,
+              "tile_rows": 2
             }
           },
           "stale": {
@@ -1406,7 +1408,7 @@
           },
           "valid_counts": {
             "items": {
-              "type": "integer"
+              "type": "number"
             },
             "title": "Valid Counts",
             "type": "array"
@@ -2660,7 +2662,8 @@
               "Reds",
               "Blues",
               "Greens",
-              "Purples"
+              "Purples",
+              "Gray"
             ],
             "title": "Colorscale",
             "type": "string"
@@ -2669,6 +2672,27 @@
             "default": false,
             "title": "Colorscale Reversed",
             "type": "boolean"
+          },
+          "levels": {
+            "anyOf": [
+              {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Levels"
           },
           "opacity": {
             "default": 0.12,
@@ -2808,6 +2832,20 @@
               }
             ],
             "title": "Solo"
+          },
+          "tile_columns": {
+            "default": 2,
+            "maximum": 4.0,
+            "minimum": 1.0,
+            "title": "Tile Columns",
+            "type": "integer"
+          },
+          "tile_rows": {
+            "default": 2,
+            "maximum": 4.0,
+            "minimum": 1.0,
+            "title": "Tile Rows",
+            "type": "integer"
           }
         },
         "title": "SpatialView",

@@ -5,6 +5,18 @@ from threading import RLock
 from tofscope.application.analyses import CapacityError
 
 
+def reserve_se_preparation(stack, budget, owner, analysis_id, base, scratch, workers):
+    """Reserve parallel scratch, or retain serial processing when memory is tight."""
+    try:
+        stack.enter_context(budget.reserve(owner, analysis_id, base + scratch * workers))
+    except CapacityError:
+        if workers == 1:
+            raise
+        workers = 1
+        stack.enter_context(budget.reserve(owner, analysis_id, base + scratch))
+    return workers
+
+
 class Reservation:
     def __init__(self, budget, owner, analysis_id, n, physical):
         self.budget = budget

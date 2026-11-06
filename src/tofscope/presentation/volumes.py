@@ -6,6 +6,7 @@ import json
 import math
 import numpy as np
 from tofscope.application.analyses import CapacityError
+from tofscope.application.resources import reserve_se_preparation
 from tofscope.application.signals import get_signal
 from tofscope.presentation.coordinates import calibration
 from tofscope.presentation.explore import finite
@@ -20,7 +21,7 @@ class LayerData:
     frames: tuple[int, int]
     values: list[float | None]
     coverage: list[float]
-    valid_counts: list[int]
+    valid_counts: list[float]
 
 
 @dataclass(frozen=True)
@@ -123,13 +124,17 @@ class VolumePresenter:
             if not styles or known is None:
                 return empty
             estimate = self.preparation_bytes(s, len(styles), known, s.spatial.quality)
+            workers, scratch = 1, 0
+            if any(x.signal_id == '@se' for x in styles):
+                se_y, se_x = self.repository.se_shape(owner, s.dataset, *known)
+                # Decoded frame, validity mask, reduction scratch and overlap matrices.
+                workers = 4 if known[1] - known[0] + 1 >= 64 else 1
+                scratch = se_y * se_x * 32 + (se_y + se_x) * 48 * 8
             with ExitStack() as local_preparation:
                 admission = (
                     preparation if preparation is not None else local_preparation
                 )
-                admission.enter_context(
-                    self.cache.budget.reserve(owner, s.id, estimate)
-                )
+                workers = reserve_se_preparation(admission, self.cache.budget, owner, s.id, estimate, scratch, workers)
 
                 # One admitted original signal at a time; no prototype global cache.
                 @contextmanager
@@ -150,7 +155,7 @@ class VolumePresenter:
 
                 previews = []
                 layers = [
-                    VolumeLayer(x.signal_id, get_signal(s, x.signal_id).recipe)
+                    VolumeLayer(x.signal_id, None if x.signal_id == '@se' else get_signal(s, x.signal_id).recipe)
                     for x in styles
                 ]
                 # Builder releases each source lease after its reduction (also on error).
@@ -164,6 +169,7 @@ class VolumePresenter:
                         calibration=active,
                         use_cache=False,
                         reader_context=source,
+                        se_workers=workers,
                     )
                 grid = previews[0].grid
                 edges = grid.edges
@@ -190,8 +196,8 @@ class VolumePresenter:
                     [
                         LayerData(
                             p.layer_id,
-                            get_signal(s, p.layer_id).name,
-                            p.recipe.frames,
+                            'SE' if p.recipe is None else get_signal(s, p.layer_id).name,
+                            frames if p.recipe is None else p.recipe.frames,
                             finite(p.values.ravel()),
                             p.coverage.ravel().tolist(),
                             p.valid_counts.ravel().tolist(),

@@ -14,9 +14,12 @@ test("colormaps are selectable and restored, image selections have contrasting e
     .getByRole("button", { name: "Image display settings", exact: true })
     .click();
   const selector = page.getByLabel("SIMS colormap", { exact: true });
-  await expect(selector).toHaveValue("viridis");
-  await expect(selector.locator('option[value="ion"]')).toHaveCount(0);
-  await selector.selectOption("cividis");
+  await expect(selector).toContainText("Viridis");
+  const choose = async (name: string) => {
+    await selector.click();
+    await page.getByRole("option", { name, exact: true }).click();
+  };
+  await choose("Cividis");
   await expect(page.getByTestId("panel-ion")).toHaveAttribute(
     "data-palette",
     "cividis",
@@ -25,7 +28,7 @@ test("colormaps are selectable and restored, image selections have contrasting e
     "data-palette",
     "cividis",
   );
-  await selector.selectOption("magma");
+  await choose("Magma");
   await expect(page.getByTestId("panel-ion")).toHaveAttribute(
     "data-palette",
     "magma",
@@ -78,7 +81,11 @@ test("colormaps are selectable and restored, image selections have contrasting e
     ["cividis", "#f02ec4", "#64104e"],
     ["magma", "#22e6ee", "#095a63"],
   ]) {
-    await selector.selectOption(palette);
+    await choose(
+      palette === "gray"
+        ? "Grayscale"
+        : palette[0].toUpperCase() + palette.slice(1),
+    );
     for (const name of ["ion", "front"]) {
       const panel = page.getByTestId(`panel-${name}`);
       await expect(
@@ -120,7 +127,7 @@ test("colormaps are selectable and restored, image selections have contrasting e
   await page
     .getByRole("button", { name: "Image display settings", exact: true })
     .click();
-  await expect(page.getByLabel("SIMS colormap", { exact: true })).toHaveValue(
-    "magma",
+  await expect(page.getByLabel("SIMS colormap", { exact: true })).toContainText(
+    "Magma",
   );
 });

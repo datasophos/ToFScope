@@ -2,8 +2,10 @@
 
 import json
 import unittest
+from contextlib import ExitStack, nullcontext
 from dataclasses import replace
 from unittest.mock import patch
+import h5py
 import numpy as np
 from service_fixture import setup_case
 from tofscope.api.app import build_services
@@ -16,6 +18,68 @@ from tofscope.storage.analysis_document import (
 
 
 class VolumeDataTests(unittest.TestCase):
+    def test_large_se_preview_uses_parallel_readers(self):
+        from fixtures.acquisition import make_acquisition
+
+        from tofscope.science.se_preview import prepare_se_preview
+
+        path = self.settings.data_root / 'large.h5'
+        make_acquisition(path)
+        with h5py.File(path, 'r+') as f:
+            peak = f['PeakData/PeakData'][:]
+            del f['PeakData/PeakData']
+            f.create_dataset('PeakData/PeakData', data=np.tile(peak, (27, 1, 1, 1)))
+        self.a = self.s.analyses.create_analysis('a', self.s.repository.open('a', 'large.h5'))
+        self.configure(layers=[{'signal_id': '@se'}])
+        with patch('tofscope.science.volume_layers.prepare_se_preview', wraps=prepare_se_preview) as preview:
+            result = self.s.volumes.snapshot('a', self.a.id)
+        self.assertEqual(preview.call_args.kwargs['workers'], 4)
+        self.assertTrue(any(value is not None for value in result.layers[0].values))
+
+    def test_parallel_preparation_falls_back_when_memory_budget_is_tight(self):
+        from tofscope.application.analyses import CapacityError
+        from tofscope.application.resources import reserve_se_preparation
+
+        with ExitStack() as stack, patch.object(self.s.cache.budget, 'reserve', side_effect=[CapacityError('limit'), nullcontext()]) as reserve:
+            workers = reserve_se_preparation(stack, self.s.cache.budget, 'a', self.a.id, 100, 20, 4)
+        self.assertEqual(workers, 1)
+        self.assertEqual([call.args[-1] for call in reserve.call_args_list], [180, 120])
+
+    def test_tile_grid_settings_are_validated_and_persisted(self):
+        a = self.configure(tile_columns=3, tile_rows=4)
+        doc = encode_document(a)
+        fresh = self.s.analyses.create_analysis('a', a.dataset)
+        restored = restore_snapshot(SavedAnalysisDocument.model_validate_json(doc.model_dump_json()), fresh)
+        self.assertEqual((restored.spatial.tile_columns, restored.spatial.tile_rows), (3, 4))
+        for field, value in [('tile_columns', 0), ('tile_columns', 5), ('tile_rows', 0), ('tile_rows', 5)]:
+            with self.assertRaises(ValueError):
+                self.configure(**{field: value})
+
+    def test_se_levels_are_validated_and_restored(self):
+        a = self.configure(layers=[{'signal_id': '@se', 'levels': (3., 9.), 'colorscale': 'Gray'}], solo='@se')
+        doc = encode_document(a)
+        fresh = self.s.analyses.create_analysis('a', a.dataset)
+        restored = restore_snapshot(SavedAnalysisDocument.model_validate_json(doc.model_dump_json()), fresh)
+        self.assertEqual(restored.spatial.layers[0].levels, (3., 9.))
+        self.assertEqual(restored.spatial.solo, '@se')
+        with self.assertRaises(ValueError):
+            self.configure(layers=[{'signal_id': '@se', 'levels': (9., 3.)}])
+    def test_se_layer_uses_common_grid_and_missing_frames(self):
+        a = self.configure(layers=[{'signal_id': '@se'}])
+        result = self.s.volumes.snapshot('a', a.id)
+        self.assertEqual(result.layers[0].label, 'SE')
+        np.testing.assert_allclose(result.layers[0].values[:4], [5., 7., 6., 8.])
+        self.assertEqual(result.layers[0].values[4:], [None, None])
+
+    def test_se_roi_and_calibrated_depth_follow_sims_coordinates(self):
+        self.configure(layers=[{'signal_id': '@se'}])
+        self.command({'type': 'set_roi', 'roi': (1, 1, 0, 0)})
+        self.command({'type': 'set_depth_anchors', 'anchors': [{'frame': 1, 'depth_nm': 100}]})
+        self.command({'type': 'set_depth_display', 'unit': 'nm', 'coordinates': 'depth'})
+        result = self.s.volumes.snapshot('a', self.a.id)
+        np.testing.assert_allclose(result.layers[0].values, [7., 8.])
+        np.testing.assert_allclose(result.z, [0., .1])
+
     def setUp(self):
         setup_case(self)
         self.s = build_services(self.settings)

@@ -42,18 +42,27 @@ class SpatialLayer(SpatialModel):
     signal_id: str = Field(min_length=1, max_length=128)
     visible: StrictBool = True
     colorscale: Literal[
-        "Viridis", "Magma", "Plasma", "Cividis", "Reds", "Blues", "Greens", "Purples"
+        "Viridis", "Magma", "Plasma", "Cividis", "Reds", "Blues", "Greens", "Purples", "Gray"
     ] = "Viridis"
     colorscale_reversed: StrictBool = False
     opacity: Number = Field(default=0.12, ge=0, le=1)
     percentile: Number = Field(default=70.0, ge=0, le=100)
+    levels: tuple[Number, Number] | None = None
     camera: Camera = Camera()
+
+    @model_validator(mode="after")
+    def ordered_levels(self):
+        if self.levels is not None and self.levels[0] >= self.levels[1]:
+            raise ValueError("Lower level must be below upper level.")
+        return self
 
 
 class SpatialView(SpatialModel):
     screen: Literal["explore", "volume"] = "explore"
     layers: tuple[SpatialLayer, ...] = Field(default=(), max_length=129)
     mode: Literal["overlay", "tiles"] = "overlay"
+    tile_columns: StrictInt = Field(default=2, ge=1, le=4)
+    tile_rows: StrictInt = Field(default=2, ge=1, le=4)
     quality: Literal["Fast", "Detailed"] = "Fast"
     scale: Literal["independent", "shared"] = "independent"
     linked: StrictBool = True
@@ -71,8 +80,10 @@ class SpatialView(SpatialModel):
         return self
 
 
-def validate_spatial(spatial, signals):
+def validate_spatial(spatial, signals, has_se=True):
     ready = {s.id for s in signals if s.recipe is not None}
+    if has_se:
+        ready.add('@se')
     if not {x.signal_id for x in spatial.layers} <= ready:
         raise ValueError("Spatial layers must reference ready named signals.")
     return spatial

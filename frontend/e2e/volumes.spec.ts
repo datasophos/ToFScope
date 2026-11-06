@@ -53,6 +53,10 @@ async function volumeData(page: Page) {
     return (await fetch(`/api/v1/analyses/${a.id}/volumes`)).json();
   });
 }
+async function chooseColormap(page: Page, name: string, value: string) {
+  await page.getByRole("combobox", { name: `3D colormap for ${name}` }).click();
+  await page.getByRole("option", { name: value, exact: true }).click();
+}
 async function setupLayers(page: Page, count = 3) {
   for (let i = 0; i < count; i++)
     await command(page, { type: "add_stored_signal", index: i });
@@ -74,6 +78,108 @@ async function setupLayers(page: Page, count = 3) {
     page.getByTestId("volume-canvas").locator("canvas").first(),
   ).toBeVisible();
 }
+test("SE layer and levels window overlay the 3D preview", async ({ page }) => {
+  await open(page);
+  await setupLayers(page, 1);
+  const canvas = page.getByTestId("volume-canvas");
+  const before = await canvas.boundingBox();
+  await page.getByRole("checkbox", { name: "Show SE in 3D" }).check();
+  await expect(page.getByTestId("volume-status")).toContainText("2 layers");
+  await page.getByRole("button", { name: "3D settings for SE" }).click();
+  await expect(page.getByLabel("Preview intensity histogram")).toBeVisible();
+  const dialog = page.getByRole("dialog", { name: "3D settings for SE" });
+  const colorPicker = page.getByRole("combobox", {
+    name: "3D colormap for SE",
+  });
+  await colorPicker.click();
+  const colorOptions = page.getByRole("listbox", {
+    name: "3D colormap for SE options",
+  });
+  await expect(colorOptions.getByRole("option")).toHaveCount(9);
+  await expect(
+    colorOptions
+      .getByRole("option", { name: "Viridis" })
+      .locator(".colormap-swatch"),
+  ).toHaveCSS("background-image", /linear-gradient/);
+  await page.keyboard.press("Escape");
+  await expect(colorOptions).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  const swatch = colorPicker.locator(".colormap-swatch");
+  const normalRamp = await swatch.evaluate(
+    (e) => getComputedStyle(e).backgroundImage,
+  );
+  await page.getByLabel("Reverse 3D colormap for SE").check();
+  await expect
+    .poll(() => swatch.evaluate((e) => getComputedStyle(e).backgroundImage))
+    .not.toBe(normalRamp);
+  await page.getByLabel("Reverse 3D colormap for SE").uncheck();
+  const dialogBox = (await dialog.boundingBox())!;
+  const sidebarBox = (await page
+    .getByRole("complementary", { name: "3D controls" })
+    .boundingBox())!;
+  expect(dialogBox.x).toBeGreaterThanOrEqual(sidebarBox.x + sidebarBox.width);
+  expect(
+    await page.evaluate(
+      ({ x, y }) =>
+        document.elementFromPoint(x, y)?.closest('[role="dialog"]') !== null,
+      { x: dialogBox.x + dialogBox.width / 2, y: dialogBox.y + 20 },
+    ),
+  ).toBe(true);
+  const after = await canvas.boundingBox();
+  expect(after!.width).toBeCloseTo(before!.width, 0);
+  const lower = page.getByRole("slider", { name: "Lower level" });
+  await lower.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect
+    .poll(
+      async () =>
+        (await state(page)).spatial.layers.find(
+          (l: any) => l.signal_id === "@se",
+        )?.levels,
+    )
+    .not.toBeNull();
+  const beforeLevels = (await state(page)).spatial.layers.find(
+    (l: any) => l.signal_id === "@se",
+  ).levels;
+  const window = page.locator(".levels-window");
+  const windowBox = (await window.boundingBox())!;
+  await page.mouse.move(
+    windowBox.x + windowBox.width / 2,
+    windowBox.y + windowBox.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    windowBox.x + windowBox.width / 2 - 10,
+    windowBox.y + windowBox.height / 2,
+    { steps: 3 },
+  );
+  await page.mouse.up();
+  await expect
+    .poll(
+      async () =>
+        (await state(page)).spatial.layers.find(
+          (l: any) => l.signal_id === "@se",
+        ).levels[0],
+    )
+    .toBeLessThan(beforeLevels[0]);
+  const afterLevels = (await state(page)).spatial.layers.find(
+    (l: any) => l.signal_id === "@se",
+  ).levels;
+  expect(afterLevels[1] - afterLevels[0]).toBeCloseTo(
+    beforeLevels[1] - beforeLevels[0],
+    5,
+  );
+  const legend = page.locator(".vtk-volume-legend").filter({ hasText: "SE ·" });
+  const shownLower = (await state(page)).display.log
+    ? Math.log1p(afterLevels[0])
+    : afterLevels[0];
+  await expect(legend.locator(".vtk-volume-ticks span").last()).toHaveText(
+    String(Number(shownLower.toPrecision(3))),
+  );
+  expect(
+    (await volumeData(page)).layers.some((l: any) => l.signal_id === "@se"),
+  ).toBe(true);
+});
 test("3D signal table starts with the image signal and recovers a saved solo selection", async ({
   page,
 }) => {
@@ -145,6 +251,90 @@ test("3D view and preview switches change their settings", async ({ page }) => {
     .toBe("Detailed");
   await expect(view).toHaveAttribute("aria-checked", "true");
   await expect(quality).toHaveAttribute("aria-checked", "true");
+  const linked = page.getByLabel("Linked cameras", { exact: true });
+  const linkedBox = (await linked.boundingBox())!;
+  const layoutBox = (await view.boundingBox())!;
+  expect(Math.abs(linkedBox.x - layoutBox.x)).toBeLessThanOrEqual(2);
+});
+
+test("tile columns and rows control layout and pagination", async ({
+  page,
+}) => {
+  await open(page);
+  await setupLayers(page, 6);
+  await page.getByRole("switch", { name: "Tiles view" }).click();
+  const columns = page.getByLabel("Tiles per row");
+  const rows = page.getByLabel("Rows per page");
+  await expect(columns).toHaveValue("2");
+  await expect(rows).toHaveValue("2");
+  await expect(page.getByTestId("vtk-tile")).toHaveCount(4);
+  await columns.selectOption("3");
+  await expect(page.getByTestId("vtk-tile")).toHaveCount(6);
+  const positions = await page.getByTestId("vtk-tile").evaluateAll((tiles) =>
+    tiles.map((t) => ({
+      x: t.getBoundingClientRect().x,
+      y: t.getBoundingClientRect().y,
+    })),
+  );
+  expect(positions[0].y).toBe(positions[2].y);
+  expect(positions[3].y).toBeGreaterThan(positions[0].y);
+  await rows.selectOption("1");
+  await expect(page.getByTestId("vtk-tile")).toHaveCount(3);
+  await expect
+    .poll(async () => [
+      (await state(page)).spatial.tile_columns,
+      (await state(page)).spatial.tile_rows,
+    ])
+    .toEqual([3, 1]);
+});
+
+test("tile grid controls remain usable at narrow widths", async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 760 });
+  await open(page);
+  await setupLayers(page, 2);
+  await page.getByRole("switch", { name: "Tiles view" }).click();
+  await page.getByLabel("Tiles per row").selectOption("1");
+  const bounds = await page.getByTestId("vtk-tile").evaluateAll((tiles) =>
+    tiles.map((t) => ({
+      x: t.getBoundingClientRect().x,
+      y: t.getBoundingClientRect().y,
+    })),
+  );
+  expect(bounds[0].x).toBe(bounds[1].x);
+  expect(bounds[1].y).toBeGreaterThan(bounds[0].y);
+});
+
+test("up to sixteen layers can share a tile page", async ({ page }) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `volume-many-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: /Open TOFexplorer/ })
+    .first()
+    .click();
+  await page
+    .getByRole("button", { name: "◫ spatial-many.h5", exact: true })
+    .dblclick();
+  await expect(page.getByTestId("analysis")).toBeVisible();
+  for (let i = 0; i < 16; i++)
+    await command(page, { type: "add_stored_signal", index: i });
+  const a = await state(page);
+  await command(page, {
+    type: "set_spatial",
+    spatial: {
+      ...a.spatial,
+      screen: "volume",
+      mode: "tiles",
+      tile_columns: 4,
+      tile_rows: 4,
+      layers: a.signals.map((s: any) => ({ signal_id: s.id, percentile: 0 })),
+    },
+  });
+  await expect(page.getByTestId("vtk-tile")).toHaveCount(16);
+  await expect(page.getByTestId("volume-canvas").locator("canvas")).toHaveCount(
+    16,
+  );
 });
 
 test("3D preview keeps its size while a new preview loads", async ({
@@ -341,18 +531,17 @@ test("multi-signal overlay, tiles, styles and linked cameras", async ({
   const first = page.getByTestId("volume-layer").first(),
     name = await first.getByTestId("volume-signal-name").textContent();
   await first.getByRole("button", { name: `3D settings for ${name}` }).click();
-  await page
-    .getByLabel(`3D colormap for ${name}`, { exact: true })
-    .selectOption("Reds");
+  await chooseColormap(page, name!, "Reds");
   await page.getByLabel(`3D opacity for ${name}`).fill("0.4");
-  await page.getByLabel(`3D intensity threshold for ${name}`).fill("35");
+  await page.getByLabel("Lower level value").fill("1");
+  await page.getByLabel("Lower level value").press("Tab");
   await page.getByRole("button", { name: "Close 3D signal settings" }).click();
   await expect
     .poll(async () => {
       const a = await state(page);
-      return a.spatial.layers[0].percentile;
+      return a.spatial.layers[0].levels?.[0];
     })
-    .toBe(35);
+    .toBe(1);
   const before = (await state(page)).spatial.layers[0].signal_id;
   const second = page.getByTestId("volume-layer").nth(1).getByRole("checkbox");
   await second.uncheck();
@@ -566,7 +755,7 @@ test("removing a named layer and rendering partial coverage keeps 3D usable", as
   await command(page, { type: "remove_signal", signal_id: sid });
   await expect(page.getByTestId("volume-status")).toContainText("1 layers");
   await expect(page.getByTestId("volume-layer")).toHaveCount(
-    (await state(page)).signals.filter((s: any) => s.recipe).length,
+    (await state(page)).signals.filter((s: any) => s.recipe).length + 1,
   );
   await expect(
     page.getByTestId("volume-canvas").locator("canvas").first(),
@@ -590,6 +779,14 @@ test("analysis view tabs sit beside the file heading and support keyboard naviga
     .boundingBox())!;
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(signals.y);
   expect(bounds.x).toBeGreaterThan(heading.x + heading.width);
+  await page
+    .getByRole("heading", { name: "spatial.h5", exact: true })
+    .evaluate((element) => {
+      element.textContent =
+        "A very long acquisition filename that should not move the Explore and 3D volume tabs across the screen.h5";
+    });
+  const longHeadingTabs = (await tabs.boundingBox())!;
+  expect(Math.abs(longHeadingTabs.x - bounds.x)).toBeLessThan(2);
   await explore.focus();
   await explore.press("ArrowRight");
   await expect(volume).toHaveAttribute("aria-selected", "true");
@@ -601,11 +798,18 @@ test("analysis view tabs sit beside the file heading and support keyboard naviga
   });
   await page.setViewportSize({ width: 700, height: 900 });
   const narrow = (await tabs.boundingBox())!;
+  await page.getByRole("heading", { level: 1 }).evaluate((element) => {
+    element.textContent =
+      "A very long acquisition filename that should remain contained even in a narrow window.h5";
+  });
+  const narrowLong = (await tabs.boundingBox())!;
   const narrowSignals = (await page
     .getByRole("region", { name: "Signals", exact: true })
     .boundingBox())!;
   expect(narrow.y + narrow.height).toBeLessThanOrEqual(narrowSignals.y);
   expect(narrow.x + narrow.width).toBeLessThanOrEqual(700);
+  expect(Math.abs(narrowLong.x - narrow.x)).toBeLessThan(2);
+  expect(narrowLong.x + narrowLong.width).toBeLessThanOrEqual(700);
 });
 
 test("polling and camera persistence retain the existing volume geometry", async ({
@@ -1013,9 +1217,7 @@ test("vtk colormap changes update the volume and its legend", async ({
   );
   const reds = await canvas.screenshot();
   await page.getByRole("button", { name: `3D settings for ${name}` }).click();
-  await page
-    .getByLabel(`3D colormap for ${name}`, { exact: true })
-    .selectOption("Purples");
+  await chooseColormap(page, name, "Purples");
   await page.getByRole("button", { name: "Close 3D signal settings" }).click();
   await expect
     .poll(() => ramp.evaluate((e) => getComputedStyle(e).backgroundImage))
@@ -1028,9 +1230,7 @@ test("vtk colormap changes update the volume and its legend", async ({
   );
   const purples = await canvas.screenshot();
   await page.getByRole("button", { name: `3D settings for ${name}` }).click();
-  await page
-    .getByLabel(`3D colormap for ${name}`, { exact: true })
-    .selectOption("Plasma");
+  await chooseColormap(page, name, "Plasma");
   await page.getByRole("button", { name: "Close 3D signal settings" }).click();
   await expect
     .poll(() => ramp.evaluate((e) => getComputedStyle(e).backgroundImage))
@@ -1084,9 +1284,7 @@ test("vtk applies a colormap to the third overlay volume component", async ({
   const name = a.signals[2].name;
   const reds = await canvas.screenshot();
   await page.getByRole("button", { name: `3D settings for ${name}` }).click();
-  await page
-    .getByLabel(`3D colormap for ${name}`, { exact: true })
-    .selectOption("Plasma");
+  await chooseColormap(page, name, "Plasma");
   await page.getByRole("button", { name: "Close 3D signal settings" }).click();
   await expect
     .poll(async () => (await canvas.screenshot()).equals(reds))

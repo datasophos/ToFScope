@@ -1,5 +1,34 @@
 import { test, expect } from "@playwright/test";
 
+test("colormap picker previews gradients and supports keyboard selection", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `color-picker-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: /Open TOFexplorer/ })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+  await page.getByRole("button", { name: "Image display settings" }).click();
+  const picker = page.getByRole("combobox", { name: "SIMS colormap" });
+  await picker.click();
+  const list = page.getByRole("listbox", { name: "SIMS colormap options" });
+  await expect(list.getByRole("option")).toHaveCount(4);
+  await expect(
+    list.getByRole("option", { name: "Magma" }).locator(".colormap-swatch"),
+  ).toHaveCSS("background-image", /linear-gradient/);
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("panel-ion")).toHaveAttribute(
+    "data-palette",
+    "cividis",
+  );
+  await expect(picker).toBeFocused();
+});
+
 test("image panes keep full extents and colormap changes repaint pixels", async ({
   page,
 }) => {
@@ -32,7 +61,8 @@ test("image panes keep full extents and colormap changes repaint pixels", async 
     page.getByRole("dialog", { name: "Image display" }),
   ).toBeVisible();
   expect((await stage.boundingBox())!.height).toBe(initialSize!.height);
-  await page.getByLabel("SIMS colormap", { exact: true }).selectOption("magma");
+  await page.getByRole("combobox", { name: "SIMS colormap" }).click();
+  await page.getByRole("option", { name: "Magma" }).click();
   await expect(ion).toHaveAttribute("data-palette", "magma");
   await page
     .getByRole("button", { name: "Close Image display", exact: true })
