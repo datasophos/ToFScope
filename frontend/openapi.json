@@ -1406,7 +1406,7 @@
           },
           "valid_counts": {
             "items": {
-              "type": "integer"
+              "type": "number"
             },
             "title": "Valid Counts",
             "type": "array"
@@ -2660,7 +2660,8 @@
               "Reds",
               "Blues",
               "Greens",
-              "Purples"
+              "Purples",
+              "Gray"
             ],
             "title": "Colorscale",
             "type": "string"
@@ -2669,6 +2670,27 @@
             "default": false,
             "title": "Colorscale Reversed",
             "type": "boolean"
+          },
+          "levels": {
+            "anyOf": [
+              {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Levels"
           },
           "opacity": {
             "default": 0.12,

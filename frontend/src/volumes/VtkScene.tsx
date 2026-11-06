@@ -13,13 +13,14 @@ import vtkPiecewiseFunction from "@kitware/vtk.js/Common/DataModel/PiecewiseFunc
 import vtkPolyData from "@kitware/vtk.js/Common/DataModel/PolyData";
 import vtkMapper from "@kitware/vtk.js/Rendering/Core/Mapper";
 import vtkActor from "@kitware/vtk.js/Rendering/Core/Actor";
-import { buildVtkPoints } from "./vtkPoints";
+import { buildVtkPoints, pointColors } from "./vtkPoints";
 import { scaleLinear } from "d3-scale";
 import { vtkColorStops } from "./vtkColors";
 import type { VtkVolumeData } from "./vtkPreview";
 import {
   enabledLayers,
   volumeDisplayStats,
+  levelStats,
   type Camera,
   type SpatialView,
   type VolumeData,
@@ -93,7 +94,9 @@ function createScene(
     rw.resize();
     const renderer = rw.getRenderer();
     const shared = volumeDisplayStats(
-      source.layers.flatMap((l) => l.values),
+      source.layers
+        .filter((l) => l.signal_id !== "@se")
+        .flatMap((l) => l.values),
       0,
       log,
     ).upper;
@@ -163,20 +166,26 @@ function createScene(
         const original = source.layers.find(
           (l) => l.signal_id === layer.signal_id,
         )!;
-        const stats = volumeDisplayStats(
-          original.values,
-          style.percentile,
-          log,
+        const stats = levelStats(original.values, style, log);
+        const upper = Math.max(
+          stats.lower + 1e-6,
+          view.scale === "shared" && layer.signal_id !== "@se" && !style.levels
+            ? shared
+            : stats.upper,
         );
-        const upper = view.scale === "shared" ? shared : stats.upper;
         const color = vtkColorTransferFunction.newInstance();
         for (const [fraction, r, g, b] of vtkColorStops(
           style.colorscale,
           style.colorscale_reversed,
         ))
-          color.addRGBPoint(upper * fraction, r / 255, g / 255, b / 255);
+          color.addRGBPoint(
+            stats.lower + (upper - stats.lower) * fraction,
+            r / 255,
+            g / 255,
+            b / 255,
+          );
         const opacity = vtkPiecewiseFunction.newInstance();
-        opacity.addPoint(0, 0);
+        opacity.addPoint(stats.lower - Math.max(1, Math.abs(stats.lower)), 0);
         opacity.addPoint(stats.lower, 0);
         opacity.addPoint(Math.max(upper, stats.lower + 1e-6), style.opacity);
         volume.getProperty().setRGBTransferFunction(i, color);
@@ -208,28 +217,45 @@ function createScene(
           verts[i * 2 + 1] = i;
         });
         poly.getVerts().setData(verts);
+        const color = vtkColorTransferFunction.newInstance();
+        const stats = levelStats(original.values, style, log);
+        const upper = Math.max(
+          stats.lower + 1e-6,
+          view.scale === "shared" && layer.signal_id !== "@se" && !style.levels
+            ? shared
+            : stats.upper,
+        );
         poly.getPointData().setScalars(
           vtkDataArray.newInstance({
-            name: "intensity",
-            values: new Float32Array(geometry.intensities),
-            numberOfComponents: 1,
+            name: "rgba",
+            values: pointColors(
+              geometry.intensities,
+              !style.levels && style.percentile === 100
+                ? stats.lower - 1e-6
+                : stats.lower,
+              !style.levels && style.percentile === 100
+                ? stats.lower
+                : Math.max(upper, stats.lower + 1e-6),
+              style.colorscale,
+              style.colorscale_reversed,
+            ),
+            numberOfComponents: 4,
           }),
         );
-        const color = vtkColorTransferFunction.newInstance();
-        const stats = volumeDisplayStats(
-          original.values,
-          style.percentile,
-          log,
-        );
-        const upper = view.scale === "shared" ? shared : stats.upper;
         for (const [fraction, r, g, b] of vtkColorStops(
           style.colorscale,
           style.colorscale_reversed,
         ))
-          color.addRGBPoint(upper * fraction, r / 255, g / 255, b / 255);
+          color.addRGBPoint(
+            stats.lower + (upper - stats.lower) * fraction,
+            r / 255,
+            g / 255,
+            b / 255,
+          );
         funcs.push(color);
         const pointMapper = vtkMapper.newInstance();
         pointMapper.setInputData(poly);
+        pointMapper.setColorModeToDirectScalars();
         pointMapper.setLookupTable(color);
         pointMapper.setUseLookupTableScalarRange(true);
         const actor = vtkActor.newInstance();
@@ -408,6 +434,7 @@ export function VtkScene(props: Props) {
       l.colorscale_reversed,
       l.opacity,
       l.percentile,
+      l.levels,
     ]),
     props.view.scale,
     props.view.frame_stretch,
@@ -449,7 +476,9 @@ export function VtkScene(props: Props) {
     const shared =
       props.view.scale === "shared"
         ? volumeDisplayStats(
-            props.source.layers.flatMap((layer) => layer.values),
+            props.source.layers
+              .filter((layer) => layer.signal_id !== "@se")
+              .flatMap((layer) => layer.values),
             0,
             props.log,
           ).upper
@@ -459,11 +488,15 @@ export function VtkScene(props: Props) {
         original = props.source.layers.find(
           (l) => l.signal_id === layer.signal_id,
         )!;
-      const upper =
-        props.view.scale === "shared"
+      const stats = levelStats(original.values, style, props.log);
+      const upper = Math.max(
+        stats.lower + 1e-6,
+        props.view.scale === "shared" &&
+          layer.signal_id !== "@se" &&
+          !style.levels
           ? shared
-          : volumeDisplayStats(original.values, style.percentile, props.log)
-              .upper;
+          : stats.upper,
+      );
       const stops = vtkColorStops(
         style.colorscale,
         style.colorscale_reversed,
@@ -471,6 +504,7 @@ export function VtkScene(props: Props) {
       return {
         id: layer.signal_id,
         label: layer.label,
+        lower: stats.lower,
         upper,
         gradient: `linear-gradient(to top,${stops.join(",")})`,
         stops: vtkColorStops(style.colorscale, style.colorscale_reversed),
@@ -506,8 +540,10 @@ export function VtkScene(props: Props) {
               />
               <span className="vtk-volume-ticks">
                 <span>{Number(legend.upper.toPrecision(3))}</span>
-                <span>{Number((legend.upper / 2).toPrecision(3))}</span>
-                <span>0</span>
+                <span>
+                  {Number(((legend.upper + legend.lower) / 2).toPrecision(3))}
+                </span>
+                <span>{Number(legend.lower.toPrecision(3))}</span>
               </span>
             </div>
           </div>

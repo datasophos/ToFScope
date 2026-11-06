@@ -1,5 +1,21 @@
 import { it, expect } from "vitest";
-import { volumeDisplayStats } from "./spatialRenderer";
+import {
+  volumeDisplayStats,
+  levelStats,
+  defaultLayer,
+  histogram,
+} from "./spatialRenderer";
+
+it("maps persisted intensity levels into log display coordinates", () => {
+  const style = { ...defaultLayer("x"), levels: [1, 9] as [number, number] };
+  const result = levelStats([0, 1, 9], style, true);
+  expect(result.lower).toBeCloseTo(Math.log(2));
+  expect(result.upper).toBeCloseTo(Math.log(10));
+});
+
+it("histogram excludes missing values and places covered values in bins", () => {
+  expect(histogram([0, null, 1, 2], 0, 2, 2)).toEqual([1, 2]);
+});
 
 it("matches prototype nonzero percentile thresholds and robust display limits", () => {
   const values = [...Array(1000).fill(0), 1, 2, 3, 1000];

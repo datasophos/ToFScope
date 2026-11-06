@@ -2,15 +2,15 @@
 title: "3D visualization"
 ---
 
-The **3D volume** view displays existing named signals through the acquisition, either together as an overlay or separately in tiles. Use it to explore spatial and depth patterns; the displayed volume is a downsampled preview.
+The **3D volume** view displays existing named signals and, when available, secondary electron (SE) images through the acquisition, either together as an overlay or separately in tiles. Use it to explore spatial and depth patterns; the displayed volume is a downsampled preview.
 
 ## Choose signals and a layout
 
-The [**3D signals**](#volume-signals) list contains all the named signals in your data. The current image signal is initially
-shown. Select the signals to display, then open a signal's [settings](#volume-signal-settings) to adjust its
-[colormap](#volume-colormap), [opacity](#volume-opacity), and [intensity threshold](#volume-percentile).
-For example, a 70% threshold hides the weakest 70% of positive preview values, making stronger features easier to see while
-potentially hiding weaker intensities within the signal.
+The [**3D signals**](#volume-signals) list contains the named signals and an SE layer when available. The current image signal is initially shown. Select layers to display, then open a layer's [settings](#volume-signal-settings) to adjust its colormap, opacity, and levels. The settings overlay the viewer without resizing it.
+
+The levels histogram shows the distribution of available preview values. Drag either handle to adjust a bound, drag between them to move the whole window, or enter values directly. Values at or below the lower bound are transparent; color and opacity increase across the window and reach their maximum at the upper bound. Reset returns to the automatic levels. Levels affect display only and leave measured intensities unchanged.
+
+![SE layer settings with a histogram, draggable levels, colormap, and opacity.](../assets/tofscope-3d-signal-settings.png){width=300}
 
 By default, all signals are stacked on top of each other in the *Overlay* view. You can select [**Overlay** or **Tiles**](#volume-layout)
 under **View** to change this setting. Tiles will show up to four signals per page side by side for comparison. Transparent overlays are
@@ -35,26 +35,14 @@ You can choose [**Fast** or **Detailed**](#volume-quality) under **View** to con
 </figure>
 ```
 
-```{=html}
-<figure class="figure" style="display: block; max-width: 260px; margin: 1rem auto">
-  <div class="explore-overview">
-    <img src="../assets/tofscope-3d-signal-settings.png" alt="Settings for an aluminum signal, including colormap, opacity, and intensity threshold controls.">
-    <span id="volume-colormap" class="explore-highlight" style="left:7%;top:26%;width:86%;height:22%" aria-hidden="true"></span>
-    <span id="volume-opacity" class="explore-highlight" style="left:7%;top:51%;width:86%;height:14%" aria-hidden="true"></span>
-    <span id="volume-percentile" class="explore-highlight" style="left:7%;top:69%;width:86%;height:14%" aria-hidden="true"></span>
-  </div>
-  <figcaption class="figure-caption">Each signal has its own display settings.</figcaption>
-</figure>
-```
-
 ## Adjust the display
 
 Open [**Display settings**](#volume-display-settings) to choose the intensity scale, log colors, and depth exaggeration
 or frame stretch.
 
 - [**Independent** and **Shared**](#volume-intensity-scale) control the intensity scale. Independent scales are the default;
-  Shared uses one numerical range across visible signals, which can potentially cause strong signals to overwhelm weak ones.
-- The upper display limit uses the 99.7th percentile of positive preview intensities. [**Log colors**](#volume-log-colors)
+  Shared uses one numerical upper range across visible SIMS signals with automatic levels, which can cause strong signals to overwhelm weak ones. SE and manually adjusted levels retain their own range.
+- The automatic upper display limit uses the 99.7th percentile of positive preview intensities. [**Log colors**](#volume-log-colors)
   displays log(1 + intensity) to improve interpretability; depth profiles and exports retain their original numerical intensities.
 - **Frame stretch** changes the displayed depth scale linearly. When depth is shown in frames, you can adjust the ratio of depth to X/Y to approximate a known feature's proportions.
 
@@ -92,6 +80,8 @@ a three-dimensional pixel). These limitations are aimed at keeping the applicati
 The preview usually shows each signal as a continuous 3D volume. Some selections, such as a single thin layer or a
 signal with missing data, are shown as individual points instead. When the preview combines nearby measurements,
 it averages only the data that are available; missing data are not filled in.
+
+SE pixels are mapped onto the SIMS field of view assuming identical physical extents and orientation, even when their pixel dimensions differ. SE images are associated with SIMS frames by their stored order. This does not register or correct drift between images; missing SE frames remain missing in the preview.
 
 If measurements are unevenly spaced, ToFScope may estimate values between them to draw the 3D preview and will
 show a warning. Very wide, narrow, or deep views can also lose fine detail; a warning appears when detail may be missed.

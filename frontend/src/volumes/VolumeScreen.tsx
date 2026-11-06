@@ -133,13 +133,14 @@ export function VolumeScreen({
   const [localDraft, setDraft] = useState<SpatialView>(v);
   const draft = useMemo(() => {
     const ids = new Set(a.signals.filter((s) => s.recipe).map((s) => s.id));
+    if (a.has_se) ids.add("@se");
     return {
       ...localDraft,
       layers: localDraft.layers.filter((l) => ids.has(l.signal_id)),
       solo:
         localDraft.solo && ids.has(localDraft.solo) ? localDraft.solo : null,
     };
-  }, [localDraft, a.signals]);
+  }, [localDraft, a.signals, a.has_se]);
   const viewer = useRef<HTMLDivElement>(null);
   const current = useRef(v);
   current.current = draft;
@@ -261,7 +262,7 @@ export function VolumeScreen({
     [vtkSource, draft.mode],
   );
   const styleKey = JSON.stringify(
-    styles.map((style) => [style.signal_id, style.percentile]),
+    styles.map((style) => [style.signal_id, style.percentile, style.levels]),
   );
   const vtkStylesSupported = useMemo(
     () =>

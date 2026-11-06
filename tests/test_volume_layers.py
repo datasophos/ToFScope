@@ -7,6 +7,22 @@ from tofscope.science.volume_layers import VolumeLayer,build_layer_previews,clea
 
 
 class VolumeLayerTests(unittest.TestCase):
+    def test_se_pixel_area_alignment_with_non_divisible_dimensions(self):
+        from tofscope.science.volume_layers import reduce_se_frame
+
+        image = np.array([[0., 6., 12.], [0., 6., 12.]])
+        sums, weights = reduce_se_frame(image, np.array([0, 1, 2]), np.array([0, 1]), (1, 2))
+        np.testing.assert_allclose(sums / weights, [[2., 10.]])
+        np.testing.assert_allclose(weights, [[1., 1.]])
+
+    def test_se_missing_pixels_reduce_coverage_not_intensity(self):
+        from tofscope.science.volume_layers import reduce_se_frame
+
+        image = np.array([[2., np.nan], [2., 2.]])
+        sums, weights = reduce_se_frame(image, np.array([0, 1]), np.array([0, 1]), (1, 1))
+        np.testing.assert_allclose(sums / weights, [[2.]])
+        np.testing.assert_allclose(weights, [[.75]])
+
     def setUp(self):clear_preview_cache()
     def layer(self,frames,label='ion'):
         return VolumeLayer(label,SignalRecipe(intervals=((1,2),),frames=frames,label=label))

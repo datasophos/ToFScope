@@ -13,10 +13,11 @@ export const defaultCamera: Camera = {
 export const defaultLayer = (signal_id: string): SpatialLayer => ({
   signal_id,
   visible: true,
-  colorscale: "Viridis",
+  colorscale: signal_id === "@se" ? "Gray" : "Viridis",
   colorscale_reversed: false,
   opacity: 0.12,
   percentile: 70,
+  levels: null,
   camera: defaultCamera,
 });
 export const enabledLayers = (v: SpatialView) =>
@@ -65,4 +66,41 @@ export function layerRange(values: (number | null)[]) {
       max = Math.max(max, v);
     }
   return min === Infinity ? [0, 0] : [min, max];
+}
+
+export function levelStats(
+  values: (number | null)[],
+  style: SpatialLayer,
+  log = false,
+) {
+  const fallback = volumeDisplayStats(values, style.percentile, log);
+  if (!style.levels) return fallback;
+  const [lo, hi] = style.levels;
+  const lower = displayIntensity(lo, log),
+    upper = displayIntensity(hi, log);
+  return {
+    ...fallback,
+    lower,
+    upper: Math.max(upper, lower + 1e-6),
+    threshold: lo,
+  };
+}
+
+export function histogram(
+  values: (number | null)[],
+  min: number,
+  max: number,
+  bins = 64,
+) {
+  const counts = Array<number>(bins).fill(0);
+  if (!(max > min)) return counts;
+  for (const value of values) {
+    if (value === null || !Number.isFinite(value)) continue;
+    const i = Math.max(
+      0,
+      Math.min(bins - 1, Math.floor(((value - min) / (max - min)) * bins)),
+    );
+    counts[i]++;
+  }
+  return counts;
 }

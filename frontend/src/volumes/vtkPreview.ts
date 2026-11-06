@@ -1,6 +1,6 @@
 import {
   layerRange,
-  volumeDisplayStats,
+  levelStats,
   type VolumeData,
   type SpatialLayer,
 } from "./spatialRenderer";
@@ -189,9 +189,6 @@ export function canRenderVtkStyles(
     if (!rendered) return false;
     const max = layerRange(rendered.values)[1];
     const displayedMax = log ? Math.log1p(Math.max(max, 0)) : max;
-    return (
-      volumeDisplayStats(layer.values, style.percentile, log).lower <
-      displayedMax
-    );
+    return levelStats(layer.values, style, log).lower < displayedMax;
   });
 }

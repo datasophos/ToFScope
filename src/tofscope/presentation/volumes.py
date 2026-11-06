@@ -20,7 +20,7 @@ class LayerData:
     frames: tuple[int, int]
     values: list[float | None]
     coverage: list[float]
-    valid_counts: list[int]
+    valid_counts: list[float]
 
 
 @dataclass(frozen=True)
@@ -123,6 +123,10 @@ class VolumePresenter:
             if not styles or known is None:
                 return empty
             estimate = self.preparation_bytes(s, len(styles), known, s.spatial.quality)
+            if any(x.signal_id == '@se' for x in styles):
+                se_y, se_x = self.repository.se_shape(owner, s.dataset, *known)
+                # Decoded frame, validity mask, reduction scratch and overlap matrices.
+                estimate += se_y * se_x * 32 + (se_y + se_x) * 48 * 8
             with ExitStack() as local_preparation:
                 admission = (
                     preparation if preparation is not None else local_preparation
@@ -150,7 +154,7 @@ class VolumePresenter:
 
                 previews = []
                 layers = [
-                    VolumeLayer(x.signal_id, get_signal(s, x.signal_id).recipe)
+                    VolumeLayer(x.signal_id, None if x.signal_id == '@se' else get_signal(s, x.signal_id).recipe)
                     for x in styles
                 ]
                 # Builder releases each source lease after its reduction (also on error).
@@ -190,8 +194,8 @@ class VolumePresenter:
                     [
                         LayerData(
                             p.layer_id,
-                            get_signal(s, p.layer_id).name,
-                            p.recipe.frames,
+                            'SE' if p.recipe is None else get_signal(s, p.layer_id).name,
+                            frames if p.recipe is None else p.recipe.frames,
                             finite(p.values.ravel()),
                             p.coverage.ravel().tolist(),
                             p.valid_counts.ravel().tolist(),

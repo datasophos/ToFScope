@@ -3,6 +3,7 @@ from contextlib import nullcontext
 from collections import OrderedDict
 from dataclasses import dataclass,replace
 import math
+import h5py
 import numpy as np
 from tofscope.storage.explorer import inspect_file,file_key
 from tofscope.science.signals import SignalRecipe,read_signal
@@ -14,7 +15,7 @@ COLORSCALES=('Viridis','Magma','Plasma','Cividis','Reds','Blues','Greens','Purpl
 @dataclass
 class VolumeLayer:
     id: str
-    recipe: SignalRecipe
+    recipe: SignalRecipe | None
     visible: bool = True
     colorscale: str = 'Viridis'
     opacity: float = .12
@@ -40,7 +41,7 @@ class PreviewGrid:
 @dataclass(frozen=True)
 class VolumePreview:
     layer_id: str
-    recipe: SignalRecipe
+    recipe: SignalRecipe | None
     grid: PreviewGrid
     values: np.ndarray
     coverage: np.ndarray
@@ -49,6 +50,19 @@ class VolumePreview:
 
 _CACHE=OrderedDict()
 _CACHE_BYTES=0
+
+def reduce_se_frame(image, x_edges, y_edges, sims_shape):
+    """Area-weight native SE pixels into SIMS-coordinate preview bins."""
+    def overlaps(edges, native_size, sims_size):
+        pixels = np.arange(native_size, dtype=np.float64)
+        lo = edges[:-1, None] * native_size / sims_size
+        hi = edges[1:, None] * native_size / sims_size
+        return np.maximum(0., np.minimum(hi, pixels + 1) - np.maximum(lo, pixels)) * sims_size / native_size
+
+    y = overlaps(np.asarray(y_edges), image.shape[0], sims_shape[0])
+    x = overlaps(np.asarray(x_edges), image.shape[1], sims_shape[1])
+    valid = np.isfinite(image)
+    return y @ np.where(valid, image, 0.) @ x.T, y @ valid.astype(float) @ x.T
 
 def clear_preview_cache():
     global _CACHE_BYTES
@@ -84,6 +98,24 @@ def build_layer_previews(path,layers,roi,frames,*,quality,voxel_budget=500_000,r
     block_sizes=np.diff(edges[0])[:,None,None]*np.diff(edges[1])[None,:,None]*np.diff(edges[2])[None,None,:]
     for layer in enabled:
         r=layer.recipe
+        if r is None:
+            values=np.full(tuple(counts()),np.nan,dtype=np.float32)
+            valid_counts=np.zeros(values.shape,dtype=np.float32)
+            names=meta['image_names']
+            with h5py.File(path,'r') as f:
+                for i,(lo,hi) in enumerate(zip(edges[0],edges[0][1:])):
+                    sums=np.zeros(values.shape[1:],dtype=np.float64)
+                    weights=np.zeros_like(sums)
+                    for frame in range(int(lo),min(int(hi),len(names))):
+                        image=f[f'FIBImages/{names[frame]}/Data'][:]
+                        frame_sums,frame_weights=reduce_se_frame(image,edges[2],edges[1],shape[1:3])
+                        sums+=frame_sums;weights+=frame_weights
+                    np.divide(sums,weights,out=values[i],where=weights>0)
+                    valid_counts[i]=weights
+            coverage=np.clip(valid_counts/block_sizes,0.,1.).astype(np.float32)
+            coverage[np.isclose(coverage,1.,rtol=0.,atol=1e-6)]=1.
+            result.append(VolumePreview(layer.id,None,grid,values,coverage,valid_counts))
+            continue
         key=(identity,r.source,r.stored_index,r.saved_id,r.intervals,r.frames,tuple(roi),tuple(frames),tuple(steps))
         cached=_CACHE.get(key) if use_cache else None
         if cached is None:

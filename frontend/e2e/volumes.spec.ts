@@ -74,6 +74,83 @@ async function setupLayers(page: Page, count = 3) {
     page.getByTestId("volume-canvas").locator("canvas").first(),
   ).toBeVisible();
 }
+test("SE layer and levels window overlay the 3D preview", async ({ page }) => {
+  await open(page);
+  await setupLayers(page, 1);
+  const canvas = page.getByTestId("volume-canvas");
+  const before = await canvas.boundingBox();
+  await page.getByRole("checkbox", { name: "Show SE in 3D" }).check();
+  await expect(page.getByTestId("volume-status")).toContainText("2 layers");
+  await page.getByRole("button", { name: "3D settings for SE" }).click();
+  await expect(page.getByLabel("Preview intensity histogram")).toBeVisible();
+  const dialog = page.getByRole("dialog", { name: "3D settings for SE" });
+  const dialogBox = (await dialog.boundingBox())!;
+  const sidebarBox = (await page
+    .getByRole("complementary", { name: "3D controls" })
+    .boundingBox())!;
+  expect(dialogBox.x).toBeGreaterThanOrEqual(sidebarBox.x + sidebarBox.width);
+  expect(
+    await page.evaluate(
+      ({ x, y }) =>
+        document.elementFromPoint(x, y)?.closest('[role="dialog"]') !== null,
+      { x: dialogBox.x + dialogBox.width / 2, y: dialogBox.y + 20 },
+    ),
+  ).toBe(true);
+  const after = await canvas.boundingBox();
+  expect(after!.width).toBeCloseTo(before!.width, 0);
+  const lower = page.getByRole("slider", { name: "Lower level" });
+  await lower.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect
+    .poll(
+      async () =>
+        (await state(page)).spatial.layers.find(
+          (l: any) => l.signal_id === "@se",
+        )?.levels,
+    )
+    .not.toBeNull();
+  const beforeLevels = (await state(page)).spatial.layers.find(
+    (l: any) => l.signal_id === "@se",
+  ).levels;
+  const window = page.locator(".levels-window");
+  const windowBox = (await window.boundingBox())!;
+  await page.mouse.move(
+    windowBox.x + windowBox.width / 2,
+    windowBox.y + windowBox.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    windowBox.x + windowBox.width / 2 - 10,
+    windowBox.y + windowBox.height / 2,
+    { steps: 3 },
+  );
+  await page.mouse.up();
+  await expect
+    .poll(
+      async () =>
+        (await state(page)).spatial.layers.find(
+          (l: any) => l.signal_id === "@se",
+        ).levels[0],
+    )
+    .toBeLessThan(beforeLevels[0]);
+  const afterLevels = (await state(page)).spatial.layers.find(
+    (l: any) => l.signal_id === "@se",
+  ).levels;
+  expect(afterLevels[1] - afterLevels[0]).toBeCloseTo(
+    beforeLevels[1] - beforeLevels[0],
+    5,
+  );
+  const legend = page.locator(".vtk-volume-legend").filter({ hasText: "SE ·" });
+  const shownLower = (await state(page)).display.log
+    ? Math.log1p(afterLevels[0])
+    : afterLevels[0];
+  await expect(legend.locator(".vtk-volume-ticks span").last()).toHaveText(
+    String(Number(shownLower.toPrecision(3))),
+  );
+  expect(
+    (await volumeData(page)).layers.some((l: any) => l.signal_id === "@se"),
+  ).toBe(true);
+});
 test("3D signal table starts with the image signal and recovers a saved solo selection", async ({
   page,
 }) => {
@@ -345,14 +422,15 @@ test("multi-signal overlay, tiles, styles and linked cameras", async ({
     .getByLabel(`3D colormap for ${name}`, { exact: true })
     .selectOption("Reds");
   await page.getByLabel(`3D opacity for ${name}`).fill("0.4");
-  await page.getByLabel(`3D intensity threshold for ${name}`).fill("35");
+  await page.getByLabel("Lower level value").fill("1");
+  await page.getByLabel("Lower level value").press("Tab");
   await page.getByRole("button", { name: "Close 3D signal settings" }).click();
   await expect
     .poll(async () => {
       const a = await state(page);
-      return a.spatial.layers[0].percentile;
+      return a.spatial.layers[0].levels?.[0];
     })
-    .toBe(35);
+    .toBe(1);
   const before = (await state(page)).spatial.layers[0].signal_id;
   const second = page.getByTestId("volume-layer").nth(1).getByRole("checkbox");
   await second.uncheck();
@@ -566,7 +644,7 @@ test("removing a named layer and rendering partial coverage keeps 3D usable", as
   await command(page, { type: "remove_signal", signal_id: sid });
   await expect(page.getByTestId("volume-status")).toContainText("1 layers");
   await expect(page.getByTestId("volume-layer")).toHaveCount(
-    (await state(page)).signals.filter((s: any) => s.recipe).length,
+    (await state(page)).signals.filter((s: any) => s.recipe).length + 1,
   );
   await expect(
     page.getByTestId("volume-canvas").locator("canvas").first(),

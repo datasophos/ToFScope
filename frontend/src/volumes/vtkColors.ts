@@ -8,6 +8,10 @@ const reds: ColorStop[] = [
   [1, 178, 10, 28],
 ];
 const named: Record<string, ColorStop[]> = {
+  Gray: [
+    [0, 0, 0, 0],
+    [1, 255, 255, 255],
+  ],
   Reds: reds,
   Plasma: [
     [0, 13, 8, 135],

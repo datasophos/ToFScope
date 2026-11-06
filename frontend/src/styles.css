@@ -2268,6 +2268,20 @@ small {
 .volume-workspace.controls-hidden .volume-sidebar { display: none; }
 .volume-sidebar .volume-layers { box-shadow: none; border-radius: 0; }
 .volume-sidebar .volume-signal-popover { left: 8px; right: 8px; width: auto; top: 12px; }
+.volume-sidebar .volume-signal-popover { left: calc(100% + 8px); right: auto; width: 300px; top: 12px; }
+.levels-heading { display:flex; justify-content:space-between; align-items:center; margin:14px 0 6px; }
+.levels-heading button { padding:2px 5px; font-size:12px; }
+.levels-histogram { height:96px; position:relative; background:#f3f7f8; border:1px solid #cadbe1; touch-action:none; }
+.levels-histogram svg { width:100%; height:100%; fill:#9bb1bb; display:block; }
+.levels-window { position:absolute; inset-block:0; background:#27999a24; border-inline:2px solid #138185; cursor:grab; touch-action:none; }
+.levels-handle { position:absolute; bottom:-9px; transform:translateX(-50%); width:20px; height:20px; padding:0; border:0; background:transparent; cursor:ew-resize; touch-action:none; z-index:1; }
+.levels-handle::before { content:""; display:block; margin:auto; border-left:7px solid transparent; border-right:7px solid transparent; border-bottom:11px solid #138185; width:0; }
+.levels-gradient { height:10px; background:linear-gradient(to right,#152532,white); margin-bottom:12px; }
+.levels-values { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.volume-signal-popover .levels-values label { display:block; margin:0; font-size:11px; color:#6a8190; }
+.levels-values input { display:block; width:100%; min-width:0; margin-top:3px; }
+.levels-control small { margin-top:7px; font-size:11px; }
+@media (max-width:850px) { .volume-sidebar .volume-signal-popover { left:auto; right:8px; width:min(300px, calc(100% - 16px)); top:44px; } }
 .volume-sidebar-section { border-top: 1px solid #e4edf1; padding: 10px 12px; }
 .volume-sidebar-section summary { cursor: pointer; font-weight: 600; color: #294757; }
 .volume-sidebar-section[open] summary { margin-bottom: 10px; }

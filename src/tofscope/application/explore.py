@@ -112,7 +112,7 @@ class ExploreService:
                     patch['signals'] = tuple(updated if r.id == signal.id else r for r in s.signals)
             elif kind == 'set_spatial':
                 from tofscope.application.spatial import validate_spatial
-                patch['spatial'] = validate_spatial(c.spatial, s.signals)
+                patch['spatial'] = validate_spatial(c.spatial, s.signals, s.has_se)
             elif kind == 'set_roi':
                 x0, x1, y0, y1 = c.roi
                 if not 0 <= x0 <= x1 < s.shape[2] or not 0 <= y0 <= y1 < s.shape[1]:

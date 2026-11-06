@@ -1510,12 +1510,15 @@ export interface components {
         | "Reds"
         | "Blues"
         | "Greens"
-        | "Purples";
+        | "Purples"
+        | "Gray";
       /**
        * Colorscale Reversed
        * @default false
        */
       colorscale_reversed: boolean;
+      /** Levels */
+      levels?: [number, number] | null;
       /**
        * Opacity
        * @default 0.12
