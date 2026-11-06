@@ -4,15 +4,29 @@ import json
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from io import BytesIO
+from io import BytesIO, RawIOBase
 from itertools import pairwise
 from threading import BoundedSemaphore
+from zipfile import BadZipFile
 
 import h5py
 import numpy as np
 
 # Avoid multiplying subprocess counts when several analyses request SE at once.
 _PARALLEL_SLOT = BoundedSemaphore(1)
+
+
+class _PipeWriter(RawIOBase):
+    """Hide unreliable pipe offsets so zipfile tracks bytes written itself."""
+
+    def __init__(self, stream):
+        self.stream = stream
+
+    def write(self, data):
+        return self.stream.write(data)
+
+    def flush(self):
+        self.stream.flush()
 
 
 def reduce_se_frame(image, x_edges, y_edges, sims_shape):
@@ -110,7 +124,7 @@ def prepare_se_preview(path, names, edges, sims_shape, *, workers=1):
         try:
             with ThreadPoolExecutor(max_workers=count) as executor:
                 chunks = list(executor.map(_subprocess, requests))
-        except (OSError, subprocess.SubprocessError):
+        except (OSError, subprocess.SubprocessError, BadZipFile):
             return _serial(path, names, (z_edges, y_edges, x_edges), sims_shape)
         return tuple(
             np.concatenate([part[i] for part in chunks], axis=0) for i in (0, 1)
@@ -144,7 +158,7 @@ def prepare_se_mean(path, names, first, last, *, workers=1):
             try:
                 with ThreadPoolExecutor(max_workers=count) as executor:
                     chunks = list(executor.map(_subprocess, requests))
-            except (OSError, subprocess.SubprocessError):
+            except (OSError, subprocess.SubprocessError, BadZipFile):
                 chunks = [_mean_totals(path, names, first, stop - 1)]
             shape = tuple(max(part[0].shape[i] for part in chunks) for i in (0, 1))
             total = np.zeros(shape, dtype=np.float64)
@@ -170,7 +184,7 @@ def _main():
         values, counts = _serial(
             request["path"], request["names"], request["edges"], request["sims_shape"]
         )
-    np.savez(sys.stdout.buffer, values=values, counts=counts)
+    np.savez(_PipeWriter(sys.stdout.buffer), values=values, counts=counts)
 
 
 if __name__ == "__main__":

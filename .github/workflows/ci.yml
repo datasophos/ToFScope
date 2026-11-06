@@ -24,6 +24,8 @@ jobs:
       - run: uv run python -m unittest discover -s tests -p test_bounded_events.py -v
       - run: uv run python -m unittest discover -s tests -p test_dataset_writeback.py -v
       - run: uv run python -m unittest discover -s tests -p test_raw_preparation.py -v
+      - run: uv run python -m unittest discover -s tests -p test_data.py -v
+      - run: uv run python -m unittest discover -s tests -p test_volume_layers.py -v
       - run: uv build --wheel
       - name: Install built wheel as a tool
         run: |

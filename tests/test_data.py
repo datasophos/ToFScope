@@ -3,6 +3,7 @@ import unittest
 import tempfile
 from unittest.mock import patch
 from pathlib import Path
+from zipfile import BadZipFile
 import h5py
 import numpy as np
 
@@ -22,11 +23,16 @@ class IntegrationTests(unittest.TestCase):
                     image[0, 0] = np.nan if i < 5 else i
                     f.create_dataset(f'FIBImages/{name}/Data', data=image)
             serial, serial_count = prepare_se_mean(path, names, 1, 12, workers=1)
-            parallel, parallel_count = prepare_se_mean(path, names, 1, 12, workers=4)
+            with patch('tofscope.science.se_preview._mean_totals', side_effect=AssertionError('unexpected serial fallback')):
+                parallel, parallel_count = prepare_se_mean(path, names, 1, 12, workers=4)
             self.assertEqual((serial_count, parallel_count), (8, 8))
             np.testing.assert_allclose(parallel, serial, equal_nan=True)
             np.testing.assert_allclose(parallel, [[6.5, 4.5, 4.5], [4.5, 4.5, 4.5], [5., 5., 14 / 3]])
             with patch('tofscope.science.se_preview._subprocess', side_effect=OSError('worker unavailable')):
+                fallback, count = prepare_se_mean(path, names, 1, 12, workers=4)
+            self.assertEqual(count, 8)
+            np.testing.assert_allclose(fallback, serial, equal_nan=True)
+            with patch('tofscope.science.se_preview._subprocess', side_effect=BadZipFile('corrupt worker output')):
                 fallback, count = prepare_se_mean(path, names, 1, 12, workers=4)
             self.assertEqual(count, 8)
             np.testing.assert_allclose(fallback, serial, equal_nan=True)
