@@ -351,15 +351,6 @@ export function App() {
         </div>
       ))}
       <footer className="app-credit">
-        {version && (
-          <a
-            href={`https://github.com/datasophos/ToFScope/releases/tag/v${encodeURIComponent(version)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            ToFScope {version}
-          </a>
-        )}
         <a
           className="datasophos-credit"
           href="https://datasophos.co"
@@ -389,6 +380,15 @@ export function App() {
         >
           Report an issue
         </a>
+        {version && (
+          <a
+            href={`https://github.com/datasophos/ToFScope/releases/tag/v${encodeURIComponent(version)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            ToFScope {version}
+          </a>
+        )}
       </footer>
       {confirming && pendingAction && (
         <UnsavedChanges
