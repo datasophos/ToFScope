@@ -514,11 +514,22 @@ test("one or two 3D tiles use the full available height", async ({ page }) => {
   for (const tile of await container.locator(".vtk-tile").all())
     expect((await tile.boundingBox())!.height).toBeGreaterThan(height * 0.9);
   await page.getByTestId("volume-layer").nth(1).getByRole("checkbox").uncheck();
-  await expect(page.getByTestId("vtk-tile")).toHaveCount(1);
-  const tile = (await container.locator(".vtk-tile").boundingBox())!;
-  const bounds = (await container.boundingBox())!;
-  expect(tile.height).toBeGreaterThan(bounds.height * 0.9);
-  expect(tile.width).toBeGreaterThan(bounds.width * 0.9);
+  await expect
+    .poll(async () =>
+      container.evaluate((element) => {
+        const tiles = element.querySelectorAll<HTMLElement>(".vtk-tile");
+        if (tiles.length !== 1) return false;
+        const tile = tiles[0].getBoundingClientRect();
+        const bounds = element.getBoundingClientRect();
+        return (
+          bounds.height > 0 &&
+          bounds.width > 0 &&
+          tile.height > bounds.height * 0.9 &&
+          tile.width > bounds.width * 0.9
+        );
+      }),
+    )
+    .toBe(true);
 });
 
 test("multi-signal overlay, tiles, styles and linked cameras", async ({
