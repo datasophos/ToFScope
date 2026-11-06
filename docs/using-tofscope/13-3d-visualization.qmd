@@ -8,12 +8,12 @@ The **3D volume** view displays existing named signals and, when available, seco
 
 The [**3D signals**](#volume-signals) list contains the named signals and an SE layer when available. The current image signal is initially shown. Select layers to display, then open a layer's [settings](#volume-signal-settings) to adjust its colormap, opacity, and levels. The settings overlay the viewer without resizing it.
 
-The levels histogram shows the distribution of available preview values. Drag either handle to adjust a bound, drag between them to move the whole window, or enter values directly. Values at or below the lower bound are transparent; color and opacity increase across the window and reach their maximum at the upper bound. Reset returns to the automatic levels. Levels affect display only and leave measured intensities unchanged.
+The levels histogram shows the distribution of available preview values. Drag either handle to adjust a bound, drag between them to move the whole window, or enter values directly. Values at or below the lower bound are transparent; color and opacity increase across the window and reach their maximum at the upper bound. Reset returns to the automatic levels. Levels affect display only and leave measured intensities unchanged. The colormap menu previews each color ramp; reversing the colormap also reverses its previews.
 
 ![SE layer settings with a histogram, draggable levels, colormap, and opacity.](../assets/tofscope-3d-signal-settings.png){width=300}
 
 By default, all signals are stacked on top of each other in the *Overlay* view. You can select [**Overlay** or **Tiles**](#volume-layout)
-under **View** to change this setting. Tiles will show up to four signals per page side by side for comparison. Transparent overlays are
+under **View** to change this setting. In Tiles mode, choose **Tiles per row** and **Rows per page** to show between one and sixteen layers per page; use the page controls when more layers are visible. **Linked cameras** keeps tile views synchronized. Transparent overlays are
 qualitative and can hide one signal behind another; inspect a single signal or use tiles to investigate occlusion.
 
 You can choose [**Fast** or **Detailed**](#volume-quality) under **View** to control the level of detail in the 3D view.

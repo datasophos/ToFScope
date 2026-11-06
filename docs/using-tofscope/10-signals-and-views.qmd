@@ -97,6 +97,7 @@ dragging directly on the ion map image. Setting an ROI will change the integrate
 depth profiles to only include ions from that region. The [**Display…**](#image-display) button allows you to customize display
 settings, such as linear/log color scales, the colormap to use for SIMS data, and the choice to display SIMS ion counts or the
 FIB-SE image. When the SE image is displayed, draw or resize the ROI there just as on the ion map; Shift-drag moves the selection.
+The colormap menu shows a preview of each color ramp.
 The conversion assumes the SE and SIMS images cover the same physical extent with the same orientation and origin. This alignment
 is not verified, so check it before using the selected region for quantitative interpretation. The Display menu also offers SE
 brightness and contrast controls and a reset button; these adjust the image appearance without changing the underlying data.

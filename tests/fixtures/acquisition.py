@@ -24,16 +24,16 @@ def make_acquisition(path):
         f.create_dataset("FIBImages/Image0001/Data",data=[[6.,8.]])
 
 
-def make_spatial_acquisition(path):
+def make_spatial_acquisition(path, count=6):
     """Small registered six-signal fixture with nonuniform physical-depth anchors."""
     make_acquisition(path)
     with h5py.File(path,'r+') as f:
         del f['PeakData/PeakData']
         values=np.arange(7*4*4,dtype=np.float32).reshape(7,4,4)
-        channels=np.stack([values*(i+1) for i in range(6)],axis=-1)
+        channels=np.stack([values*(i+1) for i in range(count)],axis=-1)
         channels[0,0,0,0]=np.nan  # A genuine missing sample, never a zero.
         f.create_dataset('PeakData/PeakData',data=channels)
         dtype=f['PeakData/PeakTable'].dtype
         del f['PeakData/PeakTable']
-        f.create_dataset('PeakData/PeakTable',data=np.array([(f'Ion {i}'.encode(),float(i+1),float(i),float(i+1)) for i in range(6)],dtype=dtype))
+        f.create_dataset('PeakData/PeakTable',data=np.array([(f'Ion {i}'.encode(),float(i+1),float(i),float(i+1)) for i in range(count)],dtype=dtype))
         f.attrs['NbrWrites']=8

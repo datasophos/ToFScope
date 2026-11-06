@@ -611,7 +611,9 @@ export interface components {
        *       "page": 0,
        *       "quality": "Fast",
        *       "scale": "independent",
-       *       "screen": "explore"
+       *       "screen": "explore",
+       *       "tile_columns": 2,
+       *       "tile_rows": 2
        *     }
        */
       spatial: components["schemas"]["SpatialView"];
@@ -1611,6 +1613,16 @@ export interface components {
       screen: "explore" | "volume";
       /** Solo */
       solo?: string | null;
+      /**
+       * Tile Columns
+       * @default 2
+       */
+      tile_columns: number;
+      /**
+       * Tile Rows
+       * @default 2
+       */
+      tile_rows: number;
     };
     /** SubmitJob */
     SubmitJob: {

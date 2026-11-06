@@ -10,6 +10,7 @@ import {
 } from "./spatialRenderer";
 import { formatNumber } from "../shared/numbers";
 import { LevelsControl } from "./LevelsControl";
+import { ColormapPicker } from "../shared/ColormapPicker";
 
 export function LayerEditor({
   analysis: a,
@@ -203,18 +204,12 @@ export function LayerEditor({
             ) : (
               <small>Show this layer to adjust its levels.</small>
             )}
-            <label>
-              Colormap
-              <select
-                aria-label={`3D colormap for ${signal.name}`}
+            <div className="volume-colormap-control">
+              <span>Colormap</span>
+              <ColormapPicker
+                label={`3D colormap for ${signal.name}`}
                 value={style.colorscale}
-                onChange={(e) =>
-                  update(signal.id, {
-                    colorscale: e.target.value as SpatialLayer["colorscale"],
-                  })
-                }
-              >
-                {[
+                options={[
                   "Viridis",
                   "Magma",
                   "Plasma",
@@ -224,11 +219,19 @@ export function LayerEditor({
                   "Greens",
                   "Purples",
                   "Gray",
-                ].map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-            </label>
+                ].map((c) => ({
+                  value: c,
+                  label: c === "Gray" ? "Grayscale" : c,
+                  palette: c,
+                }))}
+                reversed={style.colorscale_reversed}
+                onChange={(value) =>
+                  update(signal.id, {
+                    colorscale: value as SpatialLayer["colorscale"],
+                  })
+                }
+              />
+            </div>
             <label className="volume-reverse-colormap">
               <input
                 type="checkbox"

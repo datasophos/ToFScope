@@ -61,6 +61,8 @@ class SpatialView(SpatialModel):
     screen: Literal["explore", "volume"] = "explore"
     layers: tuple[SpatialLayer, ...] = Field(default=(), max_length=129)
     mode: Literal["overlay", "tiles"] = "overlay"
+    tile_columns: StrictInt = Field(default=2, ge=1, le=4)
+    tile_rows: StrictInt = Field(default=2, ge=1, le=4)
     quality: Literal["Fast", "Detailed"] = "Fast"
     scale: Literal["independent", "shared"] = "independent"
     linked: StrictBool = True

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Analysis } from "../api/client";
 import { ToolPopover } from "./ToolPopover";
+import { ColormapPicker } from "../shared/ColormapPicker";
 
 export function ImageDisplayControls({
   analysis: a,
@@ -45,27 +46,26 @@ export function ImageDisplayControls({
             />
             Log colors
           </label>
-          <label>
-            SIMS colormap{" "}
-            <select
-              aria-label="SIMS colormap"
+          <div className="image-display-colormap">
+            <span>SIMS colormap</span>
+            <ColormapPicker
+              label="SIMS colormap"
               value={
                 a.display.colormap === "ion"
                   ? "viridis"
                   : (a.display.colormap ?? "viridis")
               }
-              onChange={(e) =>
-                display({
-                  colormap: e.target.value as Analysis["display"]["colormap"],
-                })
+              options={[
+                { value: "viridis", label: "Viridis", palette: "Viridis" },
+                { value: "cividis", label: "Cividis", palette: "Cividis" },
+                { value: "magma", label: "Magma", palette: "Magma" },
+                { value: "gray", label: "Grayscale", palette: "Gray" },
+              ]}
+              onChange={(value) =>
+                display({ colormap: value as Analysis["display"]["colormap"] })
               }
-            >
-              <option value="viridis">Viridis</option>
-              <option value="cividis">Cividis</option>
-              <option value="magma">Magma</option>
-              <option value="gray">Grayscale</option>
-            </select>
-          </label>
+            />
+          </div>
           <label>
             Image{" "}
             <select

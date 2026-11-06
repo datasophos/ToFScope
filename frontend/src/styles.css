@@ -1519,6 +1519,17 @@ small {
 .image-display-settings > label:has(input[type="checkbox"]) {
   justify-content: flex-start;
 }
+.image-display-colormap { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.image-display-colormap > span { white-space: nowrap; }
+.image-display-colormap .colormap-trigger { width: 150px; }
+.volume-colormap-control { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.colormap-trigger { display: inline-flex; align-items: center; gap: 8px; min-width: 0; text-align: left; }
+.colormap-trigger > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.colormap-chevron, .colormap-check { margin-left: auto; }
+.colormap-swatch { display: inline-block; width: 54px; height: 12px; flex: 0 0 54px; border: 1px solid #97aab4; border-radius: 3px; }
+.colormap-menu { padding: 4px; border: 1px solid #c6d5dc; border-radius: 8px; background: white; box-shadow: 0 8px 24px #16374844; }
+.colormap-menu button { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; text-align: left; padding: 7px; }
+.colormap-menu button.active { background: #e8f1f3; }
 .image-display-settings .se-display-reset {
   margin-top: 16px;
 }
@@ -2211,8 +2222,6 @@ small {
 
 .vtk-volume-view { display: flex; }
 .vtk-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 4px; }
-.vtk-tiles[data-tile-count="1"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
-.vtk-tiles[data-tile-count="2"] { grid-template-rows: minmax(0, 1fr); }
 .vtk-tile { min-width: 0; min-height: 0; display: flex; flex-direction: column; color: #c2d1dc; }
 .vtk-tile-title { padding: 8px 12px 0; }
 .vtk-tile > .vtk-volume-view { flex: 1; min-height: 0; height: auto; }
@@ -2287,6 +2296,9 @@ small {
 .volume-sidebar-section[open] summary { margin-bottom: 10px; }
 .volume-sidebar .volume-toolbar, .volume-sidebar .volume-camera-toolbar, .volume-sidebar-fields { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
 .volume-sidebar .volume-toolbar label:has(input[type=checkbox]), .volume-sidebar-fields .volume-log-control { display: flex; flex-direction: row; align-items: center; align-self: start; gap: 6px; }
+.volume-sidebar .volume-linked-control input { margin: 0; }
+.volume-tile-grid-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.volume-tile-grid-settings select { width: 100%; }
 .volume-sidebar-fields label { display: flex; flex-direction: column; gap: 4px; }
 .volume-sidebar-fields input[type=number] { width: 85px; }
 .volume-sidebar .volume-camera-toolbar small { color: #688295; }

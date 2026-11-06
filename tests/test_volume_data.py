@@ -16,6 +16,16 @@ from tofscope.storage.analysis_document import (
 
 
 class VolumeDataTests(unittest.TestCase):
+    def test_tile_grid_settings_are_validated_and_persisted(self):
+        a = self.configure(tile_columns=3, tile_rows=4)
+        doc = encode_document(a)
+        fresh = self.s.analyses.create_analysis('a', a.dataset)
+        restored = restore_snapshot(SavedAnalysisDocument.model_validate_json(doc.model_dump_json()), fresh)
+        self.assertEqual((restored.spatial.tile_columns, restored.spatial.tile_rows), (3, 4))
+        for field, value in [('tile_columns', 0), ('tile_columns', 5), ('tile_rows', 0), ('tile_rows', 5)]:
+            with self.assertRaises(ValueError):
+                self.configure(**{field: value})
+
     def test_se_levels_are_validated_and_restored(self):
         a = self.configure(layers=[{'signal_id': '@se', 'levels': (3., 9.), 'colorscale': 'Gray'}], solo='@se')
         doc = encode_document(a)

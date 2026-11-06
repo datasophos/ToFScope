@@ -299,7 +299,9 @@
               "page": 0,
               "quality": "Fast",
               "scale": "independent",
-              "screen": "explore"
+              "screen": "explore",
+              "tile_columns": 2,
+              "tile_rows": 2
             }
           },
           "stale": {
@@ -2830,6 +2832,20 @@
               }
             ],
             "title": "Solo"
+          },
+          "tile_columns": {
+            "default": 2,
+            "maximum": 4.0,
+            "minimum": 1.0,
+            "title": "Tile Columns",
+            "type": "integer"
+          },
+          "tile_rows": {
+            "default": 2,
+            "maximum": 4.0,
+            "minimum": 1.0,
+            "title": "Tile Rows",
+            "type": "integer"
           }
         },
         "title": "SpatialView",
