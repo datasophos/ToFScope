@@ -7,6 +7,7 @@ import json
 import numpy as np
 from tofscope.presentation.data import Axis, Curve, Panel, ExploreData
 from tofscope.application.analyses import CapacityError
+from tofscope.application.resources import reserve_se_preparation
 from tofscope.application.signals import image_signal, visible_signals, image_frames, signal_label
 from tofscope.storage.explorer import _se_mean, file_key
 
@@ -105,10 +106,12 @@ class ExplorePresenter:
             estimate = int(count * 128 + geometry_bytes + 4096)
             if estimate > self.settings.response_bytes * 4:
                 raise CapacityError("Display exceeds configured capacity.")
-            with (
-                self.cache.budget.reserve(owner, analysis_id, estimate),
-                ExitStack() as stack,
-            ):
+            se_frames = selected_frames(s)
+            available_se = max(0, min(se_frames[1] + 1, len(meta.image_names)) - max(0, se_frames[0])) if "ion" in panels and s.display.image == "se" else 0
+            se_workers = 4 if available_se >= 64 else 1
+            se_scratch = se_shape[0] * se_shape[1] * 32 if available_se else 0
+            with ExitStack() as stack:
+                se_workers = reserve_se_preparation(stack, self.cache.budget, owner, analysis_id, estimate, se_scratch, se_workers)
                 result = {}
                 if panels & {"front", "profile"}:
                     original_frames, coordinates, depth_unit, omitted = depth_samples(s)
@@ -131,9 +134,10 @@ class ExplorePresenter:
                     else np.arange(ny),
                 )
                 if panels & {"ion", "front"}:
-                    a = stack.enter_context(
-                        self.cache.load(owner, s.id, s.dataset, image_signal(s).recipe, materialization_id=image_signal(s).materialization_id)
-                    ).array
+                    if "front" in panels or s.display.image != "se":
+                        a = stack.enter_context(
+                            self.cache.load(owner, s.id, s.dataset, image_signal(s).recipe, materialization_id=image_signal(s).materialization_id)
+                        ).array
                     r = image_signal(s).recipe
                     lo, hi = selected_frames(s)
                     low = max(lo, r.frames[0])
@@ -143,7 +147,7 @@ class ExplorePresenter:
                         if s.display.image == "se":
                             with self.repository.access(owner, s.dataset) as path:
                                 image, _ = _se_mean.__wrapped__(
-                                    file_key(path), meta.image_names, lo, hi
+                                    file_key(path), meta.image_names, lo, hi, se_workers
                                 )
                             if image is None:
                                 image = np.full((ny, nx), np.nan)

@@ -55,6 +55,26 @@ def _serial(path, names, edges, sims_shape):
     return values, counts
 
 
+def _mean_totals(path, names, first, last):
+    """Sum native pixels and counts without registering differing frame sizes."""
+    total = np.zeros((0, 0), dtype=np.float64)
+    counts = np.zeros((0, 0), dtype=np.uint32)
+    with h5py.File(path, "r") as f:
+        for frame in range(max(0, first), min(last + 1, len(names))):
+            image = f[f"FIBImages/{names[frame]}/Data"][:]
+            ny, nx = image.shape
+            if ny > total.shape[0] or nx > total.shape[1]:
+                padding = (
+                    (0, max(0, ny - total.shape[0])),
+                    (0, max(0, nx - total.shape[1])),
+                )
+                total, counts = np.pad(total, padding), np.pad(counts, padding)
+            valid = np.isfinite(image)
+            total[:ny, :nx] += np.where(valid, image, 0)
+            counts[:ny, :nx] += valid
+    return total, counts
+
+
 def _subprocess(request):
     result = subprocess.run(
         [sys.executable, "-m", "tofscope.science.se_preview"],
@@ -99,11 +119,57 @@ def prepare_se_preview(path, names, edges, sims_shape, *, workers=1):
         _PARALLEL_SLOT.release()
 
 
+def prepare_se_mean(path, names, first, last, *, workers=1):
+    """Average all selected SE frames on their original, unregistered pixel grid."""
+    first, stop = max(0, first), min(last + 1, len(names))
+    used = max(0, stop - first)
+    if not used:
+        return None, 0
+    count = min(workers, used)
+    if count <= 1 or not _PARALLEL_SLOT.acquire(blocking=False):
+        total, counts = _mean_totals(path, names, first, stop - 1)
+    else:
+        try:
+            boundaries = np.linspace(first, stop, count + 1, dtype=int)
+            requests = [
+                {
+                    "mode": "mean",
+                    "path": str(path),
+                    "names": list(names),
+                    "first": int(lo),
+                    "last": int(hi - 1),
+                }
+                for lo, hi in pairwise(boundaries)
+            ]
+            try:
+                with ThreadPoolExecutor(max_workers=count) as executor:
+                    chunks = list(executor.map(_subprocess, requests))
+            except (OSError, subprocess.SubprocessError):
+                chunks = [_mean_totals(path, names, first, stop - 1)]
+            shape = tuple(max(part[0].shape[i] for part in chunks) for i in (0, 1))
+            total = np.zeros(shape, dtype=np.float64)
+            counts = np.zeros(shape, dtype=np.uint32)
+            for partial, partial_counts in chunks:
+                ny, nx = partial.shape
+                total[:ny, :nx] += partial
+                counts[:ny, :nx] += partial_counts
+        finally:
+            _PARALLEL_SLOT.release()
+    image = np.divide(total, counts, out=np.full_like(total, np.nan), where=counts > 0)
+    image.setflags(write=False)
+    return image, used
+
+
 def _main():
     request = json.load(sys.stdin)
-    values, counts = _serial(
-        request["path"], request["names"], request["edges"], request["sims_shape"]
-    )
+    if request.get("mode") == "mean":
+        values, counts = _mean_totals(
+            request["path"], request["names"], request["first"], request["last"]
+        )
+    else:
+        values, counts = _serial(
+            request["path"], request["names"], request["edges"], request["sims_shape"]
+        )
     np.savez(sys.stdout.buffer, values=values, counts=counts)
 
 

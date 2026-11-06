@@ -6,23 +6,12 @@ import json
 import math
 import numpy as np
 from tofscope.application.analyses import CapacityError
+from tofscope.application.resources import reserve_se_preparation
 from tofscope.application.signals import get_signal
 from tofscope.presentation.coordinates import calibration
 from tofscope.presentation.explore import finite
 from tofscope.science.depth_calibration import calibrated_window
 from tofscope.science.volume_layers import VolumeLayer, build_layer_previews
-
-
-def reserve_se_preparation(stack, budget, owner, analysis_id, base, scratch, workers):
-    """Reserve parallel scratch, or retain serial preview when memory is tight."""
-    try:
-        stack.enter_context(budget.reserve(owner, analysis_id, base + scratch * workers))
-    except CapacityError:
-        if workers == 1:
-            raise
-        workers = 1
-        stack.enter_context(budget.reserve(owner, analysis_id, base + scratch))
-    return workers
 
 
 @dataclass(frozen=True)

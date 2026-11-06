@@ -1,5 +1,6 @@
 import json
 import unittest
+from unittest.mock import patch
 import numpy as np
 from service_fixture import setup_case
 from tofscope.api.app import build_services
@@ -9,6 +10,32 @@ from tofscope.presentation.exports import ExportService
 
 
 class PresentationTests(unittest.TestCase):
+    def test_long_se_image_uses_shared_parallel_reader(self):
+        import h5py
+
+        from tofscope.science.se_preview import prepare_se_mean
+
+        path = self.settings.data_root / 'b.h5'
+        with h5py.File(path, 'r+') as f:
+            peak = f['PeakData/PeakData'][:]
+            del f['PeakData/PeakData']
+            f.create_dataset('PeakData/PeakData', data=np.tile(peak, (27, 1, 1, 1)))
+            for i in range(2, 81):
+                f.create_dataset(f'FIBImages/Image{i:04}/Data', data=np.full((2, 2), i, dtype=float))
+        current = self.s.analyses.get('a', self.a.id)
+        self.s.analyses.replace('a', self.a.id, self.s.repository.open('a', 'b.h5'), current.revision)
+        self.command({'type': 'set_display', 'image': 'se', 'log': False, 'relative': False})
+        with patch('tofscope.science.se_preview.prepare_se_mean', wraps=prepare_se_mean) as reader:
+            panel = self.presenter.snapshot('a', self.a.id, {'ion'}).panels['ion']
+        self.assertEqual(reader.call_args.kwargs['workers'], 4)
+        self.assertEqual(len(panel.values), 2)
+
+    def test_se_image_only_does_not_load_sims_volume(self):
+        self.command({'type': 'set_display', 'image': 'se', 'log': False, 'relative': False})
+        with patch.object(self.s.cache, 'load', side_effect=AssertionError('SIMS volume not needed')):
+            panel = self.presenter.snapshot('a', self.a.id, {'ion'}).panels['ion']
+        np.testing.assert_array_equal(panel.values, [[4., 6.], [8., 10.]])
+
     def setUp(self):
         setup_case(self)
         self.s = build_services(self.settings)

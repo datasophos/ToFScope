@@ -38,7 +38,7 @@ class VolumeDataTests(unittest.TestCase):
 
     def test_parallel_preparation_falls_back_when_memory_budget_is_tight(self):
         from tofscope.application.analyses import CapacityError
-        from tofscope.presentation.volumes import reserve_se_preparation
+        from tofscope.application.resources import reserve_se_preparation
 
         with ExitStack() as stack, patch.object(self.s.cache.budget, 'reserve', side_effect=[CapacityError('limit'), nullcontext()]) as reserve:
             workers = reserve_se_preparation(stack, self.s.cache.budget, 'a', self.a.id, 100, 20, 4)
