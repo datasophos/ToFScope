@@ -8,6 +8,6 @@
     "index.html": "399df325f853ac68b67465dc124cb3a29b9f30f22fb2393b732963ad0aa777d6",
     "licenses/matplotlib.txt": "5a1a81ea301728c8bba2933da832c0cd62229daf20893a024ab3d53244468dbc"
   },
-  "source_sha256": "78134d121ff54a1fd7e97a3098936db58b0e0f60ed90471c435cf0cffa637904",
-  "version": "0.3.0"
+  "source_sha256": "8e0d91eac3ae9cc1a39c553cd52fa33cf1cb0138ffc9ccad2fb460e2a20b6b68",
+  "version": "0.3.1"
 }

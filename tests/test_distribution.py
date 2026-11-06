@@ -14,7 +14,7 @@ from tofscope.science.isotopes import load_catalog
 
 class DistributionTests(unittest.TestCase):
     def test_bundled_assets_and_reference(self):
-        self.assertEqual(asset_status()["version"], "0.3.0")
+        self.assertEqual(asset_status()["version"], "0.3.1")
         self.assertTrue(load_catalog())
 
     def test_frontend_fingerprint_ignores_platform_path_sorting(self):
