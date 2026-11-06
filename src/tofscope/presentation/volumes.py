@@ -13,6 +13,18 @@ from tofscope.science.depth_calibration import calibrated_window
 from tofscope.science.volume_layers import VolumeLayer, build_layer_previews
 
 
+def reserve_se_preparation(stack, budget, owner, analysis_id, base, scratch, workers):
+    """Reserve parallel scratch, or retain serial preview when memory is tight."""
+    try:
+        stack.enter_context(budget.reserve(owner, analysis_id, base + scratch * workers))
+    except CapacityError:
+        if workers == 1:
+            raise
+        workers = 1
+        stack.enter_context(budget.reserve(owner, analysis_id, base + scratch))
+    return workers
+
+
 @dataclass(frozen=True)
 class LayerData:
     signal_id: str
@@ -123,17 +135,17 @@ class VolumePresenter:
             if not styles or known is None:
                 return empty
             estimate = self.preparation_bytes(s, len(styles), known, s.spatial.quality)
+            workers, scratch = 1, 0
             if any(x.signal_id == '@se' for x in styles):
                 se_y, se_x = self.repository.se_shape(owner, s.dataset, *known)
                 # Decoded frame, validity mask, reduction scratch and overlap matrices.
-                estimate += se_y * se_x * 32 + (se_y + se_x) * 48 * 8
+                workers = 4 if known[1] - known[0] + 1 >= 64 else 1
+                scratch = se_y * se_x * 32 + (se_y + se_x) * 48 * 8
             with ExitStack() as local_preparation:
                 admission = (
                     preparation if preparation is not None else local_preparation
                 )
-                admission.enter_context(
-                    self.cache.budget.reserve(owner, s.id, estimate)
-                )
+                workers = reserve_se_preparation(admission, self.cache.budget, owner, s.id, estimate, scratch, workers)
 
                 # One admitted original signal at a time; no prototype global cache.
                 @contextmanager
@@ -168,6 +180,7 @@ class VolumePresenter:
                         calibration=active,
                         use_cache=False,
                         reader_context=source,
+                        se_workers=workers,
                     )
                 grid = previews[0].grid
                 edges = grid.edges

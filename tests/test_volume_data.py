@@ -2,8 +2,10 @@
 
 import json
 import unittest
+from contextlib import ExitStack, nullcontext
 from dataclasses import replace
 from unittest.mock import patch
+import h5py
 import numpy as np
 from service_fixture import setup_case
 from tofscope.api.app import build_services
@@ -16,6 +18,33 @@ from tofscope.storage.analysis_document import (
 
 
 class VolumeDataTests(unittest.TestCase):
+    def test_large_se_preview_uses_parallel_readers(self):
+        from fixtures.acquisition import make_acquisition
+
+        from tofscope.science.se_preview import prepare_se_preview
+
+        path = self.settings.data_root / 'large.h5'
+        make_acquisition(path)
+        with h5py.File(path, 'r+') as f:
+            peak = f['PeakData/PeakData'][:]
+            del f['PeakData/PeakData']
+            f.create_dataset('PeakData/PeakData', data=np.tile(peak, (27, 1, 1, 1)))
+        self.a = self.s.analyses.create_analysis('a', self.s.repository.open('a', 'large.h5'))
+        self.configure(layers=[{'signal_id': '@se'}])
+        with patch('tofscope.science.volume_layers.prepare_se_preview', wraps=prepare_se_preview) as preview:
+            result = self.s.volumes.snapshot('a', self.a.id)
+        self.assertEqual(preview.call_args.kwargs['workers'], 4)
+        self.assertTrue(any(value is not None for value in result.layers[0].values))
+
+    def test_parallel_preparation_falls_back_when_memory_budget_is_tight(self):
+        from tofscope.application.analyses import CapacityError
+        from tofscope.presentation.volumes import reserve_se_preparation
+
+        with ExitStack() as stack, patch.object(self.s.cache.budget, 'reserve', side_effect=[CapacityError('limit'), nullcontext()]) as reserve:
+            workers = reserve_se_preparation(stack, self.s.cache.budget, 'a', self.a.id, 100, 20, 4)
+        self.assertEqual(workers, 1)
+        self.assertEqual([call.args[-1] for call in reserve.call_args_list], [180, 120])
+
     def test_tile_grid_settings_are_validated_and_persisted(self):
         a = self.configure(tile_columns=3, tile_rows=4)
         doc = encode_document(a)

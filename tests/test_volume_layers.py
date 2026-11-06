@@ -1,14 +1,39 @@
 """Multi-ion previews share a bounded acquisition-coordinate block grid."""
 import unittest
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
+import h5py
 import numpy as np
 from tofscope.science.signals import SignalRecipe
 from tofscope.science.volume_layers import VolumeLayer,build_layer_previews,clear_preview_cache
 
 
 class VolumeLayerTests(unittest.TestCase):
+    def test_parallel_se_reduction_matches_serial_with_missing_values_and_frames(self):
+        from tofscope.science.se_preview import prepare_se_preview
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'se.h5'
+            names = [f'Image{i:04}' for i in range(9)]
+            with h5py.File(path, 'w') as f:
+                for i, name in enumerate(names):
+                    image = np.arange(15., dtype=float).reshape(3, 5) + i
+                    if i == 3:
+                        image[1, 2] = np.nan
+                    f.create_dataset(f'FIBImages/{name}/Data', data=image)
+            edges = (np.array([0, 2, 4, 7, 10]), np.array([0, 1, 2]), np.array([0, 1, 2]))
+            serial = prepare_se_preview(path, names, edges, (2, 2), workers=1)
+            parallel = prepare_se_preview(path, names, edges, (2, 2), workers=4)
+            np.testing.assert_allclose(parallel[0], serial[0], equal_nan=True)
+            np.testing.assert_allclose(parallel[1], serial[1])
+            self.assertTrue((parallel[1][-1] < 3).all())
+            with patch('tofscope.science.se_preview._subprocess', side_effect=OSError('worker unavailable')):
+                fallback = prepare_se_preview(path, names, edges, (2, 2), workers=4)
+            np.testing.assert_allclose(fallback[0], serial[0], equal_nan=True)
+            np.testing.assert_allclose(fallback[1], serial[1])
     def test_se_pixel_area_alignment_with_non_divisible_dimensions(self):
-        from tofscope.science.volume_layers import reduce_se_frame
+        from tofscope.science.se_preview import reduce_se_frame
 
         image = np.array([[0., 6., 12.], [0., 6., 12.]])
         sums, weights = reduce_se_frame(image, np.array([0, 1, 2]), np.array([0, 1]), (1, 2))
@@ -16,7 +41,7 @@ class VolumeLayerTests(unittest.TestCase):
         np.testing.assert_allclose(weights, [[1., 1.]])
 
     def test_se_missing_pixels_reduce_coverage_not_intensity(self):
-        from tofscope.science.volume_layers import reduce_se_frame
+        from tofscope.science.se_preview import reduce_se_frame
 
         image = np.array([[2., np.nan], [2., 2.]])
         sums, weights = reduce_se_frame(image, np.array([0, 1]), np.array([0, 1]), (1, 1))
