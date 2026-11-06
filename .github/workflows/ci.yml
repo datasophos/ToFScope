@@ -133,7 +133,10 @@ jobs:
       - name: Install Chrome
         if: runner.os == 'macOS'
         run: npm --prefix frontend exec -- playwright install chrome
-      - run: npm --prefix frontend run test:e2e -- --shard=${{ matrix.shard }}/3
+      - name: Run browser workflows
+        run: npm --prefix frontend run test:e2e -- --shard=${{ matrix.shard }}/3 --grep-invert 'volumes\.spec\.ts'
+      - name: Run 3D volume workflows
+        run: npm --prefix frontend run test:e2e -- volumes.spec.ts --fully-parallel --shard=${{ matrix.shard }}/3
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
