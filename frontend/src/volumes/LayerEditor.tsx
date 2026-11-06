@@ -9,7 +9,7 @@ import {
   type VolumeData,
 } from "./spatialRenderer";
 import { formatNumber } from "../shared/numbers";
-import { LevelsControl } from "./LevelsControl";
+import { LevelsControl } from "../shared/LevelsControl";
 import { ColormapPicker } from "../shared/ColormapPicker";
 
 export function LayerEditor({

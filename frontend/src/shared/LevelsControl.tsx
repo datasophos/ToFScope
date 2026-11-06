@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { histogram, layerRange } from "./spatialRenderer";
-import { moveWindow } from "./levels";
+import { histogram, layerRange, moveWindow } from "./levels";
 
 export function LevelsControl({
   values,

@@ -1530,9 +1530,6 @@ small {
 .colormap-menu { padding: 4px; border: 1px solid #c6d5dc; border-radius: 8px; background: white; box-shadow: 0 8px 24px #16374844; }
 .colormap-menu button { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; text-align: left; padding: 7px; }
 .colormap-menu button.active { background: #e8f1f3; }
-.image-display-settings .se-display-reset {
-  margin-top: 16px;
-}
 .image-display-settings select {
   max-width: 190px;
   min-width: 0;
@@ -2186,7 +2183,10 @@ small {
 @media (max-width: 650px) { .spatial-panels .volume-workspace { grid-template-columns: 1fr; } }
 
 .analysis-heading { border-bottom: 1px solid #d5e0e6; }
-.analysis-view-tabs { display: flex; align-self: flex-end; gap: 0; margin: 0 auto -11px 20px; }
+.analysis-heading > div:first-child { flex: 1 1 0; min-width: 0; }
+.analysis-heading > div:first-child h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.analysis-heading > .row { flex: 1 1 0; min-width: 0; justify-content: flex-end; }
+.analysis-view-tabs { display: flex; flex: none; align-self: flex-end; gap: 0; margin: 0 0 -11px; }
 .analysis-view-tabs button[role="tab"] { height: 42px; padding: 10px 16px; background: transparent; border: 0; border-bottom: 2px solid transparent; border-radius: 0; color: #526b7a; font-size: 13px; white-space: nowrap; }
 .analysis-view-tabs button[aria-selected="true"] { border-bottom-color: #34758b; color: #173e52; font-weight: 600; }
 .analysis-view-tabs button:hover { color: #173e52; background: #e4edf1; }
@@ -2287,7 +2287,7 @@ small {
 .levels-handle::before { content:""; display:block; margin:auto; border-left:7px solid transparent; border-right:7px solid transparent; border-bottom:11px solid #138185; width:0; }
 .levels-gradient { height:10px; background:linear-gradient(to right,#152532,white); margin-bottom:12px; }
 .levels-values { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.volume-signal-popover .levels-values label { display:block; margin:0; font-size:11px; color:#6a8190; }
+.levels-values label { display:block; margin:0; font-size:11px; color:#6a8190; }
 .levels-values input { display:block; width:100%; min-width:0; margin-top:3px; }
 .levels-control small { margin-top:7px; font-size:11px; }
 @media (max-width:850px) { .volume-sidebar .volume-signal-popover { left:auto; right:8px; width:min(300px, calc(100% - 16px)); top:44px; } }

@@ -779,6 +779,14 @@ test("analysis view tabs sit beside the file heading and support keyboard naviga
     .boundingBox())!;
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(signals.y);
   expect(bounds.x).toBeGreaterThan(heading.x + heading.width);
+  await page
+    .getByRole("heading", { name: "spatial.h5", exact: true })
+    .evaluate((element) => {
+      element.textContent =
+        "A very long acquisition filename that should not move the Explore and 3D volume tabs across the screen.h5";
+    });
+  const longHeadingTabs = (await tabs.boundingBox())!;
+  expect(Math.abs(longHeadingTabs.x - bounds.x)).toBeLessThan(2);
   await explore.focus();
   await explore.press("ArrowRight");
   await expect(volume).toHaveAttribute("aria-selected", "true");
@@ -790,11 +798,18 @@ test("analysis view tabs sit beside the file heading and support keyboard naviga
   });
   await page.setViewportSize({ width: 700, height: 900 });
   const narrow = (await tabs.boundingBox())!;
+  await page.getByRole("heading", { level: 1 }).evaluate((element) => {
+    element.textContent =
+      "A very long acquisition filename that should remain contained even in a narrow window.h5";
+  });
+  const narrowLong = (await tabs.boundingBox())!;
   const narrowSignals = (await page
     .getByRole("region", { name: "Signals", exact: true })
     .boundingBox())!;
   expect(narrow.y + narrow.height).toBeLessThanOrEqual(narrowSignals.y);
   expect(narrow.x + narrow.width).toBeLessThanOrEqual(700);
+  expect(Math.abs(narrowLong.x - narrow.x)).toBeLessThan(2);
+  expect(narrowLong.x + narrowLong.width).toBeLessThanOrEqual(700);
 });
 
 test("polling and camera persistence retain the existing volume geometry", async ({
