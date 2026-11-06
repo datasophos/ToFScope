@@ -39,7 +39,7 @@ jobs:
       - run: npm --prefix frontend ci
       - run: npm --prefix frontend exec -- playwright install chrome
       - name: Exercise Windows analysis, saving and download in Chrome
-        run: npm --prefix frontend run test:e2e -- saved-files.spec.ts -g "save a copy restores signal"
+        run: npm --prefix frontend run test:e2e -- saved-files.spec.ts -g "save a copy restores signal|saving waits for a pending signal rename"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
