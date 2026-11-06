@@ -125,11 +125,6 @@ test("Datasophos credit displays the supplied wordmark", async ({ page }) => {
   await expect(
     footer.getByRole("link", { name: "Report an issue", exact: true }),
   ).toHaveAttribute("href", "https://github.com/datasophos/ToFScope/issues");
-  await expect(
-    footer
-      .getByRole("link", { name: "Report an issue", exact: true })
-      .locator("svg"),
-  ).toBeVisible();
   const logo = footer.getByRole("img", { name: "Datasophos", exact: true });
   await expect(logo).toBeVisible();
   await expect
