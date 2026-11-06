@@ -1,5 +1,45 @@
 import { test, expect } from "@playwright/test";
 
+test("saving waits for a pending signal rename", async ({ page }) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `rename-save-${Date.now()}`,
+  });
+  let releaseRename!: () => void;
+  const renameGate = new Promise<void>((resolve) => {
+    releaseRename = resolve;
+  });
+  await page.route("**/api/v1/analyses/*/commands", async (route) => {
+    if (route.request().postData()?.includes('"rename_signal"'))
+      await renameGate;
+    await route.continue();
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
+  await page
+    .getByTestId("profile-chip")
+    .first()
+    .getByRole("button")
+    .first()
+    .click();
+  await page.getByLabel("Rename signal", { exact: true }).fill("Aluminium");
+  await page
+    .getByRole("button", { name: "Save signal name", exact: true })
+    .click();
+  const save = page.getByRole("button", { name: "Save as…", exact: true });
+  try {
+    await expect(save).toBeDisabled();
+  } finally {
+    releaseRename();
+  }
+  await expect(save).toBeEnabled();
+  await save.click();
+  await page.getByRole("button", { name: "Save copy", exact: true }).click();
+  await expect(page.getByText("Copy saved.", { exact: true })).toBeVisible();
+});
+
 test("save a copy restores signal and display state and downloads only on request", async ({
   page,
 }) => {
@@ -34,10 +74,16 @@ test("save a copy restores signal and display state and downloads only on reques
   await expect(
     page.getByText(/Large files may take a long time to download/),
   ).toBeVisible();
-  const downloadLink = page.getByRole("link", { name: "Download copy", exact: true });
-  const response = await page.request.get((await downloadLink.getAttribute("href"))!, {
-    headers: { "x-tofscope-user": owner },
+  const downloadLink = page.getByRole("link", {
+    name: "Download copy",
+    exact: true,
   });
+  const response = await page.request.get(
+    (await downloadLink.getAttribute("href"))!,
+    {
+      headers: { "x-tofscope-user": owner },
+    },
+  );
   expect(response.ok()).toBeTruthy();
   const downloadedBytes = await response.body();
   expect([...downloadedBytes.subarray(0, 8)]).toEqual([

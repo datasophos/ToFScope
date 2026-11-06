@@ -24,6 +24,8 @@ jobs:
       - run: uv run python -m unittest discover -s tests -p test_bounded_events.py -v
       - run: uv run python -m unittest discover -s tests -p test_dataset_writeback.py -v
       - run: uv run python -m unittest discover -s tests -p test_raw_preparation.py -v
+      - run: uv run python -m unittest discover -s tests -p test_data.py -v
+      - run: uv run python -m unittest discover -s tests -p test_volume_layers.py -v
       - run: uv build --wheel
       - name: Install built wheel as a tool
         run: |
@@ -37,7 +39,7 @@ jobs:
       - run: npm --prefix frontend ci
       - run: npm --prefix frontend exec -- playwright install chrome
       - name: Exercise Windows analysis, saving and download in Chrome
-        run: npm --prefix frontend run test:e2e -- saved-files.spec.ts -g "save a copy restores signal"
+        run: npm --prefix frontend run test:e2e -- saved-files.spec.ts -g "save a copy restores signal|saving waits for a pending signal rename"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -131,7 +133,10 @@ jobs:
       - name: Install Chrome
         if: runner.os == 'macOS'
         run: npm --prefix frontend exec -- playwright install chrome
-      - run: npm --prefix frontend run test:e2e -- --shard=${{ matrix.shard }}/3
+      - name: Run browser workflows
+        run: npm --prefix frontend run test:e2e -- --shard=${{ matrix.shard }}/3 --grep-invert 'volumes\.spec\.ts'
+      - name: Run 3D volume workflows
+        run: npm --prefix frontend run test:e2e -- volumes.spec.ts --fully-parallel --shard=${{ matrix.shard }}/3
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

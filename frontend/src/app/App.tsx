@@ -12,6 +12,7 @@ import { FilePicker } from "./FilePicker";
 import type { RawSelection, PreparationPreview } from "./RawPreparation";
 import { ExploreScreen } from "../explore/ExploreScreen";
 export function App() {
+  const [version, setVersion] = useState("");
   const [session, setSession] = useState<Session | null>(null),
     [analyses, setAnalyses] = useState<Analysis[]>([]),
     [active, setActive] = useState(""),
@@ -51,6 +52,20 @@ export function App() {
     const latest = info?.analysis || a;
     return info?.draft || hasChanges(latest);
   });
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/healthz", { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error("Version unavailable");
+        return response.json() as Promise<{ version?: unknown }>;
+      })
+      .then((info) => {
+        if (typeof info.version === "string" && info.version)
+          setVersion(info.version);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
   useEffect(() => {
     if (!unsaved) return;
     const warn = (event: BeforeUnloadEvent) => {
@@ -364,19 +379,16 @@ export function App() {
           rel="noopener noreferrer"
         >
           Report an issue
-          <svg
-            className="external-link-icon"
-            viewBox="0 0 16 16"
-            width="12"
-            height="12"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            aria-hidden="true"
-          >
-            <path d="M9 2h5v5M14 2 7 9M7 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V9" />
-          </svg>
         </a>
+        {version && (
+          <a
+            href={`https://github.com/datasophos/ToFScope/releases/tag/v${encodeURIComponent(version)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            ToFScope {version}
+          </a>
+        )}
       </footer>
       {confirming && pendingAction && (
         <UnsavedChanges

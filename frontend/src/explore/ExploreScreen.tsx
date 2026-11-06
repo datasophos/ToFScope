@@ -52,6 +52,7 @@ export function ExploreScreen({
     setError,
     accept,
     pendingPanels,
+    pendingCommands,
     panelStates,
   } = useAnalysis(initial);
   const editor = useSignalEditor(a, refresh);
@@ -65,12 +66,14 @@ export function ExploreScreen({
     );
   const blockedSave = editor.draft
     ? "Finish or discard the signal draft before saving."
-    : busy
-      ? "Finish or cancel calculations before saving."
-      : "";
+    : pendingCommands
+      ? "Wait for the current edit to finish before saving."
+      : busy
+        ? "Finish or cancel calculations before saving."
+        : "";
   useEffect(
-    () => onStatus(a, !!editor.draft, busy),
-    [a, !!editor.draft, busy, onStatus],
+    () => onStatus(a, !!editor.draft, busy || pendingCommands > 0),
+    [a, !!editor.draft, busy, pendingCommands, onStatus],
   );
   const [seLevels, setSeLevels] = useState<[number, number] | null>(null);
   const [max, setMax] = useState<string | null>(null),

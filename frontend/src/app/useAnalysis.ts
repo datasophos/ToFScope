@@ -13,6 +13,7 @@ export function useAnalysis(initial: Analysis) {
     [data, setData] = useState<Data | null>(null),
     [error, setError] = useState("");
   const [pendingPanels, setPendingPanels] = useState(new Set<string>());
+  const [pendingCommands, setPendingCommands] = useState(0);
   const [panelStates, setPanelStates] = useState<Record<string, Analysis>>({});
   const current = useRef(initial),
     mounted = useRef(true),
@@ -167,6 +168,7 @@ export function useAnalysis(initial: Analysis) {
     };
   }, [initial.id, refresh]);
   const send = async (command: Command) => {
+    setPendingCommands((count) => count + 1);
     try {
       setError("");
       const a = await queue.current.send(current.current, command);
@@ -177,6 +179,8 @@ export function useAnalysis(initial: Analysis) {
       setError((e as Error).message);
       await refresh();
       throw e;
+    } finally {
+      setPendingCommands((count) => count - 1);
     }
   };
   return {
@@ -188,6 +192,7 @@ export function useAnalysis(initial: Analysis) {
     accept,
     setError,
     pendingPanels,
+    pendingCommands,
     panelStates,
   };
 }
