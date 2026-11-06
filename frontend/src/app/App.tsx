@@ -12,6 +12,7 @@ import { FilePicker } from "./FilePicker";
 import type { RawSelection, PreparationPreview } from "./RawPreparation";
 import { ExploreScreen } from "../explore/ExploreScreen";
 export function App() {
+  const [version, setVersion] = useState("");
   const [session, setSession] = useState<Session | null>(null),
     [analyses, setAnalyses] = useState<Analysis[]>([]),
     [active, setActive] = useState(""),
@@ -51,6 +52,20 @@ export function App() {
     const latest = info?.analysis || a;
     return info?.draft || hasChanges(latest);
   });
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/healthz", { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error("Version unavailable");
+        return response.json() as Promise<{ version?: unknown }>;
+      })
+      .then((info) => {
+        if (typeof info.version === "string" && info.version)
+          setVersion(info.version);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
   useEffect(() => {
     if (!unsaved) return;
     const warn = (event: BeforeUnloadEvent) => {
@@ -336,6 +351,15 @@ export function App() {
         </div>
       ))}
       <footer className="app-credit">
+        {version && (
+          <a
+            href={`https://github.com/datasophos/ToFScope/releases/tag/v${encodeURIComponent(version)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            ToFScope {version}
+          </a>
+        )}
         <a
           className="datasophos-credit"
           href="https://datasophos.co"

@@ -70,6 +70,24 @@ test("favicon uses the header logo and is served as SVG", async ({ page }) => {
   expect(svg).toContain('fill="#44bdac"');
 });
 
+test("footer links the running version to its release notes", async ({
+  page,
+}) => {
+  await page.route("**/healthz", (route) =>
+    route.fulfill({ json: { status: "ok", version: "0.9.8" } }),
+  );
+  await page.goto("/");
+  const version = page
+    .getByRole("contentinfo")
+    .getByRole("link", { name: "ToFScope 0.9.8" });
+  await expect(version).toBeVisible();
+  await expect(version).toHaveAttribute(
+    "href",
+    "https://github.com/datasophos/ToFScope/releases/tag/v0.9.8",
+  );
+  await expect(version).toHaveAttribute("target", "_blank");
+});
+
 test("Datasophos credit displays the supplied wordmark", async ({ page }) => {
   await page.goto("/");
   const navDocs = page
