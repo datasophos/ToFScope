@@ -6,10 +6,9 @@ ToFScope supports Windows, macOS, and Linux.
 
 ## Python installation (Windows, macOS, and Linux)
 
-For command-line use, install Python 3.11 through 3.14 and
-[*uv*](https://docs.astral.sh/uv/getting-started/installation/).
-You can also use `pip` directly. You need an acquisition folder and enough writable
-space for saved copies.
+For command-line use, install any Python version from 3.11 through 3.14,
+together with [*uv*](https://docs.astral.sh/uv/getting-started/installation/).
+You can also use `pip` directly.
 
 After installing `uv` using the instructions for your operating system at the link above, you can open a new terminal window and check that it is available:
 
@@ -73,7 +72,7 @@ uv tool upgrade tofscope
 
 The command `uv tool uninstall tofscope` uninstalls the app. This does not delete your acquisition or saved-analysis folders.
 
-## Windows portable launcher {#windows-portable}
+## Windows portable/offline launcher {#windows-portable}
 
 The portable Windows release includes Python and the application dependencies
 and can run completely offline (such as on an instrument PC or other airgapped machine).
@@ -128,16 +127,16 @@ and [Smart App Control](https://support.microsoft.com/en-us/windows/security/thr
 
 ### Offline use, updates, and removal
 
-Download the ZIP on a connected machine, transfer it to the offline machine, and
-extract it there. The launcher and bundled application do not need an internet
-connection. Your browser connects to the service on the same machine. Acquisitions
-on network shares still require access to those shares.
+To use the application offline, you will need to download the ZIP on a connected
+machine and transfer it to the offline one, then extract the ZIP file there.
+The launcher and bundled application do not need an internet
+connection. Your browser connects to the service on the same machine.
 
-To update, save your work and stop ToFScope. Extract the new release into a separate
-folder and run its launcher. The remembered acquisition folder stays in your Windows
-profile. Keep acquisition files and saved analyses outside the extracted application
-folder. To remove a portable release, stop it and delete its application folder.
-Removing `%LOCALAPPDATA%\ToFScope` separately clears launcher preferences and logs.
+To update and offline ToFScope installation, you can simply extract the new
+release into a separate folder and run its launcher. The remembered acquisition
+folder and other settings stay in your Windows profile. To remove a portable release,
+just delete its application folder. Removing `%LOCALAPPDATA%\ToFScope` separately
+will clear the launcher's preferences and logs.
 
 ## Troubleshooting
 

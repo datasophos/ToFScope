@@ -33,11 +33,12 @@ in your default browser (similar to how [Jupyter](https://jupyter.org) operates)
 - [Your first analysis](docs/getting-started/first-analysis.qmd): opening a file, comparing signals, and saving your work.
 - [Troubleshooting](docs/getting-started/installation.qmd#troubleshooting): help with startup, file access, and saving.
 
-### Windows portable release
+### Windows portable/offline release
 
-On **Windows 10 or 11**, download the portable ZIP from
-[GitHub Releases](https://github.com/datasophos/ToFScope/releases), extract it, and
-double-click on **ToFScope.exe**. Choose your acquisition folder and click **Start** to open
+On **Windows 10 or 11**, you can run ToFScope without needing to install
+Python or `uv` by downloading the portable ZIP from
+[GitHub Releases](https://github.com/datasophos/ToFScope/releases), extracting it, and
+double-clicking on **ToFScope.exe**. Choose the folder containing your acquisitions and click **Start** to open
 the app in your browser. No Python installation or administrator privileges are needed.
 See [Windows launcher instructions and security prompts](docs/getting-started/installation.qmd#windows-portable)
 for offline use, SmartScreen warnings, and updates.

@@ -4,7 +4,8 @@ title: "ToFScope user guide"
 
 ToFScope allows you to explore ToF-SIMS acquisitions using linked plots, named signals, and 3D views.
 It runs as a local service with an interface in your browser. On Windows, the portable
-launcher starts and stops the service; a command-line interface is available on all supported platforms.
+distribution provides a small GUI to launch the application and works completely offline;
+otherwise, a command-line installation and interface is available on all supported platforms.
 
 The guides for [installation](01-installation.qmd) and [your first analysis](03-first-analysis.qmd) cover
 the first steps. The installation guide also covers updates, uninstalling, and troubleshooting.
