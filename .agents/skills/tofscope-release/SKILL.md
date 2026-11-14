@@ -16,6 +16,8 @@ Present the proposed version and a concise rationale to the user and ask for con
 ## Prepare
 
 - Draft accurate user-facing release notes for a GitHub Release; do not claim a change was released before publication.
+- If `docs/release-notes/unreleased.md` exists, review it alongside the changes since the previous release and incorporate applicable entries into the versioned release notes. Once its contents have been incorporated into the versioned release notes, delete `docs/release-notes/unreleased.md` as part of preparing the release.
+- Phrase release notes as changes, such as "ToFScope now supports..." or "Added...", rather than primarily as instructions. Use personal pronouns like "you can" rather than "users can".
 - Update the version in `pyproject.toml`, the ToFScope entry in `uv.lock`, `src/tofscope/__init__.py`, `frontend/package.json`, `frontend/package-lock.json`, `scripts/build_frontend.py`, `tests/test_distribution.py`, and `Dockerfile`. Search for the previous version to find any additional references; inspect matches before changing them. Confirm the lock is consistent and the version is not already tagged.
 - Regenerate the API schema with `npm --prefix frontend run generate:api`, then rebuild packaged assets with `uv run python scripts/build_frontend.py`. The asset manifest records the version and a hash of frontend sources and package metadata.
 - Run checks appropriate to the changes and the release. The source, browser, distribution, and container checks are described in `docs/technical-documentation/40-building-and-testing.qmd` and `.github/workflows/ci.yml`. Build fresh wheel and sdist artifacts, check their versions, and run the distribution smoke test when practical. Report checks that could not run and why.

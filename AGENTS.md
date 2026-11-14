@@ -23,6 +23,10 @@ Use four spaces for Python and two spaces for TypeScript/TSX. Keep Python module
 
 Run the focused test closest to a change, then the relevant broader suite. Scientific changes should preserve original-resolution calculations and include numerical assertions. UI behavior changes should include frontend or browser coverage when practical. The README lists full source, distribution, and container checks.
 
+## Release Notes
+
+Document significant changes in `docs/release-notes/unreleased.md`. Create the file if it does not exist. Describe changes in user-facing terms. Phrase release notes as changes, such as "ToFScope now supports..." or "Added...", rather than primarily as instructions. Use personal pronouns like "you can" rather than "users can".
+
 ## Commits and Pull Requests
 
 Recent commits use concise imperative subjects, such as `Refine scientific plot controls` and `Fix portable browser artifacts`. Keep commits focused and describe the user-visible or scientific effect. Pull requests should summarize the change, link related issues when available, list verification commands and results, and include screenshots for visible UI changes.
