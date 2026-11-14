@@ -1,0 +1,57 @@
+name: Windows test build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - run: uv sync --frozen
+      - name: Install packaging tool
+        run: uv pip install --python .venv/Scripts/python.exe pyinstaller==6.17.0
+      - name: Build standalone application folder
+        run: >-
+          uv run --no-sync python -m PyInstaller --noconfirm --clean --onedir
+          --name ToFScope --collect-all tofscope
+          scripts/windows/entry.py
+      - name: Check packaged application
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path dist/ToFScope/ToFScope.exe).Path
+          & $exe doctor --data-root $env:RUNNER_TEMP --runtime-dir "$env:RUNNER_TEMP/tofscope-test-runtime"
+          if ($LASTEXITCODE -ne 0) { throw "Packaged doctor failed" }
+          $process = Start-Process -FilePath $exe -ArgumentList @('serve', '--data-root', "`"$env:RUNNER_TEMP`"", '--runtime-dir', "`"$env:RUNNER_TEMP/tofscope-test-runtime`"", '--port', '18765') -PassThru
+          try {
+            $ready = $false
+            for ($i = 0; $i -lt 30; $i++) {
+              if ($process.HasExited) { throw "Packaged service exited early: $($process.ExitCode)" }
+              try {
+                $response = Invoke-WebRequest -Uri 'http://127.0.0.1:18765/readyz' -TimeoutSec 1 -UseBasicParsing
+                if ($response.StatusCode -eq 200) { $ready = $true; break }
+              } catch { Start-Sleep -Seconds 1 }
+            }
+            if (-not $ready) { throw 'Packaged service did not become ready' }
+          } finally {
+            if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
+          }
+      - name: Package test ZIP
+        shell: pwsh
+        run: |
+          Copy-Item scripts/windows/README.txt dist/ToFScope/README.txt
+          Compress-Archive -Path dist/ToFScope/* -DestinationPath ToFScope-windows-x64-test.zip
+          (Get-FileHash ToFScope-windows-x64-test.zip -Algorithm SHA256).Hash | Out-File -Encoding ascii ToFScope-windows-x64-test.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ToFScope-windows-x64-test
+          path: |
+            ToFScope-windows-x64-test.zip
+            ToFScope-windows-x64-test.sha256
+          if-no-files-found: error
