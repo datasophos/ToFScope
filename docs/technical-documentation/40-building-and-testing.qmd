@@ -130,3 +130,25 @@ The repository's CI workflow runs these checks and verifies that regenerated API
 
 See [Maintaining the documentation](42-documentation.qmd) for information on building and previewing the documentation
 site.
+
+## Portable Windows release builds
+
+`.github/workflows/windows-test-build.yml` builds and checks the Windows x64
+portable bundle on pull requests and manual dispatches. It also runs when a GitHub
+Release is published, including a prerelease. For release builds it verifies that
+the release tag is `v<package version>`, builds the tagged source, and attaches
+`ToFScope-<version>-windows-x64.zip` and its `.zip.sha256` checksum to that release
+only after the packaging checks pass. The release upload job has write permission;
+pull-request builds only upload workflow artifacts.
+
+The Windows assets appear after the build completes. The tag-triggered PyPI
+workflow remains separate. Publishing a release does not backfill assets for older
+releases. An upload does not overwrite existing assets; investigate an interrupted
+upload before rerunning the release job.
+
+The PyInstaller spec in `scripts/windows/tofscope.spec` builds a windowed launcher
+and a console executable sharing the same `_internal` directory. CI checks the
+console's frontend integrity and startup, then tests launcher control and graceful
+shutdown of the frozen service. Before claiming compatibility with a new Windows
+version or architecture, exercise the launcher and representative acquisitions in
+that environment, including offline use and saving from a standard user account.

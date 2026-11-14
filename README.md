@@ -36,6 +36,14 @@ ToFScope runs locally on Windows, macOS, and Linux as a Python application and o
 
 ## Get started
 
+**Windows portable release:** download the Windows x64 ZIP from
+[GitHub Releases](https://github.com/datasophos/ToFScope/releases), extract it, and
+open **ToFScope.exe**. Choose an acquisition folder and click **Start**. Python and
+administrator privileges are not required. The executables are unsigned; see the
+[Windows launcher and SmartScreen instructions](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html#windows-portable).
+
+For Python and command-line installation on Windows, macOS, or Linux:
+
 You need Python 3.11 through 3.14, [uv](https://docs.astral.sh/uv/getting-started/installation/), and a folder containing supported TOFexplorer `.h5` files. Install from PyPI:
 
 ```sh

@@ -1,4 +1,4 @@
-ToFScope portable Windows test build
+ToFScope portable Windows release
 
 Extract the entire ZIP into a folder owned by your Windows account.
 Keep both executables and the _internal folder together. No installation or
@@ -23,4 +23,9 @@ checks the configuration and bundled frontend.
 To update, stop ToFScope, extract the new version into a separate folder,
 and launch it there. Acquisition files and saved analyses should live outside
 this application folder. Delete the old application folder when no longer needed.
-This experimental build still requires Windows 10/11 testing.
+The executable is unsigned. Microsoft Defender SmartScreen may display
+"Windows protected your PC" or an unknown-publisher warning. Download only from
+https://github.com/datasophos/ToFScope/releases and verify the ZIP checksum.
+If you trust that download and Windows offers the option, choose More info,
+then Run anyway. If your organization blocks it, contact your administrator.
+Keep Windows security protections enabled.
