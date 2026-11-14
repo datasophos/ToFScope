@@ -49,7 +49,7 @@ def open_after_ready(url, secret, stop):
         stop.wait(0.1)
 
 
-def run_service(settings, browser=False):
+def run_service(settings, browser=False, shutdown_event=None):
     asset_status()
     secret = secrets.token_urlsafe(32)
     url = settings.public_origin or f"http://{settings.host}:{settings.port}"
@@ -80,7 +80,7 @@ def run_service(settings, browser=False):
         ).start()
     try:
         print(f"ToFScope Explore {__version__}: {url} (original acquisitions read only)", flush=True)
-        uvicorn.Server(
+        server = uvicorn.Server(
             uvicorn.Config(
                 create_app(settings, bootstrap_secret=secret),
                 host=settings.host,
@@ -90,7 +90,15 @@ def run_service(settings, browser=False):
                 proxy_headers=False,
                 access_log=False,
             )
-        ).run(sockets=[sock])
+        )
+        if shutdown_event is not None:
+            def watch_shutdown():
+                while not stop.is_set():
+                    if shutdown_event.wait(0.1):
+                        server.should_exit = True
+                        return
+            threading.Thread(target=watch_shutdown, daemon=True).start()
+        server.run(sockets=[sock])
     finally:
         stop.set()
         sock.close()

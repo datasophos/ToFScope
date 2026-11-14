@@ -18,15 +18,15 @@ jobs:
       - run: uv sync --frozen
       - name: Install packaging tool
         run: uv pip install --python .venv/Scripts/python.exe pyinstaller==6.17.0
+      - run: uv run --no-sync python -m unittest discover -s tests -p test_windows_launcher.py -v
       - name: Build standalone application folder
         run: >-
-          uv run --no-sync python -m PyInstaller --noconfirm --clean --onedir
-          --name ToFScope --collect-all tofscope
-          scripts/windows/entry.py
+          uv run --no-sync python -m PyInstaller --noconfirm --clean
+          scripts/windows/tofscope.spec
       - name: Check packaged application
         shell: pwsh
         run: |
-          $exe = (Resolve-Path dist/ToFScope/ToFScope.exe).Path
+          $exe = (Resolve-Path dist/ToFScope/ToFScope-cli.exe).Path
           & $exe doctor --data-root $env:RUNNER_TEMP --runtime-dir "$env:RUNNER_TEMP/tofscope-test-runtime"
           if ($LASTEXITCODE -ne 0) { throw "Packaged doctor failed" }
           $process = Start-Process -FilePath $exe -ArgumentList @('serve', '--data-root', "`"$env:RUNNER_TEMP`"", '--runtime-dir', "`"$env:RUNNER_TEMP/tofscope-test-runtime`"", '--port', '18765') -PassThru
@@ -43,6 +43,8 @@ jobs:
           } finally {
             if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
           }
+      - name: Check launcher control of frozen service
+        run: uv run --no-sync python scripts/windows/check_bundle.py dist/ToFScope/ToFScope.exe
       - name: Package test ZIP
         shell: pwsh
         run: |
