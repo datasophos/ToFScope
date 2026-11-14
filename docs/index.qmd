@@ -10,15 +10,6 @@ explore signals in three dimensions.
 
 ## Quick Start
 
-On **Windows 10 or 11**, download the portable ZIP from
-[GitHub Releases](https://github.com/datasophos/ToFScope/releases), extract it, and
-open **ToFScope.exe**. Choose your acquisition folder and click **Start** to open
-the app in your browser. No Python installation or administrator privileges are needed.
-See [Windows launcher instructions and security prompts](docs/getting-started/installation.qmd#windows-portable)
-for offline use, SmartScreen warnings, and updates.
-
-### Python and command-line use
-
 ToFScope can be easily installed from [PyPI](https://pypi.org/project/tofscope/) using [uv](https://docs.astral.sh/uv/getting-started/installation/):
 
 ```sh
@@ -41,6 +32,15 @@ in your default browser (similar to how [Jupyter](https://jupyter.org) operates)
 - [Install and launch](docs/getting-started/installation.qmd): requirements, folder setup, and starting the app.
 - [Your first analysis](docs/getting-started/first-analysis.qmd): opening a file, comparing signals, and saving your work.
 - [Troubleshooting](docs/getting-started/installation.qmd#troubleshooting): help with startup, file access, and saving.
+
+### Windows portable release
+
+On **Windows 10 or 11**, download the portable ZIP from
+[GitHub Releases](https://github.com/datasophos/ToFScope/releases), extract it, and
+double-click on **ToFScope.exe**. Choose your acquisition folder and click **Start** to open
+the app in your browser. No Python installation or administrator privileges are needed.
+See [Windows launcher instructions and security prompts](docs/getting-started/installation.qmd#windows-portable)
+for offline use, SmartScreen warnings, and updates.
 
 ## Feature Guides
 

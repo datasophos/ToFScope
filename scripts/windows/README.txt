@@ -9,6 +9,9 @@ then click Start. Your default browser opens when ToFScope is ready.
 Keep the launcher open while you work. Use Open in browser to reopen the app.
 Save your work before clicking Stop or closing the launcher.
 
+Select Open configuration to edit config.toml. Uncomment a line by removing
+its leading #, then change the value. Restart ToFScope to apply changes.
+
 The launcher remembers your acquisition folder. Preferences and logs are in
 %LOCALAPPDATA%\ToFScope, outside this portable application folder.
 Open log displays the service log; unexpected launcher errors are recorded
@@ -25,7 +28,7 @@ and launch it there. Acquisition files and saved analyses should live outside
 this application folder. Delete the old application folder when no longer needed.
 The executable is unsigned. Microsoft Defender SmartScreen may display
 "Windows protected your PC" or an unknown-publisher warning. Download only from
-https://github.com/datasophos/ToFScope/releases and verify the ZIP checksum.
+https://github.com/datasophos/ToFScope/releases.
 If you trust that download and Windows offers the option, choose More info,
 then Run anyway. If your organization blocks it, contact your administrator.
 Keep Windows security protections enabled.

@@ -36,14 +36,6 @@ ToFScope runs locally on Windows, macOS, and Linux as a Python application and o
 
 ## Get started
 
-**Windows portable release:** download the Windows x64 ZIP from
-[GitHub Releases](https://github.com/datasophos/ToFScope/releases), extract it, and
-open **ToFScope.exe**. Choose an acquisition folder and click **Start**. Python and
-administrator privileges are not required. The executables are unsigned; see the
-[Windows launcher and SmartScreen instructions](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html#windows-portable).
-
-For Python and command-line installation on Windows, macOS, or Linux:
-
 You need Python 3.11 through 3.14, [uv](https://docs.astral.sh/uv/getting-started/installation/), and a folder containing supported TOFexplorer `.h5` files. Install from PyPI:
 
 ```sh
@@ -55,6 +47,12 @@ On Windows, the runtime directory inherits its permissions from its parent; keep
 restricted to your Windows account.
 
 Replace the example paths with your folders. The output folder must be writable and have enough space for a full copy of an acquisition. ToFScope starts a local service and opens the app in your browser. Select a file to begin; keep the terminal open while you work and press **Ctrl-C** there to stop the app.
+
+**Windows portable release:** download the Windows x64 ZIP from
+[GitHub Releases](https://github.com/datasophos/ToFScope/releases), extract it, and
+open **ToFScope.exe**. Choose an acquisition folder and click **Start**. Python and
+administrator privileges are not required. The executables are unsigned. See the
+[Windows launcher and SmartScreen instructions](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html#windows-portable).
 
 For step-by-step installation, folder setup, and troubleshooting, see [Install and launch](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html). See the [configuration reference](https://datasophos.github.io/ToFScope/docs/technical-documentation/configuration.html) for settings, and [deployment](https://datasophos.github.io/ToFScope/docs/technical-documentation/deployment.html) for hosted use and containers.
 

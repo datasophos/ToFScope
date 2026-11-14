@@ -8,6 +8,30 @@ from tofscope.windows_launcher import ServiceController, load_folder, save_folde
 
 
 class LauncherTests(unittest.TestCase):
+    def test_config_created_and_preserved(self):
+        from tofscope.windows_launcher import ensure_config
+        from tofscope.config import load_settings
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            config = ensure_config(state)
+            self.assertIn("uncomment", config.read_text().lower())
+            self.assertEqual(load_settings(config, env={}, cli={"data_root": state}).response_bytes, 1024**4)
+            config.write_text("[tofscope]\nresponse_bytes = 12345\n")
+            self.assertEqual(ensure_config(state).read_text(), "[tofscope]\nresponse_bytes = 12345\n")
+
+    def test_worker_loads_config_and_keeps_launcher_settings(self):
+        from unittest.mock import patch
+        from tofscope.windows_launcher import run_worker
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            config = state / "config.toml"
+            config.write_text('[tofscope]\nresponse_bytes = 12345\nhost = "0.0.0.0"\nport = 1\n')
+            with patch("tofscope.cli.run_service") as run, patch("threading.Thread"):
+                run_worker([str(state), str(state / "runtime"), "1234", str(config)])
+            settings = run.call_args.args[0]
+            self.assertEqual(settings.response_bytes, 12345)
+            self.assertEqual((settings.host, settings.port), ("127.0.0.1", 1234))
+
     def test_preferences_roundtrip_and_invalid_preferences(self):
         with tempfile.TemporaryDirectory() as directory:
             state = Path(directory)

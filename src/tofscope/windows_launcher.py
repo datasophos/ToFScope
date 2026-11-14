@@ -21,6 +21,46 @@ def state_directory():
     return Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local" / "state")) / "ToFScope"
 
 
+
+def ensure_config(state):
+    """Create an editable configuration once, without replacing user changes."""
+    from dataclasses import fields
+    from tofscope.config import Settings
+
+    state = Path(state)
+    state.mkdir(parents=True, exist_ok=True)
+    path = state / "config.toml"
+    controlled = {"data_root", "runtime_dir", "host", "port", "mode"}
+    lines = [
+        "# Uncomment a line (remove its leading #) to change that setting.",
+        "# Save this file and restart ToFScope to apply changes.",
+        "# Commented values show defaults at file creation; omitted settings follow current defaults.",
+        "# If you lower memory budgets, set response_bytes below each budget as well.",
+        "# The launcher controls the acquisition folder, runtime, host, port, and mode.",
+        "# Paths in TOML should use forward slashes, for example C:/ToFScope/saved.",
+        "[tofscope]",
+    ]
+    for item in fields(Settings):
+        if item.name in controlled:
+            continue
+        value = item.default
+        if value is None:
+            lines.append(f'# {item.name} = ""')
+        elif isinstance(value, bool):
+            lines.append(f"# {item.name} = {str(value).lower()}")
+        elif isinstance(value, int):
+            lines.append(f"# {item.name} = {value}")
+        elif isinstance(value, str):
+            lines.append(f"# {item.name} = {json.dumps(value)}")
+        elif isinstance(value, tuple):
+            lines.append(f"# {item.name} = []")
+    try:
+        with path.open("x", encoding="utf-8") as stream:
+            stream.write("\n".join(lines) + "\n")
+    except FileExistsError:
+        pass
+    return path
+
 def load_folder(state):
     try:
         value = json.loads((state / "launcher.json").read_text(encoding="utf-8"))
@@ -63,8 +103,9 @@ class ServiceController:
             command = [str(Path(sys.executable).with_name("ToFScope-cli.exe"))]
         else:
             command = [sys.executable, "-m", "tofscope.windows_launcher"]
+        config = ensure_config(self.state)
         self.runtime_dir = Path(tempfile.mkdtemp(prefix="runtime-", dir=self.state))
-        command += ["--launcher-service", str(folder), str(self.runtime_dir), str(port)]
+        command += ["--launcher-service", str(folder), str(self.runtime_dir), str(port), str(config)]
         try:
             with self.log_path.open("w", encoding="utf-8") as log:
                 self.process = subprocess.Popen(
@@ -128,8 +169,8 @@ def run_worker(arguments):
     from tofscope.cli import run_service
     from tofscope.config import load_settings
 
-    folder, runtime, port = arguments
-    settings = load_settings(cli={"data_root": folder, "runtime_dir": runtime, "port": int(port), "mode": "local", "host": "127.0.0.1"})
+    folder, runtime, port, config = arguments
+    settings = load_settings(config, cli={"data_root": folder, "runtime_dir": runtime, "port": int(port), "mode": "local", "host": "127.0.0.1"})
     shutdown = threading.Event()
 
     def wait_for_parent():
@@ -162,6 +203,7 @@ def main():
         messagebox.showinfo("ToFScope", "The ToFScope launcher is already open.", parent=root)
         root.destroy()
         return 0
+    ensure_config(state)
     service = ServiceController(state)
     folder = tk.StringVar(value=load_folder(state))
     status = tk.StringVar(value="Choose the folder containing your acquisitions.")
@@ -232,6 +274,14 @@ def main():
             messagebox.showinfo("ToFScope log", "No service log yet. Start ToFScope first.", parent=root)
 
     ttk.Button(frame, text="Open log", command=show_log).grid(row=4, column=0, sticky="w")
+
+    def open_config():
+        try:
+            os.startfile(ensure_config(state))
+        except OSError as exc:
+            messagebox.showerror("Could not open configuration", str(exc), parent=root)
+
+    ttk.Button(frame, text="Open configuration", command=open_config).grid(row=4, column=1)
 
     def tick():
         nonlocal opened

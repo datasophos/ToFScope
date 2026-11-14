@@ -4,78 +4,6 @@ title: "Install and launch"
 
 ToFScope supports Windows, macOS, and Linux.
 
-## Windows portable launcher {#windows-portable}
-
-The portable Windows release includes Python and the application dependencies.
-You do not need to install Python, `uv`, or Node.js, and extraction does not require
-administrator privileges. You need a browser, a folder containing supported
-*TOFWERK* *TOFexplorer* HDF5 (`.h5`) acquisitions, and enough writable space for saved copies.
-
-1. Open the [GitHub Releases page](https://github.com/datasophos/ToFScope/releases)
-   and expand **Assets** for a release that includes a Windows bundle.
-2. Download `ToFScope-<version>-windows-x64.zip` and its `.zip.sha256` checksum.
-   Older releases may not have a Windows bundle. Assets appear after the release build finishes.
-3. Extract the entire ZIP into a folder owned by your Windows account.
-   Keep `ToFScope.exe`, `ToFScope-cli.exe`, and `_internal` together.
-   Open the extracted folder before launching; do not run the executable from inside the ZIP.
-4. Double-click **ToFScope.exe**, then use **Browse…** to choose your acquisition folder.
-5. Click **Start**. ToFScope opens in your default browser once the local service is ready.
-
-Keep the launcher open while you work. **Open in browser** reopens the running app.
-Save your analysis before clicking **Stop** or closing the launcher; closing a browser
-tab alone does not stop the service. To change acquisition folders, stop the service,
-choose another folder, and start again.
-
-The launcher remembers the acquisition folder under `%LOCALAPPDATA%\ToFScope`.
-That directory also contains `service.log` and `launcher.log`; **Open log** opens the
-service log, which is replaced each time you start. Saved analyses are separate from
-these preferences and logs. Choose a writable acquisition folder if you plan to save
-copies there. To configure a separate output folder, use the command-line interface
-below with `ToFScope-cli.exe` in place of `tofscope`.
-
-The x64 bundle targets Windows 10 and 11. It has also been manually exercised on
-Windows 11 ARM using Windows' x64 emulation; that is not a native ARM build.
-
-### Windows security prompts
-
-::: {.callout-warning}
-## Microsoft Defender SmartScreen
-
-The Windows executables are currently unsigned. Windows may show **Windows protected
-your PC**, **unrecognized app**, or an **unknown publisher** warning when launching a
-downloaded executable. SmartScreen uses an application's reputation to help assess it;
-a warning does not establish that the download is safe or unsafe.
-
-Download from the project's [GitHub Releases page](https://github.com/datasophos/ToFScope/releases)
-and verify the ZIP against the checksum attached to the same release. In PowerShell:
-
-```powershell
-Get-FileHash .\ToFScope-<version>-windows-x64.zip -Algorithm SHA256
-```
-
-Compare the returned hash with the value in the `.zip.sha256` file. If you trust the
-download and Windows provides the option, select **More info**, then **Run anyway**.
-An organization policy or Windows 11 Smart App Control may prevent this option;
-contact your administrator if the application is blocked. Keep Windows security
-protections enabled.
-
-See Microsoft's guidance on [SmartScreen reputation warnings](https://support.microsoft.com/en-gb/office/protect-my-pc-from-viruses)
-and [Smart App Control](https://support.microsoft.com/en-us/windows/security/threat-malware-protection/smart-app-control-frequently-asked-questions).
-:::
-
-### Offline use, updates, and removal
-
-Download the ZIP on a connected machine, transfer it to the offline machine, and
-extract it there. The launcher and bundled application do not need an internet
-connection; your browser connects to the service on the same machine. Acquisitions
-on network shares still require access to those shares.
-
-To update, save your work and stop ToFScope. Extract the new release into a separate
-folder and run its launcher. The remembered acquisition folder stays in your Windows
-profile. Keep acquisition files and saved analyses outside the extracted application
-folder. To remove a portable release, stop it and delete its application folder.
-Removing `%LOCALAPPDATA%\ToFScope` separately clears launcher preferences and logs.
-
 ## Python installation (Windows, macOS, and Linux)
 
 For command-line use, install Python 3.11 through 3.14 and
@@ -144,6 +72,72 @@ uv tool upgrade tofscope
 ```
 
 The command `uv tool uninstall tofscope` uninstalls the app. This does not delete your acquisition or saved-analysis folders.
+
+## Windows portable launcher {#windows-portable}
+
+The portable Windows release includes Python and the application dependencies
+and can run completely offline (such as on an instrument PC or other airgapped machine).
+You will need a modern web browser (to access the local port used by ToFScope).
+
+1. Open the [GitHub Releases page](https://github.com/datasophos/ToFScope/releases)
+   and expand **Assets** for a release that includes a Windows bundle (0.3.2+).
+2. Download `ToFScope-<version>-windows-x64.zip`.
+3. Extract the entire ZIP into a folder owned by your Windows account.
+   Keep `ToFScope.exe`, `ToFScope-cli.exe`, and `_internal` together.
+   Open the extracted folder before launching. Do not run the executable from inside the ZIP.
+4. Double-click **ToFScope.exe**, then use **Browse…** to choose your acquisition folder.
+5. Click **Start**. ToFScope opens in your default browser once the local service is ready.
+
+Keep the launcher open while you work. **Open in browser** reopens the running app.
+Save your analysis before clicking **Stop** or closing the launcher. Closing a browser
+tab alone does not stop the service. To change acquisition folders, stop the service,
+choose another folder, and start again.
+
+The launcher remembers the acquisition folder under `%LOCALAPPDATA%\ToFScope`.
+That directory also contains `service.log` and `launcher.log`. **Open log** opens the
+service log, which is replaced each time you start. Saved analyses are separate from
+these preferences and logs. Choose a writable acquisition folder if you plan to save
+copies there. To configure a separate output folder, use the command-line instructions above with `ToFScope-cli.exe` in place of `tofscope`.
+
+Select **Open configuration** to edit `%LOCALAPPDATA%/ToFScope/config.toml`.
+Uncomment a line by removing its leading `#`, then change its value. Save the file
+and restart ToFScope to apply changes. The launcher controls the acquisition folder,
+runtime directory, local host, port, and mode. See the [configuration reference](../technical-documentation/configuration.qmd)
+for the other settings.
+
+The x64 bundle targets Windows 10 and 11. It has also been manually exercised on
+Windows 11 ARM using Windows' x64 emulation, and found to work, but it is not a native ARM build.
+
+### Windows security prompts
+
+::: {.callout-warning}
+## Microsoft Defender SmartScreen
+
+The Windows executables are currently unsigned. Windows may show **Windows protected
+your PC**, **unrecognized app**, or an **unknown publisher** warning when launching a
+downloaded executable. This warning does not mean the file is unsafe. It means the
+file is not well known by the Windows scanning service.
+
+To run the app, select **More info**, then **Run anyway**.
+An organization policy or Windows 11 Smart App Control may
+prevent this option. Contact your administrator if the application is blocked.
+
+See Microsoft's guidance on [SmartScreen reputation warnings](https://support.microsoft.com/en-gb/office/protect-my-pc-from-viruses)
+and [Smart App Control](https://support.microsoft.com/en-us/windows/security/threat-malware-protection/smart-app-control-frequently-asked-questions).
+:::
+
+### Offline use, updates, and removal
+
+Download the ZIP on a connected machine, transfer it to the offline machine, and
+extract it there. The launcher and bundled application do not need an internet
+connection. Your browser connects to the service on the same machine. Acquisitions
+on network shares still require access to those shares.
+
+To update, save your work and stop ToFScope. Extract the new release into a separate
+folder and run its launcher. The remembered acquisition folder stays in your Windows
+profile. Keep acquisition files and saved analyses outside the extracted application
+folder. To remove a portable release, stop it and delete its application folder.
+Removing `%LOCALAPPDATA%\ToFScope` separately clears launcher preferences and logs.
 
 ## Troubleshooting
 
