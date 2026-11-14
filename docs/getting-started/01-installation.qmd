@@ -101,7 +101,7 @@ copies there. To configure a separate output folder, use the command-line instru
 
 Select **Open configuration** to edit `%LOCALAPPDATA%/ToFScope/config.toml`.
 Uncomment a line by removing its leading `#`, then change its value. Save the file
-and restart ToFScope to apply changes. The launcher controls the acquisition folder,
+then click **Stop** and **Start** in the launcher to apply changes. The launcher controls the acquisition folder,
 runtime directory, local host, port, and mode. See the [configuration reference](../technical-documentation/configuration.qmd)
 for the other settings.
 

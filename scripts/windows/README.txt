@@ -10,7 +10,8 @@ Keep the launcher open while you work. Use Open in browser to reopen the app.
 Save your work before clicking Stop or closing the launcher.
 
 Select Open configuration to edit config.toml. Uncomment a line by removing
-its leading #, then change the value. Restart ToFScope to apply changes.
+its leading #, then change the value. Save the file and click Stop, then Start
+in the launcher to apply changes.
 
 The launcher remembers your acquisition folder. Preferences and logs are in
 %LOCALAPPDATA%\ToFScope, outside this portable application folder.

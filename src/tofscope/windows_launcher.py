@@ -33,7 +33,7 @@ def ensure_config(state):
     controlled = {"data_root", "runtime_dir", "host", "port", "mode"}
     lines = [
         "# Uncomment a line (remove its leading #) to change that setting.",
-        "# Save this file and restart ToFScope to apply changes.",
+        "# Save this file, then click Stop, then Start in the launcher to apply changes.",
         "# Commented values show defaults at file creation; omitted settings follow current defaults.",
         "# If you lower memory budgets, set response_bytes below each budget as well.",
         "# The launcher controls the acquisition folder, runtime, host, port, and mode.",
@@ -183,6 +183,35 @@ def run_worker(arguments):
     return 0
 
 
+
+
+def open_local_file(path):
+    """Open a local file with the platform's default application."""
+    if os.name == "nt":
+        os.startfile(path)
+    else:
+        subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", str(path)])
+
+
+def button_icons(tk, foreground):
+    """Draw small, transparent icons without relying on platform fonts."""
+    patterns = {
+        "start": ("#.......", "##......", "###.....", "####....", "#####...", "####....", "###.....", "##......", "#......."),
+        "stop": ("########",) * 8,
+        "browser": ("##########", "#........#", "##########", "#........#", "#........#", "#........#", "#........#", "##########"),
+        "log": (".######...", ".#....##..", ".#.....#..", ".#.###.#..", ".#.....#..", ".#.###.#..", ".#.....#..", ".#######.."),
+        "config": ("...##.....", "#..##..#..", ".######...", ".##..##...", "###..###..", ".##..##...", ".######...", "#..##..#..", "...##....."),
+    }
+    icons = {}
+    for name, rows in patterns.items():
+        icon = tk.PhotoImage(width=12, height=12)
+        for y, row in enumerate(rows, start=1):
+            for x, pixel in enumerate(row, start=1):
+                if pixel == "#":
+                    icon.put(foreground, (x, y))
+        icons[name] = icon
+    return icons
+
 def main():
     import tkinter as tk
     from tkinter import filedialog, messagebox, ttk
@@ -207,6 +236,9 @@ def main():
     service = ServiceController(state)
     folder = tk.StringVar(value=load_folder(state))
     status = tk.StringVar(value="Choose the folder containing your acquisitions.")
+    foreground = ttk.Style(root).lookup("TButton", "foreground") or "black"
+    red, green, blue = root.winfo_rgb(foreground)
+    icons = button_icons(tk, f"#{red // 257:02x}{green // 257:02x}{blue // 257:02x}")
     frame = ttk.Frame(root, padding=20)
     frame.grid()
     ttk.Label(frame, text="Acquisition folder").grid(row=0, column=0, sticky="w")
@@ -229,7 +261,7 @@ def main():
         opened = False
         entry.configure(state="normal")
         browse_button.configure(state="normal")
-        start_button.configure(text="Start", state="normal")
+        start_button.configure(text="Start", image=icons["start"], state="normal")
         stop_button.configure(state="disabled")
         status.set("ToFScope stopped.")
 
@@ -262,26 +294,33 @@ def main():
         stop_button.configure(state="normal")
         status.set("Starting ToFScope…")
 
-    start_button = ttk.Button(frame, text="Start", command=start)
-    start_button.grid(row=3, column=0, sticky="w", pady=10)
-    stop_button = ttk.Button(frame, text="Stop", command=stop, state="disabled")
-    stop_button.grid(row=3, column=1, pady=10)
+    actions = ttk.Frame(frame)
+    actions.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(10, 0))
+    actions.columnconfigure((0, 1), weight=1, uniform="actions")
+    start_button = ttk.Button(actions, text="Start", image=icons["start"], compound="left", command=start)
+    start_button.grid(row=0, column=0, sticky="ew", padx=(0, 5), pady=(0, 8))
+    stop_button = ttk.Button(actions, text="Stop", image=icons["stop"], compound="left", command=stop, state="disabled")
+    stop_button.grid(row=0, column=1, sticky="ew", padx=(5, 0), pady=(0, 8))
 
     def show_log():
         if service.log_path.exists():
-            os.startfile(service.log_path)
+            try:
+                open_local_file(service.log_path)
+            except OSError as exc:
+                messagebox.showerror("Could not open log", str(exc), parent=root)
         else:
             messagebox.showinfo("ToFScope log", "No service log yet. Start ToFScope first.", parent=root)
 
-    ttk.Button(frame, text="Open log", command=show_log).grid(row=4, column=0, sticky="w")
+    ttk.Button(actions, text="Open log", image=icons["log"], compound="left", command=show_log).grid(row=1, column=0, sticky="ew", padx=(0, 5))
 
     def open_config():
         try:
-            os.startfile(ensure_config(state))
+            open_local_file(ensure_config(state))
+            status.set("After saving changes, click Stop, then Start to apply them.")
         except OSError as exc:
             messagebox.showerror("Could not open configuration", str(exc), parent=root)
 
-    ttk.Button(frame, text="Open configuration", command=open_config).grid(row=4, column=1)
+    ttk.Button(actions, text="Open configuration", image=icons["config"], compound="left", command=open_config).grid(row=1, column=1, sticky="ew", padx=(5, 0))
 
     def tick():
         nonlocal opened
@@ -290,7 +329,7 @@ def main():
             if not opened and not failed and service.ready():
                 opened = True
                 status.set("ToFScope is running. Keep this window open while you work.")
-                start_button.configure(text="Open in browser", state="normal")
+                start_button.configure(text="Open in browser", image=icons["browser"], state="normal")
                 open_browser()
             elif failed or (not opened and time.monotonic() - service.started > 60):
                 stop()

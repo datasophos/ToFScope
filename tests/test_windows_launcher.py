@@ -8,6 +8,29 @@ from tofscope.windows_launcher import ServiceController, load_folder, save_folde
 
 
 class LauncherTests(unittest.TestCase):
+    def test_open_file_uses_platform_handler(self):
+        from unittest.mock import patch
+        from tofscope.windows_launcher import open_local_file
+        path = Path("/tmp/tofscope-config.toml")
+        with patch("os.name", "posix"), patch("sys.platform", "darwin"), patch("subprocess.Popen") as process:
+            open_local_file(path)
+        process.assert_called_once_with(["open", str(path)])
+
+    def test_button_icons_use_native_foreground(self):
+        from types import SimpleNamespace
+        from tofscope.windows_launcher import button_icons
+
+        class Image:
+            def __init__(self, **kwargs):
+                self.colors = set()
+
+            def put(self, color, position):
+                self.colors.add(color)
+
+        for color in ("#222222", "#ffffff"):
+            icons = button_icons(SimpleNamespace(PhotoImage=Image), color)
+            self.assertTrue(all(icon.colors == {color} for icon in icons.values()))
+
     def test_config_created_and_preserved(self):
         from tofscope.windows_launcher import ensure_config
         from tofscope.config import load_settings
@@ -15,6 +38,7 @@ class LauncherTests(unittest.TestCase):
             state = Path(directory)
             config = ensure_config(state)
             self.assertIn("uncomment", config.read_text().lower())
+            self.assertIn("Stop, then Start", config.read_text())
             self.assertEqual(load_settings(config, env={}, cli={"data_root": state}).response_bytes, 1024**4)
             config.write_text("[tofscope]\nresponse_bytes = 12345\n")
             self.assertEqual(ensure_config(state).read_text(), "[tofscope]\nresponse_bytes = 12345\n")
@@ -31,6 +55,20 @@ class LauncherTests(unittest.TestCase):
             settings = run.call_args.args[0]
             self.assertEqual(settings.response_bytes, 12345)
             self.assertEqual((settings.host, settings.port), ("127.0.0.1", 1234))
+
+    def test_worker_reads_changes_on_next_start(self):
+        from unittest.mock import patch
+        from tofscope.windows_launcher import run_worker
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            config = state / "config.toml"
+            arguments = [str(state), str(state / "runtime"), "1234", str(config)]
+            with patch("tofscope.cli.run_service") as run, patch("threading.Thread"):
+                config.write_text("[tofscope]\nresponse_bytes = 100\n")
+                run_worker(arguments)
+                config.write_text("[tofscope]\nresponse_bytes = 200\n")
+                run_worker(arguments)
+            self.assertEqual([call.args[0].response_bytes for call in run.call_args_list], [100, 200])
 
     def test_preferences_roundtrip_and_invalid_preferences(self):
         with tempfile.TemporaryDirectory() as directory:
