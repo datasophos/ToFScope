@@ -1,0 +1,20 @@
+# Draft notes for a future release
+
+## Portable Windows application
+
+ToFScope now supports running as a portable Windows x64 application (in addition to being installed via `uv tool`). To use this version, download the ZIP from
+GitHub Releases and open `ToFScope.exe` after extracting it. The launcher GUI lets you choose an acquisition folder, starts and stops the local
+service, opens the app in a browser, and provides access to its log and configuration. The bundle runs offline after download and does not
+require a separate Python installation.
+
+The executables are unsigned, so Windows may show a SmartScreen warning.
+
+## Configuration and memory limit improvements
+
+Added a commented configuration file for the Windows launcher GUI in the user's local application data folder.
+Users can set an output folder, memory limits, and other options. Changes take effect after the
+service is stopped and started again.
+
+Increased the default managed-memory and response limits for large acquisitions.
+Deployments can lower these limits in their configuration. Note, these are upper limits and do not explicitly
+pre-reserve memory.

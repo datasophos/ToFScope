@@ -29,10 +29,10 @@ class Settings:
     trusted_proxies: tuple[str, ...] = ()
     identity_header: str = "x-tofscope-user"
     public_origin: str | None = None
-    global_bytes: int = 4 * 1024**3
-    user_bytes: int = 2 * 1024**3
-    analysis_bytes: int = 1024**3
-    response_bytes: int = 32 * 1024**2
+    global_bytes: int = 1024**5
+    user_bytes: int = 1024**5
+    analysis_bytes: int = 1024**5
+    response_bytes: int = 1024**4
     analyses_per_user: int = 8
     analyses_global: int = 32
     jobs_per_analysis: int = 4

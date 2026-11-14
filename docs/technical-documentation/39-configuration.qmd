@@ -11,8 +11,9 @@ they are all documented here.
 
 Settings can come from command-line options, environment variables, or a TOML file supplied with `--config`.
 When more than one source sets the same option, command-line options take precedence over environment variables,
-which take precedence over the TOML file; otherwise the defaults below apply. ToFScope does not automatically load
-a configuration file. For example, to use the following config:
+which take precedence over the TOML file; otherwise the defaults below apply. The Windows portable launcher
+automatically loads `%LOCALAPPDATA%/ToFScope/config.toml`.
+Other launch methods do not automatically load a configuration file. For example, to use the following config:
 
 ```toml
 # tofscope.toml
@@ -64,14 +65,16 @@ These variables apply to the current shell and programs started from it. A comma
 ## Resource limits and lifecycle
 
 Numeric values are positive integers. Byte limits govern managed arrays and response buffers, not total process or
-browser memory; allow additional headroom.
+browser memory. The defaults do not reserve memory; a machine can run out of memory before reaching them.
+Some requests reserve the full `response_bytes` allowance against the managed-memory budgets. If you lower
+those budgets, lower `response_bytes` too, leaving room for analysis data and concurrent requests.
 
 | Setting | Default | Purpose |
 | --- | --- | --- |
-| `global_bytes` | `4294967296` (4 GiB) | Global managed-memory budget. |
-| `user_bytes` | `2147483648` (2 GiB) | Managed-memory budget per user. |
-| `analysis_bytes` | `1073741824` (1 GiB) | Managed-memory budget per analysis. |
-| `response_bytes` | `33554432` (32 MiB) | Limit used for response and transport buffers. |
+| `global_bytes` | `1125899906842624` (1 PiB) | Global managed-memory budget. |
+| `user_bytes` | `1125899906842624` (1 PiB) | Managed-memory budget per user. |
+| `analysis_bytes` | `1125899906842624` (1 PiB) | Managed-memory budget per analysis. |
+| `response_bytes` | `1099511627776` (1 TiB) | Limit used for response and transport buffers. |
 | `analyses_per_user`, `analyses_global` | `8`, `32` | Limits on open analyses per user and across the service. |
 | `signals_per_analysis`, `signals_per_user`, `signals_global` | `129`, `512`, `2048` | Limits on signals per analysis, per user, and across the service. |
 | `jobs_per_analysis`, `jobs_per_user`, `jobs_global` | `4`, `8`, `32` | Limits on active jobs per analysis, per user, and across the service. |
