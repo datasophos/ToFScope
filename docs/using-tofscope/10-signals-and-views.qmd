@@ -103,6 +103,32 @@ is not verified, so check it before using the selected region for quantitative i
 levels histogram: drag its handles to change the lower and upper display bounds, drag the window to move both, or enter values directly.
 Reset returns to the automatic range. These controls adjust image appearance without changing the underlying data.
 
+### Switch the front projection
+
+The front projection shows the selected signal across the ROI and through the acquisition frames or calibrated depth.
+The **XZ** or **YZ** button shows the current orientation. Select it to switch views.
+
+- **XZ** shows X on the horizontal axis and sums the signal over the ROI's Y extent.
+- **YZ** shows Y on the horizontal axis and sums the signal over the ROI's X extent.
+
+Both views are cropped to the ROI and retain the original spatial coordinates. Click the projection to select a frame,
+or drag vertically to select a frame range. The PNG export and expanded view use the selected orientation.
+
+```{=html}
+<div class="projection-examples" role="group" aria-label="Front projection orientations">
+  <figure class="figure">
+    <img src="../assets/tofscope-front-projection-xz.png" alt="Front projection in XZ mode, with X in micrometers on the horizontal axis and frame on the vertical axis.">
+    <figcaption class="figure-caption">XZ: the signal is summed over Y.</figcaption>
+  </figure>
+  <figure class="figure">
+    <img src="../assets/tofscope-front-projection-yz.png" alt="Front projection in YZ mode, with Y in micrometers on the horizontal axis and frame on the vertical axis.">
+    <figcaption class="figure-caption">YZ: the signal is summed over X.</figcaption>
+  </figure>
+</div>
+```
+
+### Adjust plot scales
+
 Use the [**Relative profiles**](#image-relative-profiles) checkbox in the depth profile header to control how intensities are shown. When unchecked, the profiles share a mean-intensity scale, so weaker signals can be hard to see. Checking the box scales each profile to its own maximum, making their shapes easier to compare but potentially making noise more visible.
 
 ```{=html}
