@@ -20,6 +20,8 @@ import { useSignalEditor } from "./useSignalEditor";
 import { ViewingDepths, availableFrames } from "./ViewingDepths";
 import { ROIControls } from "./ROIControls";
 import { ImageDisplayControls } from "./ImageDisplayControls";
+import { useSubvolumeSpectrum } from "./useSubvolumeSpectrum";
+import { spectrumSelection, subvolumePanel } from "./subvolumeSpectrum";
 import {
   roiFromBounds,
   roiBounds,
@@ -56,7 +58,9 @@ export function ExploreScreen({
     panelStates,
   } = useAnalysis(initial);
   const editor = useSignalEditor(a, refresh);
+  const spectrum = useSubvolumeSpectrum(a);
   const busy =
+    spectrum.busy ||
     editor.submitting ||
     a.signals.some(
       (row) =>
@@ -137,6 +141,13 @@ export function ExploreScreen({
       image: (patch.image ?? latest.display.image) as "sims" | "se",
     })).catch(() => {});
   const panels = data?.panels;
+  const spectrumPanel =
+    spectrum.showSelected &&
+    spectrum.result &&
+    panels?.spectrum &&
+    spectrum.result.dataset_generation === a.dataset.generation
+      ? subvolumePanel(panels.spectrum, spectrum.result)
+      : panels?.spectrum;
   const seSize: [number, number] | undefined =
     panels?.ion?.axes.length === 2
       ? [panels.ion.axes[0].values.length, panels.ion.axes[1].values.length]
@@ -396,7 +407,7 @@ export function ExploreScreen({
                   expanded={max === "spectrum"}
                   title="Mass spectrum"
                   help={help.spectrum}
-                  panel={panels?.spectrum}
+                  panel={spectrumPanel}
                   selectionMode={d ? "select" : "zoom"}
                   selection={interval?.map(Number)}
                   selectionWindows={d?.intervals.map(
@@ -416,9 +427,48 @@ export function ExploreScreen({
                   headingControls={
                     <>
                       <span className="plot-status">
-                        {spectrumMode}
+                        {spectrum.showSelected && spectrum.result
+                          ? `Selected spectrum · ${spectrumSelection(spectrum.result)}`
+                          : "Acquisition-wide spectrum"}{" "}
+                        · {spectrumMode}
                         {d?.submittedJobId ? " · calculating" : ""}
                       </span>
+                      {spectrum.busy ? (
+                        <>
+                          <span role="status">
+                            {spectrum.job?.stage || "Calculating spectrum"}{" "}
+                            {spectrum.job?.total
+                              ? `${spectrum.job.done}/${spectrum.job.total}`
+                              : ""}
+                          </span>
+                          <button
+                            onClick={() => void spectrum.cancel()}
+                            disabled={!spectrum.job}
+                          >
+                            Cancel spectrum
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => void spectrum.calculate()}
+                          disabled={pendingCommands > 0}
+                        >
+                          Calculate ROI spectrum
+                        </button>
+                      )}
+                      {spectrum.showSelected && (
+                        <button onClick={() => spectrum.setShowSelected(false)}>
+                          Show acquisition spectrum
+                        </button>
+                      )}
+                      {!spectrum.showSelected && spectrum.result && (
+                        <button onClick={() => spectrum.setShowSelected(true)}>
+                          Show ROI spectrum
+                        </button>
+                      )}
+                      {spectrum.error && (
+                        <span role="alert">{spectrum.error}</span>
+                      )}
                       {!d && (
                         <>
                           <button onClick={editor.openNew}>
@@ -426,7 +476,7 @@ export function ExploreScreen({
                           </button>
                           <IdentifyDialog
                             analysis={a}
-                            spectrum={panels?.spectrum}
+                            spectrum={spectrumPanel}
                             send={send}
                             active={active}
                             onDraft={editor.openIdentified}

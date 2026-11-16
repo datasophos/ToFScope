@@ -38,7 +38,7 @@ class SaveService:
             except FileNotFoundError:
                 raise ValueError('Save folder is unavailable.') from None
             with self.jobs.condition:
-                if any(j.snapshot.analysis_id == analysis_id and j.snapshot.kind in {'integration', 'measurement'} and j.snapshot.status not in {'succeeded', 'failed', 'cancelled', 'obsolete'} for j in self.jobs.jobs.values()):
+                if any(j.snapshot.analysis_id == analysis_id and j.snapshot.kind in {'integration', 'measurement', 'spectrum'} and j.snapshot.status not in {'succeeded', 'failed', 'cancelled', 'obsolete'} for j in self.jobs.jobs.values()):
                     raise ValueError('Finish or cancel calculations before saving.')
                 task = SaveTask(e.snapshot, encode_document(e.snapshot), name, directory, location)
                 result = self.jobs.enqueue_save(owner, task)

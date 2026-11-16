@@ -29,7 +29,7 @@ def _hdf5_library():
 
 
 @contextmanager
-def admitted_events(raw, frame, reserve):
+def admitted_events(raw, frame, reserve, *, roi=None):
     """Borrow a packed event batch until the context exits, with bounded scratch."""
     base = h5py.check_dtype(vlen=raw.dtype)
     if base is None or np.dtype(base).kind not in "iu" or np.dtype(base).itemsize > 8:
@@ -56,7 +56,16 @@ def admitted_events(raw, frame, reserve):
             stack.callback(identifier.close)
             return identifier
 
-        shape = raw.shape[1:]
+        if len(raw.shape) != 3 or not 0 <= frame < raw.shape[0]:
+            raise ValueError("Invalid raw event frame or shape.")
+        ny, nx = raw.shape[1:]
+        if roi is None:
+            roi = (0, nx - 1, 0, ny - 1)
+        if (len(roi) != 4 or any(type(v) is not int for v in roi)
+                or not (0 <= roi[0] <= roi[1] < nx and 0 <= roi[2] <= roi[3] < ny)):
+            raise ValueError("Invalid raw event ROI.")
+        x0, x1, y0, y1 = roi
+        shape = (y1 - y0 + 1, x1 - x0 + 1)
         count = int(np.prod(shape))
         # Descriptors, offset/length tables, masks and per-cell reduction scratch.
         stack.enter_context(reserve(count * 512 + 4096))
@@ -94,7 +103,7 @@ def admitted_events(raw, frame, reserve):
 
         memory_type = manage(raw.id.get_type())
         file_space = manage(raw.id.get_space())
-        file_space.select_hyperslab((frame, 0, 0), (1, *shape))
+        file_space.select_hyperslab((frame, y0, x0), (1, *shape))
         memory_space = manage(h5py.h5s.create_simple(shape))
         transfer = manage(h5py.h5p.create(h5py.h5p.DATASET_XFER))
         if set_manager(transfer.id, allocate, None, free, None) < 0:

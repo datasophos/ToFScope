@@ -1314,7 +1314,8 @@
               "integration",
               "save",
               "preparation",
-              "measurement"
+              "measurement",
+              "spectrum"
             ],
             "title": "Kind",
             "type": "string"
@@ -2055,6 +2056,35 @@
           "relative_path"
         ],
         "title": "ReplaceAcquisition",
+        "type": "object"
+      },
+      "RevisionEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset_generation": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Dataset Generation",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "request_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_revision",
+          "dataset_generation"
+        ],
+        "title": "RevisionEnvelope",
         "type": "object"
       },
       "SaveCopy": {
@@ -2873,6 +2903,68 @@
           }
         },
         "title": "SpatialView",
+        "type": "object"
+      },
+      "SpectrumResult": {
+        "properties": {
+          "dataset_generation": {
+            "title": "Dataset Generation",
+            "type": "string"
+          },
+          "frames": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Frames",
+            "type": "array"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "roi": {
+            "maxItems": 4,
+            "minItems": 4,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Roi",
+            "type": "array"
+          },
+          "values": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Values",
+            "type": "array"
+          }
+        },
+        "required": [
+          "job_id",
+          "dataset_generation",
+          "roi",
+          "frames",
+          "values"
+        ],
+        "title": "SpectrumResult",
         "type": "object"
       },
       "SubmitJob": {
@@ -3841,6 +3933,100 @@
           }
         },
         "summary": "Save Copy"
+      }
+    },
+    "/api/v1/analyses/{aid}/spectrum": {
+      "get": {
+        "operationId": "spectrum_result_api_v1_analyses__aid__spectrum_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "aid",
+            "required": true,
+            "schema": {
+              "title": "Aid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SpectrumResult"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Spectrum Result Api V1 Analyses  Aid  Spectrum Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Spectrum Result"
+      },
+      "post": {
+        "operationId": "submit_spectrum_api_v1_analyses__aid__spectrum_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "aid",
+            "required": true,
+            "schema": {
+              "title": "Aid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionEnvelope"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit Spectrum"
       }
     },
     "/api/v1/analyses/{aid}/views": {

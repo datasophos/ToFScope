@@ -148,6 +148,10 @@ Use the [**Relative profiles**](#image-relative-profiles) checkbox in the depth 
 </div>
 ```
 
+Select a region on the ion map and a frame or frame range under **Viewing depths**, then choose **Calculate ROI spectrum** above the mass spectrum. The result is labeled with the pixel bounds and frames captured when the calculation started. Changing the selection does not change that result; calculate again to use the new selection. Use **Cancel spectrum** to stop a running calculation, and **Show acquisition spectrum** to return to the spectrum stored in the file. The calculated spectrum is temporary and is not saved with the analysis. Files without raw events retain the acquisition-wide spectrum.
+
+The calculation reads the selected pixels and inclusive frame range from the raw event list. Each nonnegative event timestamp is divided by the integer sample-to-clock ratio and rounded down to its original mass-axis bin; timestamps outside the axis are excluded. Counts are summed across selected pixels and frames, then divided by the number of acquisition waveforms times the number of active recording channels. There is no averaging by ROI area or number of frames. The acquisition-wide spectrum is the vendor-provided sum and may use different processing.
+
 Use the [**Log y**](#image-log-y) button beside the spectrum to switch its vertical scale between linear and log scale.
 Plot axes include labels, units, and tick marks. Hover over the [spectrum](#image-spectrum-plot) or
 [profile](#image-depth-profile) to see the current x coordinate; calibrated profiles will also show the nearest frame.
