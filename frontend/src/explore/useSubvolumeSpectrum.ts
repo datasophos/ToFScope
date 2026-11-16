@@ -17,14 +17,18 @@ export function useSubvolumeSpectrum(analysis: Analysis) {
     setError("");
   }
   const busy =
-    submitting || (!!job && ["queued", "running"].includes(job.status));
+    submitting || (!!job && ["queued", "running", "succeeded"].includes(job.status));
 
   useEffect(() => {
-    if (!job || !["queued", "running"].includes(job.status)) return;
+    if (!job || !["queued", "running", "succeeded"].includes(job.status))
+      return;
     let alive = true;
     const timer = setTimeout(async () => {
       try {
-        const next = await request<Job>(`/jobs/${job.id}`);
+        const next =
+          job.status === "succeeded"
+            ? job
+            : await request<Job>(`/jobs/${job.id}`);
         if (!alive) return;
         if (next.status === "succeeded") {
           const spectrum = await request<SpectrumResult | null>(
@@ -43,7 +47,8 @@ export function useSubvolumeSpectrum(analysis: Analysis) {
             next.safe_error || "Spectrum calculation is no longer current.",
           );
         }
-        setJob(next);
+        if (next.status === "succeeded") setJob(null);
+        else setJob(next);
       } catch (e) {
         if (alive) {
           setError((e as Error).message);

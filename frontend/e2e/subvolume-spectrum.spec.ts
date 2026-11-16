@@ -142,3 +142,49 @@ test("exports the complete displayed mass spectrum as CSV", async ({
   await panel.getByRole("button", { name: "Total sum", exact: true }).click();
   expect((await exportCsv()).rows).toEqual(sum.rows);
 });
+
+test("shows the completed spectrum when cancellation arrives after completion", async ({
+  page,
+}) => {
+  const owner = `spectrum-cancel-race-${Date.now()}`;
+  await page.setExtraHTTPHeaders({ "x-tofscope-user": owner });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: /Open TOFexplorer/ })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+  await page.route("**/api/v1/jobs/*", async (route) => {
+    const response = await route.fetch();
+    const job = await response.json();
+    await route.fulfill({ response, json: { ...job, status: "running" } });
+  });
+  await page.route("**/api/v1/jobs/*/cancel", async (route) => {
+    const jobUrl = route
+      .request()
+      .url()
+      .replace(/\/cancel$/, "");
+    await expect
+      .poll(
+        async () =>
+          (
+            await (
+              await page.request.get(jobUrl, {
+                headers: { "x-tofscope-user": owner },
+              })
+            ).json()
+          ).status,
+      )
+      .toBe("succeeded");
+    await route.continue();
+  });
+  const panel = page.getByTestId("panel-spectrum");
+  await panel.getByRole("button", { name: "Calculate ROI" }).click();
+  await panel.getByRole("button", { name: "Cancel" }).click();
+  await expect(
+    panel.getByRole("button", { name: "ROI", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    panel.getByText(/Selected spectrum · x 0–1, y 0–0, frames 0–2/),
+  ).toBeVisible();
+});
