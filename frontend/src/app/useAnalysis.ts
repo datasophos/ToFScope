@@ -67,7 +67,7 @@ export function useAnalysis(initial: Analysis) {
         if (
           active ||
           geometry ||
-          different(before.roi.slice(2), a.roi.slice(2)) ||
+          different(before.roi, a.roi) ||
           before.display.colormap !== a.display.colormap ||
           before.display.log !== a.display.log
         )

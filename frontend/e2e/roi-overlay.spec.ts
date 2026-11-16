@@ -198,3 +198,18 @@ test("SE image selection updates the SIMS ROI and display controls reset", async
     /x 1–1/,
   );
 });
+
+test("front projection refreshes when only the ROI X bounds change", async ({ page }) => {
+  await page.setExtraHTTPHeaders({ "x-tofscope-user": `roi-x-${Date.now()}` });
+  await page.goto("/");
+  await page.getByRole("button", { name: /Open TOFexplorer/ }).first().click();
+  await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+  const front = page.getByTestId("panel-front");
+  await expect(front).toHaveAttribute("data-content-version", /.+/);
+  const before = await front.getAttribute("data-content-version");
+  await page.getByRole("button", { name: /^ROI:/ }).click();
+  await page.getByLabel("ROI x first", { exact: true }).fill("1");
+  await page.getByRole("button", { name: "Apply ROI", exact: true }).click();
+  await expect(front).not.toHaveAttribute("data-content-version", before!);
+  await expect(front.getByTestId("selection-overlay")).toHaveAttribute("data-x-range", "10,20");
+});
