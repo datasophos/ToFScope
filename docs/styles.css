@@ -119,8 +119,7 @@ sup > a[href$="#trademark-notice"] {
 .projection-examples img {
   display: block;
   width: 100%;
-  aspect-ratio: 652 / 698;
-  object-fit: cover;
+  height: auto;
 }
 
 .profile-comparison label {
