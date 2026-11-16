@@ -96,10 +96,10 @@ class PresentationTests(unittest.TestCase):
         self.assertEqual(d.panels["profile"].series[0].values, [0.5, 2.5, 4.5])
         json.dumps(d.to_dict(), allow_nan=False)
         self.command({"type": "set_roi", "roi": [1, 1, 0, 0]})
-        np.testing.assert_array_equal(
-            self.presenter.snapshot("a", self.a.id, {"front"}).panels["front"].values,
-            [[0.0, 1.0], [2.0, 3.0], [4.0, 5.0]],
-        )
+        front = self.presenter.snapshot("a", self.a.id, {"front"}).panels["front"]
+        np.testing.assert_array_equal(front.values, [[1.0], [3.0], [5.0]])
+        self.assertEqual(front.axes[0].values, [15.0])
+        self.assertEqual(front.axes[0].boundaries, [10.0, 20.0])
         csv = self.exports.render("a", self.a.id, "csv").content
         self.command(
             {"type": "set_display", "log": True, "relative": True, "image": "sims"}
@@ -111,6 +111,26 @@ class PresentationTests(unittest.TestCase):
             self.presenter.snapshot("a", self.a.id, {"ion"}).panels["ion"].values,
             [[2.0, 3.0]],
         )
+
+    def test_front_projection_crops_both_roi_axes_and_retains_coordinates(self):
+        from fixtures.acquisition import make_spatial_acquisition
+
+        make_spatial_acquisition(self.settings.data_root / "b.h5")
+        current = self.s.analyses.get("a", self.a.id)
+        self.s.analyses.replace(
+            "a", self.a.id, self.s.repository.open("a", "b.h5"), current.revision
+        )
+        self.select_channel(0)
+        self.command({"type": "set_roi", "roi": [1, 2, 1, 2]})
+        front = self.presenter.snapshot("a", self.a.id, {"front"}).panels["front"]
+        self.assertEqual(front.values[0], [14.0, 16.0])
+        self.assertEqual(front.values[1], [46.0, 48.0])
+        self.assertEqual(front.axes[0].values, [7.5, 12.5])
+        self.assertEqual(front.axes[0].boundaries, [5.0, 10.0, 15.0])
+        self.command({"type": "set_roi", "roi": [2, 2, 1, 2]})
+        narrower = self.presenter.snapshot("a", self.a.id, {"front"}).panels["front"]
+        self.assertEqual(narrower.values[0], [16.0])
+        self.assertNotEqual(narrower.content_version, front.content_version)
 
     def test_se_and_json_exact_scope(self):
         self.command(

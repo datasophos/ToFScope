@@ -148,7 +148,7 @@ class ExplorePresenter:
                     lo, hi = selected_frames(s)
                     low = max(lo, r.frames[0])
                     high = min(hi, r.frames[1])
-                    _x0, _x1, y0, y1 = s.roi
+                    x0, x1, y0, y1 = s.roi
                     if "ion" in panels:
                         if s.display.image == "se":
                             with self.repository.access(owner, s.dataset) as path:
@@ -207,14 +207,14 @@ class ExplorePresenter:
                             frame_range=selected_frames(s),
                         )
                     if "front" in panels:
-                        front = np.full((last - first + 1, nx), np.nan)
+                        front = np.full((last - first + 1, x1 - x0 + 1), np.nan)
                         l = max(first, r.frames[0])
                         h = min(last, r.frames[1])
                         if l <= h:
                             front[l - first : h - first + 1] = a[
-                                l - r.frames[0] : h - r.frames[0] + 1, y0 : y1 + 1, :
+                                l - r.frames[0] : h - r.frames[0] + 1, y0 : y1 + 1, x0 : x1 + 1
                             ].sum(axis=1, dtype=np.float64)
-                        fx = xaxis
+                        fx = replace(xaxis, values=xaxis.values[x0 : x1 + 1], boundaries=xaxis.boundaries[x0 : x1 + 2])
                         result["front"] = self.panel(
                             "image",
                             [fx, depth_axis],
