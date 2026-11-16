@@ -169,7 +169,7 @@ export function useAnalysis(initial: Analysis) {
         void request(`/views/${view}`, { method: "DELETE" }).catch(() => {});
     };
   }, [initial.id, refresh]);
-  const send = async (command: Command) => {
+  const send = async (command: Command | ((state: Analysis) => Command)) => {
     setPendingCommands((count) => count + 1);
     try {
       setError("");

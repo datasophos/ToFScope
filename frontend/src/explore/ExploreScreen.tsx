@@ -130,12 +130,12 @@ export function ExploreScreen({
         ? [a.depth.first, a.depth.last]
         : undefined;
   const display = (patch: Partial<Analysis["display"]>) =>
-    act({
+    void send((latest) => ({
       type: "set_display",
-      ...a.display,
+      ...latest.display,
       ...patch,
-      image: (patch.image ?? a.display.image) as "sims" | "se",
-    });
+      image: (patch.image ?? latest.display.image) as "sims" | "se",
+    })).catch(() => {});
   const panels = data?.panels;
   const seSize: [number, number] | undefined =
     panels?.ion?.axes.length === 2

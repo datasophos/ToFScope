@@ -15,7 +15,7 @@ export class CommandQueue<T extends StateRef> {
     if (!current || state.revision >= current.revision)
       this.latest.set(state.id, state);
   }
-  send(state: T, command: Command): Promise<T> {
+  send(state: T, command: Command | ((state: T) => Command)): Promise<T> {
     this.observe(state);
     const next = (this.chains.get(state.id) || Promise.resolve())
       .catch(() => {})
@@ -25,7 +25,7 @@ export class CommandQueue<T extends StateRef> {
           request_id: crypto.randomUUID(),
           expected_revision: current.revision,
           dataset_generation: current.dataset.generation,
-          command,
+          command: typeof command === "function" ? command(current) : command,
         };
         let result: T;
         try {
