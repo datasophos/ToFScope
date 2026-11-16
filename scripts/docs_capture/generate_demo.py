@@ -62,13 +62,79 @@ def generate(path=DEMO):
             counts[z] = frame_counts
             # Each event is a native mass-axis bin. Spread it over nearby bins.
             cell_counts = frame_counts.reshape(-1, len(labels))
-            background = rng.poisson(0.15, SIZE * SIZE)
+            background = rng.poisson(0.45, SIZE * SIZE)
+            # Smaller molecular and isotope peaks make the overview spectrum
+            # resemble an acquisition while retaining the spatial channels above.
+            extra_masses = np.array(
+                [
+                    12,
+                    16,
+                    18,
+                    23,
+                    29,
+                    39,
+                    41,
+                    55,
+                    56,
+                    69,
+                    70,
+                    71,
+                    85,
+                    87,
+                    103,
+                    107,
+                    127,
+                    133,
+                    134,
+                    135,
+                    137,
+                    138,
+                    151,
+                    185,
+                ]
+            )
+            extra_weights = np.array(
+                [
+                    2,
+                    5,
+                    2,
+                    3,
+                    3,
+                    2,
+                    1,
+                    4,
+                    1,
+                    6,
+                    9,
+                    4,
+                    5,
+                    3,
+                    2,
+                    4,
+                    2,
+                    6,
+                    8,
+                    4,
+                    2,
+                    1,
+                    1,
+                    1,
+                ],
+                dtype=float,
+            )
+            extra_weights /= extra_weights.sum()
+            extra_counts = rng.poisson(0.12, SIZE * SIZE)
             cells = np.empty(SIZE * SIZE, dtype=object)
             for i, values in enumerate(cell_counts):
                 bins = np.repeat(peak_bins, values)
                 if bins.size:
                     bins = np.clip(
-                        bins + rng.integers(-3, 4, bins.size), 0, len(axis) - 1
+                        bins
+                        + np.clip(np.rint(rng.normal(0, 1.1, bins.size)), -3, 3).astype(
+                            int
+                        ),
+                        0,
+                        len(axis) - 1,
                     )
                 if background[i]:
                     noise = rng.integers(0, len(axis), background[i])
@@ -77,6 +143,19 @@ def generate(path=DEMO):
                         np.abs(noise_masses[:, None] - masses) <= 0.20, axis=0
                     )
                     bins = np.concatenate((bins, noise))
+                if extra_counts[i]:
+                    centers = rng.choice(extra_masses, extra_counts[i], p=extra_weights)
+                    # Narrow peaks with a weak, asymmetric instrumental tail.
+                    offsets = rng.normal(0, 0.06, extra_counts[i]) + rng.exponential(
+                        0.12, extra_counts[i]
+                    )
+                    extra_bins = np.searchsorted(axis, centers + offsets).clip(
+                        0, len(axis) - 1
+                    )
+                    counts[z, i // SIZE, i % SIZE] += np.count_nonzero(
+                        np.abs(axis[extra_bins, None] - masses) <= 0.20, axis=0
+                    )
+                    bins = np.concatenate((bins, extra_bins))
                 if bins.size:
                     np.add.at(spectrum, bins, 1)
                 cells[i] = bins.astype("u4")

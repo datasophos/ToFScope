@@ -112,27 +112,23 @@ test("capture documentation views using the synthetic demo", async ({
   );
   await settleCanvas(page.getByTestId("panel-ion").locator("canvas").first());
   await capture(page, "tofscope-explore.png");
-  await page
-    .getByTestId("panel-profile")
-    .screenshot({
-      path: join(output!, "profile-relative.png"),
-      animations: "disabled",
-    });
+  await page.getByTestId("panel-profile").screenshot({
+    path: join(output!, "profile-relative.png"),
+    animations: "disabled",
+  });
   await page.getByLabel("Relative profiles").click();
   await expect(page.getByLabel("Relative profiles")).not.toBeChecked();
-  await page
-    .getByTestId("panel-profile")
-    .screenshot({
-      path: join(output!, "profile-mean.png"),
-      animations: "disabled",
-    });
+  await page.getByTestId("panel-profile").screenshot({
+    path: join(output!, "profile-mean.png"),
+    animations: "disabled",
+  });
   await page.getByLabel("Relative profiles").click();
   await expect(page.getByLabel("Relative profiles")).toBeChecked();
   await page.getByRole("button", { name: "Calibrate depth" }).click();
   const calibration = page.getByRole("dialog", { name: "Depth calibration" });
   await expect(calibration).toBeVisible();
-  await calibration.getByLabel("Anchor frame", { exact: true }).fill("64");
-  await calibration.getByLabel("Known depth", { exact: true }).fill("120");
+  await calibration.getByLabel("Anchor frame", { exact: true }).fill("25");
+  await calibration.getByLabel("Known depth", { exact: true }).fill("50");
   await calibration
     .getByRole("button", { name: "Add anchor", exact: true })
     .click();
@@ -150,24 +146,24 @@ test("capture documentation views using the synthetic demo", async ({
     .getByRole("button", { name: "Create signal", exact: true })
     .click();
   await page.getByLabel("Signal name", { exact: true }).fill("Titanium");
+  await page.getByLabel("Mass lower 1", { exact: true }).fill("46");
+  await page.getByLabel("Mass upper 1", { exact: true }).fill("50");
+  await page.getByRole("button", { name: "Zoom to draft" }).click();
   await page.getByLabel("Mass lower 1", { exact: true }).fill("47.75");
   await page.getByLabel("Mass upper 1", { exact: true }).fill("48.15");
-  await page
-    .locator(".spectrum-workbench")
-    .screenshot({
-      path: join(output!, "signal-editor.png"),
-      animations: "disabled",
-    });
+  await page.locator(".spectrum-workbench").screenshot({
+    path: join(output!, "signal-editor.png"),
+    animations: "disabled",
+  });
   await page.getByRole("button", { name: "Discard", exact: true }).click();
   await page
     .getByRole("button", { name: "Discard and continue", exact: true })
     .click();
-  await page
-    .getByTestId("panel-front")
-    .screenshot({
-      path: join(output!, "tofscope-front-projection-xz.png"),
-      animations: "disabled",
-    });
+  await page.setViewportSize({ width: 2400, height: 1100 });
+  await page.getByTestId("panel-front").screenshot({
+    path: join(output!, "tofscope-front-projection-xz.png"),
+    animations: "disabled",
+  });
   await page
     .getByTestId("panel-front")
     .getByRole("button", { name: "Switch to Y-Z projection" })
@@ -177,12 +173,11 @@ test("capture documentation views using the synthetic demo", async ({
       .getByTestId("panel-front")
       .getByRole("button", { name: "Switch to X-Z projection" }),
   ).toBeVisible();
-  await page
-    .getByTestId("panel-front")
-    .screenshot({
-      path: join(output!, "tofscope-front-projection-yz.png"),
-      animations: "disabled",
-    });
+  await page.getByTestId("panel-front").screenshot({
+    path: join(output!, "tofscope-front-projection-yz.png"),
+    animations: "disabled",
+  });
+  await page.setViewportSize({ width: 1660, height: 1100 });
   await page
     .getByTestId("panel-spectrum")
     .locator("summary")
@@ -266,15 +261,31 @@ test("capture documentation views using the synthetic demo", async ({
   await expect(page.getByTestId("volume-status")).toContainText("2 layers", {
     timeout: 120_000,
   });
+  for (const [prefix, colorscale] of [
+    ["Al", "Reds"],
+    ["Si", "Blues"],
+  ]) {
+    const settings = page.getByRole("button", {
+      name: new RegExp(`^3D settings for ${prefix} `),
+    });
+    await settings.click();
+    const dialog = page.getByRole("dialog", {
+      name: new RegExp(`^3D settings for ${prefix} `),
+    });
+    await dialog.getByRole("combobox").click();
+    await page.getByRole("option", { name: colorscale, exact: true }).click();
+    await dialog.getByLabel(/^3D opacity/).fill("0.65");
+    await dialog
+      .getByRole("button", { name: "Close 3D signal settings" })
+      .click();
+  }
   await page.getByRole("button", { name: "Maximize 3D" }).click();
   // Let the maximized WebGL view finish its resize and render.
   await page.waitForTimeout(1000);
-  await page
-    .locator(".volume-workspace")
-    .screenshot({
-      path: join(output!, "tofscope-3d.png"),
-      animations: "disabled",
-    });
+  await page.locator(".volume-workspace").screenshot({
+    path: join(output!, "tofscope-3d.png"),
+    animations: "disabled",
+  });
   await page.getByRole("button", { name: "Restore 3D" }).click();
   await page.getByText("Display settings", { exact: true }).click();
   await page
@@ -287,12 +298,10 @@ test("capture documentation views using the synthetic demo", async ({
   await page.getByRole("checkbox", { name: "Show SE in 3D" }).check();
   await page.getByRole("button", { name: "3D settings for SE" }).click();
   await expect(page.getByLabel("Preview intensity histogram")).toBeVisible();
-  await page
-    .getByRole("dialog", { name: "3D settings for SE" })
-    .screenshot({
-      path: join(output!, "tofscope-3d-signal-settings.png"),
-      animations: "disabled",
-    });
+  await page.getByRole("dialog", { name: "3D settings for SE" }).screenshot({
+    path: join(output!, "tofscope-3d-signal-settings.png"),
+    animations: "disabled",
+  });
   await page.keyboard.press("Escape");
   await page
     .getByRole("button", { name: "Open TOFexplorer file", exact: true })
