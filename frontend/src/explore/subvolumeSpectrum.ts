@@ -1,7 +1,24 @@
 import type { components } from "../api/generated";
-import type { Panel } from "../api/client";
+import type { Analysis, Panel } from "../api/client";
 
 export type SpectrumResult = components["schemas"]["SpectrumResult"];
+
+export function spectrumIsOutOfDate(
+  result: SpectrumResult,
+  analysis: Analysis,
+): boolean {
+  const depth = analysis.depth;
+  const frames =
+    depth.mode === "frame"
+      ? [depth.index, depth.index]
+      : depth.mode === "window"
+        ? [depth.first, depth.last]
+        : [0, analysis.shape[0] - 1];
+  return (
+    result.roi.some((value, index) => value !== analysis.roi[index]) ||
+    result.frames.some((value, index) => value !== frames[index])
+  );
+}
 
 export function spectrumSelection(result: SpectrumResult): string {
   const [x0, x1, y0, y1] = result.roi;

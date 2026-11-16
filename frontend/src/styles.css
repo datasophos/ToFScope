@@ -851,6 +851,36 @@ small {
   overflow-wrap: anywhere;
   color: #617582;
 }
+.spectrum-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 4px 0;
+}
+.spectrum-progress progress {
+  width: 160px;
+  max-width: 100%;
+  accent-color: #166c84;
+}
+.spectrum-progress button {
+  padding: 3px 7px;
+  font-size: 11px;
+}
+.spectrum-outdated {
+  color: #875909;
+  font-weight: 600;
+  margin: 4px 0;
+}
+.spectrum-source { display: inline-flex; align-items: center; height: 28px; box-sizing: border-box; padding: 2px; border: 1px solid #bccbd2; border-radius: 7px; background: #e4eaee; }
+.plot-panel header .spectrum-source button { height: 22px; min-height: 0; border: 0; border-radius: 5px; color: #526b7a; background: transparent; padding: 2px 9px; }
+.plot-panel header .spectrum-source button[aria-pressed="true"] { background: #315e72; color: white; }
+.spectrum-actions { position: relative; }
+.spectrum-actions summary { cursor: pointer; list-style: none; border: 1px solid #bccbd2; border-radius: 5px; padding: 3px 9px; font-size: 11px; height: 28px; box-sizing: border-box; display: inline-flex; align-items: center; gap: 4px; }
+.plot-panel header .spectrum-source + span > button, .plot-panel header .spectrum-source ~ span > button { height: 28px; }
+.spectrum-actions summary::-webkit-details-marker { display: none; }
+.spectrum-actions-menu { position: absolute; top: calc(100% + 5px); right: 0; z-index: 30; min-width: 190px; padding: 5px; border: 1px solid #c6d5dc; border-radius: 6px; background: white; box-shadow: 0 5px 18px #20374425; }
+.plot-panel header .spectrum-actions-menu button { display: block; width: 100%; text-align: left; border: 0; padding: 8px 10px; }
 .plot-controls {
   display: flex;
   align-items: center;

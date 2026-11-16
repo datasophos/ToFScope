@@ -1,6 +1,44 @@
 import { expect, test } from "vitest";
-import { subvolumePanel } from "./subvolumeSpectrum";
-import type { Panel } from "../api/client";
+import { subvolumePanel, spectrumIsOutOfDate } from "./subvolumeSpectrum";
+import type { Analysis, Panel } from "../api/client";
+
+const result = {
+  job_id: "j",
+  dataset_generation: "g",
+  roi: [1, 2, 3, 4] as [number, number, number, number],
+  frames: [0, 6] as [number, number],
+  values: [0, 2],
+};
+
+test("detects ROI and frame changes against the calculated selection", () => {
+  const analysis = {
+    roi: [1, 2, 3, 4],
+    shape: [7, 5, 5, 1],
+    depth: { mode: "all" },
+  } as Analysis;
+  expect(spectrumIsOutOfDate(result, analysis)).toBe(false);
+  expect(spectrumIsOutOfDate(result, { ...analysis, roi: [1, 3, 3, 4] })).toBe(
+    true,
+  );
+  expect(
+    spectrumIsOutOfDate(result, {
+      ...analysis,
+      depth: { mode: "frame", index: 3 },
+    }),
+  ).toBe(true);
+  expect(
+    spectrumIsOutOfDate(result, {
+      ...analysis,
+      depth: { mode: "window", first: 0, last: 6 },
+    }),
+  ).toBe(false);
+  expect(
+    spectrumIsOutOfDate(result, {
+      ...analysis,
+      depth: { mode: "window", first: 1, last: 6 },
+    }),
+  ).toBe(true);
+});
 
 test("spectrum panel preserves the native axis and labels the captured selection", () => {
   const base = {

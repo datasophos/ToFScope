@@ -8,6 +8,14 @@ export function useSubvolumeSpectrum(analysis: Analysis) {
   const [showSelected, setShowSelected] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [generation, setGeneration] = useState(analysis.dataset.generation);
+  if (generation !== analysis.dataset.generation) {
+    setGeneration(analysis.dataset.generation);
+    setResult(null);
+    setShowSelected(false);
+    setJob(null);
+    setError("");
+  }
   const busy =
     submitting || (!!job && ["queued", "running"].includes(job.status));
 
@@ -48,13 +56,6 @@ export function useSubvolumeSpectrum(analysis: Analysis) {
       clearTimeout(timer);
     };
   }, [job, analysis.id]);
-
-  useEffect(() => {
-    setResult(null);
-    setShowSelected(false);
-    setJob(null);
-    setError("");
-  }, [analysis.dataset.generation]);
 
   const calculate = async () => {
     setSubmitting(true);
