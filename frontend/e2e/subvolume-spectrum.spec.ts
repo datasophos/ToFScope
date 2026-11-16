@@ -57,9 +57,88 @@ test("calculate a selected spectrum and return to the acquisition spectrum", asy
   await expect(
     panel.getByText(/Selected spectrum · x 0–1, y 0–0, frames 0–2/),
   ).toBeVisible();
-  await expect(panel.getByRole("button", { name: "Identify peak", exact: true })).not.toBeVisible();
+  await expect(
+    panel.getByRole("button", { name: "Identify peak", exact: true }),
+  ).not.toBeVisible();
   await panel.locator("summary").filter({ hasText: "Analyze" }).click();
-  await panel.getByRole("button", { name: "Identify peak", exact: true }).click();
-  await expect(page.getByText("Atomic identification", { exact: true })).toBeVisible();
+  await panel
+    .getByRole("button", { name: "Identify peak", exact: true })
+    .click();
+  await expect(
+    page.getByText("Atomic identification", { exact: true }),
+  ).toBeVisible();
   await expect(panel.locator("details")).not.toHaveAttribute("open");
+});
+
+test("exports the complete displayed mass spectrum as CSV", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `spectrum-csv-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: /Open TOFexplorer/ })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+  const panel = page.getByTestId("panel-spectrum");
+  const exportCsv = async () => {
+    const event = page.waitForEvent("download");
+    await panel.getByRole("button", { name: "Mass spectrum CSV" }).click();
+    const download = await event;
+    const stream = await download.createReadStream();
+    let text = "";
+    for await (const chunk of stream!) text += chunk.toString();
+    return {
+      filename: download.suggestedFilename(),
+      rows: text
+        .trim()
+        .split(/\r?\n/)
+        .filter((row) => row && !row.startsWith("#")),
+      text,
+    };
+  };
+  const sum = await exportCsv();
+  await panel.getByRole("button", { name: "Use linear y scale" }).click();
+  expect((await exportCsv()).rows).toEqual(sum.rows);
+  expect(sum.filename).toContain("sum-spectrum");
+  expect(sum.text).toContain("# Acquisition,a.h5");
+  expect(sum.text).toContain("# Spectrum,Total sum");
+  expect(sum.text).toMatch(/# Exported at \(UTC\),\d{4}-/);
+  expect(sum.rows).toEqual([
+    "m/z,intensity",
+    "0,1",
+    "1,1",
+    "2,1",
+    "3,1",
+    "4,2",
+    "5,2",
+  ]);
+  await panel.getByRole("button", { name: "Calculate ROI" }).click();
+  await expect(
+    panel.getByRole("button", { name: "ROI", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  const roi = await exportCsv();
+  expect(roi.filename).toContain("roi-spectrum");
+  expect(roi.text).toContain("# ROI X pixels,0–1");
+  expect(roi.text).toContain("# ROI Y pixels,0–0");
+  expect(roi.text).toContain("# Frames,0–2");
+  expect(roi.rows).toEqual([
+    "m/z,intensity",
+    "0,0",
+    "1,1.5",
+    "2,1.5",
+    "3,1.5",
+    "4,0.75",
+    "5,0.75",
+  ]);
+  await page.getByRole("button", { name: /ROI: Full field/ }).click();
+  await page.getByLabel("ROI x first").fill("1");
+  await page.getByRole("button", { name: "Apply ROI" }).click();
+  const stale = await exportCsv();
+  expect(stale.text).toContain("# ROI X pixels,0–1");
+  expect(stale.rows).toEqual(roi.rows);
+  await panel.getByRole("button", { name: "Total sum", exact: true }).click();
+  expect((await exportCsv()).rows).toEqual(sum.rows);
 });

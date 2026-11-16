@@ -23,6 +23,7 @@ import { ImageDisplayControls } from "./ImageDisplayControls";
 import { useSubvolumeSpectrum } from "./useSubvolumeSpectrum";
 import { SpectrumActions } from "./SpectrumActions";
 import {
+  downloadSpectrumCsv,
   spectrumIsOutOfDate,
   spectrumSelection,
   subvolumePanel,
@@ -420,6 +421,26 @@ export function ExploreScreen({
                   maximized={false}
                   expanded={max === "spectrum"}
                   title="Mass spectrum"
+                  toolbarControls={
+                    <button
+                      className="plot-csv-button"
+                      aria-label="Mass spectrum CSV"
+                      title="Export mass spectrum CSV"
+                      disabled={!spectrumPanel?.series?.length}
+                      onClick={() =>
+                        spectrumPanel &&
+                        downloadSpectrumCsv(
+                          spectrumPanel,
+                          a.dataset.name ||
+                            a.dataset.relative_path.split(/[\\/]/).pop() ||
+                            "",
+                          spectrum.showSelected ? spectrum.result : null,
+                        )
+                      }
+                    >
+                      CSV
+                    </button>
+                  }
                   help={help.spectrum}
                   panel={spectrumPanel}
                   status={
@@ -523,9 +544,20 @@ export function ExploreScreen({
                             onClick={() => void spectrum.calculate()}
                             disabled={pendingCommands > 0 || spectrumCurrent}
                             title={calculateTooltip}
-                            aria-description={!spectrumCurrent && spectrum.result ? calculateTooltip : undefined}
+                            aria-description={
+                              !spectrumCurrent && spectrum.result
+                                ? calculateTooltip
+                                : undefined
+                            }
                           >
-                            {spectrum.result && !spectrumCurrent && <span className="spectrum-outdated" aria-hidden="true">⚠</span>}{" "}
+                            {spectrum.result && !spectrumCurrent && (
+                              <span
+                                className="spectrum-outdated"
+                                aria-hidden="true"
+                              >
+                                ⚠
+                              </span>
+                            )}{" "}
                             {spectrum.result && !spectrumCurrent
                               ? "Update ROI"
                               : "Calculate ROI"}

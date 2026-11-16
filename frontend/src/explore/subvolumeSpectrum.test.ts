@@ -58,3 +58,31 @@ test("spectrum panel preserves the native axis and labels the captured selection
   expect(panel.series?.[0].values).toEqual([0, 2]);
   expect(panel.series?.[0].label).toContain("x 1–2, y 3–4, frames 5–6");
 });
+
+test("CSV identifies the source, captured ROI, frames and unmodified mass bins", async () => {
+  const { spectrumCsv } = await import("./subvolumeSpectrum");
+  const panel = {
+    axes: [{ values: [0, 0, 1.25] }],
+    series: [{ values: [0, 1, 2] }],
+  } as unknown as Panel;
+  const csv = spectrumCsv(
+    panel,
+    'sample,"one".h5',
+    result,
+    new Date("2026-11-16T12:34:56Z"),
+  );
+  expect(csv).toContain("# Exported at (UTC),2026-11-16T12:34:56.000Z\r\n");
+  expect(csv).toContain('# Acquisition,"sample,""one"".h5"\r\n');
+  expect(csv).toContain(
+    "# Spectrum,ROI\r\n# ROI X pixels,1–2\r\n# ROI Y pixels,3–4\r\n# Frames,0–6\r\n",
+  );
+  expect(csv).toContain("m/z,intensity\r\n0,0\r\n0,1\r\n1.25,2\r\n");
+  const total = spectrumCsv(
+    panel,
+    "sample.h5",
+    null,
+    new Date("2026-11-16T12:34:56Z"),
+  );
+  expect(total).toContain("# Spectrum,Total sum\r\n");
+  expect(total).not.toContain("# ROI X pixels");
+});

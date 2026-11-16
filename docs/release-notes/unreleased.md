@@ -8,3 +8,5 @@ ToFScope now calculates a mass spectrum from raw detection events for the select
 The mass spectrum toolbar now groups analysis tools in an Analyze menu and uses a Total sum / ROI switch. ROI calculation is disabled when the selected region and frames have already been calculated.
 
 Documentation screenshots now show a reproducible synthetic device with layered signals and spatial features.
+
+Added CSV export for the displayed total sum or ROI mass spectrum, with acquisition and selection details in the header.
