@@ -1690,6 +1690,8 @@ small {
 .depth-strip input[type="range"] {
   width: 110px;
   margin: 0 4px;
+  height: 28px;
+  padding: 0;
 }
 .signal-strip button.help-button,
 .depth-strip button.help-button {
@@ -1711,25 +1713,23 @@ small {
 }
 .depth-mode-controls {
   gap: 0;
+  padding: 2px;
+  border: 1px solid #bccbd2;
+  border-radius: 7px;
+  background: #e4eaee;
 }
-.depth-mode-controls button {
-  border-radius: 0;
-  position: relative;
-}
-.depth-mode-controls button + button {
-  margin-left: -1px;
-}
-.depth-mode-controls button:first-child {
-  border-radius: 4px 0 0 4px;
-}
-.depth-mode-controls button:last-child {
-  border-radius: 0 4px 4px 0;
+.depth-strip .depth-mode-controls button {
+  border: 0;
+  border-radius: 5px;
+  color: #526b7a;
+  background: transparent;
+  height: 22px;
+  min-height: 22px;
+  padding: 1px 7px;
 }
 .depth-mode-controls button[aria-pressed="true"] {
-  background: #345d70;
-  border-color: #345d70;
+  background: #315e72;
   color: white;
-  z-index: 1;
 }
 .depth-view-status {
   color: #617582;
