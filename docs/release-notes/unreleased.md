@@ -1,4 +1,3 @@
-
 The front projection now crops to the selected ROI’s horizontal bounds while retaining the original coordinates, so it and the depth profile represent the same region (fix for [#26](https://github.com/datasophos/ToFScope/issues/26)).
 
 The front projection can now switch between XZ and YZ views, so you can inspect either spatial axis through the selected region.
@@ -10,3 +9,5 @@ The mass spectrum toolbar now groups analysis tools in an Analyze menu and inclu
 Added CSV export for the displayed total sum or ROI mass spectrum, with acquisition and selection details in the header.
 
 Documentation screenshots now show a reproducible synthetic device with layered signals and spatial features, and are generated automatically.
+
+ToFScope now loads system and user configuration files automatically, with launch-specific overrides and loaded-file details in `tofscope doctor`.
