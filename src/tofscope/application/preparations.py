@@ -1,7 +1,7 @@
 """Explicit generation-bound raw preparations on the shared owner work queue."""
+import os
 from dataclasses import dataclass, replace
 from uuid import uuid4
-import os
 
 from tofscope.storage.raw_preparation import inspect_source, prepare_copy
 from tofscope.storage.saved_files import filename

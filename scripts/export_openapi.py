@@ -1,7 +1,8 @@
 import argparse
 import json
-from pathlib import Path
 import tempfile
+from pathlib import Path
+
 from tofscope.api.app import create_app
 from tofscope.config import Settings
 

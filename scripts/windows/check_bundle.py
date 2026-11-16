@@ -1,9 +1,9 @@
 """Exercise launcher control against the frozen CLI child on Windows."""
 
-from pathlib import Path
 import sys
 import tempfile
 import time
+from pathlib import Path
 from unittest.mock import patch
 
 from tofscope.windows_launcher import ServiceController

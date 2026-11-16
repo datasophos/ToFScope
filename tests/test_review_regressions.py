@@ -1,14 +1,16 @@
 import json
 import unittest
 from unittest.mock import patch
+
 import h5py
 import numpy as np
 from service_fixture import setup_case
+
 from tofscope.api.app import build_services
+from tofscope.application.analyses import CapacityError
 from tofscope.application.commands import CommandEnvelope
 from tofscope.application.jobs import IntegrationSpec
 from tofscope.application.resources import ResourceBudget
-from tofscope.application.analyses import CapacityError
 
 
 class ReviewRegressions(unittest.TestCase):
@@ -77,9 +79,8 @@ class ReviewRegressions(unittest.TestCase):
         with patch(
             "tofscope.storage.acquisitions.inspect_file",
             side_effect=AssertionError("read before admission"),
-        ):
-            with self.assertRaises(CapacityError):
-                repo.open("a", "a.h5")
+        ), self.assertRaises(CapacityError):
+            repo.open("a", "a.h5")
 
     def test_raw_payload_cannot_bypass_scratch_budget(self):
         with h5py.File(self.settings.data_root / "a.h5", "r+") as f:

@@ -2,14 +2,20 @@ import json
 import unittest
 from dataclasses import replace
 from uuid import uuid4
+
 import h5py
 import numpy as np
 from service_fixture import setup_case
+
 from tofscope.application.analyses import AnalysisService
-from tofscope.application.models import SignalSnapshot, DisplaySettings
 from tofscope.application.commands import DepthWindow
+from tofscope.application.models import DisplaySettings, SignalSnapshot
 from tofscope.science.signals import SignalRecipe
-from tofscope.storage.analysis_document import encode_document, read_document, restore_snapshot
+from tofscope.storage.analysis_document import (
+    encode_document,
+    read_document,
+    restore_snapshot,
+)
 
 
 class DocumentTests(unittest.TestCase):
@@ -47,7 +53,7 @@ class DocumentTests(unittest.TestCase):
         self.assertEqual(restored.depth, s.depth)
         self.assertEqual([x.name for x in restored.signals], [x.name for x in s.signals])
         self.assertEqual([x.style_index for x in restored.signals], [x.style_index for x in s.signals])
-        self.assertTrue(set(x.id for x in restored.signals).isdisjoint(x.id for x in s.signals))
+        self.assertTrue({x.id for x in restored.signals}.isdisjoint(x.id for x in s.signals))
         self.assertEqual(restored.image_signal_id, restored.signals[0].id)
         self.assertNotIn(restored.signals[1].id, restored.profile_signal_ids)
         self.assertEqual(restored.signals[1].recipe.intervals, hidden.recipe.intervals)
@@ -58,7 +64,7 @@ class DocumentTests(unittest.TestCase):
 
     def test_invalid_metadata_fails_explicitly(self):
         base = encode_document(self.initial).model_dump(mode='json')
-        changes = [dict(schema_version=99), dict(signals=[]), dict(image_signal_id=str(uuid4())), dict(roi=[0, 999, 0, 0]), dict(owner='injected'), dict(shape=[True, 1, 2, 2]), dict(signals=[base['signals'][0], base['signals'][0]])]
+        changes = [{'schema_version': 99}, {'signals': []}, {'image_signal_id': str(uuid4())}, {'roi': [0, 999, 0, 0]}, {'owner': 'injected'}, {'shape': [True, 1, 2, 2]}, {'signals': [base['signals'][0], base['signals'][0]]}]
         for change in changes:
             with self.subTest(change=change), self.assertRaises(ValueError):
                 doc = read_document(self.write(base | change), self.settings)
@@ -82,8 +88,8 @@ class DocumentTests(unittest.TestCase):
             encode_document(replace(self.initial, signals=(*self.initial.signals, pending)))
 
     def test_spectrum_scale_commands_preserve_existing_choice(self):
-        from tofscope.application.explore import ExploreService
         from tofscope.application.commands import CommandEnvelope
+        from tofscope.application.explore import ExploreService
         ws = AnalysisService(self.repo, self.settings)
         s = ws.create_analysis('a', self.dataset)
         service = ExploreService(ws, self.repo)

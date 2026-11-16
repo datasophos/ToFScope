@@ -1,7 +1,7 @@
 """Immutable scientific signal definitions, independent of presentation state."""
-from dataclasses import dataclass,field
+from dataclasses import dataclass, field
 from operator import index
-from uuid import UUID,uuid4
+from uuid import UUID, uuid4
 
 from tofscope.science.integration import canonical_intervals
 from tofscope.storage.dataset_io import locked_read
@@ -9,7 +9,7 @@ from tofscope.storage.dataset_io import locked_read
 
 def _integer(value):
     if isinstance(value,bool):
-        raise ValueError('Frame and channel indices must be integers.')
+        raise ValueError('Frame and channel indices must be integers.')  # noqa: TRY004
     try:
         return index(value)
     except TypeError as exc:
@@ -38,7 +38,7 @@ class SignalRecipe:
         if self.source not in ('stored','custom','saved'):
             raise ValueError('Unknown signal source.')
         if not isinstance(self.label,str):
-            raise ValueError('Signal label must be text.')
+            raise ValueError('Signal label must be text.')  # noqa: TRY004
         try:
             first,last=map(_integer,self.frames)
         except (TypeError,ValueError) as exc:
@@ -66,9 +66,9 @@ class SignalRecipe:
         object.__setattr__(self,'frames',(first,last))
 
     def to_dict(self):
-        return dict(schema_version=3,id=self.id,label=self.label,source=self.source,
-                    stored_index=self.stored_index,saved_id=self.saved_id,
-                    intervals=[list(w) for w in self.intervals],frames=list(self.frames))
+        return {'schema_version': 3,'id': self.id,'label': self.label,'source': self.source,
+                    'stored_index': self.stored_index,'saved_id': self.saved_id,
+                    'intervals': [list(w) for w in self.intervals],'frames': list(self.frames)}
 
     @classmethod
     def from_dict(cls,value):
@@ -96,10 +96,14 @@ class SignalRecipe:
 def read_signal(path, recipe, progress=None):
     """Return (depth,y,x), with array index zero at recipe.frames[0]."""
     import h5py
-    from tofscope.storage.explorer import stored_peak
+
     from tofscope.science.integration import custom_peak_windows
+    from tofscope.storage.explorer import stored_peak
     if recipe.source=='saved':
-        from tofscope.storage.integration_store import read_saved_integration,saved_integration_info
+        from tofscope.storage.integration_store import (
+            read_saved_integration,
+            saved_integration_info,
+        )
         info=saved_integration_info(path,recipe.saved_id)
         first,last=info['derivation']['frames']
         if recipe.frames[0]<first or recipe.frames[1]>last or recipe.intervals!=tuple(tuple(w) for w in info['derivation']['intervals']):

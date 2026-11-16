@@ -1,7 +1,9 @@
 """Identification must preserve labels, ownership, exact counts and captured scope."""
 import unittest
 from uuid import uuid4
+
 from service_fixture import setup_case
+
 from tofscope.api.app import build_services
 from tofscope.api.schemas import RevisionEnvelope
 from tofscope.application.commands import CommandEnvelope
@@ -118,7 +120,10 @@ class IdentificationTests(unittest.TestCase):
                          restored.signals[0].recipe.id)
 
     def test_saved_measurement_rejects_false_scope_and_nonfinite_values(self):
-        from tofscope.storage.analysis_document import encode_document, SavedAnalysisDocument
+        from tofscope.storage.analysis_document import (
+            SavedAnalysisDocument,
+            encode_document,
+        )
         self.measure([self.a.signals[0].id])
         document = encode_document(self.s.analyses.get('a', self.a.id)).model_dump(mode='json')
         import copy
@@ -129,7 +134,7 @@ class IdentificationTests(unittest.TestCase):
             elif change == 'sum':
                 value['isotope_measurement']['rows'][0]['measurement']['summed_intensity'] = float('nan')
             else:
-                value['signals'][0]['assignment'] = dict(candidate_id='fake', isotope=dict(symbol='Al', mass_number=27, neutral_mass_u=26.98153853, abundance_low=1., abundance_high=1., source_id='fixture'), charge=0, predicted_mz=27., catalog=dict(records_sha256='fake', retrieved='today', sources_json='{}'))
+                value['signals'][0]['assignment'] = {'candidate_id': 'fake', 'isotope': {'symbol': 'Al', 'mass_number': 27, 'neutral_mass_u': 26.98153853, 'abundance_low': 1., 'abundance_high': 1., 'source_id': 'fixture'}, 'charge': 0, 'predicted_mz': 27., 'catalog': {'records_sha256': 'fake', 'retrieved': 'today', 'sources_json': '{}'}}
             with self.subTest(change=change), self.assertRaises(ValueError):
                 SavedAnalysisDocument.model_validate(value)
 
@@ -147,6 +152,7 @@ class IdentificationTests(unittest.TestCase):
         import csv
         import io
         import json
+
         from tofscope.presentation.isotopes import isotope_csv
         candidates = self.s.identification.candidates('a', self.a.id, 47.95, .01, 'Th', (1,))
         ti = next(c for c in candidates.candidates if c.isotope.symbol == 'Ti' and c.isotope.mass_number == 48)

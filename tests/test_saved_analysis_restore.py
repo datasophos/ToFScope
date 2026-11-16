@@ -2,11 +2,13 @@ import shutil
 import unittest
 from dataclasses import replace
 from threading import Event
-from uuid import uuid4
 from unittest.mock import patch
+from uuid import uuid4
+
 import h5py
 import numpy as np
 from service_fixture import setup_case
+
 from tofscope.api.app import build_services
 from tofscope.application.models import SignalSnapshot
 from tofscope.science.signals import SignalRecipe
@@ -48,7 +50,7 @@ class RestoreTests(unittest.TestCase):
         with patch('tofscope.storage.acquisitions.custom_peak_windows', side_effect=AssertionError('must not reintegrate')):
             a = s.analyses.create_analysis('fresh', s.repository.open('fresh', 'portable.h5'))
             self.assertEqual([x.name for x in a.signals], [x.name for x in self.original.signals])
-            self.assertTrue(set(x.id for x in a.signals).isdisjoint(x.id for x in self.original.signals))
+            self.assertTrue({x.id for x in a.signals}.isdisjoint(x.id for x in self.original.signals))
             panel = s.presenter.snapshot('fresh', a.id, {'ion', 'front', 'profile'})
             self.assertEqual(panel.panels['ion'].values, [[2., 4.]])
             self.assertEqual(panel.panels['profile'].series[0].values, [None, .5, 2.5])

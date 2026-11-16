@@ -1,6 +1,6 @@
+import time
 from dataclasses import dataclass
 from threading import RLock
-import time
 from uuid import uuid4
 
 

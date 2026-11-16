@@ -3,23 +3,27 @@
 Locks coordinate ToFScope processes, not an independently running acquisition
 program. Admins must verify locking and atomic replacement on their NFS mount.
 """
-from dataclasses import dataclass,asdict
-from functools import wraps
-from pathlib import Path
-from threading import Lock
-from contextvars import ContextVar
 import hashlib
-from uuid import uuid4
 import os
 import shutil
 import stat
+from contextvars import ContextVar
+from dataclasses import asdict, dataclass
+from functools import wraps
+from pathlib import Path
+from threading import Lock
+from uuid import uuid4
 
 import h5py
 import numpy as np
 from filelock import FileLock
 
 from tofscope.config import default_runtime_dir
-from tofscope.storage.vendor_export import export_native_copy,validate_native_recipe,validate_native_layout
+from tofscope.storage.vendor_export import (
+    export_native_copy,
+    validate_native_layout,
+    validate_native_recipe,
+)
 
 _LOCKS={}
 _REGISTRY_LOCK=Lock()
@@ -99,8 +103,8 @@ def verify_saved_copy(source,prepared,record,frame_data_factory):
         if a.chunks and a.chunks[-1]==1:
             for selection in a.iter_chunks():
                 offset=tuple(s.start for s in selection)
-                if a.id.get_chunk_info_by_coord(offset).size:
-                    if a.id.read_direct_chunk(offset)!=b.id.read_direct_chunk(offset):raise ValueError('Original compressed peak data changed.')
+                if a.id.get_chunk_info_by_coord(offset).size and a.id.read_direct_chunk(offset)!=b.id.read_direct_chunk(offset):
+                    raise ValueError('Original compressed peak data changed.')
         else:
             for z in range(a.shape[0]):
                 if not np.array_equal(a[z],b[z,:,:,:index],equal_nan=True):raise ValueError('Original peak data changed.')
@@ -112,8 +116,8 @@ def verify_saved_copy(source,prepared,record,frame_data_factory):
 
 
 def clear_dataset_caches():
-    from tofscope.storage.explorer import _stored_peak,_se_mean
     from tofscope.science.volume_layers import clear_preview_cache
+    from tofscope.storage.explorer import _se_mean, _stored_peak
     _stored_peak.cache_clear();_se_mean.cache_clear();clear_preview_cache()
 
 
@@ -162,6 +166,6 @@ def save_to_acquisition(settings,relative_path,record,frame_data_factory,expecte
                 try:os.fsync(descriptor)
                 finally:os.close(descriptor)
             clear_dataset_caches()
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             warning=f'Saved successfully; reload required. Post-save housekeeping: {exc}'
         return SaveResult(target,backup,generation,record.id,native_index,warning=warning)

@@ -1,5 +1,7 @@
 """Physical profile coordinates; acquisition intensities and frames stay intact."""
+import itertools
 from dataclasses import dataclass
+
 import numpy as np
 
 
@@ -37,7 +39,7 @@ def validate_anchors(anchors,acquisition_frames):
         rows.append(DepthAnchor(a.frame,float(a.depth_nm)))
     if not any(a.frame==0 for a in rows):rows.append(DepthAnchor(0,0.))
     rows.sort(key=lambda a:a.frame)
-    for a,b in zip(rows,rows[1:]):
+    for a,b in itertools.pairwise(rows):
         if a.frame==b.frame:raise ValueError('Depth anchor frames must be unique.')
         if a.depth_nm>=b.depth_nm:raise ValueError('Depth must increase with acquisition frame.')
     return tuple(rows)
@@ -61,9 +63,9 @@ class DepthCalibration:
 
     def to_dict(self,unit='nm'):
         convert_depth(1,'nm',unit)
-        return dict(anchors=[dict(frame=a.frame,depth_nm=a.depth_nm) for a in self.anchors],
-                    acquisition_frames=self.acquisition_frames,unit='µm' if unit=='um' else unit,
-                    interpolation='piecewise_linear',extrapolation=False)
+        return {'anchors': [{'frame': a.frame,'depth_nm': a.depth_nm} for a in self.anchors],
+                    'acquisition_frames': self.acquisition_frames,'unit': 'µm' if unit=='um' else unit,
+                    'interpolation': 'piecewise_linear','extrapolation': False}
 
     @classmethod
     def from_dict(cls,data):

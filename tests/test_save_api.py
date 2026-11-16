@@ -1,8 +1,9 @@
-import io
 import time
 import unittest
+
 from fastapi.testclient import TestClient
 from service_fixture import setup_case
+
 from tofscope.api.app import create_app
 
 
@@ -12,7 +13,7 @@ class SaveApiTests(unittest.TestCase):
         with TestClient(create_app(self.settings)) as client:
             headers = {'x-tofscope-user': 'a', 'Origin': 'http://testserver'}
             a = client.post("/api/v1/analyses", headers=headers, json={'relative_path': 'a.h5'}).json()
-            envelope = dict(request_id='save', expected_revision=a['revision'], dataset_generation=a['dataset']['generation'], filename='my copy.h5')
+            envelope = {'request_id': 'save', 'expected_revision': a['revision'], 'dataset_generation': a['dataset']['generation'], 'filename': 'my copy.h5'}
             response = client.post(f"/api/v1/analyses/{a['id']}/saves", headers=headers, json=envelope)
             self.assertEqual(response.status_code, 202, response.text)
             job_id = response.json()['id']
@@ -52,7 +53,7 @@ class SaveApiTests(unittest.TestCase):
             a = client.post('/api/v1/analyses', headers=h, json={'relative_path': 'a.h5'})
             self.assertEqual(a.status_code, 200, a.text)
             a = a.json()
-            job = client.post(f"/api/v1/analyses/{a['id']}/saves", headers=h, json=dict(request_id='save', expected_revision=a['revision'], dataset_generation=a['dataset']['generation'], filename='copy.h5')).json()
+            job = client.post(f"/api/v1/analyses/{a['id']}/saves", headers=h, json={'request_id': 'save', 'expected_revision': a['revision'], 'dataset_generation': a['dataset']['generation'], 'filename': 'copy.h5'}).json()
             done = client.app.state.services.jobs.wait('a', job['id'], 5)
             self.assertEqual(done.status, 'succeeded', done.safe_error)
             saved = Path(locations['save_destination']) / 'copy.h5'
@@ -82,7 +83,7 @@ class SaveApiTests(unittest.TestCase):
             self.assertEqual([e['name'] for e in existing], ['a.h5', 'b.h5'])
             a = client.post('/api/v1/analyses', headers=h, json={'relative_path':'a.h5'}).json()
             def save(name, request):
-                response = client.post(f"/api/v1/analyses/{a['id']}/saves", headers=h, json=dict(request_id=request, expected_revision=a['revision'], dataset_generation=a['dataset']['generation'], filename=name))
+                response = client.post(f"/api/v1/analyses/{a['id']}/saves", headers=h, json={'request_id': request, 'expected_revision': a['revision'], 'dataset_generation': a['dataset']['generation'], 'filename': name})
                 self.assertEqual(response.status_code, 202, response.text)
                 return client.app.state.services.jobs.wait('local', response.json()['id'], 5)
             saved = save('copy.h5', 'copy')
@@ -96,7 +97,6 @@ class SaveApiTests(unittest.TestCase):
             self.assertEqual(reopened.status_code, 200, reopened.text)
 
     def test_choose_save_folder_and_reopen_nested_copy(self):
-        from pathlib import Path
         setup_case(self, mode='proxy', trusted_proxies=('testclient',), public_origin='http://testserver')
         with TestClient(create_app(self.settings)) as client:
             h = {'x-tofscope-user': 'a', 'Origin': 'http://testserver'}
@@ -115,7 +115,7 @@ class SaveApiTests(unittest.TestCase):
             (store.owner_root('a') / 'escape').symlink_to(self.settings.data_root, target_is_directory=True)
             self.assertEqual(client.get('/api/v1/save-folders', headers=h, params={'directory':'escape'}).status_code, 422)
             a = client.post('/api/v1/analyses', headers=h, json={'relative_path':'a.h5'}).json()
-            body = dict(request_id='nested', expected_revision=a['revision'], dataset_generation=a['dataset']['generation'], filename='copy.h5', directory='results')
+            body = {'request_id': 'nested', 'expected_revision': a['revision'], 'dataset_generation': a['dataset']['generation'], 'filename': 'copy.h5', 'directory': 'results'}
             response = client.post(f"/api/v1/analyses/{a['id']}/saves", headers=h, json=body)
             self.assertEqual(response.status_code, 202, response.text)
             job = client.app.state.services.jobs.wait('a', response.json()['id'], 5)
@@ -147,7 +147,7 @@ class SaveApiTests(unittest.TestCase):
             self.assertEqual(client.get('/api/v1/save-folders', headers=h, params={'directory':str(outside)}).status_code, 422)
             self.assertEqual(client.get('/api/v1/save-folders', headers=h, params={'location':'acquisition','directory':'../'}).status_code, 422)
             a = client.post('/api/v1/analyses', headers=h, json={'relative_path':'a.h5'}).json()
-            response = client.post(f"/api/v1/analyses/{a['id']}/saves", headers=h, json=dict(request_id='external', expected_revision=a['revision'], dataset_generation=a['dataset']['generation'], filename='outside.h5', directory='results', destination_location='acquisition'))
+            response = client.post(f"/api/v1/analyses/{a['id']}/saves", headers=h, json={'request_id': 'external', 'expected_revision': a['revision'], 'dataset_generation': a['dataset']['generation'], 'filename': 'outside.h5', 'directory': 'results', 'destination_location': 'acquisition'})
             self.assertEqual(response.status_code, 202, response.text)
             job = client.app.state.services.jobs.wait('local', response.json()['id'], 5)
             self.assertEqual(job.status, 'succeeded', job.safe_error)

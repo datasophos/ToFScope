@@ -1,14 +1,20 @@
-from contextlib import ExitStack
-from dataclasses import replace
-from tofscope.presentation.coordinates import depth_samples
-from dataclasses import asdict
 import hashlib
 import json
+from contextlib import ExitStack
+from dataclasses import asdict, replace
+
 import numpy as np
-from tofscope.presentation.data import Axis, Curve, Panel, ExploreData
+
 from tofscope.application.analyses import CapacityError
 from tofscope.application.resources import reserve_se_preparation
-from tofscope.application.signals import image_signal, visible_signals, image_frames, signal_label
+from tofscope.application.signals import (
+    image_frames,
+    image_signal,
+    signal_label,
+    visible_signals,
+)
+from tofscope.presentation.coordinates import depth_samples
+from tofscope.presentation.data import Axis, Curve, ExploreData, Panel
 from tofscope.storage.explorer import _se_mean, file_key
 
 PANELS = {"ion", "front", "spectrum", "profile"}
@@ -117,8 +123,8 @@ class ExplorePresenter:
                     original_frames, coordinates, depth_unit, omitted = depth_samples(s)
                     depth_axis = axis('depth' if s.depth_coordinates == 'depth' else 'frame', depth_unit, coordinates)
                     indices = original_frames - first
-                    geometry = dict(acquisition_frames=original_frames.tolist(), omitted_frames=omitted,
-                                    coordinate_kind=s.depth_coordinates)
+                    geometry = {"acquisition_frames": original_frames.tolist(), "omitted_frames": omitted,
+                                    "coordinate_kind": s.depth_coordinates}
                 xaxis = axis(
                     "x",
                     "µm" if s.fov_um else "pixel",
@@ -142,7 +148,7 @@ class ExplorePresenter:
                     lo, hi = selected_frames(s)
                     low = max(lo, r.frames[0])
                     high = min(hi, r.frames[1])
-                    x0, x1, y0, y1 = s.roi
+                    _x0, _x1, y0, y1 = s.roi
                     if "ion" in panels:
                         if s.display.image == "se":
                             with self.repository.access(owner, s.dataset) as path:

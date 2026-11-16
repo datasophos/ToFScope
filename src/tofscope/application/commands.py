@@ -1,6 +1,8 @@
+from typing import Annotated, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, TypeAdapter
+
 from tofscope.application.spatial import SpatialView
-from typing import Annotated, Literal, Union
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictBool, TypeAdapter
 
 
 class StrictModel(BaseModel):
@@ -23,7 +25,7 @@ class DepthWindow(StrictModel):
 
 
 DepthSelection = Annotated[
-    Union[AllDepth, SingleFrame, DepthWindow], Field(discriminator="mode")
+    AllDepth | SingleFrame | DepthWindow, Field(discriminator="mode")
 ]
 
 
@@ -108,21 +110,7 @@ class SetSpatial(StrictModel):
 
 
 Command = Annotated[
-    Union[
-        AddStoredSignal,
-        RenameSignal,
-        AnnotateSignal,
-        SelectImageSignal,
-        SetProfileVisible,
-        RemoveSignal,
-        SetStoredCoverage,
-        SetROI,
-        SetDepth,
-        SetDisplay,
-        SetDepthAnchors,
-        SetDepthDisplay,
-        SetSpatial,
-    ],
+    AddStoredSignal | RenameSignal | AnnotateSignal | SelectImageSignal | SetProfileVisible | RemoveSignal | SetStoredCoverage | SetROI | SetDepth | SetDisplay | SetDepthAnchors | SetDepthDisplay | SetSpatial,
     Field(discriminator="type"),
 ]
 command_adapter = TypeAdapter(Command)

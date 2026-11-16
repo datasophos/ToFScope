@@ -1,10 +1,11 @@
 """Compact HDF5 copying with bounded event payloads and preserved internal links."""
 from contextlib import ExitStack
+
 import h5py
 import numpy as np
+
 from tofscope.storage.bounded_events import admitted_events, write_events
 from tofscope.storage.saved_files import COPY_BYTES
-
 
 # Attributes are metadata, not unbounded acquisition payloads. HDF5 attribute
 # reads lack the dataset VLEN allocator hook. Fixed-buffer conversion bounds
@@ -99,7 +100,7 @@ def compact_copy(source, target, check, progress, reserve):
                 dst[key] = h5py.SoftLink(link.path)
                 continue
             if not isinstance(link, h5py.HardLink):
-                raise ValueError('External HDF5 links cannot be copied.')
+                raise ValueError('External HDF5 links cannot be copied.')  # noqa: TRY004
             item = src[key]
             address = h5py.h5o.get_info(item.id).addr
             if address in seen:

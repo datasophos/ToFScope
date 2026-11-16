@@ -5,7 +5,6 @@ Tk is imported only by the GUI; the controller can be exercised without a displa
 
 import json
 import os
-from pathlib import Path
 import shutil
 import socket
 import subprocess
@@ -15,6 +14,7 @@ import threading
 import time
 import urllib.request
 import webbrowser
+from pathlib import Path
 
 
 def state_directory():
@@ -25,6 +25,7 @@ def state_directory():
 def ensure_config(state):
     """Create an editable configuration once, without replacing user changes."""
     from dataclasses import fields
+
     from tofscope.config import Settings
 
     state = Path(state)
@@ -215,6 +216,7 @@ def button_icons(tk, foreground):
 def main():
     import tkinter as tk
     from tkinter import filedialog, messagebox, ttk
+
     from filelock import FileLock, Timeout
 
     root = tk.Tk()

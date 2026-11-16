@@ -1,16 +1,16 @@
 import tempfile
 import unittest
 import weakref
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
-from concurrent.futures import ThreadPoolExecutor
 
 import h5py
 import numpy as np
 
-from tofscope.application.resources import ResourceBudget
 from tofscope.application.analyses import CapacityError
+from tofscope.application.resources import ResourceBudget
 from tofscope.config import Settings
 from tofscope.science.integration import integrate_event_windows
 from tofscope.storage.bounded_events import admitted_events
@@ -52,18 +52,14 @@ class BoundedEventTests(unittest.TestCase):
         with h5py.File(self.path, "w") as f:
             f.create_dataset("events", (1, 1, 1), dtype=h5py.vlen_dtype(np.dtype("u4")))[0, 0, 0] = np.ones(100000, dtype="u4")
         self.budget.settings = replace(self.settings, global_bytes=100000, user_bytes=100000, analysis_bytes=100000)
-        with h5py.File(self.path, "r") as f, patch("tofscope.storage.bounded_events.np.empty", side_effect=AssertionError("payload allocated before admission")):
-            with self.assertRaises(CapacityError):
-                with admitted_events(f["events"], 0, self.reserve):
-                    self.fail("Unadmitted events were exposed")
+        with h5py.File(self.path, "r") as f, patch("tofscope.storage.bounded_events.np.empty", side_effect=AssertionError("payload allocated before admission")), self.assertRaises(CapacityError), admitted_events(f["events"], 0, self.reserve):
+            self.fail("Unadmitted events were exposed")
         self.assertEqual(self.budget.physical_bytes, 0)
         self.assertEqual(self.budget.users["a"], 0)
 
     def test_caller_failure_releases_all_scratch(self):
-        with h5py.File(self.path, "r") as f:
-            with self.assertRaisesRegex(RuntimeError, "caller"):
-                with admitted_events(f["events"], 0, self.reserve):
-                    raise RuntimeError("caller")
+        with h5py.File(self.path, "r") as f, self.assertRaisesRegex(RuntimeError, "caller"), admitted_events(f["events"], 0, self.reserve):
+            raise RuntimeError("caller")
         self.assertEqual(self.budget.physical_bytes, 0)
 
     def test_arena_memory_does_not_outlive_the_read_context(self):
@@ -74,7 +70,8 @@ class BoundedEventTests(unittest.TestCase):
             references.append(weakref.ref(array))
             return array
         with h5py.File(self.path, "r") as f, patch("tofscope.storage.bounded_events.np.empty", side_effect=allocate):
-            with admitted_events(f["events"], 0, self.reserve) as events:
+            # Keep the borrowed values alive to check that the arena is still released.
+            with admitted_events(f["events"], 0, self.reserve) as events:  # noqa: F841
                 self.assertTrue(any(ref() is not None for ref in references))
             # The packed numerical values may remain borrowed by the caller;
             # HDF5's arena buffers must already have been freed.
@@ -85,18 +82,16 @@ class BoundedEventTests(unittest.TestCase):
     def test_budget_failure_after_partial_read_releases_all_arenas(self):
         self.budget.settings = replace(self.settings, global_bytes=200000, user_bytes=200000, analysis_bytes=200000)
         with h5py.File(self.path, "r") as f, patch("tofscope.storage.bounded_events.np.empty", wraps=np.empty) as allocate:
-            with self.assertRaises(CapacityError):
-                with admitted_events(f["events"], 0, self.reserve):
-                    self.fail("Partial read escaped admission")
+            with self.assertRaises(CapacityError), admitted_events(f["events"], 0, self.reserve):
+                self.fail("Partial read escaped admission")
             self.assertGreater(allocate.call_count, 0)
         self.assertEqual(self.budget.physical_bytes, 0)
         self.assertEqual(self.budget.users["a"], 0)
 
     def test_independent_concurrent_reads_do_not_share_arenas_or_reservations(self):
         def run(owner):
-            with h5py.File(self.path, "r") as f:
-                with admitted_events(f["events"], 0, lambda size: self.budget.reserve(owner, owner, size)) as events:
-                    return integrate_event_windows(events, np.arange(10.), 2, 4, [(1, 2), (4, 5)])
+            with h5py.File(self.path, "r") as f, admitted_events(f["events"], 0, lambda size: self.budget.reserve(owner, owner, size)) as events:
+                return integrate_event_windows(events, np.arange(10.), 2, 4, [(1, 2), (4, 5)])
         with ThreadPoolExecutor(2) as pool:
             results = list(pool.map(run, ("a", "b")))
         np.testing.assert_array_equal(*results)

@@ -1,7 +1,9 @@
 """Original-intensity isotope areas, with explicit coverage and ambiguity."""
-from dataclasses import dataclass,replace
-import numpy as np
 from contextlib import nullcontext
+from dataclasses import dataclass, replace
+
+import numpy as np
+
 from tofscope.science.signals import read_signal
 
 

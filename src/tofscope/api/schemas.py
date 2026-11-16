@@ -1,5 +1,7 @@
-from typing import Literal, Annotated
-from pydantic import Field, StrictInt, StrictBool
+from typing import Annotated, Literal
+
+from pydantic import Field, StrictBool, StrictInt
+
 from tofscope.application.commands import StrictModel
 
 

@@ -1,7 +1,7 @@
 """Dispatch the portable GUI, CLI, and launcher-owned service."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
 
 
 def main():
@@ -12,7 +12,8 @@ def main():
         from tofscope.cli import main as cli_main
         return cli_main()
 
-    from tofscope.windows_launcher import main as launcher_main, state_directory
+    from tofscope.windows_launcher import main as launcher_main
+    from tofscope.windows_launcher import state_directory
     state = state_directory()
     state.mkdir(parents=True, exist_ok=True)
     # Windowed executables have no stdout/stderr. Keep unexpected GUI errors
@@ -21,7 +22,7 @@ def main():
         sys.stdout = sys.stderr = log
         try:
             return launcher_main()
-        except Exception:
+        except Exception:  # noqa: BLE001
             import traceback
             traceback.print_exc()
             import ctypes

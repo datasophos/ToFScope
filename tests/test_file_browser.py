@@ -2,10 +2,10 @@
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch,Mock
+from unittest.mock import Mock, patch
+
 from tofscope.config import Settings
 from tofscope.storage.file_browser import list_data_files
-
 
 
 class FileBrowserTests(unittest.TestCase):
@@ -25,7 +25,7 @@ class FileBrowserTests(unittest.TestCase):
         self.assertEqual(list_data_files(self.settings,query='B.').entries[0]['path'],'B.HDF5')
         self.assertEqual(list_data_files(self.settings,'empty').total,0)
         self.assertEqual(list_data_files(self.settings,offset=99).entries,[])
-        for kwargs in [dict(limit=0),dict(limit=201),dict(offset=-1),dict(limit=1.5),dict(offset=True)]:
+        for kwargs in [{'limit': 0},{'limit': 201},{'offset': -1},{'limit': 1.5},{'offset': True}]:
             with self.assertRaises(ValueError):list_data_files(self.settings,**kwargs)
         with self.assertRaises(ValueError):list_data_files(self.settings,'outside')
 
@@ -36,8 +36,7 @@ class FileBrowserTests(unittest.TestCase):
         self.assertEqual(page.total,5000);self.assertEqual(len(page.entries),200);self.assertEqual(page.next_offset,4200)
 
     def test_permissions_and_disappearing_entries(self):
-        with patch('tofscope.storage.file_browser.os.scandir',side_effect=PermissionError('denied')):
-            with self.assertRaises(PermissionError):list_data_files(self.settings)
+        with patch('tofscope.storage.file_browser.os.scandir',side_effect=PermissionError('denied')), self.assertRaises(PermissionError):list_data_files(self.settings)
         gone=Mock();gone.name='gone.h5';gone.stat.side_effect=FileNotFoundError('gone')
         with patch('tofscope.storage.file_browser.os.scandir') as scan:
             scan.return_value.__enter__.return_value=[gone]

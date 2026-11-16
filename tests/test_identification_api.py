@@ -1,6 +1,8 @@
 import unittest
+
 from fastapi.testclient import TestClient
 from service_fixture import setup_case
+
 from tofscope.api.app import create_app
 
 
@@ -15,16 +17,16 @@ class IdentificationAPITests(unittest.TestCase):
         self.url = f"/api/v1/analyses/{self.a['id']}"
 
     def test_matching_validation_and_cross_owner(self):
-        body = dict(mz=26.981, tolerance=.01, unit='Th', charges=[1])
+        body = {'mz': 26.981, 'tolerance': .01, 'unit': 'Th', 'charges': [1]}
         result = self.client.post(self.url+'/candidates', headers=self.headers, json=body)
         self.assertEqual(result.status_code, 200, result.text)
         self.assertEqual(result.json()['candidates'][0]['isotope']['symbol'], 'Al')
         self.assertEqual(self.client.post(self.url+'/candidates', headers=self.headers | {'x-tofscope-user': 'b'}, json=body).status_code, 404)
-        for patch in [dict(charges=[True]), dict(charges=[]), dict(mz=-1), dict(tolerance=-1), dict(unit='invalid')]:
+        for patch in [{'charges': [True]}, {'charges': []}, {'mz': -1}, {'tolerance': -1}, {'unit': 'invalid'}]:
             self.assertEqual(self.client.post(self.url+'/candidates', headers=self.headers, json=body | patch).status_code, 422)
 
     def test_measurement_and_csv_include_scope_and_provenance(self):
-        body = dict(request_id='measure', expected_revision=0, dataset_generation=self.a['dataset']['generation'], signal_ids=[self.a['signals'][0]['id']])
+        body = {'request_id': 'measure', 'expected_revision': 0, 'dataset_generation': self.a['dataset']['generation'], 'signal_ids': [self.a['signals'][0]['id']]}
         result = self.client.post(self.url+'/measurements', headers=self.headers, json=body)
         self.assertEqual(result.status_code, 202, result.text)
         job = result.json()['id']
@@ -44,12 +46,12 @@ class IdentificationAPITests(unittest.TestCase):
         services = self.client.app.state.services
         # Restrict the shared budget after opening a ready analysis.
         services.cache.budget.settings = replace(self.settings, global_bytes=1)
-        body = dict(mz=27., tolerance=.1, unit='Th', charges=[1])
+        body = {'mz': 27., 'tolerance': .1, 'unit': 'Th', 'charges': [1]}
         self.assertEqual(self.client.post(self.url+'/candidates', headers=self.headers, json=body).status_code, 429)
         self.assertEqual(self.client.get(self.url+'/measurements', headers=self.headers).status_code, 429)
 
     def test_broad_candidate_query_is_bounded(self):
-        body = dict(mz=100., tolerance=1e9, unit='Th', charges=[1,2,3,-1,-2,-3])
+        body = {'mz': 100., 'tolerance': 1e9, 'unit': 'Th', 'charges': [1,2,3,-1,-2,-3]}
         result = self.client.post(self.url+'/candidates', headers=self.headers, json=body)
         self.assertEqual(result.status_code, 429)
         self.assertIn('narrow', result.json()['message'])

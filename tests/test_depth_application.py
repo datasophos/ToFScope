@@ -4,11 +4,17 @@ import io
 import json
 import unittest
 from dataclasses import replace
+
 import numpy as np
 from service_fixture import setup_case
+
 from tofscope.api.app import build_services
 from tofscope.application.commands import CommandEnvelope
-from tofscope.storage.analysis_document import encode_document, restore_snapshot, SavedAnalysisDocument
+from tofscope.storage.analysis_document import (
+    SavedAnalysisDocument,
+    encode_document,
+    restore_snapshot,
+)
 
 
 class DepthApplicationTests(unittest.TestCase):
@@ -24,10 +30,10 @@ class DepthApplicationTests(unittest.TestCase):
         return self.s.explore.apply(owner, a.id, CommandEnvelope(str(a.revision), a.revision, a.dataset.generation, command))
 
     def anchors(self, rows):
-        return self.command(dict(type='set_depth_anchors', anchors=[dict(frame=f, depth_nm=d) for f,d in rows]))
+        return self.command({'type': 'set_depth_anchors', 'anchors': [{'frame': f, 'depth_nm': d} for f,d in rows]})
 
     def physical(self, unit='nm'):
-        return self.command(dict(type='set_depth_display', unit=unit, coordinates='depth'))
+        return self.command({'type': 'set_depth_display', 'unit': unit, 'coordinates': 'depth'})
 
     def test_validation_atomicity_fixed_origin_and_removal(self):
         a = self.anchors([(1,100)])
@@ -63,13 +69,13 @@ class DepthApplicationTests(unittest.TestCase):
             self.physical(unit)
             self.assertEqual(self.s.presenter.snapshot('a',self.a.id,{'front'}).panels['front'].values,front.values)
             self.assertEqual(list(csv.DictReader(io.StringIO(self.s.exports.render('a',self.a.id,'csv').content.decode()))),rows)
-        self.command(dict(type='set_depth',depth=dict(mode='frame',index=2)))
+        self.command({'type': 'set_depth','depth': {'mode': 'frame','index': 2}})
         self.assertEqual(self.s.analyses.get('a',self.a.id).depth.index,2)
         json.dumps(after.to_dict(),allow_nan=False)
 
     def test_viewing_range_preserves_full_profile_and_limits_csv_rows(self):
         before = self.s.presenter.snapshot('a', self.a.id, {'profile', 'front'})
-        self.command(dict(type='set_depth', depth=dict(mode='window', first=1, last=2)))
+        self.command({'type': 'set_depth', 'depth': {'mode': 'window', 'first': 1, 'last': 2}})
         after = self.s.presenter.snapshot('a', self.a.id, {'profile', 'front'})
         self.assertEqual(after.panels['profile'].acquisition_frames, [0, 1, 2])
         self.assertEqual(after.panels['profile'].series, before.panels['profile'].series)
@@ -83,7 +89,7 @@ class DepthApplicationTests(unittest.TestCase):
         self.anchors([(1,100)])
         a = self.physical('mm')
         self.assertEqual(b.depth_coordinates,'frame')
-        with self.assertRaises(KeyError): self.command(dict(type='set_depth_anchors',anchors=[]),owner='b')
+        with self.assertRaises(KeyError): self.command({'type': 'set_depth_anchors','anchors': []},owner='b')
         document = encode_document(a)
         self.assertEqual(document.schema_version,4)
         restored = restore_snapshot(SavedAnalysisDocument.model_validate_json(document.model_dump_json()),b)
@@ -97,7 +103,7 @@ class DepthApplicationTests(unittest.TestCase):
         self.assertEqual(legacy.depth_coordinates,'frame')
         self.assertEqual(len(legacy.depth_anchors),1)
         bad = document.model_dump()
-        bad['depth_anchors']=[dict(frame=0,depth_nm=2),dict(frame=1,depth_nm=100)]
+        bad['depth_anchors']=[{'frame': 0,'depth_nm': 2},{'frame': 1,'depth_nm': 100}]
         with self.assertRaises(ValueError): SavedAnalysisDocument.model_validate(bad)
 
     def test_full_domain_anchor_kink_and_block_mean_coordinates(self):
@@ -106,7 +112,7 @@ class DepthApplicationTests(unittest.TestCase):
         s = replace(self.a, shape=(301,1,2,2),
                     depth_anchors=(DepthAnchor(0,0),DepthAnchor(100,50),DepthAnchor(200,150)),depth_coordinates='depth')
         from tofscope.presentation.coordinates import depth_samples
-        frames, depths, unit, omitted = depth_samples(s)
+        frames, depths, _unit, omitted = depth_samples(s)
         np.testing.assert_array_equal(frames,np.arange(201))
         np.testing.assert_array_equal(depths[100:103],[50,51,52])
         self.assertEqual(omitted,100)
@@ -115,11 +121,13 @@ class DepthApplicationTests(unittest.TestCase):
         self.assertTrue(np.isnan(block_depths(s,[[4,5]])[0]))
 
     def test_saved_copy_roundtrip_and_legacy_file_on_disk(self):
-        from threading import Event
-        from tofscope.storage.saved_files import SavedFileStore
-        from tofscope.storage.analysis_document import read_document
-        import h5py
         import hashlib
+        from threading import Event
+
+        import h5py
+
+        from tofscope.storage.analysis_document import read_document
+        from tofscope.storage.saved_files import SavedFileStore
         path=self.settings.data_root/'a.h5'
         digest=hashlib.sha256(path.read_bytes()).digest()
         self.anchors([(1,100)])
@@ -157,15 +165,15 @@ class DepthApplicationTests(unittest.TestCase):
             h.create_dataset('PeakData/PeakData',data=values)
         a=self.s.analyses.create_analysis('a',self.s.repository.open('a','b.h5'))
         before=self.s.presenter.snapshot('a',a.id,{'profile','front'})
-        a=self.command(dict(type='set_depth_anchors',anchors=[dict(frame=100,depth_nm=50),dict(frame=200,depth_nm=150)]),analysis=a.id)
-        a=self.command(dict(type='set_depth_display',unit='nm',coordinates='depth'),analysis=a.id)
+        a=self.command({'type': 'set_depth_anchors','anchors': [{'frame': 100,'depth_nm': 50},{'frame': 200,'depth_nm': 150}]},analysis=a.id)
+        a=self.command({'type': 'set_depth_display','unit': 'nm','coordinates': 'depth'},analysis=a.id)
         after=self.s.presenter.snapshot('a',a.id,{'profile','front'})
         self.assertEqual(after.panels['profile'].acquisition_frames,list(range(201)))
         self.assertEqual(after.panels['profile'].axes[0].values[100:103],[50,51,52])
         self.assertEqual(after.panels['profile'].series[0].values,before.panels['profile'].series[0].values[:201])
         np.testing.assert_array_equal(after.panels['front'].values,before.panels['front'].values[:201])
         self.assertEqual(after.panels['front'].omitted_frames,100)
-        self.command(dict(type='set_depth', depth=dict(mode='frame', index=200)), analysis=a.id)
+        self.command({'type': 'set_depth', 'depth': {'mode': 'frame', 'index': 200}}, analysis=a.id)
         selected=self.s.presenter.snapshot('a',a.id,{'profile'}).panels['profile']
         self.assertEqual(selected.series[0].values, list(range(201)))
         self.assertEqual(selected.acquisition_frames, list(range(201)))

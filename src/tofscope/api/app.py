@@ -1,54 +1,59 @@
-from contextlib import asynccontextmanager, ExitStack
-from dataclasses import dataclass, asdict
 import asyncio
+import json
+import os
+from contextlib import ExitStack, asynccontextmanager
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from fastapi import FastAPI, Request, Response, Depends, HTTPException, Query
+from typing import Literal
+from urllib.parse import quote
+
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.staticfiles import StaticFiles
-import json
+
 from tofscope import __version__
-from tofscope.storage.safe_open import open_saved_file
-from tofscope.storage.saved_files import SavedFile
-from tofscope.storage.raw_preparation import PreparationPreview
-from urllib.parse import quote
-import os
-from tofscope.application.saves import SaveService
-from tofscope.application.analyses import AnalysisService, CapacityError, Conflict
-from tofscope.application.explore import ExploreService
-from tofscope.application.resources import ResourceBudget
-from tofscope.application.cache import ArrayCache
-from tofscope.application.jobs import JobService, JobSnapshot, IntegrationSpec
-from tofscope.application.lifecycle import LifecycleService, ViewLease
-from tofscope.application.identification_models import CandidateResult, MeasurementResult
-from tofscope.application.models import AnalysisSnapshot
-from tofscope.application.signals import image_signal
-from tofscope.application.commands import CommandEnvelope
-from tofscope.storage.acquisitions import (
-    AcquisitionRepository,
-    SourceChanged,
-    DatasetBusy,
-)
-from tofscope.storage.file_browser import list_data_files
 from tofscope.api.auth import Auth
 from tofscope.api.schemas import (
-    CandidateInput,
-    MeasureIsotopes,
     Bootstrap,
-    SessionInfo,
+    CandidateInput,
+    CreateSaveFolder,
+    FolderLocations,
+    MeasureIsotopes,
     OpenAcquisition,
     PrepareAcquisition,
     ReplaceAcquisition,
-    SubmitJob,
     SaveCopy,
-    FolderLocations,
-    CreateSaveFolder,
+    SessionInfo,
+    SubmitJob,
 )
-from typing import Literal
+from tofscope.application.analyses import AnalysisService, CapacityError, Conflict
+from tofscope.application.cache import ArrayCache
+from tofscope.application.commands import CommandEnvelope
+from tofscope.application.explore import ExploreService
+from tofscope.application.identification_models import (
+    CandidateResult,
+    MeasurementResult,
+)
+from tofscope.application.jobs import IntegrationSpec, JobService, JobSnapshot
+from tofscope.application.lifecycle import LifecycleService, ViewLease
+from tofscope.application.models import AnalysisSnapshot
+from tofscope.application.resources import ResourceBudget
+from tofscope.application.saves import SaveService
+from tofscope.application.signals import image_signal
 from tofscope.presentation.data import ExploreData
 from tofscope.presentation.explore import ExplorePresenter
 from tofscope.presentation.exports import ExportService
+from tofscope.storage.acquisitions import (
+    AcquisitionRepository,
+    DatasetBusy,
+    SourceChanged,
+)
+from tofscope.storage.file_browser import list_data_files
+from tofscope.storage.raw_preparation import PreparationPreview
+from tofscope.storage.safe_open import open_saved_file
+from tofscope.storage.saved_files import SavedFile
 
 
 @dataclass
@@ -472,8 +477,8 @@ def create_app(settings, services=None, bootstrap_secret=None):
                 except FileNotFoundError:
                     raise HTTPException(404, 'Save folder is unavailable.') from None
             values = [f for f in s.saves.files.list(o) if query.lower() in f.name.lower()]
-            entries = [dict(name=f.name, path=f.id, kind='file', size=f.size) for f in values[offset:offset + limit]]
-            return dict(path='', entries=entries, total=len(values), next_offset=offset + limit if offset + limit < len(values) else None)
+            entries = [{"name": f.name, "path": f.id, "kind": 'file', "size": f.size} for f in values[offset:offset + limit]]
+            return {"path": '', "entries": entries, "total": len(values), "next_offset": offset + limit if offset + limit < len(values) else None}
         return list_data_files(
             settings, directory, query=query, offset=offset, limit=limit
         )

@@ -1,10 +1,13 @@
 """Validate prebuilt assets for both source-checkout and sdist installations."""
-from setuptools import setup
-from setuptools.command.build_py import build_py
-from pathlib import Path
 import hashlib
 import json
 import runpy
+from pathlib import Path
+
+from setuptools import setup
+from setuptools.command.build_py import build_py
+
+
 class CheckedBuild(build_py):
     def run(self):
         root=Path(__file__).parent;static=root/'src/tofscope/static';manifest=static/'manifest.json'

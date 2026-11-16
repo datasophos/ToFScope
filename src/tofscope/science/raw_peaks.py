@@ -1,5 +1,6 @@
 """Frame-sized floating-point peak reconstruction, independent of HDF5 and UI."""
 import numpy as np
+
 from tofscope.science.integration import EventBatch
 
 

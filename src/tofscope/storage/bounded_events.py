@@ -5,13 +5,14 @@ HDF5's per-cell callbacks only hand out slices; they create no per-cell budget
 objects, malloc/free calls or NumPy arrays. No on-disk format parsing is used.
 """
 
-from contextlib import contextmanager, ExitStack
 import ctypes as C
 import os
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
+
 import h5py
-from h5py._objects import phil
 import numpy as np
+from h5py._objects import phil
 
 from tofscope.science.integration import EventBatch
 
@@ -82,7 +83,7 @@ def admitted_events(raw, frame, reserve):
                 pointer = start + used
                 arenas[-1][1] += size
                 return pointer
-            except BaseException as exc:
+            except BaseException as exc:  # noqa: BLE001
                 failure.append(exc)
                 return None
 

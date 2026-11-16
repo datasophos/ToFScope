@@ -1,13 +1,14 @@
 import threading
-import time
 import unittest
+
 from service_fixture import setup_case
+
 from tofscope.application.analyses import AnalysisService
-from tofscope.application.explore import ExploreService
-from tofscope.application.resources import ResourceBudget
 from tofscope.application.cache import ArrayCache
-from tofscope.application.jobs import JobService, IntegrationSpec
 from tofscope.application.commands import CommandEnvelope
+from tofscope.application.explore import ExploreService
+from tofscope.application.jobs import IntegrationSpec, JobService
+from tofscope.application.resources import ResourceBudget
 
 
 class JobTests(unittest.TestCase):

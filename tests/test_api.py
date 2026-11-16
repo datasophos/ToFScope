@@ -1,7 +1,9 @@
 import unittest
 from unittest.mock import patch
+
 from fastapi.testclient import TestClient
 from service_fixture import setup_case
+
 from tofscope.api.app import create_app
 
 
@@ -131,7 +133,7 @@ class APITests(unittest.TestCase):
         self.assertEqual(preview.status_code, 200, preview.text)
         self.assertTrue(preview.json()['requires_preparation'])
         self.assertEqual(self.client.get('/api/v1/analyses', headers=self.a).json(), [])
-        payload = dict(relative_path='a.h5', generation=preview.json()['generation'], filename='prepared.h5')
+        payload = {"relative_path": 'a.h5', "generation": preview.json()['generation'], "filename": 'prepared.h5'}
         response = self.client.post('/api/v1/acquisitions/prepare', headers=self.a, json=payload)
         self.assertEqual(response.status_code, 202, response.text)
         services = self.client.app.state.services
@@ -149,10 +151,10 @@ class APITests(unittest.TestCase):
         c=self.client
         a=c.post('/api/v1/analyses',headers=self.a,json={'relative_path':'a.h5'}).json()
         endpoint=f"/api/v1/analyses/{a['id']}"
-        command=dict(request_id='anchors',expected_revision=a['revision'],dataset_generation=a['dataset']['generation'],command=dict(type='set_depth_anchors',anchors=[dict(frame=1,depth_nm=100)]))
+        command={"request_id": 'anchors',"expected_revision": a['revision'],"dataset_generation": a['dataset']['generation'],"command": {"type": 'set_depth_anchors',"anchors": [{"frame": 1,"depth_nm": 100}]}}
         self.assertEqual(c.post(endpoint+'/commands',headers=self.b,json=command).status_code,404)
         a=c.post(endpoint+'/commands',headers=self.a,json=command).json()
-        command.update(request_id='physical',expected_revision=a['revision'],command=dict(type='set_depth_display',unit='um',coordinates='depth'))
+        command.update(request_id='physical',expected_revision=a['revision'],command={"type": 'set_depth_display',"unit": 'um',"coordinates": 'depth'})
         self.assertEqual(c.post(endpoint+'/commands',headers=self.a,json=command).status_code,200)
         data=c.get(endpoint+'/data?panels=profile',headers=self.a).json()
         self.assertEqual(data['panels']['profile']['axes'][0]['values'],[0,.1])

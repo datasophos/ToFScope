@@ -3,9 +3,10 @@ import unittest
 import h5py
 import numpy as np
 from service_fixture import setup_case
+
 from tofscope.application.analyses import AnalysisService, strongest_spectral_peak
-from tofscope.application.explore import ExploreService
 from tofscope.application.commands import CommandEnvelope
+from tofscope.application.explore import ExploreService
 
 
 class AnalysisTests(unittest.TestCase):

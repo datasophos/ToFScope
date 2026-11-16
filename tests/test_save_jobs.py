@@ -2,7 +2,9 @@ import unittest
 from dataclasses import replace
 from threading import Event
 from unittest.mock import patch
+
 from service_fixture import setup_case
+
 from tofscope.api.app import build_services
 from tofscope.application.commands import CommandEnvelope
 
@@ -63,8 +65,8 @@ class SaveJobTests(unittest.TestCase):
         self.assertEqual(self.s.saves.files.list('a'), [])
 
     def test_save_and_integration_share_admission_and_busy_save_rejection(self):
-        from tofscope.application.jobs import IntegrationSpec
         from tofscope.application.analyses import CapacityError
+        from tofscope.application.jobs import IntegrationSpec
         self.s.jobs.settings = replace(self.settings, jobs_per_analysis=1)
         entered, release = Event(), Event()
         original = self.s.saves.files._verify

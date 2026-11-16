@@ -1,15 +1,16 @@
 """Native copies append eligible channels without altering the source cube."""
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+
 import h5py
 import numpy as np
-import subprocess
-import sys
-from filelock import Timeout
+from test_signal_recipes import make_acquisition
+
 from tofscope.science.signals import SignalRecipe
 from tofscope.storage.vendor_export import export_native_copy
-from test_signal_recipes import make_acquisition
 
 
 class NativeExportTests(unittest.TestCase):

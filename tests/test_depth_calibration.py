@@ -1,7 +1,14 @@
 """Depth coordinates preserve acquisition frames and never extrapolate."""
 import unittest
+
 import numpy as np
-from tofscope.science.depth_calibration import DepthAnchor,DepthCalibration,validate_anchors,convert_depth
+
+from tofscope.science.depth_calibration import (
+    DepthAnchor,
+    DepthCalibration,
+    convert_depth,
+    validate_anchors,
+)
 
 
 class DepthCalibrationTests(unittest.TestCase):
@@ -31,5 +38,5 @@ class DepthCalibrationTests(unittest.TestCase):
         c=DepthCalibration((DepthAnchor(0,0),DepthAnchor(200,1500)),301)
         data=c.to_dict(unit='µm');restored=DepthCalibration.from_dict(data)
         self.assertEqual(restored,c);self.assertEqual(data['unit'],'µm')
-        self.assertEqual(data['anchors'][1],dict(frame=200,depth_nm=1500))
+        self.assertEqual(data['anchors'][1],{'frame': 200,'depth_nm': 1500})
         self.assertEqual(c.anchors[1].depth_nm,1500)

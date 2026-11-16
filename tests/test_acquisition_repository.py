@@ -1,11 +1,13 @@
 import tempfile
 import unittest
 from pathlib import Path
+
 import numpy as np
 from fixtures.acquisition import make_acquisition
+
 from tofscope.config import Settings
-from tofscope.storage.acquisitions import AcquisitionRepository
 from tofscope.science.signals import SignalRecipe
+from tofscope.storage.acquisitions import AcquisitionRepository
 
 
 class RepositoryTests(unittest.TestCase):
@@ -36,9 +38,8 @@ class RepositoryTests(unittest.TestCase):
         self.assertEqual(before, p.read_bytes())
         self.assertFalse(list(self.root.glob(".*.lock")))
         self.repo.authorize = lambda owner, path: owner != "denied"
-        with self.assertRaises(PermissionError):
-            with self.repo.metadata("denied", a):
-                pass
+        with self.assertRaises(PermissionError), self.repo.metadata("denied", a):
+            pass
 
     def test_escape_malformed_and_stale(self):
         for path in ["../a.h5", "/etc/passwd", "missing.h5"]:

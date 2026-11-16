@@ -2,12 +2,14 @@
 import argparse
 import hashlib
 import json
-from pathlib import Path
 import shutil
 import tempfile
 import time
+from pathlib import Path
+
 import h5py
 import numpy as np
+
 from tofscope.api.app import build_services
 from tofscope.application.commands import CommandEnvelope
 from tofscope.application.jobs import IntegrationSpec
@@ -23,8 +25,8 @@ def digest_file(path):
 
 def normalized(value):
     if isinstance(value, np.ndarray):
-        return dict(dtype=str(value.dtype), shape=value.shape,
-                    data=value.tobytes().hex() if not value.dtype.hasobject else normalized(value.tolist()))
+        return {'dtype': str(value.dtype), 'shape': value.shape,
+                    'data': value.tobytes().hex() if not value.dtype.hasobject else normalized(value.tolist())}
     if isinstance(value, np.generic): return normalized(value.item())
     if isinstance(value, bytes): return {'bytes': value.hex()}
     if isinstance(value, (list, tuple)): return [normalized(v) for v in value]
@@ -82,8 +84,8 @@ def main():
         try:
             state = services.analyses.create_analysis('qualified', services.repository.open('qualified', source.name))
             independent = services.analyses.create_analysis('other-owner', services.repository.open('other-owner', source.name))
-            from unittest.mock import patch
             from threading import Event
+            from unittest.mock import patch
             with services.cache.load('other-owner', independent.id, independent.dataset, independent.signals[0].recipe) as lease:
                 assert lease.array.shape[0] == state.shape[0]
             try:
@@ -158,15 +160,15 @@ def main():
     after = source.stat()
     assert (identity.st_ino, identity.st_size, identity.st_mtime_ns) == (after.st_ino, after.st_size, after.st_mtime_ns)
     assert digest_file(source) == before_hash
-    result = dict(source=source.name, source_bytes=identity.st_size, shape=state.shape,
-        original_sha256=before_hash, original_unchanged=True, vendor_chunk_count=chunks,
-        vendor_payload_sha256=vendor_original, vendor_payloads_exact=True,
-        custom_volume_sha256=raw_hash, custom_values_exact=True, exact_restored_csv=True,
-        hidden_signals_restored=True, fresh_owner_and_moved_copy=True, restore_without_reintegration=True,
-        two_owners_independent=True, cancelled_save_not_published=True, managed_bytes_high_water=high_water[0], managed_bytes_limit=config.global_bytes,
-        integration_seconds=integration_seconds, save_seconds=save_seconds, saved_bytes=stored_bytes,
-        elapsed_seconds=time.perf_counter() - started,
-        limitations=['Filesystem/NFS crash durability not qualified.', 'Commercial software round trip not tested.', 'Real original remains in place; literal source removal is covered by disposable installed-package checks.'])
+    result = {'source': source.name, 'source_bytes': identity.st_size, 'shape': state.shape,
+        'original_sha256': before_hash, 'original_unchanged': True, 'vendor_chunk_count': chunks,
+        'vendor_payload_sha256': vendor_original, 'vendor_payloads_exact': True,
+        'custom_volume_sha256': raw_hash, 'custom_values_exact': True, 'exact_restored_csv': True,
+        'hidden_signals_restored': True, 'fresh_owner_and_moved_copy': True, 'restore_without_reintegration': True,
+        'two_owners_independent': True, 'cancelled_save_not_published': True, 'managed_bytes_high_water': high_water[0], 'managed_bytes_limit': config.global_bytes,
+        'integration_seconds': integration_seconds, 'save_seconds': save_seconds, 'saved_bytes': stored_bytes,
+        'elapsed_seconds': time.perf_counter() - started,
+        'limitations': ['Filesystem/NFS crash durability not qualified.', 'Commercial software round trip not tested.', 'Real original remains in place; literal source removal is covered by disposable installed-package checks.']}
     (args.output / 'saved-copy.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result))
 

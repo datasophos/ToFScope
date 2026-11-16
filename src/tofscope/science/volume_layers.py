@@ -1,13 +1,16 @@
 from contextlib import nullcontext
+
 """Shared, acquisition-aligned previews with a total visible-voxel budget."""
-from collections import OrderedDict
-from dataclasses import dataclass,replace
 import math
+from collections import OrderedDict
+from dataclasses import dataclass
+
 import numpy as np
-from tofscope.storage.explorer import inspect_file,file_key
-from tofscope.science.signals import SignalRecipe,read_signal
+
 from tofscope.science.depth_calibration import calibrated_window
 from tofscope.science.se_preview import prepare_se_preview
+from tofscope.science.signals import SignalRecipe, read_signal
+from tofscope.storage.explorer import file_key, inspect_file
 
 COLORSCALES=('Viridis','Magma','Plasma','Cividis','Reds','Blues','Greens','Purples')
 

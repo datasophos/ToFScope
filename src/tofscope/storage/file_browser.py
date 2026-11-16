@@ -1,8 +1,8 @@
 """Shallow directory enumeration; no HDF5 reads during browsing."""
 import os
-from dataclasses import dataclass,asdict
-from pathlib import Path
-from tofscope.config import resolve_data_path, is_private_output_path
+from dataclasses import asdict, dataclass
+
+from tofscope.config import is_private_output_path, resolve_data_path
 
 
 @dataclass(frozen=True)
@@ -35,7 +35,7 @@ def list_data_files(settings, relative_dir: str='', *, query: str='', offset: in
                 kind='directory' if target.is_dir() else 'file'
                 if kind=='file' and (target.suffix.lower() not in ('.h5','.hdf5') or not target.is_file()):continue
             except (OSError,ValueError):continue
-            entries.append(dict(name=name,path=str((directory/name).relative_to(settings.data_root)),kind=kind,size=stat.st_size,mtime=stat.st_mtime))
+            entries.append({'name': name,'path': str((directory/name).relative_to(settings.data_root)),'kind': kind,'size': stat.st_size,'mtime': stat.st_mtime})
     entries.sort(key=lambda e:(e['kind']!='directory',e['name'].casefold(),e['name']))
     total=len(entries);end=offset+limit
     return DirectoryPage(str(directory.relative_to(settings.data_root)) if directory!=settings.data_root else '',entries[offset:end],total,end if end<total else None)

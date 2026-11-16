@@ -1,9 +1,9 @@
 """Scientific semantics and serialization of composite mass-window signals."""
 import json
-from dataclasses import replace, FrozenInstanceError
-from pathlib import Path
 import tempfile
 import unittest
+from dataclasses import FrozenInstanceError, replace
+from pathlib import Path
 from uuid import uuid4
 
 import numpy as np
@@ -59,16 +59,16 @@ class WindowSetTests(unittest.TestCase):
         with self.assertRaises(FrozenInstanceError):recipe.label='Changed'
 
     def test_legacy_raw_recipe_migrates_one_interval(self):
-        recipe=SignalRecipe.from_dict(dict(schema_version=2,source='raw_reconstruction',signal='custom',lower_Th=1,upper_Th=2,frames_inclusive=[10,12]))
+        recipe=SignalRecipe.from_dict({'schema_version': 2,'source': 'raw_reconstruction','signal': 'custom','lower_Th': 1,'upper_Th': 2,'frames_inclusive': [10,12]})
         self.assertEqual(recipe.intervals,((1.,2.),))
         self.assertEqual(recipe.frames,(10,12))
         self.assertEqual(recipe.source,'custom')
 
     def test_recipe_validates_references_frames_and_unknown_schema(self):
-        valid=dict(source='custom',intervals=((1,2),),frames=(0,3))
-        for patch in [dict(frames=(3,1)),dict(frames=(.5,2)),dict(frames=(-1,2)),dict(id='not-a-uuid'),dict(source='unknown'),dict(source='stored'),dict(stored_index=3),dict(intervals=())]:
+        valid={'source': 'custom','intervals': ((1,2),),'frames': (0,3)}
+        for patch in [{'frames': (3,1)},{'frames': (.5,2)},{'frames': (-1,2)},{'id': 'not-a-uuid'},{'source': 'unknown'},{'source': 'stored'},{'stored_index': 3},{'intervals': ()}]:
             with self.subTest(patch=patch),self.assertRaises(ValueError):SignalRecipe(**(valid|patch))
-        with self.assertRaises(ValueError):SignalRecipe.from_dict(dict(schema_version=99))
+        with self.assertRaises(ValueError):SignalRecipe.from_dict({'schema_version': 99})
 
     def test_computation_key_ignores_display_identity(self):
         recipe=SignalRecipe(label='one',source='custom',intervals=((1,2),),frames=(10,12))

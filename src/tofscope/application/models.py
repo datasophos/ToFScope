@@ -1,11 +1,15 @@
-from tofscope.application.spatial import SpatialView
-from tofscope.application.identification_models import AtomicAssignment, MeasurementResult
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
-from tofscope.science.depth_calibration import DepthAnchor
-from tofscope.storage.acquisitions import DatasetRef
-from tofscope.science.signals import SignalRecipe
+
 from tofscope.application.commands import DepthSelection
+from tofscope.application.identification_models import (
+    AtomicAssignment,
+    MeasurementResult,
+)
+from tofscope.application.spatial import SpatialView
+from tofscope.science.depth_calibration import DepthAnchor
+from tofscope.science.signals import SignalRecipe
+from tofscope.storage.acquisitions import DatasetRef
 
 
 @dataclass(frozen=True)
@@ -71,4 +75,4 @@ class AnalysisSnapshot:
     depth_coordinates: Literal['frame', 'depth'] = 'frame'
     isotope_measurement: MeasurementResult | None = None
     isotope_job_id: str | None = None
-    spatial: SpatialView = SpatialView()
+    spatial: SpatialView = field(default_factory=SpatialView)

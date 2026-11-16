@@ -1,7 +1,9 @@
 """Inclusive mass-window unions; display transforms never enter this module."""
 
 from dataclasses import dataclass
+
 import numpy as np
+
 from tofscope.storage.dataset_io import locked_read
 
 
@@ -89,8 +91,9 @@ def custom_peak_windows(
     path, intervals, first, last, progress=None, cancel=None, reserve=None
 ):
     """Reconstruct a union in one read per supported acquisition depth slice."""
-    import h5py
     from operator import index
+
+    import h5py
 
     try:
         if isinstance(first, bool) or isinstance(last, bool):

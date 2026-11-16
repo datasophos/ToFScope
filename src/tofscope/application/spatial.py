@@ -1,6 +1,7 @@
 """Validated, durable spatial display state; numerical recipes remain signals."""
 
 from typing import Annotated, Literal
+
 from pydantic import (
     BaseModel,
     ConfigDict,

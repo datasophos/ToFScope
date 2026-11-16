@@ -1,5 +1,7 @@
 import unittest
+
 from service_fixture import setup_case
+
 from tofscope.config import Settings
 
 
@@ -15,6 +17,7 @@ class ConfigTests(unittest.TestCase):
         from pathlib import Path
         from tempfile import TemporaryDirectory
         from unittest.mock import patch
+
         from tofscope.config import load_settings
         with TemporaryDirectory() as directory:
             root = Path(directory).resolve()

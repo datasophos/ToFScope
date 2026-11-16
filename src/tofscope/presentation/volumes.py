@@ -1,10 +1,10 @@
 """Admitted renderer-neutral volume previews in exact acquisition coordinates."""
 
-from contextlib import contextmanager, ExitStack
-from dataclasses import dataclass, asdict
 import json
 import math
-import numpy as np
+from contextlib import ExitStack, contextmanager
+from dataclasses import asdict, dataclass
+
 from tofscope.application.analyses import CapacityError
 from tofscope.application.resources import reserve_se_preparation
 from tofscope.application.signals import get_signal

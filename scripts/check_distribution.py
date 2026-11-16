@@ -3,7 +3,6 @@
 import argparse
 import json
 import os
-from pathlib import Path
 import shutil
 import socket
 import subprocess
@@ -15,6 +14,7 @@ import tomllib
 import urllib.request
 import zipfile
 from email.parser import BytesParser
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tests"))
@@ -79,8 +79,9 @@ def smoke(artifact, output):
         acquisition.mkdir()
         make_acquisition(acquisition / "a.h5")
         # A real multi-chunk transfer makes the early-close download check meaningful.
-        import h5py
         import hashlib
+
+        import h5py
         import numpy as np
         make_acquisition(acquisition / 'raw.h5')
         with h5py.File(acquisition / 'raw.h5', 'r+') as raw:
@@ -313,13 +314,13 @@ def smoke(artifact, output):
                 page.screenshot(path=str(output / (artifact.name + '.png')), full_page=True)
                 assert not external, external
                 browser.close()
-            return dict(artifact=artifact.name, installed_without_node=True,
-                runtime_dependencies_clean=True, offline_browser=True,
-                raw_preparation_without_scientific_runtime=True,
-                plots_integration_export=True, identification_and_measurement_restore=True, saved_copy_restart_source_removed=True,
-                spatial_preview_and_state_restore=True,
-                exact_restored_csv=True, calibrated_copy_roundtrip=True, scientific_axes_hover=True, colormap_roundtrip=True, optional_download=True,
-                interrupted_download_preserves_saved_file=True)
+            return {"artifact": artifact.name, "installed_without_node": True,
+                "runtime_dependencies_clean": True, "offline_browser": True,
+                "raw_preparation_without_scientific_runtime": True,
+                "plots_integration_export": True, "identification_and_measurement_restore": True, "saved_copy_restart_source_removed": True,
+                "spatial_preview_and_state_restore": True,
+                "exact_restored_csv": True, "calibrated_copy_roundtrip": True, "scientific_axes_hover": True, "colormap_roundtrip": True, "optional_download": True,
+                "interrupted_download_preserves_saved_file": True}
         finally:
             stop(); log.close()
 

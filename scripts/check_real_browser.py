@@ -2,13 +2,14 @@
 
 import argparse
 import json
-from pathlib import Path
 import socket
 import subprocess
 import sys
 import tempfile
 import time
 import urllib.request
+from pathlib import Path
+
 from playwright.sync_api import sync_playwright
 
 
