@@ -19,7 +19,7 @@ ToFScope runs locally on Windows, macOS, and Linux as a Python application and o
 
 ## What you can do
 
-- **Explore an acquisition:** view ion maps, a mass spectrum, front projections, and depth profiles together; choose custom regions of interest and frame range.
+- **Explore an acquisition:** view ion maps, a mass spectrum, XZ or YZ front projections, and depth profiles together; choose custom regions of interest and frame range.
 - **Compare signals:** use stored ion channels or define custom mass windows from the spectrum, then compare their profiles.
 - **Work with depth:** add calibration anchors to display profiles and projections in physical depth where calibration is known.
 - **Inspect peaks and isotopes:** find candidate atomic isotope ions and measure selected signals over a region and frame range.

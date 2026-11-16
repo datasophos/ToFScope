@@ -199,10 +199,15 @@ test("SE image selection updates the SIMS ROI and display controls reset", async
   );
 });
 
-test("front projection refreshes when only the ROI X bounds change", async ({ page }) => {
+test("front projection refreshes when only the ROI X bounds change", async ({
+  page,
+}) => {
   await page.setExtraHTTPHeaders({ "x-tofscope-user": `roi-x-${Date.now()}` });
   await page.goto("/");
-  await page.getByRole("button", { name: /Open TOFexplorer/ }).first().click();
+  await page
+    .getByRole("button", { name: /Open TOFexplorer/ })
+    .first()
+    .click();
   await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
   const front = page.getByTestId("panel-front");
   await expect(front).toHaveAttribute("data-content-version", /.+/);
@@ -211,5 +216,54 @@ test("front projection refreshes when only the ROI X bounds change", async ({ pa
   await page.getByLabel("ROI x first", { exact: true }).fill("1");
   await page.getByRole("button", { name: "Apply ROI", exact: true }).click();
   await expect(front).not.toHaveAttribute("data-content-version", before!);
-  await expect(front.getByTestId("selection-overlay")).toHaveAttribute("data-x-range", "10,20");
+  await expect(front.getByTestId("selection-overlay")).toHaveAttribute(
+    "data-x-range",
+    "10,20",
+  );
+});
+
+test("front projection switches between XZ and YZ", async ({ page }) => {
+  await page.setExtraHTTPHeaders({
+    "x-tofscope-user": `front-axis-${Date.now()}`,
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: /Open TOFexplorer/ })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+  const panel = page.getByTestId("panel-front");
+  const toggle = panel.getByRole("button", {
+    name: "Switch to Y-Z projection",
+  });
+  await expect(toggle).toHaveText("XZ");
+  await toggle.click();
+  await expect(
+    panel.getByRole("button", { name: "Switch to X-Z projection" }),
+  ).toHaveText("YZ");
+  await expect(panel).toHaveAttribute("data-x-axis", /Y/);
+  await panel.getByRole("button", { name: "Switch to X-Z projection" }).click();
+  await expect(panel).toHaveAttribute("data-x-axis", /X/);
+});
+
+test("YZ projection refreshes when the ROI X bounds change", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({ "x-tofscope-user": `roi-yz-${Date.now()}` });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: /Open TOFexplorer/ })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
+  const front = page.getByTestId("panel-front");
+  await front.getByRole("button", { name: "Switch to Y-Z projection" }).click();
+  await expect(front).toHaveAttribute("data-x-axis", /Y/);
+  await expect(front).toHaveAttribute("data-content-version", /.+/);
+  const before = await front.getAttribute("data-content-version");
+  await page.getByRole("button", { name: /^ROI:/ }).click();
+  await page.getByLabel("ROI x first", { exact: true }).fill("1");
+  await page.getByRole("button", { name: "Apply ROI", exact: true }).click();
+  await expect(front).not.toHaveAttribute("data-content-version", before!);
+  await expect(front).toHaveAttribute("data-x-axis", /Y/);
 });

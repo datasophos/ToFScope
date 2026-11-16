@@ -142,7 +142,7 @@ class ExploreService:
                     raise ValueError('Add a positive-depth anchor first.')
                 patch.update(depth_unit=c.unit, depth_coordinates=c.coordinates)
             elif kind == 'set_display':
-                patch['display'] = DisplaySettings(c.log, c.relative, c.image, s.display.spectrum_log if c.spectrum_log is None else c.spectrum_log, s.display.colormap if c.colormap is None else c.colormap)
+                patch['display'] = DisplaySettings(c.log, c.relative, c.image, s.display.spectrum_log if c.spectrum_log is None else c.spectrum_log, s.display.colormap if c.colormap is None else c.colormap, s.display.front_orientation if c.front_orientation is None else c.front_orientation)
             if kind == 'remove_signal':
                 patch['spatial'] = s.spatial.model_copy(update={
                     'layers': tuple(x for x in s.spatial.layers if x.signal_id != signal.id),

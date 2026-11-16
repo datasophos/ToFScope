@@ -68,6 +68,7 @@ export function useAnalysis(initial: Analysis) {
           active ||
           geometry ||
           different(before.roi, a.roi) ||
+          before.display.front_orientation !== a.display.front_orientation ||
           before.display.colormap !== a.display.colormap ||
           before.display.log !== a.display.log
         )

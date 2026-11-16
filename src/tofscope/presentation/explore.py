@@ -100,7 +100,7 @@ class ExplorePresenter:
             )
             count = (
                 (se_shape[0] * se_shape[1] if "ion" in panels else 0)
-                + ((last - first + 1) * nx if "front" in panels else 0)
+                + ((last - first + 1) * (ny if s.display.front_orientation == "yz" else nx) if "front" in panels else 0)
                 + (
                     (last - first + 1) * len(visible_signals(s))
                     if "profile" in panels
@@ -207,21 +207,23 @@ class ExplorePresenter:
                             frame_range=selected_frames(s),
                         )
                     if "front" in panels:
-                        front = np.full((last - first + 1, x1 - x0 + 1), np.nan)
+                        yz = s.display.front_orientation == "yz"
+                        front = np.full((last - first + 1, (y1 - y0 + 1) if yz else (x1 - x0 + 1)), np.nan)
                         l = max(first, r.frames[0])
                         h = min(last, r.frames[1])
                         if l <= h:
                             front[l - first : h - first + 1] = a[
                                 l - r.frames[0] : h - r.frames[0] + 1, y0 : y1 + 1, x0 : x1 + 1
-                            ].sum(axis=1, dtype=np.float64)
-                        fx = replace(xaxis, values=xaxis.values[x0 : x1 + 1], boundaries=xaxis.boundaries[x0 : x1 + 2])
+                            ].sum(axis=2 if yz else 1, dtype=np.float64)
+                        spatial_axis, start, end = (yaxis, y0, y1) if yz else (xaxis, x0, x1)
+                        fx = replace(spatial_axis, values=spatial_axis.values[start : end + 1], boundaries=spatial_axis.boundaries[start : end + 2])
                         result["front"] = self.panel(
                             "image",
                             [fx, depth_axis],
                             palette=s.display.colormap,
                             values=front[indices],
                             **geometry,
-                            aggregation="exact sum along ROI y",
+                            aggregation="exact sum along ROI x" if yz else "exact sum along ROI y",
                             intensity_range=(
                                 0,
                                 finite_max(front),

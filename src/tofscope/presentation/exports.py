@@ -55,6 +55,7 @@ class ExportService:
                         "relative": s.display.relative,
                         "image": s.display.image,
                         "spectrum_log": s.display.spectrum_log,
+                        "front_orientation": s.display.front_orientation,
                         "colormap": s.display.colormap,
                     },
                     "recipe_import_available": False,
