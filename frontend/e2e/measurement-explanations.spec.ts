@@ -1,3 +1,4 @@
+import { openSpectrumAction } from "./spectrum-actions";
 import { test, expect } from "@playwright/test";
 
 for (const zero of [true, false]) {
@@ -14,10 +15,7 @@ for (const zero of [true, false]) {
       .first()
       .click();
     await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
-    await page
-      .getByTestId("panel-spectrum")
-      .getByRole("button", { name: "Create signal", exact: true })
-      .click();
+    await openSpectrumAction(page, "Create signal");
     await page.getByLabel("Signal name", { exact: true }).fill("Test window");
     await page
       .getByLabel("Mass lower 1", { exact: true })
@@ -31,9 +29,7 @@ for (const zero of [true, false]) {
     await expect(
       page.getByRole("region", { name: "Signal editor", exact: true }),
     ).toBeHidden();
-    await page
-      .getByRole("button", { name: "Isotope measurements", exact: true })
-      .click();
+    await openSpectrumAction(page, "Isotope measurements");
     const dialog = page.getByRole("dialog", {
       name: "Isotope measurements",
       exact: true,

@@ -1,3 +1,4 @@
+import { openSpectrumAction } from "./spectrum-actions";
 import { manageSignals } from "./signal-controls";
 import { test, expect } from "@playwright/test";
 
@@ -14,9 +15,7 @@ test("all draft intervals remain visible and compact bounds preserve exact value
     .click();
   await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
   const spectrum = page.getByTestId("panel-spectrum");
-  await spectrum
-    .getByRole("button", { name: "Create signal", exact: true })
-    .click();
+  await openSpectrumAction(page, "Create signal");
   const name = page.getByLabel("Signal name", { exact: true });
   await name.fill("Two windows");
   await page.getByLabel("Mass lower 1", { exact: true }).fill("1.123456789");

@@ -1,3 +1,4 @@
+import { openSpectrumAction } from "./spectrum-actions";
 import { test, expect } from "@playwright/test";
 test("mass windows and calibration show compact values while submitting exact scientific inputs", async ({
   page,
@@ -11,9 +12,7 @@ test("mass windows and calibration show compact values while submitting exact sc
     .first()
     .click();
   await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
-  await page
-    .getByRole("button", { name: "Identify peak", exact: true })
-    .click();
+  await openSpectrumAction(page, "Identify peak");
   const dialog = page.getByRole("dialog", { name: "Atomic identification" });
   await dialog.getByLabel("Measured m/z", { exact: true }).fill("2.014");
   await dialog
