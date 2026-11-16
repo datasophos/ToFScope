@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Literal
 
 from tofscope.application.commands import DepthSelection
@@ -75,4 +75,5 @@ class AnalysisSnapshot:
     depth_coordinates: Literal['frame', 'depth'] = 'frame'
     isotope_measurement: MeasurementResult | None = None
     isotope_job_id: str | None = None
-    spatial: SpatialView = field(default_factory=SpatialView)
+    # SpatialView is immutable; retaining this default also preserves the API schema.
+    spatial: SpatialView = SpatialView()  # noqa: RUF009

@@ -7,6 +7,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:renderer": "playwright test renderer.spec.ts",
@@ -18,16 +19,21 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@kitware/vtk.js": "^37.4.6",
     "@playwright/test": "^1.56.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.0",
     "d3-scale": "^4.0.2",
+    "eslint": "^10.15.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
     "openapi-typescript": "^7.10.0",
     "plotly.js-dist-min": "^3.2.0",
     "prettier": "^3.9.10",
     "typescript": "^5.9.0",
+    "typescript-eslint": "^8.72.2",
     "vite": "^7.0.0",
     "vitest": "^4.0.0"
   }
