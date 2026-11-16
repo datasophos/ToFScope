@@ -1,15 +1,16 @@
 import hashlib
 import json
 import os
-from pathlib import Path
-from threading import Event
 import unittest
-from unittest.mock import patch
 from dataclasses import replace
+from threading import Event
+from unittest.mock import patch
 from uuid import uuid4
+
 import h5py
 import numpy as np
 from service_fixture import setup_case
+
 from tofscope.application.analyses import AnalysisService
 from tofscope.application.models import SignalSnapshot
 from tofscope.science.signals import SignalRecipe
@@ -310,12 +311,9 @@ class SavedFilesTests(unittest.TestCase):
         stopped = Event(); stopped.set()
         with self.assertRaises(ValueError): self.save(cancel=stopped)
         with self.assertRaises(ValueError): self.save(before_publish=lambda: (_ for _ in ()).throw(ValueError('stale')))
-        with patch('tofscope.storage.saved_files.shutil.disk_usage', return_value=type('Usage', (), {'free': 1})()):
-            with self.assertRaises(OSError): self.save()
-        with patch('tofscope.storage.saved_files.write_integration_group', side_effect=OSError('disk write failed')):
-            with self.assertRaises(OSError): self.save()
-        with patch.object(self.store, '_verify', side_effect=ValueError('corrupt')):
-            with self.assertRaises(ValueError): self.save()
+        with patch('tofscope.storage.saved_files.shutil.disk_usage', return_value=type('Usage', (), {'free': 1})()), self.assertRaises(OSError): self.save()
+        with patch('tofscope.storage.saved_files.write_integration_group', side_effect=OSError('disk write failed')), self.assertRaises(OSError): self.save()
+        with patch.object(self.store, '_verify', side_effect=ValueError('corrupt')), self.assertRaises(ValueError): self.save()
         self.assertEqual(list(self.store.owner_root('a').iterdir()), [])
         self.assertEqual(self.before, hashlib.sha256(self.source.read_bytes()).hexdigest())
 
@@ -353,9 +351,7 @@ class SavedFilesTests(unittest.TestCase):
     def test_disk_reservations_prevent_concurrent_overcommit_and_release(self):
         from tofscope.storage.saved_files import reserve_disk
         with patch('tofscope.storage.saved_files.shutil.disk_usage', return_value=type('Usage', (), {'free': 40})()):
-            with reserve_disk(self.store.owner_root('a'), 20):
-                with self.assertRaises(OSError):
-                    with reserve_disk(self.store.owner_root('a'), 30): pass
+            with reserve_disk(self.store.owner_root('a'), 20), self.assertRaises(OSError), reserve_disk(self.store.owner_root('a'), 30): pass
             with reserve_disk(self.store.owner_root('a'), 30): pass
 
     def test_nonfinite_results_and_external_links_rejected(self):
@@ -369,6 +365,7 @@ class SavedFilesTests(unittest.TestCase):
 
     def test_large_copy_keeps_only_one_admitted_buffer(self):
         import tracemalloc
+
         from tofscope.storage.saved_files import COPY_BYTES
         with h5py.File(self.source, 'r+') as h:
             data = h.create_dataset('Payload', (24 * 1024**2,), dtype='uint8')

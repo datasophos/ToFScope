@@ -1,7 +1,8 @@
 from tofscope.application.spatial import SpatialView, validate_spatial
+
 """Bounded, versioned analysis state, independent of service identities and plots."""
-from dataclasses import replace
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
@@ -10,10 +11,19 @@ import h5py
 import numpy as np
 from pydantic import Field, StrictBool, StrictInt, field_validator, model_validator
 
-from tofscope.application.commands import StrictModel, DepthSelection, AnchorInput
+from tofscope.application.commands import AnchorInput, DepthSelection, StrictModel
+from tofscope.application.identification_models import (
+    AtomicAssignment,
+    CatalogProvenance,
+    MeasuredSignal,
+    MeasurementResult,
+)
+from tofscope.application.models import (
+    AnalysisSnapshot,
+    DisplaySettings,
+    SignalSnapshot,
+)
 from tofscope.science.depth_calibration import DepthAnchor, validate_anchors
-from tofscope.application.models import AnalysisSnapshot, DisplaySettings, SignalSnapshot
-from tofscope.application.identification_models import AtomicAssignment, MeasuredSignal, CatalogProvenance, MeasurementResult
 from tofscope.science.signals import SignalRecipe
 
 FiniteStrictFloat = Annotated[float, Field(strict=True, allow_inf_nan=False)]
@@ -140,8 +150,8 @@ def encode_document(snapshot: AnalysisSnapshot) -> SavedAnalysisDocument:
     for row in snapshot.signals:
         if row.recipe is None:
             raise ValueError('Finish or discard pending signals before saving.')
-        rows.append(dict(id=row.id, name=row.name, style_index=row.style_index,
-                         recipe=row.recipe.to_dict(), assignment=row.assignment, materialization_id=(row.materialization_id or str(uuid4())) if row.recipe.source == 'custom' else None))
+        rows.append({'id': row.id, 'name': row.name, 'style_index': row.style_index,
+                         'recipe': row.recipe.to_dict(), 'assignment': row.assignment, 'materialization_id': (row.materialization_id or str(uuid4())) if row.recipe.source == 'custom' else None})
     from tofscope.application.identification import current_result
     measurement = current_result(snapshot)
     captured = DocumentMeasurement(**{key: getattr(measurement, key) for key in DocumentMeasurement.model_fields}) if measurement else None

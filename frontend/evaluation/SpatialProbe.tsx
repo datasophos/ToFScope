@@ -5,6 +5,7 @@ import vtkDataArray from "@kitware/vtk.js/Common/Core/DataArray";
 import vtkVolumeMapper from "@kitware/vtk.js/Rendering/Core/VolumeMapper";
 import { createRoot } from "react-dom/client";
 import { useEffect, useRef } from "react";
+import type { SpatialProbeWindow } from "./spatialProbeTypes";
 const fixture = {
   x: [0, 1, 2],
   y: [0, 1, 2],
@@ -16,17 +17,16 @@ const fixture = {
 function Probe() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    const element = ref.current;
     const run = async () => {
       const image = vtkImageData.newInstance();
       image.setDimensions(3, 3, 4);
       image.setSpacing([1, 1, 20]);
-      image
-        .getPointData()
-        .setScalars(
-          vtkDataArray.newInstance({
-            values: Float32Array.from(fixture.layers[0].map((v) => v ?? NaN)),
-          }),
-        );
+      image.getPointData().setScalars(
+        vtkDataArray.newInstance({
+          values: Float32Array.from(fixture.layers[0].map((v) => v ?? NaN)),
+        }),
+      );
       const mapper = vtkVolumeMapper.newInstance();
       mapper.setInputData(image);
       const vtkZ = fixture.z.map((_, i) => image.indexToWorld([0, 0, i])[2]);
@@ -59,7 +59,7 @@ function Probe() {
       });
       const start = performance.now();
       await Plotly.newPlot(
-        ref.current,
+        element,
         traces,
         {
           width: 700,
@@ -72,13 +72,13 @@ function Probe() {
       const times: number[] = [];
       for (let i = 0; i < 30; i++) {
         const t = performance.now();
-        await Plotly.relayout(ref.current, {
+        await Plotly.relayout(element, {
           "scene.camera.eye": { x: 1.3 + i / 100, y: 1.3, z: 1.3 },
         });
         await new Promise(requestAnimationFrame);
         times.push(performance.now() - t);
       }
-      (window as any).spatialProbe = {
+      (window as unknown as SpatialProbeWindow).spatialProbe = {
         fixture,
         vtkZ,
         plotlyZ: traces[0].z.filter((_, i) => i % 9 === 0),
@@ -91,7 +91,7 @@ function Probe() {
       image.delete();
     };
     void run();
-    return () => Plotly.purge(ref.current);
+    return () => Plotly.purge(element);
   }, []);
   return <div ref={ref} />;
 }

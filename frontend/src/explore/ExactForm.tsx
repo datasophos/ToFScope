@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 export function ExactForm({
   labels,
   values,
@@ -11,7 +11,12 @@ export function ExactForm({
   button: string;
 }) {
   const [draft, setDraft] = useState(values.map(String));
-  useEffect(() => setDraft(values.map(String)), [values.join(",")]);
+  const valueKey = values.join(",");
+  const [previousValueKey, setPreviousValueKey] = useState(valueKey);
+  if (valueKey !== previousValueKey) {
+    setPreviousValueKey(valueKey);
+    setDraft(values.map(String));
+  }
   return (
     <form
       className="exact-form"

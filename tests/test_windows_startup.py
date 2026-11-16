@@ -8,7 +8,7 @@ from pathlib import Path
 class WindowsStartupTests(unittest.TestCase):
     def test_startup_without_posix_user_id(self):
         with tempfile.TemporaryDirectory() as directory:
-            script = """
+            script = f"""
 import os
 import tempfile
 from pathlib import Path
@@ -22,8 +22,8 @@ from tofscope.storage.dataset_io import LOCK_DIR
 settings = Settings(data_root=Path({directory!r}))
 assert settings.lock_dir == LOCK_DIR.get().resolve()
 assert settings.lock_dir.is_dir()
-""".format(directory=directory)
-            result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True)
+"""
+            result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, check=False)
             self.assertEqual(result.returncode, 0, result.stderr)
 
 

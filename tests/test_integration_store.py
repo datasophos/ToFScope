@@ -3,11 +3,18 @@ import tempfile
 import unittest
 from pathlib import Path
 from uuid import uuid4
+
 import h5py
 import numpy as np
-from tofscope.storage.integration_store import IntegrationRecord,write_integration_group,list_saved_integrations,read_saved_integration
-from tofscope.science.signals import SignalRecipe,read_signal
 from test_signal_recipes import make_acquisition
+
+from tofscope.science.signals import SignalRecipe, read_signal
+from tofscope.storage.integration_store import (
+    IntegrationRecord,
+    list_saved_integrations,
+    read_saved_integration,
+    write_integration_group,
+)
 
 
 class IntegrationStoreTests(unittest.TestCase):
@@ -17,7 +24,7 @@ class IntegrationStoreTests(unittest.TestCase):
 
     def record(self,intervals=((1,2),(4,5)),frames=(10,12)):
         recipe=SignalRecipe(intervals=intervals,frames=frames,label='Ti α')
-        return IntegrationRecord(str(uuid4()),recipe.to_dict(),(1,2),dict(generation='source'),dict(normalization=4))
+        return IntegrationRecord(str(uuid4()),recipe.to_dict(),(1,2),{'generation': 'source'},{'normalization': 4})
 
     def test_round_trip_partial_composite_and_vendor_unchanged(self):
         record=self.record();values=np.arange(6,dtype=np.float32).reshape(3,1,2)
@@ -33,8 +40,7 @@ class IntegrationStoreTests(unittest.TestCase):
 
     def test_invalid_and_incomplete_records(self):
         record=self.record(frames=(0,2));values=np.ones((3,1,2),dtype=np.float32)
-        with h5py.File(self.path,'r+') as f:
-            with self.assertRaises(ValueError):write_integration_group(f,record,values[:2])
+        with h5py.File(self.path,'r+') as f, self.assertRaises(ValueError):write_integration_group(f,record,values[:2])
         self.assertEqual(list_saved_integrations(self.path),[])
         for identifier in ['../bad','/absolute','abc']:
             with self.assertRaises(ValueError):read_saved_integration(self.path,identifier)

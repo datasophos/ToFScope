@@ -5,6 +5,10 @@ export { histogram, layerRange } from "../shared/levels";
 export type VolumeData = components["schemas"]["VolumeData"];
 export type SpatialView = components["schemas"]["SpatialView"];
 export type SpatialLayer = components["schemas"]["SpatialLayer"];
+export type LayerLevels = Pick<
+  SpatialLayer,
+  "signal_id" | "percentile" | "levels"
+>;
 export type Camera = components["schemas"]["Camera"];
 export const defaultCamera: Camera = {
   eye: { x: 1.5, y: 1.5, z: 0.9 },
@@ -61,7 +65,7 @@ export function volumeDisplayStats(
 }
 export function levelStats(
   values: (number | null)[],
-  style: SpatialLayer,
+  style: Pick<SpatialLayer, "percentile" | "levels">,
   log = false,
 ) {
   const fallback = volumeDisplayStats(values, style.percentile, log);

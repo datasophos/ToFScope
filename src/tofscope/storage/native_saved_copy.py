@@ -119,7 +119,7 @@ def prepare_native_channels(handle, document, check, progress, previous=None, re
                     raise ValueError('label must fit the native ASCII field')
                 entry = np.array(rows[index], dtype=table.dtype)[()]
                 entry['label'] = label
-                match = matches(entry, lambda z: old[z, :, :, index])
+                match = matches(entry, lambda z, index=index: old[z, :, :, index])
                 if match is None:
                     additions.append((row, entry, index))
                 else:
@@ -142,7 +142,7 @@ def prepare_native_channels(handle, document, check, progress, previous=None, re
             entry['lower integration limit'], entry['upper integration limit'] = low, high
             # Reuse only an exact native match; do not change or delete input peaks.
             data = handle[f'ToFScope/Integrations/{row.materialization_id}/data']
-            match = matches(entry, lambda z: data[z])
+            match = matches(entry, lambda z, data=data: data[z])
             if match is None:
                 additions.append((row, entry, None))
             else:
@@ -207,13 +207,13 @@ def prepare_native_channels(handle, document, check, progress, previous=None, re
                 progress('Copying native peaks', i, total)
             offset = info.chunk_offset
             if offset[-1] not in remap:
-                return None
+                return
             mask, payload = old.id.read_direct_chunk(offset)
             target = (*offset[:-1], remap[offset[-1]])
             new.id.write_direct_chunk(target, payload, filter_mask=mask)
             if new.id.read_direct_chunk(target) != (mask, payload):
                 raise ValueError('Native peak chunk verification failed.')
-            return None
+            return
         old.id.chunk_iter(copy_chunk)
     else:
         for z in range(old.shape[0]):

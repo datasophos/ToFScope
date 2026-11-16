@@ -10,6 +10,7 @@ from tofscope.windows_launcher import ServiceController, load_folder, save_folde
 class LauncherTests(unittest.TestCase):
     def test_open_file_uses_platform_handler(self):
         from unittest.mock import patch
+
         from tofscope.windows_launcher import open_local_file
         path = Path("/tmp/tofscope-config.toml")
         with patch("os.name", "posix"), patch("sys.platform", "darwin"), patch("subprocess.Popen") as process:
@@ -18,6 +19,7 @@ class LauncherTests(unittest.TestCase):
 
     def test_button_icons_use_native_foreground(self):
         from types import SimpleNamespace
+
         from tofscope.windows_launcher import button_icons
 
         class Image:
@@ -32,8 +34,8 @@ class LauncherTests(unittest.TestCase):
             self.assertTrue(all(icon.colors == {color} for icon in icons.values()))
 
     def test_config_created_and_preserved(self):
-        from tofscope.windows_launcher import ensure_config
         from tofscope.config import load_settings
+        from tofscope.windows_launcher import ensure_config
         with tempfile.TemporaryDirectory() as directory:
             state = Path(directory)
             config = ensure_config(state)
@@ -45,6 +47,7 @@ class LauncherTests(unittest.TestCase):
 
     def test_worker_loads_config_and_keeps_launcher_settings(self):
         from unittest.mock import patch
+
         from tofscope.windows_launcher import run_worker
         with tempfile.TemporaryDirectory() as directory:
             state = Path(directory)
@@ -58,6 +61,7 @@ class LauncherTests(unittest.TestCase):
 
     def test_worker_reads_changes_on_next_start(self):
         from unittest.mock import patch
+
         from tofscope.windows_launcher import run_worker
         with tempfile.TemporaryDirectory() as directory:
             state = Path(directory)
@@ -126,8 +130,8 @@ class LauncherTests(unittest.TestCase):
                 service.stop()
 
     def test_startup_failure_is_available_in_log(self):
-        from unittest.mock import patch
         import os
+        from unittest.mock import patch
         with tempfile.TemporaryDirectory() as directory:
             service = ServiceController(Path(directory))
             try:

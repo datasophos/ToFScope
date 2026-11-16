@@ -4,6 +4,7 @@ Reader compatibility is testable here. Commercial software compatibility needs
 an observed round trip in ToF-Explorer before it can be claimed.
 """
 from pathlib import Path
+
 import h5py
 import numpy as np
 
@@ -46,7 +47,7 @@ def validate_native_layout(h5):
     def walk(group):
         for name in group:
             link=group.get(name,getlink=True)
-            if isinstance(link,(h5py.ExternalLink,h5py.SoftLink)):raise ValueError('Linked HDF5 layouts require a separate compatibility review.')
+            if isinstance(link,(h5py.ExternalLink,h5py.SoftLink)):raise ValueError('Linked HDF5 layouts require a separate compatibility review.')  # noqa: TRY004
             obj=group[name]
             address=h5py.h5o.get_info(obj.id).addr
             if address in seen:raise ValueError('Hard-linked aliases and cycles require a separate compatibility review.')
@@ -81,7 +82,7 @@ def _export_native_copy(source_path,destination_path,recipes,*,volumes=None,prog
             for key,value in original['PeakData'].attrs.items():peak.attrs[key]=value
             for name in original['PeakData']:
                 if name not in ('PeakData','PeakTable'):original['PeakData'].copy(name,peak)
-            kwargs=dict(dtype=old.dtype,fillvalue=old.fillvalue)
+            kwargs={'dtype': old.dtype,'fillvalue': old.fillvalue}
             if old.chunks:
                 kwargs.update(chunks=old.chunks,compression=old.compression,shuffle=old.shuffle,fletcher32=old.fletcher32)
                 if old.compression:kwargs['compression_opts']=old.compression_opts

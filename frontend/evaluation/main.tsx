@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createRoot } from "react-dom/client";
 import { mountChart, type ChartData } from "../src/plots/selectedRenderer";
 import { mountPlotly } from "./PlotlyProbe";
@@ -14,16 +20,18 @@ function Probe() {
     [exact, setExact] = useState("1");
   const [kind, setKind] = useState<"spectrum" | "image" | "depth">("spectrum");
   const candidate = new URLSearchParams(location.search).get("renderer");
-  const base: ChartData = {
-    kind: "line",
-    x: [0, 1, 1.00000001, 2, 3, 4, 5],
-    series: [{ label: "narrow peak", values: [0, 100, 0, 30 + data, 1, 3, 0] }],
-    xRange: range,
-    yRange: [0, 110],
-  };
   const [rows, setRows] = useState(128);
-  const d: ChartData =
-    kind === "image"
+  const d: ChartData = useMemo(() => {
+    const base: ChartData = {
+      kind: "line",
+      x: [0, 1, 1.00000001, 2, 3, 4, 5],
+      series: [
+        { label: "narrow peak", values: [0, 100, 0, 30 + data, 1, 3, 0] },
+      ],
+      xRange: range,
+      yRange: [0, 110],
+    };
+    return kind === "image"
       ? {
           kind: "image",
           x: Array.from({ length: 128 }, (_, i) => i),
@@ -47,11 +55,12 @@ function Probe() {
             ],
           }
         : base;
+  }, [kind, data, range, rows]);
+  const mount = useEffectEvent(() =>
+    (candidate === "plotly" ? mountPlotly : mountChart)(element.current!, d),
+  );
   useEffect(() => {
-    chart.current = (candidate === "plotly" ? mountPlotly : mountChart)(
-      element.current!,
-      d,
-    );
+    chart.current = mount();
     const resize = new ResizeObserver(() => chart.current?.resize());
     resize.observe(element.current!);
     return () => {
@@ -72,7 +81,7 @@ function Probe() {
         }
         return times;
       };
-  }, [data, range, kind, rows]);
+  }, [d]);
   return (
     <main>
       <h1>{candidate} interaction probe</h1>

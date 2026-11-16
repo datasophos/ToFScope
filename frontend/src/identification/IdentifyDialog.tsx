@@ -63,15 +63,30 @@ export function IdentifyDialog({
     setLow(String(Math.max(a.mass_limits[0], value - 0.1)));
     setHigh(String(Math.min(a.mass_limits[1], value + 0.1)));
   };
-  useEffect(() => {
+  const [previousActive, setPreviousActive] = useState(active);
+  if (active !== previousActive) {
+    setPreviousActive(active);
     if (!active) setOpen(false);
-  }, [active]);
-  useEffect(() => {
-    invalidate();
+  }
+  const [previousGeneration, setPreviousGeneration] = useState(
+    a.dataset.generation,
+  );
+  if (a.dataset.generation !== previousGeneration) {
+    setPreviousGeneration(a.dataset.generation);
+    setBusy(false);
+    setResult(undefined);
+    setSelected("");
+    setError("");
     setOpen(false);
     setMz("");
     setSignalId(a.image_signal_id);
-  }, [a.dataset.generation]);
+  }
+  useEffect(
+    () => () => {
+      serial.current++;
+    },
+    [a.dataset.generation],
+  );
   const close = () => {
     serial.current++;
     setBusy(false);
@@ -506,7 +521,8 @@ export function IdentifyDialog({
                 </button>
               </div>
               <p className="identification-action-note">
-                <em>Apply window</em> opens a draft signal. <em>Add signal</em> adds it immediately.
+                <em>Apply window</em> opens a draft signal. <em>Add signal</em>{" "}
+                adds it immediately.
               </p>
             </fieldset>
           </div>

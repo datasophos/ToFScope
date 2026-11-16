@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import type { Command, Signal } from "../src/api/client";
+import type { Camera } from "../src/volumes/spatialRenderer";
+
+type GeometryWindow = Window & {
+  originalVolumeGeometry: HTMLCanvasElement | null;
+};
 test("optional real all-depth payload through the full application camera lifecycle", async ({
   page,
 }) => {
@@ -30,17 +36,19 @@ test("optional real all-depth payload through the full application camera lifecy
         analysis_id: current.analysis_id,
         revision: current.revision,
         dataset_generation: current.dataset_generation,
-        layers: current.layers.map((l: any, i: number) => ({
-          ...payload.layers[i],
-          signal_id: l.signal_id,
-          label: l.label,
-        })),
+        layers: current.layers.map(
+          (l: { signal_id: string; label: string }, i: number) => ({
+            ...payload.layers[i],
+            signal_id: l.signal_id,
+            label: l.label,
+          }),
+        ),
       },
     });
   });
   await page.evaluate(async () => {
     const session = await (await fetch("/api/v1/auth/session")).json();
-    const command = async (command: any) => {
+    const command = async (command: Command) => {
       const [a] = await (await fetch("/api/v1/analyses")).json();
       const r = await fetch(`/api/v1/analyses/${a.id}/commands`, {
         method: "POST",
@@ -69,7 +77,7 @@ test("optional real all-depth payload through the full application camera lifecy
       spatial: {
         ...a.spatial,
         screen: "volume",
-        layers: a.signals.map((s: any) => ({ signal_id: s.id })),
+        layers: a.signals.map((s: Signal) => ({ signal_id: s.id })),
       },
     });
   });
@@ -77,7 +85,8 @@ test("optional real all-depth payload through the full application camera lifecy
   await expect(canvas.locator("canvas").first()).toBeVisible();
   await expect.poll(() => canvas.getAttribute("data-renderer")).toBe("vtk");
   await canvas.evaluate((el) => {
-    (window as any).originalVolumeGeometry = el.querySelector("canvas");
+    (window as GeometryWindow).originalVolumeGeometry =
+      el.querySelector("canvas");
   });
   const box = (await canvas.boundingBox())!,
     times: number[] = [];
@@ -85,7 +94,7 @@ test("optional real all-depth payload through the full application camera lifecy
     const [a] = await (await fetch("/api/v1/analyses")).json();
     return a.spatial.camera;
   });
-  let lastCamera: any;
+  let lastCamera: Camera | undefined;
   for (let i = 0; i < 30; i++) {
     const saved = page.waitForResponse(
       (r) =>
@@ -120,8 +129,9 @@ test("optional real all-depth payload through the full application camera lifecy
   expect(persistedCamera).toEqual(lastCamera);
   expect(
     await canvas.evaluate(
-      (el: any) =>
-        el.querySelector("canvas") === (window as any).originalVolumeGeometry,
+      (el: Element) =>
+        el.querySelector("canvas") ===
+        (window as GeometryWindow).originalVolumeGeometry,
     ),
   ).toBe(true);
   console.log(

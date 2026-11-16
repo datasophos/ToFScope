@@ -1,7 +1,9 @@
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from threading import Condition, RLock
+
 import numpy as np
+
 from tofscope.application.analyses import CapacityError
 
 

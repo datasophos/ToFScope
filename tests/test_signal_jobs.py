@@ -1,10 +1,12 @@
-import unittest
 import threading
+import unittest
 from uuid import uuid4
+
 from service_fixture import setup_case
+
 from tofscope.api.app import build_services
-from tofscope.application.jobs import IntegrationSpec
 from tofscope.application.commands import CommandEnvelope
+from tofscope.application.jobs import IntegrationSpec
 
 
 class SignalJobTests(unittest.TestCase):

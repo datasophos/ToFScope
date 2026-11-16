@@ -1,4 +1,13 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { canRenderVtkStyles, prepareVtkPreview } from "./vtkPreview";
 import { vtkDisplayExtent, vtkSamplingLimited } from "./vtkGeometry";
 import { exportVolume } from "./exportVolume";
@@ -16,6 +25,7 @@ import {
   defaultLayer,
   type VolumeData,
   type SpatialView,
+  type LayerLevels,
   type Camera,
 } from "./spatialRenderer";
 function VolumePlaceholder() {
@@ -124,7 +134,7 @@ export function VolumeScreen({
   const v = a.spatial;
   const [data, setData] = useState<VolumeData | null>(null),
     [error, setError] = useState(""),
-    [loading, setLoading] = useState(false),
+    [loading, setLoading] = useState(true),
     [retry, setRetry] = useState(0),
     [max, setMax] = useState(false),
     [controlsHidden, setControlsHidden] = useState(false),
@@ -143,7 +153,9 @@ export function VolumeScreen({
   }, [localDraft, a.signals, a.has_se]);
   const viewer = useRef<HTMLDivElement>(null);
   const current = useRef(v);
-  current.current = draft;
+  useLayoutEffect(() => {
+    current.current = draft;
+  }, [draft]);
   const pending = useRef(0);
   const interactions = useRef(new Set<string>());
   const onInteraction = (id: string, active: boolean) => {
@@ -164,15 +176,18 @@ export function VolumeScreen({
       })
       .finally(() => pending.current--);
   };
-  useEffect(() => {
+  const initializeLayer = useEffectEvent(() => {
     if (
       !v.layers.length &&
       !pending.current &&
       a.signals.some((s) => s.id === a.image_signal_id && s.recipe)
     )
       change({ ...v, layers: [defaultLayer(a.image_signal_id)] });
+  });
+  useEffect(() => {
+    initializeLayer();
   }, [a.id, a.image_signal_id, v.layers.length]);
-  const styles = enabledLayers(draft);
+  const styles = useMemo(() => enabledLayers(draft), [draft]);
   const key = JSON.stringify([
     a.dataset.generation,
     a.roi,
@@ -183,18 +198,23 @@ export function VolumeScreen({
     draft.quality,
     a.signals.map((s) => [s.id, s.recipe, s.materialization_id]),
   ]);
-  useEffect(() => {
-    const controller = new AbortController();
-    let disposed = false;
+  const authoritativeIds = JSON.stringify(
+    enabledLayers(v).map((l) => l.signal_id),
+  );
+  const selectedIds = JSON.stringify(styles.map((l) => l.signal_id));
+  const fetchKey = JSON.stringify([key, retry, v.quality, authoritativeIds]);
+  const [previousFetchKey, setPreviousFetchKey] = useState(fetchKey);
+  if (fetchKey !== previousFetchKey) {
+    setPreviousFetchKey(fetchKey);
     setLoading(true);
     setError("");
     setData(null);
+  }
+  useEffect(() => {
+    const controller = new AbortController();
+    let disposed = false;
     // Await authoritative commands before fetching geometry selected optimistically.
-    if (
-      JSON.stringify(enabledLayers(v).map((l) => l.signal_id)) !==
-        JSON.stringify(styles.map((l) => l.signal_id)) ||
-      v.quality !== draft.quality
-    )
+    if (authoritativeIds !== selectedIds || v.quality !== draft.quality)
       return () => controller.abort();
     void request<VolumeData>(`/analyses/${a.id}/volumes`, {
       signal: controller.signal,
@@ -218,8 +238,11 @@ export function VolumeScreen({
   }, [
     key,
     retry,
+    a.id,
     v.quality,
-    JSON.stringify(enabledLayers(v).map((l) => l.signal_id)),
+    authoritativeIds,
+    selectedIds,
+    draft.quality,
   ]);
   useEffect(() => {
     const escape = (e: KeyboardEvent) => {
@@ -231,6 +254,12 @@ export function VolumeScreen({
     window.addEventListener("keydown", escape);
     return () => window.removeEventListener("keydown", escape);
   }, []);
+  const signalNameKey = JSON.stringify(a.signals.map((s) => [s.id, s.name]));
+  const signalNames = useMemo(
+    () =>
+      new Map<string, string>(JSON.parse(signalNameKey) as [string, string][]),
+    [signalNameKey],
+  );
   const displayData = useMemo(
     () =>
       data
@@ -238,12 +267,11 @@ export function VolumeScreen({
             ...data,
             layers: data.layers.map((l) => ({
               ...l,
-              label:
-                a.signals.find((s) => s.id === l.signal_id)?.name ?? l.label,
+              label: signalNames.get(l.signal_id) ?? l.label,
             })),
           }
         : null,
-    [data, JSON.stringify(a.signals.map((s) => [s.id, s.name]))],
+    [data, signalNames],
   );
   const visibleKey = JSON.stringify(styles.map((style) => style.signal_id));
   const vtkSource = useMemo(() => {
@@ -261,15 +289,29 @@ export function VolumeScreen({
         : null,
     [vtkSource, draft.mode],
   );
-  const styleKey = JSON.stringify(
-    styles.map((style) => [style.signal_id, style.percentile, style.levels]),
+  // Camera and color changes do not change the volume's intensity bounds.
+  const levelKey = JSON.stringify(
+    styles.map(({ signal_id, percentile, levels }) => ({
+      signal_id,
+      percentile,
+      levels,
+    })),
+  );
+  const levelStyles = useMemo(
+    () => JSON.parse(levelKey) as LayerLevels[],
+    [levelKey],
   );
   const vtkStylesSupported = useMemo(
     () =>
       !!vtkSource &&
       vtkPreview?.kind === "vtk" &&
-      canRenderVtkStyles(vtkSource, styles, a.display.log, vtkPreview.data),
-    [vtkSource, vtkPreview, styleKey, a.display.log],
+      canRenderVtkStyles(
+        vtkSource,
+        levelStyles,
+        a.display.log,
+        vtkPreview.data,
+      ),
+    [vtkSource, vtkPreview, levelStyles, a.display.log],
   );
   const useVtk =
     draft.mode === "overlay" &&
@@ -287,7 +329,7 @@ export function VolumeScreen({
     for (const layer of vtkSource.layers) {
       const single = { ...vtkSource, layers: [layer] };
       const preview = prepareVtkPreview(single);
-      const style = styles.find((s) => s.signal_id === layer.signal_id);
+      const style = levelStyles.find((s) => s.signal_id === layer.signal_id);
       if (
         style &&
         preview.kind === "vtk" &&
@@ -316,7 +358,7 @@ export function VolumeScreen({
           }
         : vtkSource;
     return { data, pointIds, preview };
-  }, [vtkSource, useVtkPoints, styleKey, a.display.log]);
+  }, [vtkSource, useVtkPoints, levelStyles, a.display.log]);
   const pageSize = draft.tile_columns * draft.tile_rows;
   const pages = Math.max(1, Math.ceil(styles.length / pageSize)),
     page = Math.min(draft.page, pages - 1);
@@ -327,7 +369,7 @@ export function VolumeScreen({
       .map((layer) => {
         const single = { ...vtkSource, layers: [layer] };
         const preview = prepareVtkPreview(single);
-        const style = styles.find((s) => s.signal_id === layer.signal_id)!;
+        const style = levelStyles.find((s) => s.signal_id === layer.signal_id)!;
         return {
           single,
           preview,
@@ -336,7 +378,7 @@ export function VolumeScreen({
             !canRenderVtkStyles(single, [style], a.display.log, preview.data),
         };
       });
-  }, [vtkSource, draft.mode, page, pageSize, styleKey, a.display.log]);
+  }, [vtkSource, draft.mode, page, pageSize, levelStyles, a.display.log]);
   const camera = (id: string, c: Camera) => {
     const state = current.current;
     const next =

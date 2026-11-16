@@ -8,11 +8,12 @@ import argparse
 import gc
 import importlib.metadata
 import json
-from pathlib import Path
 import resource
 import subprocess
 import sys
 import time
+from pathlib import Path
+
 import h5py
 import numpy as np
 import psutil
@@ -45,14 +46,14 @@ def measure(path, backend, lazy, channel):
     else:
         from rsciio.utils.file import get_file_handle
 
-        kwargs = dict(
-            signal="nominal_peak_data",
-            lazy=lazy,
-            depth_range=(0, stop),
-            mz_range=(low, high),
-            chunks=chunks,
-            show_progressbar=False,
-        )
+        kwargs = {
+            "signal": "nominal_peak_data",
+            "lazy": lazy,
+            "depth_range": (0, stop),
+            "mz_range": (low, high),
+            "chunks": chunks,
+            "show_progressbar": False,
+        }
         if backend == "hyperspy":
             import hyperspy.api as hs
 
@@ -75,19 +76,19 @@ def measure(path, backend, lazy, channel):
     np.testing.assert_array_equal(data, expected)
     del data
     gc.collect()
-    return dict(
-        backend=backend,
-        lazy=lazy,
-        exact=True,
-        peak_rss=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
-        wall_ms=(time.perf_counter() - start) * 1000,
-        open_files_after=[
+    return {
+        "backend": backend,
+        "lazy": lazy,
+        "exact": True,
+        "peak_rss": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+        "wall_ms": (time.perf_counter() - start) * 1000,
+        "open_files_after": [
             Path(f.path).name
             for f in psutil.Process().open_files()
             if f.path.endswith(".h5")
         ],
-        metadata=metadata,
-    )
+        "metadata": metadata,
+    }
 
 
 def main():
@@ -127,13 +128,13 @@ def main():
                         )
                     )
                 )
-        result = dict(
-            versions={
+        result = {
+            "versions": {
                 name: importlib.metadata.version(name)
                 for name in ["h5py", "rosettasciio", "hyperspy"]
             },
-            runs=results,
-        )
+            "runs": results,
+        }
         if a.output:
             a.output.mkdir(parents=True, exist_ok=True)
             (a.output / "readers.json").write_text(json.dumps(result, indent=2))

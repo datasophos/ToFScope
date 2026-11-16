@@ -1,5 +1,7 @@
 import unittest
+
 from service_fixture import setup_case
+
 from tofscope.application.analyses import AnalysisService
 from tofscope.application.lifecycle import LifecycleService
 

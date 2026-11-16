@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { usePanModifier } from "./usePanModifier";
 import { axisTitle, plotInsets, formatPosition } from "./axes";
 import { coordinateToFrame } from "../calibration/coordinates";
@@ -11,12 +18,7 @@ import {
 import { SelectionOverlay, type Range } from "./SelectionOverlay";
 import { HelpHeading } from "../components/HelpButton";
 import { CurveMarker } from "../components/CurveMarker";
-import {
-  curveStyle,
-  imageWithLegend,
-  type CurveStyle,
-  type LegendEntry,
-} from "./curveStyle";
+import { curveStyle, imageWithLegend, type LegendEntry } from "./curveStyle";
 const imageInsets = plotInsets("image");
 export function PlotToolbarIcon({
   action,
@@ -126,14 +128,18 @@ export function PlotPanel({
   const panModifier = usePanModifier();
   const [hovered, setHovered] = useState(false);
   const panActive = panning || (panModifier && hovered);
-  const [yScale, setYScale] = useState<"log" | "linear">("log");
-  useEffect(() => {
+  const [yScale, setYScale] = useState<"log" | "linear">(
+    spectrumLog === false ? "linear" : "log",
+  );
+  const [previousSpectrumLog, setPreviousSpectrumLog] = useState(spectrumLog);
+  if (spectrumLog !== previousSpectrumLog) {
+    setPreviousSpectrumLog(spectrumLog);
     if (spectrumLog !== undefined) setYScale(spectrumLog ? "log" : "linear");
-  }, [spectrumLog]);
+  }
   const [exportError, setExportError] = useState<string | null>(null);
   const legend: LegendEntry[] =
     name === "profile" || name === "calibration"
-      ? (panel?.series || []).map((series, index) => ({
+      ? (panel?.series || []).map((series) => ({
           id: series.signal_id,
           label: series.label,
           ...curveStyle(series.style_index),
@@ -148,7 +154,12 @@ export function PlotPanel({
       ? [axis.boundaries[0], axis.boundaries.at(-1)!]
       : [0, 1];
   const coordinateKey = panel?.axes.map((a) => `${a.name}:${a.unit}`).join("/");
-  useEffect(() => setZoom(null), [coordinateKey]);
+  const [previousCoordinateKey, setPreviousCoordinateKey] =
+    useState(coordinateKey);
+  if (coordinateKey !== previousCoordinateKey) {
+    setPreviousCoordinateKey(coordinateKey);
+    setZoom(null);
+  }
   const xRange =
     panel?.kind === "image" || expectedKind === "image" ? range : zoom || range;
   const high = useMemo(() => {
@@ -173,7 +184,17 @@ export function PlotPanel({
         ? "Mean intensity"
         : "Intensity";
   const [cursor, setCursor] = useState<number | null>(null);
-  useEffect(() => setCursor(null), [panel?.content_version, zoom]);
+  const [previousCursorSource, setPreviousCursorSource] = useState({
+    version: panel?.content_version,
+    zoom,
+  });
+  if (
+    previousCursorSource.version !== panel?.content_version ||
+    previousCursorSource.zoom !== zoom
+  ) {
+    setPreviousCursorSource({ version: panel?.content_version, zoom });
+    setCursor(null);
+  }
   const hoverFrame =
     cursor !== null && axis && panel?.coordinate_kind === "depth"
       ? coordinateToFrame(cursor, axis, panel.acquisition_frames ?? [])
@@ -225,19 +246,17 @@ export function PlotPanel({
       chart.current = null;
     };
   }, [image]);
-  useEffect(() => {
+  const updateChart = useEffectEvent(() => {
     if (!data || !element.current || (data.kind === "image" && !stageSize))
       return;
     if (!chart.current) chart.current = mountChart(element.current, data);
     else chart.current.update(data);
-  }, [
-    panel?.content_version,
-    panel?.intensity_range[0],
-    panel?.intensity_range[1],
-    zoom,
-    stageSize,
-    yScale,
-  ]);
+  });
+  const rangeLow = panel?.intensity_range[0];
+  const rangeHigh = panel?.intensity_range[1];
+  useEffect(() => {
+    updateChart();
+  }, [panel?.content_version, rangeLow, rangeHigh, zoom, stageSize, yScale]);
   return (
     <section
       className={`plot-panel ${maximized ? "maximized" : ""}`}

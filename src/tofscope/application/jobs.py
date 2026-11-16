@@ -1,18 +1,19 @@
 """Bounded round-robin user scheduling, with one active job per user."""
 
-from collections import OrderedDict, deque
-from dataclasses import dataclass, replace, field
-from threading import Condition, Event, RLock, Thread
 import json
 import time
-from uuid import uuid4
+from collections import OrderedDict, deque
+from dataclasses import dataclass, field, replace
+from threading import Condition, Event, RLock, Thread
 from typing import Literal
-from tofscope.storage.saved_files import SavedFile
+from uuid import uuid4
+
 from tofscope.application.analyses import CapacityError
 from tofscope.application.models import SignalSnapshot
 from tofscope.application.signals import get_signal, normalize_view, valid_name
 from tofscope.science.integration import canonical_intervals
 from tofscope.science.signals import SignalRecipe
+from tofscope.storage.saved_files import SavedFile
 
 TERMINAL = {"succeeded", "failed", "cancelled", "obsolete"}
 
@@ -248,7 +249,7 @@ class JobService:
                 aid = j.snapshot.analysis_id
                 e = self.analyses.entry(j.owner, aid)
 
-                def current():
+                def current(e=e, j=j):
                     return (
                         not e.closed
                         and e.snapshot.dataset == j.source
@@ -256,13 +257,13 @@ class JobService:
                         and any(r.id == j.signal_id for r in e.snapshot.signals)
                     )
 
-                def cancelled():
+                def cancelled(j=j):
                     return j.cancelled.is_set() or not current()
 
                 if cancelled():
                     raise InterruptedError()
 
-                def progress(done, total):
+                def progress(done, total, j=j):
                     with self.condition:
                         j.snapshot = replace(j.snapshot, done=done, total=total)
 
@@ -305,7 +306,7 @@ class JobService:
                         j.snapshot,
                         status="cancelled" if j.cancelled.is_set() else "obsolete",
                     )
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 with self.condition:
                     j.snapshot = replace(
                         j.snapshot,

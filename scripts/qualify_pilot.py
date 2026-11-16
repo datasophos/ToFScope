@@ -5,15 +5,16 @@ The app runs under TestClient's isolated peer; no production identity is forged.
 
 import argparse
 import json
-from pathlib import Path
 import resource
 import statistics
 import tempfile
 import time
-from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
 from fastapi.testclient import TestClient
-from tofscope.config import Settings
+
 from tofscope.api.app import create_app
+from tofscope.config import Settings
 
 
 def main():
@@ -40,12 +41,12 @@ def main():
             analyses = {}
             timings = []
             payload = []
-            for o in headers:
+            for o, owner_headers in headers.items():
                 analyses[o] = []
                 for _ in range(3):
                     response = c.post(
                         "/api/v1/analyses",
-                        headers=headers[o],
+                        headers=owner_headers,
                         json={"relative_path": a.file},
                     )
                     response.raise_for_status()

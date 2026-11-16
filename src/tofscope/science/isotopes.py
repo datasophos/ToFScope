@@ -1,13 +1,14 @@
 """Offline atomic-isotope candidates with explicit charge and provenance."""
-from dataclasses import dataclass
-from pathlib import Path
 import hashlib
 import json
 import math
 import re
+from dataclasses import dataclass
+from pathlib import Path
 
 ELECTRON_MASS_U=0.0005485799090441  # CODATA2022, NIST electron mass in u.
 from importlib.resources import files
+
 CATALOG_PATH=files('tofscope.resources').joinpath('reference/isotopes.json')
 
 

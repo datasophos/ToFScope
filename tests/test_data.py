@@ -1,13 +1,20 @@
 """Numerical checks for custom mass-window reconstruction."""
-import unittest
 import tempfile
-from unittest.mock import patch
+import unittest
 from pathlib import Path
+from unittest.mock import patch
 from zipfile import BadZipFile
+
 import h5py
 import numpy as np
 
-from tofscope.storage.explorer import integrate_events, preview_grid, roi_from_bounds, sum_depth_window, se_mean
+from tofscope.storage.explorer import (
+    integrate_events,
+    preview_grid,
+    roi_from_bounds,
+    se_mean,
+    sum_depth_window,
+)
 
 
 class IntegrationTests(unittest.TestCase):

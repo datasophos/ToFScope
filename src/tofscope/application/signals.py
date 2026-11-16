@@ -1,6 +1,7 @@
 """Signal identity and view invariants, independent of readers and renderers."""
 from dataclasses import replace
-from tofscope.application.commands import AllDepth, SingleFrame, DepthWindow
+
+from tofscope.application.commands import DepthWindow, SingleFrame
 
 
 def valid_name(value):

@@ -1,8 +1,10 @@
 import json
 import unittest
 from unittest.mock import patch
+
 import numpy as np
 from service_fixture import setup_case
+
 from tofscope.api.app import build_services
 from tofscope.application.commands import CommandEnvelope
 from tofscope.presentation.explore import ExplorePresenter
@@ -138,8 +140,8 @@ class PresentationTests(unittest.TestCase):
         self.assertIsNone(d.panels["ion"].values[0][0])
         self.assertFalse(d.panels["ion"].coverage[0][0])
     def test_partial_comparison_alignment_roi_and_exports(self):
-        from tofscope.application.jobs import IntegrationSpec
         from tofscope.application.commands import CommandEnvelope
+        from tofscope.application.jobs import IntegrationSpec
         a=self.s.analyses.get('a',self.a.id)
         job=self.s.jobs.submit('a',a.id,CommandEnvelope('comparison',a.revision,a.dataset.generation,{'type':'set_depth','depth':{'mode':'all'}}),IntegrationSpec(((1,2),(4,5)),(1,2),'comparison'))
         self.assertEqual(self.s.jobs.wait('a',job.id,3).status,'succeeded')

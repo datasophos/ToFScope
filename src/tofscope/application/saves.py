@@ -1,11 +1,11 @@
 """Revision-bound saved copies run through the shared fair job scheduler."""
+import json
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
-import json
 
 from tofscope.application.analyses import Conflict
 from tofscope.storage.analysis_document import encode_document
-from tofscope.storage.saved_files import SavedFileStore, COPY_BYTES, filename
+from tofscope.storage.saved_files import COPY_BYTES, SavedFileStore, filename
 
 
 @dataclass(frozen=True)

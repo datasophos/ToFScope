@@ -1,13 +1,13 @@
 """Private, self-contained saved copies with bounded copying and exclusive publication."""
 import base64
-from contextlib import contextmanager, ExitStack
-from dataclasses import dataclass
 import hashlib
 import json
 import logging
 import os
-from pathlib import Path
 import shutil
+from contextlib import ExitStack, contextmanager
+from dataclasses import dataclass
+from pathlib import Path
 from threading import RLock
 from uuid import uuid4
 
@@ -16,8 +16,12 @@ import numpy as np
 
 from tofscope import __version__
 from tofscope.storage.acquisitions import AcquisitionRepository, content_identity
-from tofscope.storage.analysis_document import ROOT, MAX_DOCUMENT_BYTES, read_document
-from tofscope.storage.integration_store import IntegrationRecord, write_integration_group, _read_info
+from tofscope.storage.analysis_document import MAX_DOCUMENT_BYTES, ROOT, read_document
+from tofscope.storage.integration_store import (
+    IntegrationRecord,
+    _read_info,
+    write_integration_group,
+)
 
 COPY_BYTES = 8 * 1024**2
 _disk_lock = RLock()
@@ -146,18 +150,18 @@ class SavedFileStore:
                 continue
             try:
                 if child.is_dir():
-                    entries.append(dict(name=child.name, path=child.relative_to(root).as_posix(), kind='directory', size=0))
+                    entries.append({'name': child.name, 'path': child.relative_to(root).as_posix(), 'kind': 'directory', 'size': 0})
                 elif not folders_only and child.is_file() and child.suffix == '.h5':
-                    entries.append(dict(name=child.name, path=self.identifier(owner, child), kind='file', size=child.stat().st_size))
+                    entries.append({'name': child.name, 'path': self.identifier(owner, child), 'kind': 'file', 'size': child.stat().st_size})
             except OSError:
                 continue
         entries.sort(key=lambda row: (row['kind'] != 'directory', row['name'].casefold(), row['name']))
         relative = target.relative_to(root).as_posix()
         relative = '' if relative == '.' else relative
         parent = str(Path(relative).parent) if relative else None
-        return dict(path=relative, full_path=str(target), parent='' if parent == '.' else parent,
-                    entries=entries[offset:offset + limit], total=len(entries),
-                    next_offset=offset + limit if offset + limit < len(entries) else None)
+        return {'path': relative, 'full_path': str(target), 'parent': '' if parent == '.' else parent,
+                    'entries': entries[offset:offset + limit], 'total': len(entries),
+                    'next_offset': offset + limit if offset + limit < len(entries) else None}
 
     def create_directory(self, owner, directory, location, name):
         if not name or name.startswith('.') or len(name.encode()) > 240 or any(c in name for c in ('/', '\\', '\x00')) or any(ord(c) < 32 for c in name):
@@ -168,7 +172,7 @@ class SavedFileStore:
         except FileExistsError:
             raise ValueError('A file or folder with that name already exists. Choose another name.') from None
         root = self.settings.data_root if location == 'acquisition' else self.owner_root(owner)
-        return dict(path=(parent / name).relative_to(root).as_posix())
+        return {'path': (parent / name).relative_to(root).as_posix()}
 
     def list(self, owner):
         return [SavedFile(file_id(p.name), p.name, p.stat().st_size)
@@ -269,7 +273,7 @@ class SavedFileStore:
                             continue
                         check()
                         digest = hashlib.sha256()
-                        def checked_frames():
+                        def checked_frames(row=row, digest=digest):
                             for i, values in enumerate(frames(row.id)):
                                 check()
                                 values = np.asarray(values)
@@ -280,7 +284,9 @@ class SavedFileStore:
                         write_integration_group(handle, record, checked_frames())
                         checksums[row.materialization_id] = digest.hexdigest()
                         handle[f'ToFScope/Integrations/{row.materialization_id}'].attrs['sha256'] = digest.hexdigest()
-                    from tofscope.storage.native_saved_copy import prepare_native_channels
+                    from tofscope.storage.native_saved_copy import (
+                        prepare_native_channels,
+                    )
                     document, compatibility_warnings = prepare_native_channels(
                         handle, document, check, progress, previous,
                         reserve_rebuild, previous_stale,

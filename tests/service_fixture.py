@@ -1,6 +1,8 @@
-from pathlib import Path
 import tempfile
+from pathlib import Path
+
 from fixtures.acquisition import make_acquisition
+
 from tofscope.config import Settings
 from tofscope.storage.acquisitions import AcquisitionRepository
 

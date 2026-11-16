@@ -5,16 +5,16 @@ prototype checkout and baseline git revision. Output arrays must agree exactly.
 """
 
 import argparse
-from contextlib import nullcontext
 import hashlib
 import importlib.util
 import json
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import time
 import types
+from contextlib import nullcontext
+from pathlib import Path
 from unittest.mock import patch
 
 import h5py
@@ -35,7 +35,7 @@ def baseline_module(name, path, ref):
     )
     module = types.ModuleType(name)
     sys.modules[name] = module
-    exec(compile(source, path, "exec"), module.__dict__)
+    exec(compile(source, path, "exec"), module.__dict__)  # noqa: S102
     return module
 
 
@@ -86,19 +86,19 @@ def main():
             budget = ResourceBudget(settings)
             peak, requests = 0, 0
 
-            def reserve(size):
+            def reserve(size, budget=budget):
                 nonlocal peak, requests
                 lease = budget.reserve("qualification", "qualification", size)
                 peak = max(peak, budget.physical_bytes)
                 requests += 1
                 return lease
 
-            def progress(done, total):
+            def progress(done, total, mode=mode):
                 if done % 256 == 0 or done == total:
-                    print(json.dumps(dict(
-                        mode=mode, done=done, total=total,
-                        elapsed_s=round(time.perf_counter() - start, 3),
-                    )), flush=True)
+                    print(json.dumps({
+                        "mode": mode, "done": done, "total": total,
+                        "elapsed_s": round(time.perf_counter() - start, 3),  # noqa: B023
+                    }), flush=True)
 
             with reserve(output_bytes):
                 kwargs = {} if mode == "prototype" else {"reserve": reserve}
@@ -118,12 +118,12 @@ def main():
                     expected = volume
                 else:
                     np.testing.assert_array_equal(volume, expected)
-                results[mode] = dict(
-                    seconds=elapsed, frames=args.frames, managed_peak_bytes=peak,
-                    managed_scratch_accounted=mode != "prototype",
-                    reservation_calls=requests,
-                    sha256=hashlib.sha256(volume).hexdigest(), exact_equal=True,
-                )
+                results[mode] = {
+                    "seconds": elapsed, "frames": args.frames, "managed_peak_bytes": peak,
+                    "managed_scratch_accounted": mode != "prototype",
+                    "reservation_calls": requests,
+                    "sha256": hashlib.sha256(volume).hexdigest(), "exact_equal": True,
+                }
                 print(json.dumps({"mode": mode, **results[mode]}), flush=True)
             assert budget.physical_bytes == 0
             if mode != "prototype":
@@ -150,10 +150,10 @@ def main():
                 owner, analysis.id, state.dataset, next(row.recipe for row in state.signals if row.id == job.signal_id)
             ) as lease:
                 np.testing.assert_array_equal(lease.array, expected)
-            results["service_job"] = dict(
-                seconds=elapsed, status=result.status, done=result.done,
-                total=result.total, exact_equal=True, revision=state.revision,
-            )
+            results["service_job"] = {
+                "seconds": elapsed, "status": result.status, "done": result.done,
+                "total": result.total, "exact_equal": True, "revision": state.revision,
+            }
             print(json.dumps({"mode": "service_job", **results["service_job"]}), flush=True)
         finally:
             services.analyses.close_all()

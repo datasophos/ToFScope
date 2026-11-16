@@ -1,9 +1,16 @@
-import unittest
 import json
+import unittest
+
 from service_fixture import setup_case
+
 from tofscope.api.app import build_services
 from tofscope.application.commands import CommandEnvelope
-from tofscope.storage.analysis_document import encode_document,restore_snapshot,SavedAnalysisDocument
+from tofscope.storage.analysis_document import (
+    SavedAnalysisDocument,
+    encode_document,
+    restore_snapshot,
+)
+
 
 class ColormapTests(unittest.TestCase):
     def setUp(self):
@@ -15,7 +22,7 @@ class ColormapTests(unittest.TestCase):
 
     def change(self,**patch):
         a=self.s.analyses.get('a',self.a.id)
-        return self.s.explore.apply('a',a.id,CommandEnvelope(str(a.revision),a.revision,a.dataset.generation,dict(type='set_display',log=True,relative=True,image='sims') | patch))
+        return self.s.explore.apply('a',a.id,CommandEnvelope(str(a.revision),a.revision,a.dataset.generation,{'type': 'set_display','log': True,'relative': True,'image': 'sims'} | patch))
 
     def test_palette_changes_only_colors_and_is_analysis_local(self):
         other=self.s.analyses.create_analysis('a',self.a.dataset)

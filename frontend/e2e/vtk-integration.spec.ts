@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import type { Camera } from "../src/volumes/spatialRenderer";
+
+type VtkWindow = Window & {
+  cameraResult: Camera;
+  vtkRoot: { unmount(): void };
+};
 test("vtk scene renders a nonuniform real preview and persists camera changes", async ({
   page,
 }) => {
@@ -27,9 +33,11 @@ test("vtk scene renders a nonuniform real preview and persists camera changes", 
     if (preview.kind !== "vtk") throw Error(preview.reason);
     document.body.innerHTML =
       '<div id="root" style="width:800px;height:600px"></div>';
-    const view: any = {
+    const view = {
       screen: "volume",
-      layers: data.layers.map((l: any) => defaultLayer(l.signal_id)),
+      layers: data.layers.map((l: { signal_id: string }) =>
+        defaultLayer(l.signal_id),
+      ),
       mode: "overlay",
       quality: "Fast",
       scale: "independent",
@@ -50,12 +58,12 @@ test("vtk scene renders a nonuniform real preview and persists camera changes", 
         onError: (message: string) => {
           throw Error(message);
         },
-        onCamera: (_: string, c: any) => {
-          (window as any).cameraResult = c;
+        onCamera: (_: string, c: Camera) => {
+          (window as VtkWindow).cameraResult = c;
         },
       }),
     );
-    (window as any).vtkRoot = root;
+    (window as VtkWindow).vtkRoot = root;
     return { resampled: preview.resampled, points: preview.data.z.length };
   }, data);
   expect(result.resampled).toBe(true);
@@ -72,8 +80,10 @@ test("vtk scene renders a nonuniform real preview and persists camera changes", 
   );
   await page.mouse.up();
   await expect
-    .poll(() => page.evaluate(() => (window as any).cameraResult?.projection))
+    .poll(() =>
+      page.evaluate(() => (window as VtkWindow).cameraResult?.projection),
+    )
     .toBe("perspective");
   await page.screenshot({ path: test.info().outputPath("vtk-real.png") });
-  await page.evaluate(() => (window as any).vtkRoot.unmount());
+  await page.evaluate(() => (window as VtkWindow).vtkRoot.unmount());
 });

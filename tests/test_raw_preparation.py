@@ -1,7 +1,7 @@
-import unittest
 import hashlib
 import os
 import shutil
+import unittest
 from dataclasses import replace
 from threading import Event
 from unittest.mock import patch
@@ -9,6 +9,7 @@ from unittest.mock import patch
 import h5py
 import numpy as np
 from service_fixture import setup_case
+
 from tofscope.api.app import build_services
 from tofscope.science.raw_peaks import integrate_peak_table
 
@@ -78,8 +79,7 @@ class RawPreparationTests(unittest.TestCase):
             st = self.path.stat()
             os.utime(self.path, ns=(st.st_atime_ns, st.st_mtime_ns + 1000000))
             return result
-        with patch.object(raw_preparation.h5py, 'File', side_effect=changing):
-            with self.assertRaises(SourceChanged): self.preview()
+        with patch.object(raw_preparation.h5py, 'File', side_effect=changing), self.assertRaises(SourceChanged): self.preview()
         self.assertEqual(calls, 3)
 
     def test_reader_defaults_require_acknowledgment_and_are_recorded_in_copy(self):
@@ -95,6 +95,7 @@ class RawPreparationTests(unittest.TestCase):
         target = self.s.saves.files.path('a', done.saved_file.id)
         with h5py.File(target, 'r') as f:
             import json
+
             from tofscope.storage.explorer import integration_parameters
             self.assertEqual(integration_parameters(f), (1, 2))
             self.assertEqual(json.loads(f['ToFScope/Preparation'].attrs['assumptions']), list(p.assumptions))
@@ -104,6 +105,7 @@ class RawPreparationTests(unittest.TestCase):
 
     def test_reader_defaults_do_not_decode_unrelated_attributes(self):
         from types import SimpleNamespace
+
         from tofscope.storage.explorer import integration_parameters
         class Attributes:
             def __init__(self, values): self.values = values
@@ -183,7 +185,7 @@ class RawPreparationTests(unittest.TestCase):
         for idx in np.ndindex(events.shape):
             events[idx] = rng.integers(0, 500, size=25, dtype='uint32')
         windows = [(2.5, 3.5), (.5, 1.5), (4.5, 5.5)]
-        table = [dict(mass=(lo+hi)/2, lower_integration_limit=lo, upper_integration_limit=hi) for lo,hi in windows]
+        table = [{'mass': (lo+hi)/2, 'lower_integration_limit': lo, 'upper_integration_limit': hi} for lo,hi in windows]
         expected = compute_peak_data_from_eventlist(events, np.arange(6.), 6, 64, 4, table, False, np.float32)
         np.testing.assert_array_equal(integrate_peak_table(events[0], np.arange(6.), 64, 4, windows), expected[0])
 
@@ -213,8 +215,8 @@ class RawPreparationTests(unittest.TestCase):
         self.assertEqual(done.status, 'succeeded', done.safe_error)
 
     def test_shared_queue_limit_applies_to_other_preparations(self):
-        from tofscope.application.analyses import CapacityError
         from tofscope.application import preparations
+        from tofscope.application.analyses import CapacityError
         self.s.jobs.settings = replace(self.settings, jobs_global=1)
         with h5py.File(self.settings.data_root / 'b.h5', 'r+') as f:
             del f['PeakData/PeakData']

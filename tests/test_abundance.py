@@ -3,9 +3,11 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+
 import numpy as np
-from tofscope.science.signals import SignalRecipe
+
 from tofscope.science.abundance import measure_isotopes
+from tofscope.science.signals import SignalRecipe
 
 
 class AbundanceTests(unittest.TestCase):

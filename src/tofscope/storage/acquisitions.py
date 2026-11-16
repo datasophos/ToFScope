@@ -1,16 +1,18 @@
 """Authorized storage boundary. No open handles or renderer objects escape."""
 
-from contextlib import contextmanager
-from dataclasses import dataclass
 import hashlib
 import secrets
+from contextlib import contextmanager
+from dataclasses import dataclass
+
 import h5py
 import numpy as np
 from filelock import Timeout
-from tofscope.config import resolve_data_path, is_private_output_path
+
+from tofscope.config import is_private_output_path, resolve_data_path
+from tofscope.science.integration import custom_peak_windows
 from tofscope.storage.dataset_io import LOCK_DIR, dataset_lock
 from tofscope.storage.explorer import inspect_file
-from tofscope.science.integration import custom_peak_windows
 
 
 class SourceChanged(ValueError):
@@ -135,7 +137,7 @@ class AcquisitionRepository:
             for name in group:
                 link = group.get(name, getlink=True)
                 if isinstance(link, h5py.ExternalLink):
-                    raise ValueError("HDF5 external links are unsupported.")
+                    raise ValueError("HDF5 external links are unsupported.")  # noqa: TRY004
                 item = group[name]
                 if isinstance(item, h5py.Group):
                     visit(item)
@@ -215,9 +217,8 @@ class AcquisitionRepository:
 
     @contextmanager
     def metadata(self, owner, dataset, analysis_id=None):
-        with self.access(owner, dataset) as path:
-            with self._inspect(owner, dataset, path, analysis_id) as metadata:
-                yield metadata
+        with self.access(owner, dataset) as path, self._inspect(owner, dataset, path, analysis_id) as metadata:
+            yield metadata
 
     def se_shape(self, owner, dataset, first, last):
         with (
@@ -241,7 +242,12 @@ class AcquisitionRepository:
         with self.access(owner, dataset) as p:
             if materialization_id is not None:
                 from contextlib import nullcontext
-                from tofscope.storage.integration_store import saved_result_info, metadata_size, ROOT
+
+                from tofscope.storage.integration_store import (
+                    ROOT,
+                    metadata_size,
+                    saved_result_info,
+                )
                 with h5py.File(p, 'r') as handle:
                     size = metadata_size(handle[f'{ROOT}/{materialization_id}'])
                 with reserve(size * 16) if reserve else nullcontext():

@@ -28,6 +28,7 @@ dev = [
     "build>=1.2",
     "playwright>=1.50",
     "rosettasciio==0.15.0",
+    "ruff==0.17.3",
 ]
 docs = [
     "great-docs==0.17.0",
@@ -38,3 +39,6 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 tofscope = ["static/**/*", "static/*", "resources/reference/*"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends"]

@@ -1,10 +1,11 @@
 """Captured atomic assignments and isotope measurement provenance."""
-from dataclasses import dataclass
 import json
 import math
 import re
-from tofscope.science.isotopes import IsotopeRecord, IonCandidate, ion_mz
+from dataclasses import dataclass
+
 from tofscope.science.abundance import IsotopeMeasurement
+from tofscope.science.isotopes import IonCandidate, IsotopeRecord, ion_mz
 
 
 @dataclass(frozen=True)

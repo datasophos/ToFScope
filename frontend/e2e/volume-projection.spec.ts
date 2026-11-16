@@ -1,4 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
+
+type ProjectionWindow = Window & {
+  renderProjection: (projection: string) => void;
+};
 async function coloredPixels(page: Page) {
   const png = await page.locator("#plot canvas").screenshot();
   return page.evaluate(async (bytes) => {
@@ -39,7 +43,7 @@ test("vtk volume remains visible when switching projection", async ({
         z = Math.floor(i / n / n) - 9.5;
       return Math.exp(-(x * x + y * y + z * z) / 60);
     });
-    const data: any = {
+    const data = {
       dataset_generation: "1",
       x: axis,
       y: axis,
@@ -52,7 +56,7 @@ test("vtk volume remains visible when switching projection", async ({
         { signal_id: "a", label: "A", values, coverage: values.map(() => 1) },
       ],
     };
-    const view: any = {
+    const view = {
       layers: [{ ...defaultLayer("a"), percentile: 0, opacity: 0.5 }],
       mode: "overlay",
       quality: "Detailed",
@@ -65,7 +69,7 @@ test("vtk volume remains visible when switching projection", async ({
       depth_exaggeration: 1,
     };
     const root = createRoot(document.getElementById("plot")!);
-    (window as any).renderProjection = (projection: string) =>
+    (window as ProjectionWindow).renderProjection = (projection: string) =>
       root.render(
         React.createElement(VtkScene, {
           data,
@@ -78,17 +82,21 @@ test("vtk volume remains visible when switching projection", async ({
           },
         }),
       );
-    (window as any).renderProjection("perspective");
+    (window as ProjectionWindow).renderProjection("perspective");
   });
   await expect(page.locator("#plot canvas")).toBeVisible();
   await expect.poll(() => coloredPixels(page)).toBeGreaterThan(1000);
-  await page.evaluate(() => (window as any).renderProjection("orthographic"));
+  await page.evaluate(() =>
+    (window as ProjectionWindow).renderProjection("orthographic"),
+  );
   await expect(page.getByTestId("volume-canvas")).toHaveAttribute(
     "data-camera",
     /orthographic/,
   );
   await expect.poll(() => coloredPixels(page)).toBeGreaterThan(1000);
-  await page.evaluate(() => (window as any).renderProjection("perspective"));
+  await page.evaluate(() =>
+    (window as ProjectionWindow).renderProjection("perspective"),
+  );
   await expect(page.getByTestId("volume-canvas")).toHaveAttribute(
     "data-camera",
     /perspective/,

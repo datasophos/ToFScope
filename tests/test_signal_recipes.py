@@ -1,19 +1,14 @@
 """Streamed multi-window reads and controller/export coverage on disposable data."""
-import csv
-import io
-import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch,Mock
 
 import h5py
 import numpy as np
 
 from tofscope.science.integration import custom_peak_windows
-from tofscope.science.signals import SignalRecipe,read_signal
-from tofscope.storage.explorer import custom_peak,integrate_events
-
+from tofscope.science.signals import SignalRecipe, read_signal
+from tofscope.storage.explorer import custom_peak, integrate_events
 
 
 def make_acquisition(path):

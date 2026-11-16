@@ -1,10 +1,12 @@
 """Versioned full-resolution integration records in an additive HDF5 namespace."""
-from dataclasses import dataclass,field,asdict
-from datetime import datetime,timezone
-from uuid import UUID
 import json
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
+from uuid import UUID
+
 import h5py
 import numpy as np
+
 from tofscope.storage.dataset_io import locked_read
 
 ROOT='ToFScope/Integrations'
@@ -12,7 +14,7 @@ MAX_METADATA_BYTES = 64 * 1024
 
 
 def checked_uuid(value):
-    if not isinstance(value,str):raise ValueError('A canonical integration UUID is required.')
+    if not isinstance(value,str):raise ValueError('A canonical integration UUID is required.')  # noqa: TRY004
     try:parsed=UUID(value)
     except (ValueError,AttributeError):raise ValueError('A canonical integration UUID is required.') from None
     if str(parsed)!=value:raise ValueError('A canonical integration UUID is required.')
@@ -27,7 +29,7 @@ class IntegrationRecord:
     source_identity: dict
     normalization: dict
     calibration: dict | None = None
-    created_utc: str = field(default_factory=lambda:datetime.now(timezone.utc).isoformat())
+    created_utc: str = field(default_factory=lambda:datetime.now(UTC).isoformat())
     app_version: str = '0.1.0'
     schema_version: int = 1
 

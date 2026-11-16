@@ -2,9 +2,9 @@
 
 import hashlib
 import json
-from pathlib import Path
 import shutil
 import subprocess
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -45,7 +45,7 @@ def main():
     }
     (target / "manifest.json").write_text(
         json.dumps(
-            dict(version="0.4.0", source_sha256=source_hash(), assets=assets),
+            {"version": "0.4.0", "source_sha256": source_hash(), "assets": assets},
             sort_keys=True,
             indent=2,
         )

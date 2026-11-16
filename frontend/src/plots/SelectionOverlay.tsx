@@ -122,7 +122,7 @@ export function SelectionOverlay({
     };
     element.addEventListener("wheel", wheel, { passive: false });
     return () => element.removeEventListener("wheel", wheel);
-  }, [onZoom, xRange[0], xRange[1]]);
+  }, [onZoom, xRange]);
   const drag = useRef<{
     start: number[];
     pointerStart: [number, number];

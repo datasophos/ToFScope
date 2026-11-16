@@ -1,11 +1,11 @@
 """Server-owned root, runtime and resource policy. CLI > environment > TOML."""
 
-from dataclasses import dataclass, field, fields
-from pathlib import Path
 import os
 import tempfile
 import tomllib
-from typing import Mapping
+from collections.abc import Mapping
+from dataclasses import dataclass, field, fields
+from pathlib import Path
 
 
 def default_runtime_dir() -> Path:

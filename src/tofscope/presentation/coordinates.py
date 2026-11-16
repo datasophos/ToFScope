@@ -5,6 +5,7 @@ Unknown physical depths are omitted from physical views, but retained by CSV exp
 Cell boundaries are display footprints, not measurements of plane thickness.
 """
 import numpy as np
+
 from tofscope.science.depth_calibration import DepthCalibration, convert_depth
 
 

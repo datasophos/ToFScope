@@ -2,7 +2,7 @@ import {
   layerRange,
   levelStats,
   type VolumeData,
-  type SpatialLayer,
+  type LayerLevels,
 } from "./spatialRenderer";
 import { resampleDepth } from "./depthResampling";
 
@@ -155,6 +155,9 @@ export function prepareVtkPreview(data: VolumeData): Prepared {
     block_edges: _blockEdges,
     ...displayData
   } = data;
+  // The resampled volume no longer has the source frame boundaries.
+  void _frameCenters;
+  void _blockEdges;
   const z = interpolated[0].z;
   return {
     kind: "vtk",
@@ -176,7 +179,7 @@ export function prepareVtkPreview(data: VolumeData): Prepared {
 // A cutoff at the highest value produces no visible volume; preserve point fallback.
 export function canRenderVtkStyles(
   data: VolumeData,
-  styles: SpatialLayer[],
+  styles: LayerLevels[],
   log: boolean,
   display: VtkVolumeData = data,
 ): boolean {

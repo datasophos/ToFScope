@@ -22,16 +22,22 @@ export function IsotopeMeasurements({
     [job, setJob] = useState<Job>();
   const [error, setError] = useState(""),
     [submitting, setSubmitting] = useState(false);
-  useEffect(() => {
+  const [previousActive, setPreviousActive] = useState(active);
+  if (active !== previousActive) {
+    setPreviousActive(active);
     if (!active) setOpen(false);
-  }, [active]);
-  useEffect(() => {
+  }
+  const [previousGeneration, setPreviousGeneration] = useState(
+    a.dataset.generation,
+  );
+  if (a.dataset.generation !== previousGeneration) {
+    setPreviousGeneration(a.dataset.generation);
     setOpen(false);
     setIds([]);
     setResult(null);
     setJob(undefined);
     setError("");
-  }, [a.dataset.generation]);
+  }
   useEffect(() => {
     if (!open) return;
     let live = true;
@@ -45,7 +51,8 @@ export function IsotopeMeasurements({
     return () => {
       live = false;
     };
-  }, [open, a.revision]);
+  }, [open, a.id, a.revision]);
+  const jobStatus = job?.status;
   useEffect(() => {
     if (!open || !a.isotope_job_id) return;
     let live = true,
@@ -69,13 +76,17 @@ export function IsotopeMeasurements({
     };
     void poll();
     const timer = setInterval(() => {
-      if (!job || !terminal(job)) void poll();
+      if (
+        !jobStatus ||
+        !["succeeded", "failed", "cancelled", "obsolete"].includes(jobStatus)
+      )
+        void poll();
     }, 300);
     return () => {
       live = false;
       clearInterval(timer);
     };
-  }, [open, a.isotope_job_id, job?.status, refresh]);
+  }, [open, a.isotope_job_id, jobStatus, refresh]);
   const busy =
     submitting ||
     (!!a.isotope_job_id &&

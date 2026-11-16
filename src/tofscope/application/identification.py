@@ -1,15 +1,27 @@
 """Owner-scoped atomic matching and explicit, bounded isotope measurements."""
-from dataclasses import dataclass, replace, asdict
 import hashlib
 import json
+from dataclasses import asdict, dataclass, replace
+
 import numpy as np
+
+from tofscope.application.analyses import CapacityError
 from tofscope.application.identification_models import (
-    AtomicAssignment, CatalogProvenance, CandidateResult, MeasuredSignal, MeasurementResult,
+    AtomicAssignment,
+    CandidateResult,
+    CatalogProvenance,
+    MeasuredSignal,
+    MeasurementResult,
 )
 from tofscope.application.signals import get_signal
-from tofscope.application.analyses import CapacityError
-from tofscope.science.isotopes import CATALOG_PATH, load_catalog, find_candidates, ion_mz, CandidateLimitExceeded
 from tofscope.science.abundance import measure_isotopes
+from tofscope.science.isotopes import (
+    CATALOG_PATH,
+    CandidateLimitExceeded,
+    find_candidates,
+    ion_mz,
+    load_catalog,
+)
 
 
 def catalog_provenance():
@@ -150,4 +162,3 @@ class IdentificationService:
             # Preserve captured results even if ROI/recipes changed while the job ran.
             updated = replace(e.snapshot, revision=e.snapshot.revision+1, isotope_measurement=result)
             e.snapshot = replace(updated, isotope_measurement=current_result(updated))
-        return None

@@ -4,14 +4,14 @@ Direct HDF5 access keeps the prototype's reads bounded to a channel or a raw
 depth slice. Raw reconstruction follows the TDC mapping and per-waveform /
 active-channel normalization used by RosettaSciIO's Tofwerk reader.
 """
+import re
 from functools import lru_cache
 from pathlib import Path
-import re
 
 import h5py
 import numpy as np
-from tofscope.storage.dataset_io import locked_read
 
+from tofscope.storage.dataset_io import locked_read
 
 DEFAULT_FILE = (
     Path(__file__).resolve().parent.parent
@@ -39,18 +39,18 @@ def inspect_file(path):
         table = f["PeakData/PeakTable"][:]
         if len(table) != data.shape[-1]:
             raise ValueError("Peak table length does not match the peak data channels.")
-        peaks = [dict(index=i, label=decode(r['label']), mass=float(r['mass']),
-                      low=float(r['lower integration limit']),
-                      high=float(r['upper integration limit'])) for i, r in enumerate(table)]
+        peaks = [{"index": i, "label": decode(r['label']), "mass": float(r['mass']),
+                      "low": float(r['lower integration limit']),
+                      "high": float(r['upper integration limit'])} for i, r in enumerate(table)]
         spectrum = f['FullSpectra/SumSpectrum'][:]
         masses = f['FullSpectra/MassAxis'][:]
         fib = f.get('FIBParams')
         fov = float(scalar(fib.attrs['ViewField'])) * 1000 if fib is not None and 'ViewField' in fib.attrs else None
         raw_shape = f['FullSpectra/EventList'].shape if 'FullSpectra/EventList' in f else None
         image_names = sorted(f['FIBImages'].keys()) if 'FIBImages' in f else []
-        return dict(path=str(path), name=path.name, bytes=path.stat().st_size,
-                    shape=data.shape, peaks=peaks, masses=masses, spectrum=spectrum,
-                    fov_um=fov, raw_shape=raw_shape, image_names=image_names)
+        return {"path": str(path), "name": path.name, "bytes": path.stat().st_size,
+                    "shape": data.shape, "peaks": peaks, "masses": masses, "spectrum": spectrum,
+                    "fov_um": fov, "raw_shape": raw_shape, "image_names": image_names}
 
 
 def file_key(path):

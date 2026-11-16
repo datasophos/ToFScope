@@ -3,14 +3,15 @@
 import argparse
 import json
 import os
-from pathlib import Path
 import socket
 import subprocess
 import sys
 import tempfile
 import time
 import urllib.request
-from playwright.sync_api import sync_playwright, expect
+from pathlib import Path
+
+from playwright.sync_api import expect, sync_playwright
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))
 from fixtures.acquisition import make_acquisition

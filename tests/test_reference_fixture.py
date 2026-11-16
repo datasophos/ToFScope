@@ -1,10 +1,13 @@
 import tempfile
 import unittest
 from pathlib import Path
+
 import h5py
 import numpy as np
 from fixtures.acquisition import make_acquisition
+
 from tofscope.science.integration import custom_peak_windows
+
 
 class ReferenceFixtureTests(unittest.TestCase):
     def test_exact_union_and_stored_domain(self):

@@ -3,17 +3,18 @@
 No download occurs: fetch/save the named official pages, then pass their paths.
 """
 import argparse
+import hashlib
+import json
+import re
+import sys
 from dataclasses import asdict
 from datetime import date
 from decimal import Decimal
 from html.parser import HTMLParser
-import hashlib
-import json
 from pathlib import Path
-import re
-import sys
+
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from tofscope.science.isotopes import IsotopeRecord,records_checksum
+from tofscope.science.isotopes import IsotopeRecord, records_checksum
 
 
 class ReferenceHTML(HTMLParser):
@@ -53,8 +54,8 @@ def parse_nist(text):
         fields=dict(line.split(' = ',1) for line in block.strip().splitlines() if ' = ' in line)
         mass,uncertainty,estimated=number_with_uncertainty(fields['Relative Atomic Mass'])
         symbol=fields['Atomic Symbol'];symbol='H' if symbol in ('D','T') else symbol
-        records.append(dict(symbol=symbol,mass_number=int(fields['Mass Number']),neutral_mass_u=mass,
-                            mass_uncertainty_u=uncertainty,mass_estimated=estimated))
+        records.append({'symbol': symbol,'mass_number': int(fields['Mass Number']),'neutral_mass_u': mass,
+                            'mass_uncertainty_u': uncertainty,'mass_estimated': estimated})
     if len(records)<300:raise ValueError('NIST source did not contain a complete isotope table.')
     return records
 
@@ -84,11 +85,11 @@ def build(nist_path,ciaaw_path,output):
         record=IsotopeRecord(**row,abundance_low=lo,abundance_high=hi,abundance_uncertainty=uncertainty,source_id='NIST-2015-CIAAW-2024')
         records.append(asdict(record))
     records.sort(key=lambda r:(r['symbol'],r['mass_number']))
-    data=dict(metadata=dict(schema_version=1,retrieved=str(date.today()),records_sha256=records_checksum(records),
-        sources=[dict(id='NIST-2015',revision='January 2015; isotope masses AME2012',url='https://www.nist.gov/pml/atomic-weights-and-isotopic-compositions-relative-atomic-masses',sha256=hashlib.sha256(nist).hexdigest()),
-                 dict(id='CIAAW-2024',revision='Isotopic Compositions of the Elements 2024',url='https://ciaaw.org/isotopic-abundances.htm',sha256=hashlib.sha256(ciaaw).hexdigest())],
-        electron_mass=dict(value_u=.0005485799090441,source='CODATA2022',url='https://physics.nist.gov/cgi-bin/cuu/Value?meu'),
-        redistribution_review='Extracted factual numerical records only, with source attribution; no source HTML, scripts, table layout or prose redistributed. No explicit CIAAW data license found; no open-license claim is made.'),isotopes=records)
+    data={'metadata': {'schema_version': 1,'retrieved': str(date.today()),'records_sha256': records_checksum(records),
+        'sources': [{'id': 'NIST-2015','revision': 'January 2015; isotope masses AME2012','url': 'https://www.nist.gov/pml/atomic-weights-and-isotopic-compositions-relative-atomic-masses','sha256': hashlib.sha256(nist).hexdigest()},
+                 {'id': 'CIAAW-2024','revision': 'Isotopic Compositions of the Elements 2024','url': 'https://ciaaw.org/isotopic-abundances.htm','sha256': hashlib.sha256(ciaaw).hexdigest()}],
+        'electron_mass': {'value_u': .0005485799090441,'source': 'CODATA2022','url': 'https://physics.nist.gov/cgi-bin/cuu/Value?meu'},
+        'redistribution_review': 'Extracted factual numerical records only, with source attribution; no source HTML, scripts, table layout or prose redistributed. No explicit CIAAW data license found; no open-license claim is made.'},'isotopes': records}
     Path(output).write_text(json.dumps(data,indent=2)+'\n');print(f'Wrote {len(records)} isotope records to {output}')
 
 

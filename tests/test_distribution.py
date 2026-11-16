@@ -2,12 +2,13 @@ import hashlib
 import json
 import os
 import runpy
-from pathlib import Path, PurePath
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path, PurePath
 from unittest.mock import patch
+
 from tofscope.cli import asset_status
 from tofscope.science.isotopes import load_catalog
 

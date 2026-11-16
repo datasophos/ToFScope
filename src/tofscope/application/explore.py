@@ -1,9 +1,15 @@
 from dataclasses import replace
-from tofscope.science.depth_calibration import DepthAnchor, validate_anchors
+
+from tofscope.application.analyses import Conflict
 from tofscope.application.commands import CommandEnvelope
 from tofscope.application.models import DisplaySettings, SignalSnapshot
-from tofscope.application.signals import get_signal, normalize_view, usable_frames, valid_name
-from tofscope.application.analyses import Conflict, CapacityError
+from tofscope.application.signals import (
+    get_signal,
+    normalize_view,
+    usable_frames,
+    valid_name,
+)
+from tofscope.science.depth_calibration import DepthAnchor, validate_anchors
 from tofscope.science.signals import SignalRecipe
 
 
@@ -72,8 +78,8 @@ class ExploreService:
                 else:
                     self.analyses.admit_signal(owner, len(s.signals))
                     signal = SignalSnapshot(recipe.id, recipe.label, s.next_style_index, recipe)
-                    patch = dict(signals=(*s.signals, signal), next_style_index=s.next_style_index+1,
-                                 profile_signal_ids=(*s.profile_signal_ids, signal.id))
+                    patch = {"signals": (*s.signals, signal), "next_style_index": s.next_style_index+1,
+                                 "profile_signal_ids": (*s.profile_signal_ids, signal.id)}
             elif kind == 'annotate_signal':
                 from tofscope.application.identification import assignment
                 signal = get_signal(s, c.signal_id)

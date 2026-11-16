@@ -1,11 +1,11 @@
 """Create verified PeakData in a new copy; never write to a raw acquisition."""
-from contextlib import contextmanager
-from dataclasses import dataclass
 import hashlib
 import json
 import logging
 import os
-from pathlib import Path
+import re
+from contextlib import contextmanager
+from dataclasses import dataclass
 from uuid import uuid4
 
 import h5py
@@ -14,10 +14,15 @@ import numpy as np
 from tofscope.science.raw_peaks import integrate_peak_table
 from tofscope.storage.acquisitions import DatasetRef, SourceChanged
 from tofscope.storage.bounded_events import admitted_events
-from tofscope.storage.explorer import integration_parameters, scalar, decode
-import re
-from tofscope.storage.saved_files import COPY_BYTES, SavedFile, file_id, filename, reserve_disk
 from tofscope.storage.compact_copy import compact_copy
+from tofscope.storage.explorer import decode, integration_parameters, scalar
+from tofscope.storage.saved_files import (
+    COPY_BYTES,
+    SavedFile,
+    file_id,
+    filename,
+    reserve_disk,
+)
 
 
 @dataclass(frozen=True)
@@ -153,13 +158,11 @@ def prepare_copy(repository, files, owner, source, name, required_bytes, cancell
                         compression='gzip', compression_opts=1, shuffle=False)
                     for z in range(shape[0]):
                         check()
-                        with reserve_disk(directory, int(np.prod(shape[1:])) * 8 + 64 * 1024**2):
-                            with admitted_events(f['FullSpectra/EventList'], z, lambda n: repository.budget.reserve(owner, task_id, n)) as events:
-                                with repository.budget.reserve(owner, task_id, events.samples.size * 48):
-                                    values = integrate_peak_table(events, axis, ratio, normalization, windows)
-                                    data[z] = values
-                                    digest.update(values.tobytes())
-                                    del values
+                        with reserve_disk(directory, int(np.prod(shape[1:])) * 8 + 64 * 1024**2), admitted_events(f['FullSpectra/EventList'], z, lambda n: repository.budget.reserve(owner, task_id, n)) as events, repository.budget.reserve(owner, task_id, events.samples.size * 48):
+                            values = integrate_peak_table(events, axis, ratio, normalization, windows)
+                            data[z] = values
+                            digest.update(values.tobytes())
+                            del values
                         progress('Integrating peak channels', z + 1, shape[0])
                     output.attrs['NbrPeaks'] = shape[-1]
                     group = output.require_group('ToFScope/Preparation')

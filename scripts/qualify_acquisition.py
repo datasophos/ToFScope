@@ -1,15 +1,17 @@
 """Real acquisition scientific qualification. All HDF5 handles use mode r."""
 
 import argparse
-from concurrent.futures import ThreadPoolExecutor
 import json
-from pathlib import Path
 import resource
 import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
 import h5py
 import numpy as np
-from rsciio.tofwerk import file_reader, compute_peak_data_from_eventlist
+from rsciio.tofwerk import compute_peak_data_from_eventlist, file_reader
 from rsciio.utils.file import get_file_handle
+
 from tofscope.science.integration import integrate_event_windows
 from tofscope.storage.explorer import integration_parameters
 
@@ -98,12 +100,12 @@ def main():
         finally:
             if h is not None:
                 h.close()
-        return dict(
-            lazy=lazy,
-            exact=equal,
-            ms=(time.perf_counter() - t) * 1000,
-            shape=array.shape,
-        )
+        return {
+            "lazy": lazy,
+            "exact": equal,
+            "ms": (time.perf_counter() - t) * 1000,
+            "shape": array.shape,
+        }
 
     result["subset"] = [subset(False), subset(True)]
     with ThreadPoolExecutor(2) as pool:

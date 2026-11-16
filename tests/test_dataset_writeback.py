@@ -1,20 +1,22 @@
 """Copy-and-replace saves never publish partial or stale scientific data."""
-import tempfile
-import unittest
-from pathlib import Path
-from dataclasses import asdict,replace
-from unittest.mock import patch
-from uuid import uuid4
 import subprocess
 import sys
+import tempfile
+import unittest
+from dataclasses import asdict, replace
+from pathlib import Path
+from unittest.mock import patch
+from uuid import uuid4
+
 import h5py
 import numpy as np
 from filelock import Timeout
-from tofscope.storage.dataset_io import file_identity,dataset_lock,save_to_acquisition
-from tofscope.config import Settings
-from tofscope.storage.integration_store import IntegrationRecord,read_saved_integration
-from tofscope.science.signals import SignalRecipe,read_signal
 from test_signal_recipes import make_acquisition
+
+from tofscope.config import Settings
+from tofscope.science.signals import SignalRecipe, read_signal
+from tofscope.storage.dataset_io import dataset_lock, file_identity, save_to_acquisition
+from tofscope.storage.integration_store import IntegrationRecord, read_saved_integration
 
 
 class DatasetWritebackTests(unittest.TestCase):
@@ -25,7 +27,7 @@ class DatasetWritebackTests(unittest.TestCase):
         self.expected=file_identity(self.path)
         self.recipe=SignalRecipe(intervals=((1,2),),frames=(0,2),label='saved_test')
         self.values=read_signal(self.path,self.recipe)
-        self.record=IntegrationRecord(str(uuid4()),self.recipe.to_dict(),(1,2),asdict(self.expected),dict(normalization=4))
+        self.record=IntegrationRecord(str(uuid4()),self.recipe.to_dict(),(1,2),asdict(self.expected),{'normalization': 4})
 
     def save(self):return save_to_acquisition(self.settings,'a.h5',self.record,lambda:iter(self.values),self.expected)
 
@@ -41,11 +43,9 @@ class DatasetWritebackTests(unittest.TestCase):
     def test_prepublication_failures_preserve_original_bytes(self):
         before=self.path.read_bytes()
         for target in ['tofscope.storage.dataset_io.shutil.copy2','tofscope.storage.dataset_io.export_native_copy','tofscope.storage.dataset_io.write_integration_group','tofscope.storage.dataset_io.verify_saved_copy','tofscope.storage.dataset_io.os.replace']:
-            with self.subTest(stage=target),patch(target,side_effect=OSError('injected failure')):
-                with self.assertRaises(OSError):self.save()
+            with self.subTest(stage=target),patch(target,side_effect=OSError('injected failure')), self.assertRaises(OSError):self.save()
             self.assertEqual(self.path.read_bytes(),before)
-        with patch('tofscope.storage.dataset_io.file_identity',side_effect=[self.expected,replace(self.expected,mtime_ns=self.expected.mtime_ns+1)]):
-            with self.assertRaises(ValueError):self.save()
+        with patch('tofscope.storage.dataset_io.file_identity',side_effect=[self.expected,replace(self.expected,mtime_ns=self.expected.mtime_ns+1)]), self.assertRaises(ValueError):self.save()
         self.assertEqual(self.path.read_bytes(),before)
 
     def test_policy_space_stale_and_postreplace_warning(self):
@@ -67,6 +67,5 @@ class DatasetWritebackTests(unittest.TestCase):
         process=subprocess.Popen([sys.executable,'-c',script,str(self.path)],stdout=subprocess.PIPE,text=True)
         try:
             self.assertEqual(process.stdout.readline().strip(),'locked')
-            with self.assertRaises(Timeout):
-                with dataset_lock(self.path).acquire(timeout=.05):pass
+            with self.assertRaises(Timeout), dataset_lock(self.path).acquire(timeout=.05):pass
         finally:process.wait(timeout=3);process.stdout.close()

@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from threading import RLock
+
 from tofscope.application.analyses import CapacityError
 
 

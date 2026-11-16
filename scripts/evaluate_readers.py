@@ -1,17 +1,17 @@
 """Run in a disposable environment with h5py, RosettaSciIO, HyperSpy, psutil."""
 
-from concurrent.futures import ThreadPoolExecutor
 import gc
 import json
-import os
-from pathlib import Path
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
 import h5py
+import hyperspy.api as hs
 import numpy as np
 import psutil
 import rsciio
-import hyperspy.api as hs
 from rsciio.tofwerk import file_reader
 from rsciio.utils.file import get_file_handle
 
@@ -70,16 +70,16 @@ def run(backend, lazy):
             handle.close()
     np.testing.assert_array_equal(np.asarray(data).reshape(expected.shape), expected)
     gc.collect()
-    return dict(
-        backend=backend,
-        lazy=lazy,
-        ms=(time.perf_counter() - t) * 1000,
-        rss_delta=process.memory_info().rss - rss,
-        open_fds_delta=process.num_fds() - before,
-        shape=list(data.shape),
-        equal=True,
-        metadata_keys=meta,
-    )
+    return {
+        "backend": backend,
+        "lazy": lazy,
+        "ms": (time.perf_counter() - t) * 1000,
+        "rss_delta": process.memory_info().rss - rss,
+        "open_fds_delta": process.num_fds() - before,
+        "shape": list(data.shape),
+        "equal": True,
+        "metadata_keys": meta,
+    }
 
 
 for backend in ["h5py", "rsciio", "hyperspy"]:
@@ -87,7 +87,7 @@ for backend in ["h5py", "rsciio", "hyperspy"]:
         try:
             report["runs"].append(run(backend, lazy))
             with ThreadPoolExecutor(2) as pool:
-                report["runs"].extend(pool.map(lambda _: run(backend, lazy), range(2)))
-        except Exception as e:
-            report["runs"].append(dict(backend=backend, lazy=lazy, error=str(e)))
+                report["runs"].extend(pool.map(lambda _, backend=backend, lazy=lazy: run(backend, lazy), range(2)))
+        except Exception as e:  # noqa: BLE001
+            report["runs"].append({"backend": backend, "lazy": lazy, "error": str(e)})
 print(json.dumps(report, indent=2))

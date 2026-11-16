@@ -5,14 +5,16 @@ The supplied acquisition is only read. The output must be a new path.
 import argparse
 import hashlib
 import json
-from pathlib import Path
 import sys
 import time
+from pathlib import Path
+
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import h5py
 import numpy as np
+
+from tofscope.science.signals import SignalRecipe, read_signal
 from tofscope.storage.explorer import inspect_file
-from tofscope.science.signals import SignalRecipe,read_signal
 from tofscope.storage.vendor_export import export_native_copy
 
 
@@ -46,8 +48,8 @@ def main():
     signal=signals[0];mass_axis=np.asarray(signal['axes'][-1]['axis']);index=int(np.argmin(abs(mass_axis-27)))
     np.testing.assert_array_equal(signal['data'][...,index].compute(),values)
     assert digest(source)==before,'Source acquisition changed'
-    report=dict(source=str(source),output=str(output),source_sha256=before,recipe=recipe.to_dict(),
-                official_reader='RosettaSciIO9959c5679',reader_round_trip=True,source_unchanged=True,seconds=round(time.monotonic()-started,2),commercial_validation='pending')
+    report={'source': str(source),'output': str(output),'source_sha256': before,'recipe': recipe.to_dict(),
+                'official_reader': 'RosettaSciIO9959c5679','reader_round_trip': True,'source_unchanged': True,'seconds': round(time.monotonic()-started,2),'commercial_validation': 'pending'}
     report_path=output.with_suffix('.json');report_path.write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2),flush=True)
 

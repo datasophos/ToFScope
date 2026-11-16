@@ -1,12 +1,13 @@
 """Local-only non-root container smoke against a read-only synthetic bind mount."""
 
 import json
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import time
 import urllib.request
+from pathlib import Path
+
 import h5py
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))

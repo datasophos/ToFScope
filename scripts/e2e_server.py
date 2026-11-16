@@ -1,15 +1,17 @@
 """Disposable loopback-only fixture service. Never use its proxy policy in production."""
 
-from pathlib import Path
 import sys
 import tempfile
-import uvicorn
+from pathlib import Path
+
 import h5py
+import uvicorn
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))
 from fixtures.acquisition import make_acquisition, make_spatial_acquisition
-from tofscope.config import Settings
+
 from tofscope.api.app import create_app
+from tofscope.config import Settings
 
 with tempfile.TemporaryDirectory(prefix="tofscope-e2e-") as d:
     root = Path(d)

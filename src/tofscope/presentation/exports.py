@@ -1,14 +1,15 @@
-from dataclasses import dataclass
-from contextlib import ExitStack
 import csv
-import numpy as np
-from tofscope.presentation.coordinates import calibration
 import io
 import json
-from tofscope.presentation.explore import selected_frames
-from dataclasses import asdict
+from contextlib import ExitStack
+from dataclasses import asdict, dataclass
+
+import numpy as np
+
 from tofscope.application.identification import current_result
 from tofscope.application.signals import visible_signals
+from tofscope.presentation.coordinates import calibration
+from tofscope.presentation.explore import selected_frames
 
 
 @dataclass(frozen=True)
@@ -29,35 +30,35 @@ class ExportService:
             s = e.snapshot
             p.repository.assert_current(owner, s.dataset)
             if format == "json":
-                value = dict(
-                    schema_version=4,
-                    signals=[asdict(row) for row in s.signals if row.recipe is not None],
-                    image_signal_id=s.image_signal_id,
-                    profile_signal_ids=list(s.profile_signal_ids),
-                    scope="Explore and 3D",
-                    spatial=s.spatial.model_dump(mode="json"),
-                    isotope_measurement=asdict(current_result(s)) if s.isotope_measurement else None,
-                    relative_path=s.dataset.relative_path,
-                    dataset_generation=s.dataset.generation,
-                    selected_frames=list(selected_frames(s)),
-                    depth=s.depth.model_dump(),
-                    roi=list(s.roi),
-                    calibration={
+                value = {
+                    "schema_version": 4,
+                    "signals": [asdict(row) for row in s.signals if row.recipe is not None],
+                    "image_signal_id": s.image_signal_id,
+                    "profile_signal_ids": list(s.profile_signal_ids),
+                    "scope": "Explore and 3D",
+                    "spatial": s.spatial.model_dump(mode="json"),
+                    "isotope_measurement": asdict(current_result(s)) if s.isotope_measurement else None,
+                    "relative_path": s.dataset.relative_path,
+                    "dataset_generation": s.dataset.generation,
+                    "selected_frames": list(selected_frames(s)),
+                    "depth": s.depth.model_dump(),
+                    "roi": list(s.roi),
+                    "calibration": {
                         "anchors_nm": [[x.frame, x.depth_nm] for x in s.depth_anchors],
                         "unit": s.depth_unit,
                         "coordinates": s.depth_coordinates,
                         "extrapolation": False,
                         "policy": "interpolate only between anchors",
                     },
-                    display={
+                    "display": {
                         "log": s.display.log,
                         "relative": s.display.relative,
                         "image": s.display.image,
                         "spectrum_log": s.display.spectrum_log,
                         "colormap": s.display.colormap,
                     },
-                    recipe_import_available=False,
-                )
+                    "recipe_import_available": False,
+                }
                 content = json.dumps(value, allow_nan=False, indent=2).encode()
                 media = "application/json"
             elif format == "csv":

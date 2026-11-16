@@ -6,7 +6,7 @@ import {
   frameToCoordinate,
   coordinateToFrame,
 } from "../calibration/coordinates";
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { useAnalysis } from "../app/useAnalysis";
 import { hasChanges } from "../app/changes";
 import { download, type Analysis, type Command } from "../api/client";
@@ -71,9 +71,10 @@ export function ExploreScreen({
       : busy
         ? "Finish or cancel calculations before saving."
         : "";
+  const hasDraft = !!editor.draft;
   useEffect(
-    () => onStatus(a, !!editor.draft, busy || pendingCommands > 0),
-    [a, !!editor.draft, busy, pendingCommands, onStatus],
+    () => onStatus(a, hasDraft, busy || pendingCommands > 0),
+    [a, hasDraft, busy, pendingCommands, onStatus],
   );
   const [seLevels, setSeLevels] = useState<[number, number] | null>(null);
   const [max, setMax] = useState<string | null>(null),
@@ -90,34 +91,38 @@ export function ExploreScreen({
       },
     });
   };
-  useEffect(() => {
+  const normalizeDepth = useEffectEvent(() => {
     if (active && a.spatial.screen === "volume" && a.depth.mode === "frame")
       act({ type: "set_depth", depth: { mode: "all" } });
+  });
+  useEffect(() => {
+    normalizeDepth();
   }, [active, a.spatial.screen, a.depth.mode]);
+  const onKey = useEffectEvent((e: KeyboardEvent) => {
+    if (e.key === "Escape") setMax(null);
+    if (
+      (e.target as HTMLElement).closest(
+        'input,select,textarea,button,[role="dialog"]',
+      )
+    )
+      return;
+    if (
+      a.spatial.screen !== "volume" &&
+      (e.key === "ArrowLeft" || e.key === "ArrowRight")
+    ) {
+      e.preventDefault();
+      frame(
+        (a.depth.mode === "frame" ? a.depth.index : bounds[0]) +
+          (e.key === "ArrowRight" ? 1 : -1),
+      );
+    }
+  });
   useEffect(() => {
     if (!active) return;
-    const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMax(null);
-      if (
-        (e.target as HTMLElement).closest(
-          'input,select,textarea,button,[role="dialog"]',
-        )
-      )
-        return;
-      if (
-        a.spatial.screen !== "volume" &&
-        (e.key === "ArrowLeft" || e.key === "ArrowRight")
-      ) {
-        e.preventDefault();
-        frame(
-          (a.depth.mode === "frame" ? a.depth.index : bounds[0]) +
-            (e.key === "ArrowRight" ? 1 : -1),
-        );
-      }
-    };
+    const key = (e: KeyboardEvent) => onKey(e);
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [a.revision, active]);
+  }, [active]);
   const selectedDepth =
     a.depth.mode === "frame"
       ? [a.depth.index, a.depth.index]
@@ -237,7 +242,8 @@ export function ExploreScreen({
             event.preventDefault();
             event.currentTarget
               .querySelectorAll<HTMLButtonElement>('[role="tab"]')
-              [next].focus();
+              .item(next)
+              .focus();
             act({
               type: "set_spatial",
               spatial: { ...a.spatial, screen: names[next] },

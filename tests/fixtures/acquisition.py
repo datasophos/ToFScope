@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 
+
 def make_acquisition(path):
     with h5py.File(path,'w') as f:
         f.attrs['TofDAQ Version']='1.0'

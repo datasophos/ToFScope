@@ -4,16 +4,16 @@ from threading import RLock
 from uuid import uuid4
 
 import numpy as np
-from tofscope.storage.acquisitions import SourceChanged
+
+from tofscope.application.commands import AllDepth
 from tofscope.application.models import (
     AnalysisSnapshot,
     DisplaySettings,
-    SignalSnapshot,
     Peak,
+    SignalSnapshot,
 )
-from tofscope.application.commands import AllDepth
 from tofscope.science.signals import SignalRecipe
-
+from tofscope.storage.acquisitions import SourceChanged
 
 DEFAULT_MIN_MZ = 20.0
 
@@ -146,11 +146,23 @@ class AnalysisService:
                 opened_revision=revision,
             )
 
-        from tofscope.storage.analysis_document import read_document, restore_snapshot, ROOT, MAX_DOCUMENT_BYTES
-        from tofscope.storage.integration_store import saved_result_info, iter_saved_frames, metadata_size, ROOT as RESULT_ROOT
-        from contextlib import nullcontext
         import hashlib
+        from contextlib import nullcontext
+
         import h5py
+
+        from tofscope.storage.analysis_document import (
+            MAX_DOCUMENT_BYTES,
+            ROOT,
+            read_document,
+            restore_snapshot,
+        )
+        from tofscope.storage.integration_store import ROOT as RESULT_ROOT
+        from tofscope.storage.integration_store import (
+            iter_saved_frames,
+            metadata_size,
+            saved_result_info,
+        )
         with self.repository.access(owner, dataset) as path:
             # Plain acquisitions need no document allocation. Reject oversized metadata first.
             with h5py.File(path, 'r') as h:
