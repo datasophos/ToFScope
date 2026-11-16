@@ -110,6 +110,19 @@ sup > a[href$="#trademark-notice"] {
   overflow-wrap: anywhere;
 }
 
+.projection-examples {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+}
+
+.projection-examples img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 652 / 698;
+  object-fit: cover;
+}
+
 .profile-comparison label {
   margin-right: 1rem;
 }

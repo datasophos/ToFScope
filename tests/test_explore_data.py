@@ -132,6 +132,22 @@ class PresentationTests(unittest.TestCase):
         self.assertEqual(narrower.values[0], [16.0])
         self.assertNotEqual(narrower.content_version, front.content_version)
 
+    def test_yz_projection_sums_x_and_crops_to_roi(self):
+        from fixtures.acquisition import make_spatial_acquisition
+
+        make_spatial_acquisition(self.settings.data_root / "b.h5")
+        current = self.s.analyses.get("a", self.a.id)
+        self.s.analyses.replace("a", self.a.id, self.s.repository.open("a", "b.h5"), current.revision)
+        self.select_channel(0)
+        self.command({"type": "set_roi", "roi": [1, 2, 1, 2]})
+        self.command({"type": "set_display", "log": True, "relative": True, "image": "sims", "front_orientation": "yz"})
+        front = self.presenter.snapshot("a", self.a.id, {"front"}).panels["front"]
+        self.assertEqual(front.values[0], [11.0, 19.0])
+        self.assertEqual(front.values[1], [43.0, 51.0])
+        self.assertEqual(front.axes[0].name, "y")
+        self.assertEqual(front.axes[0].values, [7.5, 12.5])
+        self.assertEqual(front.axes[0].boundaries, [5.0, 10.0, 15.0])
+
     def test_se_and_json_exact_scope(self):
         self.command(
             {"type": "set_display", "log": False, "relative": False, "image": "se"}

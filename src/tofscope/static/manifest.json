@@ -1,13 +1,13 @@
 {
   "assets": {
-    "assets/VtkScene-CRtNZFK1.js": "35a37d22c60bdf802890417862bcf7916cc4d8674a96a482bd928c2bd6e11823",
+    "assets/VtkScene-4RAgJTAC.js": "27c2950e8812d39c0b275292d9d09f5c5ce9798444d8b784ff4183e20353afbd",
     "assets/datasophos-wordmark.png": "d727f11ef2aa8fe9b0d7780d28e33e0785956ca7f38a23c90c594d56253fad04",
     "assets/favicon.svg": "dcdec3e4480df28e57a9d9fa123347d551765651ab764bb53ec7f13f74f1e3f2",
-    "assets/index-BNUiSbWu.js": "c91f95ef9cc4e80ba7dfb76c420786077248d0066c8ba1a3f509850cb7ce09c9",
     "assets/index-Be4kQM2t.css": "1d1c99d6a585090ed2f325095abe3429b4a26dc3b9e6e9acda5b6388099d1694",
-    "index.html": "98ab8bb591d0f40e2f316f7e2482d3747959be9fdbcdbaad83c04e74c5c90ff1",
+    "assets/index-CRXZ6lUf.js": "53599fa7cb61af669c43029f6bb0f234cb9d4420164c43268a2598cfb6fa774d",
+    "index.html": "fa5b5506acc33b078155a530f1e2f2f3c7399e0812ef9f10f20e25287d3e9c07",
     "licenses/matplotlib.txt": "5a1a81ea301728c8bba2933da832c0cd62229daf20893a024ab3d53244468dbc"
   },
-  "source_sha256": "6a58a70c3316daa76d35fa032a66b670cc87784c525c9eeee8bc911eced58980",
+  "source_sha256": "71641c4a2301e040777f11596c7ee1f4fc624d6e2527b5e8541fdbee28036b7b",
   "version": "0.4.0"
 }

@@ -129,7 +129,7 @@ export function VolumeScreen({
   send,
 }: {
   analysis: Analysis;
-  send: (c: Command) => Promise<Analysis>;
+  send: (c: Command | ((state: Analysis) => Command)) => Promise<Analysis>;
 }) {
   const v = a.spatial;
   const [data, setData] = useState<VolumeData | null>(null),
@@ -728,14 +728,15 @@ export function VolumeScreen({
               <input
                 type="checkbox"
                 checked={a.display.log}
-                onChange={(e) =>
-                  void send({
+                onChange={(e) => {
+                  const log = e.target.checked;
+                  void send((latest) => ({
                     type: "set_display",
-                    ...a.display,
-                    log: e.target.checked,
-                    image: a.display.image as "sims" | "se",
-                  }).catch((e) => setError(e.message))
-                }
+                    ...latest.display,
+                    log,
+                    image: latest.display.image as "sims" | "se",
+                  })).catch((e) => setError(e.message));
+                }}
               />
               Log colors
             </label>

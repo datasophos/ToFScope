@@ -80,6 +80,7 @@ class DocumentDisplay(StrictModel):
     log: StrictBool = True
     relative: StrictBool = True
     image: Literal['sims', 'se'] = 'sims'
+    front_orientation: Literal["xz", "yz"] = "xz"
     spectrum_log: StrictBool = True
     colormap: Literal["ion", "gray", "viridis", "magma", "cividis"] = "viridis"
 

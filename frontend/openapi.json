@@ -894,6 +894,15 @@
             "title": "Colormap",
             "type": "string"
           },
+          "front_orientation": {
+            "default": "xz",
+            "enum": [
+              "xz",
+              "yz"
+            ],
+            "title": "Front Orientation",
+            "type": "string"
+          },
           "image": {
             "default": "sims",
             "title": "Image",
@@ -2296,6 +2305,21 @@
               }
             ],
             "title": "Colormap"
+          },
+          "front_orientation": {
+            "anyOf": [
+              {
+                "enum": [
+                  "xz",
+                  "yz"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Front Orientation"
           },
           "image": {
             "default": "sims",

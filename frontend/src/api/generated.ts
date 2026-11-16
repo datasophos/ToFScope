@@ -844,6 +844,12 @@ export interface components {
        */
       colormap: "ion" | "gray" | "viridis" | "magma" | "cividis";
       /**
+       * Front Orientation
+       * @default xz
+       * @enum {string}
+       */
+      front_orientation: "xz" | "yz";
+      /**
        * Image
        * @default sims
        */
@@ -1348,6 +1354,8 @@ export interface components {
     SetDisplay: {
       /** Colormap */
       colormap?: ("ion" | "gray" | "viridis" | "magma" | "cividis") | null;
+      /** Front Orientation */
+      front_orientation?: ("xz" | "yz") | null;
       /**
        * Image
        * @default sims

@@ -130,12 +130,12 @@ export function ExploreScreen({
         ? [a.depth.first, a.depth.last]
         : undefined;
   const display = (patch: Partial<Analysis["display"]>) =>
-    act({
+    void send((latest) => ({
       type: "set_display",
-      ...a.display,
+      ...latest.display,
       ...patch,
-      image: (patch.image ?? a.display.image) as "sims" | "se",
-    });
+      image: (patch.image ?? latest.display.image) as "sims" | "se",
+    })).catch(() => {});
   const panels = data?.panels;
   const seSize: [number, number] | undefined =
     panels?.ion?.axes.length === 2
@@ -449,6 +449,20 @@ export function ExploreScreen({
                 help={help.front}
                 panel={panels?.front}
                 expectedKind="image"
+                toolbarControls={
+                  <button
+                    title={`Switch to ${a.display.front_orientation === "xz" ? "Y-Z" : "X-Z"} projection`}
+                    aria-label={`Switch to ${a.display.front_orientation === "xz" ? "Y-Z" : "X-Z"} projection`}
+                    onClick={() =>
+                      display({
+                        front_orientation:
+                          a.display.front_orientation === "xz" ? "yz" : "xz",
+                      })
+                    }
+                  >
+                    {a.display.front_orientation.toUpperCase()}
+                  </button>
+                }
                 status={
                   <span>
                     {panels?.front.signal_name ?? ""} · {coverage("front")}
@@ -457,7 +471,15 @@ export function ExploreScreen({
                 }
                 selection={
                   depthSelection("front")
-                    ? [0, a.fov_um ?? a.shape[2], ...depthSelection("front")!]
+                    ? [
+                        panels?.front.axes[0].boundaries[0] ?? 0,
+                        panels?.front.axes[0].boundaries.at(-1) ??
+                          a.fov_um ??
+                          (a.display.front_orientation === "yz"
+                            ? a.shape[1]
+                            : a.shape[2]),
+                        ...depthSelection("front")!,
+                      ]
                     : undefined
                 }
                 mode="y"

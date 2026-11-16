@@ -68,6 +68,7 @@ export function useAnalysis(initial: Analysis) {
           active ||
           geometry ||
           different(before.roi, a.roi) ||
+          before.display.front_orientation !== a.display.front_orientation ||
           before.display.colormap !== a.display.colormap ||
           before.display.log !== a.display.log
         )
@@ -168,7 +169,7 @@ export function useAnalysis(initial: Analysis) {
         void request(`/views/${view}`, { method: "DELETE" }).catch(() => {});
     };
   }, [initial.id, refresh]);
-  const send = async (command: Command) => {
+  const send = async (command: Command | ((state: Analysis) => Command)) => {
     setPendingCommands((count) => count + 1);
     try {
       setError("");

@@ -19,6 +19,7 @@ class DisplaySettings:
     image: str = "sims"
     spectrum_log: bool = True
     colormap: Literal["ion", "gray", "viridis", "magma", "cividis"] = "viridis"
+    front_orientation: Literal["xz", "yz"] = "xz"
 
 
     def __post_init__(self):

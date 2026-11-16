@@ -84,6 +84,7 @@ class SetDisplay(StrictModel):
     log: StrictBool
     relative: StrictBool
     image: Literal["sims", "se"] = "sims"
+    front_orientation: Literal["xz", "yz"] | None = None
     spectrum_log: StrictBool | None = None
     colormap: Literal["ion", "gray", "viridis", "magma", "cividis"] | None = None
 
