@@ -1,10 +1,15 @@
 import { test, expect } from "@playwright/test";
+import type { SpatialProbeWindow } from "../evaluation/spatialProbeTypes";
 test("compare spatial geometry on the same registered fixture", async ({
   page,
 }) => {
   await page.goto("/evaluation/spatial.html");
-  await page.waitForFunction(() => !!(window as any).spatialProbe);
-  const result = await page.evaluate(() => (window as any).spatialProbe);
+  await page.waitForFunction(
+    () => !!(window as unknown as SpatialProbeWindow).spatialProbe,
+  );
+  const result = await page.evaluate(
+    () => (window as unknown as SpatialProbeWindow).spatialProbe,
+  );
   expect(result.plotlyZ).toEqual([0, 10, 30, 60]);
   expect(result.vtkZ).toEqual([0, 20, 40, 60]);
   expect(result.vtkInputClass).toBe("vtkImageData");

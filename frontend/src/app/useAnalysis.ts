@@ -143,7 +143,7 @@ export function useAnalysis(initial: Analysis) {
       }
     };
     void attach();
-    void refresh();
+    const initialPoll = setTimeout(() => void refresh(), 0);
     const poll = setInterval(() => void refresh(), 1000),
       heartbeat = setInterval(() => {
         if (!view) {
@@ -161,6 +161,7 @@ export function useAnalysis(initial: Analysis) {
     return () => {
       disposed = true;
       mounted.current = false;
+      clearTimeout(initialPoll);
       clearInterval(poll);
       clearInterval(heartbeat);
       if (view)

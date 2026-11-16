@@ -3,8 +3,8 @@ import { animationQuality } from "./animationQuality";
 
 test("animation requests adaptive rendering once and restores detail when stopped or disposed", () => {
   const interactor = {
-    requestAnimation: vi.fn((_requester: object) => {}),
-    cancelAnimation: vi.fn((_requester: object) => {}),
+    requestAnimation: vi.fn<(requester: object) => void>(),
+    cancelAnimation: vi.fn<(requester: object) => void>(),
   };
   const quality = animationQuality(interactor);
   quality.set(true);
@@ -22,8 +22,8 @@ test("animation requests adaptive rendering once and restores detail when stoppe
 
 test("stopping during an export does not restart animation afterwards", async () => {
   const interactor = {
-    requestAnimation: vi.fn((_requester: object) => {}),
-    cancelAnimation: vi.fn((_requester: object) => {}),
+    requestAnimation: vi.fn<(requester: object) => void>(),
+    cancelAnimation: vi.fn<(requester: object) => void>(),
   };
   const quality = animationQuality(interactor);
   quality.set(true);

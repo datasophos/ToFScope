@@ -33,10 +33,10 @@ export function DepthEditor({
   };
   // Keep draft physical values canonical across display-unit changes.
   const [previousScale, setPreviousScale] = useState(scale);
-  useEffect(() => {
+  if (scale !== previousScale) {
     if (depth !== "") setDepth(String((Number(depth) * previousScale) / scale));
     setPreviousScale(scale);
-  }, [scale]);
+  }
   const commit = async (command: Parameters<Send>[0]) => {
     if (command.type === "set_depth_anchors") {
       const invalid = anchorError(command.anchors, a.shape[0]);
@@ -75,16 +75,22 @@ export function DepthEditor({
     return () => {
       alive = false;
     };
-  }, [open, a.revision]);
-  useEffect(() => {
+  }, [open, a.id, a.revision]);
+  const [previousActive, setPreviousActive] = useState(active);
+  if (active !== previousActive) {
+    setPreviousActive(active);
     if (!active) setOpen(false);
-  }, [active]);
-  useEffect(() => {
+  }
+  const [previousGeneration, setPreviousGeneration] = useState(
+    a.dataset.generation,
+  );
+  if (a.dataset.generation !== previousGeneration) {
+    setPreviousGeneration(a.dataset.generation);
     setFull(undefined);
     setFrame("1");
     setDepth("");
     setError("");
-  }, [a.dataset.generation]);
+  }
   const graph = full;
   return (
     <>

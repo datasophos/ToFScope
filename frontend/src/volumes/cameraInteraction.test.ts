@@ -2,7 +2,7 @@ import { expect, test, vi } from "vitest";
 import { cameraInteraction } from "./cameraInteraction";
 
 test("queued camera updates cannot overwrite an active gesture", () => {
-  const apply = vi.fn((_camera: string) => {});
+  const apply = vi.fn<(camera: string) => void>();
   const gesture = cameraInteraction(apply);
   gesture.update("before");
   gesture.start();

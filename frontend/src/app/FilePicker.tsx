@@ -77,6 +77,15 @@ export function FilePicker({
   const [rawSelection, setRawSelection] = useState<RawSelection | null>(
     initialRawSelection,
   );
+  const requestKey = JSON.stringify([folderMode, location, dir, query, offset]);
+  const [previousRequestKey, setPreviousRequestKey] = useState(requestKey);
+  if (requestKey !== previousRequestKey) {
+    setPreviousRequestKey(requestKey);
+    setLoading(true);
+    setError("");
+    setPage(null);
+    setSelected(null);
+  }
   const dialog = useRef<HTMLElement>(null);
   const search = useRef<HTMLInputElement>(null);
   const files = useRef<HTMLTableElement>(null);
@@ -91,10 +100,6 @@ export function FilePicker({
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
-    setError("");
-    setPage(null);
-    setSelected(null);
     request<Page>(
       `/${folderMode ? "save-folders" : "files"}?location=${location}&directory=${encodeURIComponent(dir)}&query=${encodeURIComponent(query)}&offset=${offset}&folders=true`,
     )

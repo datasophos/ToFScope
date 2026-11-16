@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { Analysis } from "../api/client";
 import type { Send } from "./SignalDetails";
 import { HelpHeading } from "../components/HelpButton";
@@ -21,7 +21,11 @@ export function ViewingDepths({
     current = a.depth.mode === "frame" ? a.depth.index : bounds[0];
   const allFrames = volume ? [0, a.shape[0] - 1] : bounds;
   const [slider, setSlider] = useState(current);
-  useEffect(() => setSlider(current), [current]);
+  const [previousCurrent, setPreviousCurrent] = useState(current);
+  if (current !== previousCurrent) {
+    setPreviousCurrent(current);
+    setSlider(current);
+  }
   const frame = (n: number) =>
     void send({
       type: "set_depth",
@@ -37,7 +41,12 @@ export function ViewingDepths({
         ? [a.depth.index, a.depth.index]
         : bounds;
   const [draft, setDraft] = useState(range.map(String));
-  useEffect(() => setDraft(range.map(String)), [range[0], range[1]]);
+  const rangeKey = `${range[0]},${range[1]}`;
+  const [previousRangeKey, setPreviousRangeKey] = useState(rangeKey);
+  if (rangeKey !== previousRangeKey) {
+    setPreviousRangeKey(rangeKey);
+    setDraft(range.map(String));
+  }
   const selectMode = (mode: Analysis["depth"]["mode"]) => {
     if (mode === a.depth.mode) return;
     if (mode === "frame") return frame(current);

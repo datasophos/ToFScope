@@ -33,11 +33,15 @@ export function SaveCopy({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const savedCallback = useRef(onSaved);
-  savedCallback.current = onSaved;
-  const running = !!job && ["queued", "running"].includes(job.status);
   useEffect(() => {
+    savedCallback.current = onSaved;
+  }, [onSaved]);
+  const running = !!job && ["queued", "running"].includes(job.status);
+  const [previousSaveRequest, setPreviousSaveRequest] = useState(0);
+  if (saveRequest !== previousSaveRequest) {
+    setPreviousSaveRequest(saveRequest);
     if (saveRequest) setOpen(true);
-  }, [saveRequest]);
+  }
   useEffect(() => {
     if (!job?.id) return;
     let alive = true,

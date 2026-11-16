@@ -49,7 +49,7 @@ export function RawPreparation({
             setBusy(true);
             try {
               await onPrepared(next.saved_file.id);
-            } catch (e) {
+            } catch {
               setError(
                 `Saved ${next.saved_file.name}, but couldn't open it yet. Your prepared copy is safe. Try “Open prepared copy” again.`,
               );
@@ -76,7 +76,7 @@ export function RawPreparation({
       alive = false;
       clearTimeout(timer);
     };
-  }, [job]);
+  }, [job, onPrepared]);
   const start = async () => {
     setBusy(true);
     setError("");
@@ -215,7 +215,7 @@ export function RawPreparation({
                     setBusy(true);
                     try {
                       await onPrepared(job.saved_file!.id);
-                    } catch (e) {
+                    } catch {
                       setError(
                         `Your prepared copy is still saved as ${job.saved_file!.name}. Opening is unavailable right now; try again shortly.`,
                       );

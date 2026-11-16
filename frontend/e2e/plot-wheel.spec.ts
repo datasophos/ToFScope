@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
 
+type WheelWindow = Window & {
+  plotWheel: { prevented: boolean; modifier: boolean }[];
+};
+
 test("modifier wheel zoom consumes scrolling, ordinary wheel still scrolls the page", async ({
   page,
 }) => {
@@ -15,11 +19,11 @@ test("modifier wheel zoom consumes scrolling, ordinary wheel still scrolls the p
     .getByLabel("Depth profile selection");
   await overlay.hover();
   await page.evaluate(() => {
-    (window as any).plotWheel = [];
+    (window as WheelWindow).plotWheel = [];
     document.addEventListener(
       "wheel",
       (e) =>
-        (window as any).plotWheel.push({
+        (window as WheelWindow).plotWheel.push({
           prevented: e.defaultPrevented,
           modifier: e.ctrlKey || e.metaKey,
         }),
@@ -34,7 +38,9 @@ test("modifier wheel zoom consumes scrolling, ordinary wheel still scrolls the p
     await page.keyboard.up(key);
     await expect
       .poll(() =>
-        page.evaluate(() => (window as any).plotWheel.at(-1)?.prevented),
+        page.evaluate(
+          () => (window as WheelWindow).plotWheel.at(-1)?.prevented,
+        ),
       )
       .toBe(true);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scroll);
@@ -43,7 +49,7 @@ test("modifier wheel zoom consumes scrolling, ordinary wheel still scrolls the p
   await page.mouse.wheel(0, -120);
   await expect
     .poll(() =>
-      page.evaluate(() => (window as any).plotWheel.at(-1)?.prevented),
+      page.evaluate(() => (window as WheelWindow).plotWheel.at(-1)?.prevented),
     )
     .toBe(false);
   await expect

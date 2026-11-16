@@ -1,4 +1,9 @@
 import { test, expect as baseExpect, type Page } from "@playwright/test";
+import type { Command, Signal } from "../src/api/client";
+import type { SpatialLayer } from "../src/volumes/spatialRenderer";
+
+type VolumeElement = HTMLElement & { data: { x: unknown }[] };
+type GeometryWindow = Window & { initialVolumeGeometry: unknown };
 
 // VTK startup and analysis polling can take longer on software-rendered CI.
 const expect = baseExpect.configure({ timeout: 15_000 });
@@ -17,7 +22,7 @@ async function open(page: Page) {
     .dblclick();
   await expect(page.getByTestId("analysis")).toBeVisible();
 }
-async function command(page: Page, command: any) {
+async function command(page: Page, command: Command) {
   const revision = await page.evaluate(async (c) => {
     const session = await (await fetch("/api/v1/auth/session")).json();
     const [a] = await (await fetch("/api/v1/analyses")).json();
@@ -68,7 +73,7 @@ async function setupLayers(page: Page, count = 3) {
       screen: "volume",
       layers: a.signals
         .slice(0, count)
-        .map((s: any) => ({ signal_id: s.id, percentile: 0 })),
+        .map((s: Signal) => ({ signal_id: s.id, percentile: 0 })),
     },
   });
   await expect(page.getByTestId("volume-status")).toContainText(
@@ -134,12 +139,12 @@ test("SE layer and levels window overlay the 3D preview", async ({ page }) => {
     .poll(
       async () =>
         (await state(page)).spatial.layers.find(
-          (l: any) => l.signal_id === "@se",
+          (l: { signal_id: string }) => l.signal_id === "@se",
         )?.levels,
     )
     .not.toBeNull();
   const beforeLevels = (await state(page)).spatial.layers.find(
-    (l: any) => l.signal_id === "@se",
+    (l: { signal_id: string }) => l.signal_id === "@se",
   ).levels;
   const window = page.locator(".levels-window");
   const windowBox = (await window.boundingBox())!;
@@ -158,12 +163,12 @@ test("SE layer and levels window overlay the 3D preview", async ({ page }) => {
     .poll(
       async () =>
         (await state(page)).spatial.layers.find(
-          (l: any) => l.signal_id === "@se",
+          (l: { signal_id: string }) => l.signal_id === "@se",
         ).levels[0],
     )
     .toBeLessThan(beforeLevels[0]);
   const afterLevels = (await state(page)).spatial.layers.find(
-    (l: any) => l.signal_id === "@se",
+    (l: { signal_id: string }) => l.signal_id === "@se",
   ).levels;
   expect(afterLevels[1] - afterLevels[0]).toBeCloseTo(
     beforeLevels[1] - beforeLevels[0],
@@ -177,7 +182,9 @@ test("SE layer and levels window overlay the 3D preview", async ({ page }) => {
     String(Number(shownLower.toPrecision(3))),
   );
   expect(
-    (await volumeData(page)).layers.some((l: any) => l.signal_id === "@se"),
+    (await volumeData(page)).layers.some(
+      (l: { signal_id: string }) => l.signal_id === "@se",
+    ),
   ).toBe(true);
 });
 test("3D signal table starts with the image signal and recovers a saved solo selection", async ({
@@ -186,9 +193,11 @@ test("3D signal table starts with the image signal and recovers a saved solo sel
   await open(page);
   await command(page, { type: "add_stored_signal", index: 0 });
   const before = await state(page);
-  const main = before.signals.find((s: any) => s.id === before.image_signal_id);
+  const main = before.signals.find(
+    (s: Signal) => s.id === before.image_signal_id,
+  );
   const other = before.signals.find(
-    (s: any) => s.id !== before.image_signal_id,
+    (s: Signal) => s.id !== before.image_signal_id,
   );
   await page.getByRole("tab", { name: "3D volume" }).click();
   await expect(
@@ -328,7 +337,10 @@ test("up to sixteen layers can share a tile page", async ({ page }) => {
       mode: "tiles",
       tile_columns: 4,
       tile_rows: 4,
-      layers: a.signals.map((s: any) => ({ signal_id: s.id, percentile: 0 })),
+      layers: a.signals.map((s: Signal) => ({
+        signal_id: s.id,
+        percentile: 0,
+      })),
     },
   });
   await expect(page.getByTestId("vtk-tile")).toHaveCount(16);
@@ -688,7 +700,7 @@ test("six layers page four scenes, hide/show, independent cameras and depth rang
     .getByRole("button", { name: "Previous 3D page", exact: true })
     .click();
   const beforeCameras = (await state(page)).spatial.layers.map(
-    (l: any) => l.camera,
+    (l: SpatialLayer) => l.camera,
   );
   const tileBox = (await page
     .getByTestId("vtk-tile")
@@ -766,7 +778,7 @@ test("removing a named layer and rendering partial coverage keeps 3D usable", as
   await command(page, { type: "remove_signal", signal_id: sid });
   await expect(page.getByTestId("volume-status")).toContainText("1 layers");
   await expect(page.getByTestId("volume-layer")).toHaveCount(
-    (await state(page)).signals.filter((s: any) => s.recipe).length + 1,
+    (await state(page)).signals.filter((s: Signal) => s.recipe).length + 1,
   );
   await expect(
     page.getByTestId("volume-canvas").locator("canvas").first(),
@@ -828,8 +840,8 @@ test("polling and camera persistence retain the existing volume geometry", async
 }) => {
   await open(page);
   await setupLayers(page, 1);
-  await page.getByTestId("volume-canvas").evaluate((el: any) => {
-    (window as any).initialVolumeGeometry =
+  await page.getByTestId("volume-canvas").evaluate((el: VolumeElement) => {
+    (window as GeometryWindow).initialVolumeGeometry =
       el.dataset.renderer === "vtk" ? el.querySelector("canvas") : el.data[0].x;
   });
   for (let i = 0; i < 3; i++)
@@ -842,10 +854,11 @@ test("polling and camera persistence retain the existing volume geometry", async
     await page
       .getByTestId("volume-canvas")
       .evaluate(
-        (el: any) =>
+        (el: VolumeElement) =>
           (el.dataset.renderer === "vtk"
             ? el.querySelector("canvas")
-            : el.data[0].x) === (window as any).initialVolumeGeometry,
+            : el.data[0].x) ===
+          (window as GeometryWindow).initialVolumeGeometry,
       ),
   ).toBe(true);
   const before = (await state(page)).spatial.camera.eye;
@@ -863,10 +876,11 @@ test("polling and camera persistence retain the existing volume geometry", async
     await page
       .getByTestId("volume-canvas")
       .evaluate(
-        (el: any) =>
+        (el: VolumeElement) =>
           (el.dataset.renderer === "vtk"
             ? el.querySelector("canvas")
-            : el.data[0].x) === (window as any).initialVolumeGeometry,
+            : el.data[0].x) ===
+          (window as GeometryWindow).initialVolumeGeometry,
       ),
   ).toBe(true);
 });
@@ -1016,7 +1030,7 @@ test("vtk renders a complete signal and warns when calibrated depth is resampled
 }) => {
   await open(page);
   await command(page, { type: "add_stored_signal", index: 1 });
-  let a = await state(page);
+  const a = await state(page);
   await command(page, {
     type: "set_spatial",
     spatial: {
@@ -1134,7 +1148,10 @@ test("vtk overlay remains usable when a signal is hidden or shown", async ({
     spatial: {
       ...a.spatial,
       screen: "volume",
-      layers: a.signals.map((s: any) => ({ signal_id: s.id, percentile: 0 })),
+      layers: a.signals.map((s: Signal) => ({
+        signal_id: s.id,
+        percentile: 0,
+      })),
     },
   });
   await expect(page.getByTestId("volume-canvas")).toHaveAttribute(
@@ -1283,7 +1300,7 @@ test("vtk applies a colormap to the third overlay volume component", async ({
     type: "set_spatial",
     spatial: {
       ...a.spatial,
-      layers: a.spatial.layers.map((l: any, i: number) => ({
+      layers: a.spatial.layers.map((l: SpatialLayer, i: number) => ({
         ...l,
         opacity: i === 2 ? 1 : 0,
         colorscale: "Reds",
@@ -1321,7 +1338,7 @@ test("transparent overlay components do not tint another signal", async ({
     type: "set_spatial",
     spatial: {
       ...a.spatial,
-      layers: a.spatial.layers.map((l: any, i: number) => ({
+      layers: a.spatial.layers.map((l: SpatialLayer, i: number) => ({
         ...l,
         opacity: i === 2 ? 1 : 0,
         colorscale: i === 2 ? "Reds" : "Blues",
@@ -1362,7 +1379,7 @@ test("transparent overlay components do not tint another signal", async ({
     type: "set_spatial",
     spatial: {
       ...current.spatial,
-      layers: current.spatial.layers.map((l: any, i: number) => ({
+      layers: current.spatial.layers.map((l: SpatialLayer, i: number) => ({
         ...l,
         colorscale: i === 2 ? "Reds" : "Greens",
       })),

@@ -21,12 +21,13 @@ export function LevelsControl({
   const current = useRef(draft);
   const box = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
+  const [levelLow, levelHigh] = levels;
   useEffect(() => {
     if (!dragging.current) {
-      current.current = levels;
-      setDraft(levels);
+      current.current = [levelLow, levelHigh];
+      setDraft([levelLow, levelHigh]);
     }
-  }, [levels[0], levels[1]]);
+  }, [levelLow, levelHigh]);
   const bars = useMemo(
     () => histogram(values, min, min + width),
     [values, min, width],

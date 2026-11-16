@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import "@kitware/vtk.js/Rendering/Profiles/Volume";
 import "@kitware/vtk.js/Rendering/Profiles/Geometry";
 import vtkCubeAxesActor from "@kitware/vtk.js/Rendering/Core/CubeAxesActor";
@@ -134,7 +134,11 @@ function createScene(
         // vtk's default independent-component mix adds colors even for fully
         // transparent components. Weight each color by its opacity instead.
         volume.getProperty().setColorMixPreset(ColorMixPreset.CUSTOM);
-        (mapper as any).setViewSpecificProperties({
+        (
+          mapper as unknown as {
+            setViewSpecificProperties(properties: object): void;
+          }
+        ).setViewSpecificProperties({
           OpenGL: {
             ShaderReplacements: [
               {
@@ -425,7 +429,9 @@ export function VtkScene(props: Props) {
   const el = useRef<HTMLDivElement>(null),
     handle = useRef<Handle | null>(null),
     latest = useRef(props);
-  latest.current = props;
+  useLayoutEffect(() => {
+    latest.current = props;
+  }, [props]);
   const styleKey = JSON.stringify([
     props.view.layers.map((l) => [
       l.signal_id,
@@ -510,7 +516,7 @@ export function VtkScene(props: Props) {
         stops: vtkColorStops(style.colorscale, style.colorscale_reversed),
       };
     });
-  }, [props.data, props.source, styleKey]);
+  }, [props.data, props.source, props.view, props.log]);
   return (
     <div
       ref={sceneElement}

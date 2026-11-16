@@ -3,13 +3,22 @@ import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
-// Existing findings are tracked by file and rule in eslint-suppressions.json.
-// Reduce that baseline as the underlying issues are fixed.
 export default tseslint.config(
-  { ignores: ["src/api/generated.ts", "dist/**", "test-results/**", "playwright-report/**"] },
+  {
+    ignores: [
+      "src/api/generated.ts",
+      "dist/**",
+      "test-results/**",
+      "playwright-report/**",
+    ],
+  },
   {
     files: ["**/*.{ts,tsx}"],
-    extends: [js.configs.recommended, ...tseslint.configs.recommended, reactHooks.configs.flat.recommended],
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommended,
+      reactHooks.configs.flat.recommended,
+    ],
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
     rules: { "react-hooks/exhaustive-deps": "error" },
   },
