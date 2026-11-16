@@ -59,7 +59,7 @@ For step-by-step installation, folder setup, and troubleshooting, see [Install a
 ## Your first analysis
 
 1. Open an acquisition and choose a stored signal, or create one from a mass window in the spectrum.
-2. Select a frame range and region of interest to explore its ion image and depth profile. Add other signals to compare profiles.
+2. Select a frame range and region of interest to explore its ion image, front projection, and depth profile. The front projection is cropped to the region’s horizontal bounds and summed over its vertical bounds. Add other signals to compare profiles.
 3. Use **Depth calibration…** if you have known frame-to-depth measurements, or open **3D volume** to explore the signal spatially.
 4. Choose **Save as…** to save a new analysis copy. After a restart, open it through **Saved files** to resume your saved work.
 
