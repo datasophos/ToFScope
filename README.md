@@ -13,14 +13,14 @@ ToFScope runs locally on Windows, macOS, and Linux as a Python application and o
 
 **[Read the ToFScope documentation](https://datasophos.github.io/ToFScope/)** for installation, user guides, deployment, and developer information. Start with [Install and launch](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html) or [Your first analysis](https://datasophos.github.io/ToFScope/docs/getting-started/first-analysis.html).
 
-![ToFScope Explore showing an ion map, mass spectrum, front projection, and depth profile from a real acquisition](https://raw.githubusercontent.com/datasophos/ToFScope/main/docs/assets/tofscope-explore.png)
+![ToFScope Explore showing an ion map, mass spectrum, front projection, and depth profile from a synthetic demo acquisition](https://raw.githubusercontent.com/datasophos/ToFScope/main/docs/assets/tofscope-explore.png)
 
-*Explore view showing an ion map, mass spectrum, front projection, and depth profile for a real acquisition.*
+*Explore view showing an ion map, mass spectrum, front projection, and depth profile for a synthetic demo acquisition.*
 
 ## What you can do
 
 - **Explore an acquisition:** view ion maps, a mass spectrum, XZ or YZ front projections, and depth profiles together; choose custom regions of interest and frame range.
-- **Calculate a regional spectrum:** reconstruct the spectrum for the selected pixels and frames from raw detection events when they are available.
+- **Calculate a sub-region mass spectrum:** reconstruct the mass spectrum for the selected pixels and frames from raw detection events.
 - **Compare signals:** use stored ion channels or define custom mass windows from the spectrum, then compare their profiles.
 - **Work with depth:** add calibration anchors to display profiles and projections in physical depth where calibration is known.
 - **Inspect peaks and isotopes:** find candidate atomic isotope ions and measure selected signals over a region and frame range.

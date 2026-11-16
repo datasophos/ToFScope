@@ -13,7 +13,7 @@ Hover over, focus, or tap a number to see its description.
   <img src="../assets/tofscope-explore-numbered.svg" alt="The Explore workspace, with six numbered controls and plots described below.">
   <span id="image-signals" class="explore-highlight" style="left:0.7%;top:11.35%;width:33%;height:4%" aria-hidden="true"></span>
   <span id="image-add-signal" class="explore-highlight" style="left:85.4%;top:11.35%;width:6.5%;height:4%" aria-hidden="true"></span>
-  <span id="image-create-signal" class="explore-highlight" style="left:42%;top:21.7%;width:5.5%;height:3%" aria-hidden="true"></span>
+  <span id="image-create-signal" class="explore-highlight" style="left:49.1%;top:21.7%;width:4.3%;height:3%" aria-hidden="true"></span>
   <span id="image-signal-details" class="explore-highlight" style="left:24.5%;top:11.7%;width:8.9%;height:3.3%" aria-hidden="true"></span>
   <span id="image-viewing-depths" class="explore-highlight" style="left:0.7%;top:16%;width:8%;height:4%" aria-hidden="true"></span>
   <span id="image-all-frames" class="explore-highlight" style="left:8.9%;top:16.3%;width:4.4%;height:3.4%" aria-hidden="true"></span>
@@ -52,7 +52,7 @@ profile. Signal names and colors stay with each signal when you switch views.
 To add a signal:
 
 1. Choose [**Add signal**](#image-add-signal) to search among the nominal channels (or ones previously defined with the
-   commercial software, or use [**Create signal**](#image-create-signal) above the spectrum to define a raw integration.
+   commercial software, or choose [**Analyze → Create signal**](#image-create-signal) above the spectrum to define a raw integration.
    You can also choose **Create from spectrum** from the Add signal menu.
 2. For a raw integration, name it and draw or enter exact inclusive mass intervals. Multiple disjointed intervals
    can be used and will form a union, adding their intensities together.
@@ -138,11 +138,11 @@ Use the [**Relative profiles**](#image-relative-profiles) checkbox in the depth 
   <input type="radio" name="profile-comparison" id="profiles-mean">
   <label for="profiles-mean">Relative profiles off</label>
   <figure class="figure profile-comparison-relative">
-    <img src="../assets/tofscope-profiles-relative.svg" alt="Three depth profiles, each scaled to its own maximum, with weaker signals and their noise visible.">
+    <img src="../assets/tofscope-profiles-relative.svg" alt="Two depth profiles, each scaled to its own maximum, with weaker signals and their noise visible.">
     <figcaption class="figure-caption">Relative profiles on: each curve is scaled to its own maximum.</figcaption>
   </figure>
   <figure class="figure profile-comparison-mean">
-    <img src="../assets/tofscope-profiles-mean.svg" alt="The same three depth profiles on a shared mean-intensity scale; the weaker curves lie close to zero.">
+    <img src="../assets/tofscope-profiles-mean.svg" alt="The same two depth profiles on a shared mean-intensity scale.">
     <figcaption class="figure-caption">Relative profiles off: curves share a mean-intensity scale.</figcaption>
   </figure>
 </div>
