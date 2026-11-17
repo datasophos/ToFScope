@@ -101,6 +101,7 @@ def config_paths(platform: str, env: Mapping[str, str]) -> list[Path]:
         return [system / "ToFScope/config.toml", user / "ToFScope/config.toml"]
     if platform == "darwin":
         return [
+            Path("/etc/tofscope.toml"),
             Path("/Library/Application Support/ToFScope/config.toml"),
             home / "Library/Application Support/ToFScope/config.toml",
             home / ".config/tofscope/config.toml",

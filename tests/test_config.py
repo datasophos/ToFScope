@@ -71,6 +71,7 @@ class ConfigDiscoveryTests(unittest.TestCase):
         self.assertEqual(
             config_paths("darwin", {"HOME": str(home)}),
             [
+                Path("/etc/tofscope.toml"),
                 Path("/Library/Application Support/ToFScope/config.toml"),
                 home / "Library/Application Support/ToFScope/config.toml",
                 home / ".config/tofscope/config.toml",
@@ -99,7 +100,7 @@ class ConfigDiscoveryTests(unittest.TestCase):
 
         with TemporaryDirectory() as directory:
             root = Path(directory)
-            paths = config_paths("darwin", {"HOME": directory})[1:]
+            paths = config_paths("darwin", {"HOME": directory})[2:]
             for path, port in zip(paths, (8000, 8001), strict=True):
                 path.parent.mkdir(parents=True)
                 path.write_text(f"[tofscope]\nport = {port}\n")
