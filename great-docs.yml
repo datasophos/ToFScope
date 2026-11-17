@@ -66,7 +66,7 @@ dark_mode_toggle: true
 source:
   branch: main
 announcement:
-  content: "Heads up! ToFScope is still in alpha status. Features and file compatibility may change."
+  content: "Heads up! ToFScope is still in beta status. Features and file compatibility may change."
   type: info
   dismissable: true
 site:

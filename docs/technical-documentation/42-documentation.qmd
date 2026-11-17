@@ -109,7 +109,7 @@ The Git-connected Cloudflare Pages project `tofscope-docs` builds branch preview
 production site. These builds are controlled by the workflow in `.github/workflows/cloudflare-previews.yml`. Its root
 directory is the repository root, build command is `sh scripts/build_cloudflare_docs.sh`, and
 output directory is `great-docs/_site`. Its build variables are `PYTHON_VERSION=3.12` and `SKIP_DEPENDENCY_INSTALL=1`.
-The script installs documentation dependencies, checks local links, and adds a `noindex` header. Automatic Cloudflare
+The script installs documentation dependencies, checks local links, and adds a `noindex` header. Documentation builds fall back to the public GitHub release feed if the releases API is unavailable, and fail if no changelog is produced. The fallback checks each release page to exclude tags without published releases. Automatic Cloudflare
 production deployments are disabled; GitHub Pages remains the canonical production site.
 
 Preview builds watch `docs/*`, `great-docs.yml`, `index.qmd`, the documentation build and checking scripts,
