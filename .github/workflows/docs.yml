@@ -23,9 +23,11 @@ jobs:
       - name: Install documentation dependencies
         run: uv sync --frozen --only-group docs
       - name: Build documentation
-        run: uv run --frozen --only-group docs great-docs build
+        run: uv run --frozen --only-group docs python scripts/build_docs.py
       - name: Check local links and images
-        run: python scripts/check_docs.py great-docs/_site
+        run: |
+          test -s great-docs/_site/changelog.html
+          python scripts/check_docs.py great-docs/_site
       - name: Upload documentation for review
         uses: actions/upload-artifact@v4
         with:

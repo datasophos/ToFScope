@@ -19,7 +19,8 @@ if ! command -v uv >/dev/null 2>&1; then
 fi
 
 uv sync --frozen --only-group docs
-uv run --frozen --only-group docs great-docs build
+uv run --frozen --only-group docs python scripts/build_docs.py
+test -s great-docs/_site/changelog.html
 uv run --frozen --only-group docs python scripts/check_docs.py great-docs/_site
 
 # Preview deployments should not compete with the canonical GitHub Pages site.
