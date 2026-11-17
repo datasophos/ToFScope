@@ -10,4 +10,5 @@ Added CSV export for the displayed total sum or ROI mass spectrum, with acquisit
 
 Documentation screenshots now show a reproducible synthetic device with layered signals and spatial features, and are generated automatically.
 
-ToFScope now loads system and user configuration files automatically, with launch-specific overrides and loaded-file details in `tofscope doctor`.
+ToFScope now loads system and user configuration files automatically, removing the
+need for supplying `--config` at every invocation to load custom settings.
