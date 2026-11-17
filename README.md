@@ -55,7 +55,7 @@ open **ToFScope.exe**. Choose an acquisition folder and click **Start**. Python 
 administrator privileges are not required. The executables are unsigned. See the
 [Windows launcher and SmartScreen instructions](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html#windows-portable).
 
-For step-by-step installation, folder setup, and troubleshooting, see [Install and launch](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html). See the [configuration reference](https://datasophos.github.io/ToFScope/docs/technical-documentation/configuration.html) for settings, and [deployment](https://datasophos.github.io/ToFScope/docs/technical-documentation/deployment.html) for hosted use and containers.
+For step-by-step installation, folder setup, and troubleshooting, see [Install and launch](https://datasophos.github.io/ToFScope/docs/getting-started/installation.html). ToFScope automatically loads system and user configuration files. To view what files are active, you can use `tofscope doctor`. See the [configuration reference](https://datasophos.github.io/ToFScope/docs/technical-documentation/configuration.html) for settings, and [deployment](https://datasophos.github.io/ToFScope/docs/technical-documentation/deployment.html) for hosted use and containers.
 
 ## Your first analysis
 

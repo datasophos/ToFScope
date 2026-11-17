@@ -9,25 +9,32 @@ they are all documented here.
 
 ## Configuration sources
 
-Settings can come from command-line options, environment variables, or a TOML file supplied with `--config`.
-When more than one source sets the same option, command-line options take precedence over environment variables,
-which take precedence over the TOML file; otherwise the defaults below apply. The Windows portable launcher
-automatically loads `%LOCALAPPDATA%/ToFScope/config.toml`.
-Other launch methods do not automatically load a configuration file. For example, to use the following config:
+ToFScope automatically loads configuration files in the following order, when they exist:
+
+| Platform | System defaults | User settings |
+| --- | --- | --- |
+| Linux and other Unix | `/etc/tofscope.toml` | `$XDG_CONFIG_HOME/tofscope/config.toml`, or `~/.config/tofscope/config.toml` when `XDG_CONFIG_HOME` is unset or relative |
+| macOS | `/etc/tofscope.toml`, then `/Library/Application Support/ToFScope/config.toml` | `~/Library/Application Support/ToFScope/config.toml`, then `~/.config/tofscope/config.toml` |
+| Windows | `%PROGRAMDATA%\ToFScope\config.toml` | `%LOCALAPPDATA%\ToFScope\config.toml` |
+
+On macOS, the system Application Support file overrides `/etc/tofscope.toml`. The `.config` file overrides the Application Support user file when both exist.
+
+Later sources override earlier ones: built-in defaults, system file, user file, an explicit `--config` file,
+environment variables, then command-line options. Missing automatic files are ignored. An explicitly named missing
+file, an unreadable file, or invalid TOML produces an error naming the file. The Windows portable launcher edits the
+same user file and supplies it explicitly; its selected folder and service settings take precedence.
+
+For example, save the following as `~/.config/tofscope/config.toml` on Linux or macOS to retain a memory limit:
 
 ```toml
-# tofscope.toml
 [tofscope]
 data_root = "/path/to/acquisitions"
-output_root = "/path/to/saved-analyses"
-port = 8765
+global_bytes = 8589934592
+response_bytes = 1073741824
 ```
 
-You must explicitly pass `--config` when you start ToFScope:
-
-```sh
-tofscope --config tofscope.toml
-```
+Then run `tofscope` normally. To add launch-specific settings, use `tofscope --config /path/to/other.toml`.
+The explicit file is layered over the automatic files.
 
 Every TOML setting below also has an environment variable formed by uppercasing its name and adding `TOFSCOPE_`;
 for example, `data_root` corresponds to `TOFSCOPE_DATA_ROOT`. Boolean environment variables accept `true` or `false`.
@@ -88,4 +95,4 @@ acquisition writes; the supported **Save as…** workflow creates a separate cop
 
 ## Inspect the effective configuration
 
-The `tofscope doctor` command loads the configuration and verifies packaged frontend assets. The `--json` option prints the effective settings as JSON. It reports configuration and asset errors but does not diagnose every startup problem. The `/healthz` and `/readyz` endpoints provide service health checks.
+The `tofscope doctor` command loads the configuration and verifies packaged frontend assets. The report lists loaded configuration files in precedence order, or says none were loaded. The `--json` option prints the effective settings and `config_files` as JSON. It reports configuration and asset errors but does not diagnose every startup problem. The `/healthz` and `/readyz` endpoints provide service health checks.

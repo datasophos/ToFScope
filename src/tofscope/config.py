@@ -1,6 +1,7 @@
 """Server-owned root, runtime and resource policy. CLI > environment > TOML."""
 
 import os
+import sys
 import tempfile
 import tomllib
 from collections.abc import Mapping
@@ -62,7 +63,9 @@ class Settings:
         if not os.access(runtime, os.W_OK) or not os.access(lock, os.W_OK):
             raise ValueError("Runtime and lock directories must be writable.")
         object.__setattr__(self, "runtime_dir", runtime)
-        output = Path(self.output_root).expanduser().resolve() if self.output_root else root
+        output = (
+            Path(self.output_root).expanduser().resolve() if self.output_root else root
+        )
         object.__setattr__(self, "output_root", output)
         object.__setattr__(self, "lock_dir", lock)
         if self.mode not in ("local", "proxy"):
@@ -89,12 +92,69 @@ class Settings:
 # Storage validators use the policy fields directly; no alternate launcher defaults.
 
 
+def config_paths(platform: str, env: Mapping[str, str]) -> list[Path]:
+    """Return system and user configuration locations in precedence order."""
+    home = Path(env.get("HOME") or Path.home())
+    if platform == "win32":
+        system = Path(env.get("PROGRAMDATA") or "C:/ProgramData")
+        user = Path(env.get("LOCALAPPDATA") or home / "AppData/Local")
+        return [system / "ToFScope/config.toml", user / "ToFScope/config.toml"]
+    if platform == "darwin":
+        return [
+            Path("/etc/tofscope.toml"),
+            Path("/Library/Application Support/ToFScope/config.toml"),
+            home / "Library/Application Support/ToFScope/config.toml",
+            home / ".config/tofscope/config.toml",
+        ]
+    xdg = Path(env.get("XDG_CONFIG_HOME") or home / ".config")
+    if not xdg.is_absolute():
+        xdg = home / ".config"
+    return [Path("/etc/tofscope.toml"), xdg / "tofscope/config.toml"]
+
+
 def load_settings(file=None, env: Mapping[str, str] | None = None, cli=None):
+    """Load effective settings from discovered and explicit sources."""
+    return load_settings_with_sources(file, env, cli)[0]
+
+
+def load_settings_with_sources(
+    file=None, env: Mapping[str, str] | None = None, cli=None
+):
+    """Return effective settings and the configuration files actually loaded."""
     env = os.environ if env is None else env
     values = {}
-    if file:
-        with Path(file).open("rb") as stream:
-            values = tomllib.load(stream).get("tofscope", {})
+    sources = []
+    paths = [(path, False) for path in config_paths(sys.platform, env)]
+    if file is not None:
+        explicit = Path(file)
+        paths = [
+            (path, required)
+            for path, required in paths
+            if path.resolve() != explicit.resolve()
+        ]
+        paths.append((explicit, True))
+    for path, required in paths:
+        try:
+            with path.open("rb") as stream:
+                document = tomllib.load(stream)
+        except FileNotFoundError as exc:
+            if not required:
+                continue
+            raise ValueError(f"Cannot load configuration {path}: {exc}") from exc
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
+            raise ValueError(f"Cannot load configuration {path}: {exc}") from exc
+        section = document.get("tofscope", {})
+        if not isinstance(section, dict):
+            raise TypeError(
+                f"Invalid configuration {path}: [tofscope] must be a table."
+            )
+        unknown = section.keys() - {f.name for f in fields(Settings)}
+        if unknown:
+            raise ValueError(
+                f"Invalid configuration {path}: unknown settings: {', '.join(sorted(unknown))}."
+            )
+        values.update(section)
+        sources.append(path)
     for f in fields(Settings):
         key = "TOFSCOPE_" + f.name.upper()
         if key in env:
@@ -111,7 +171,7 @@ def load_settings(file=None, env: Mapping[str, str] | None = None, cli=None):
     if "TOF_FILE" in env:
         values["initial_file"] = env["TOF_FILE"]
     values.update({k: v for k, v in (cli or {}).items() if v is not None})
-    return Settings(**values)
+    return Settings(**values), sources
 
 
 def resolve_data_path(settings, relative_path, *, require_file=False):
@@ -140,4 +200,6 @@ def is_private_output_path(settings, path):
     parts = path.relative_to(settings.output_root).parts
     # Owner directories use the SHA-256 identity namespace. The shared root and
     # ordinary acquisition folders remain browsable; owner folders never do.
-    return bool(parts and len(parts[0]) == 64 and all(c in '0123456789abcdef' for c in parts[0]))
+    return bool(
+        parts and len(parts[0]) == 64 and all(c in "0123456789abcdef" for c in parts[0])
+    )

@@ -31,13 +31,13 @@ def ensure_config(state):
     state = Path(state)
     state.mkdir(parents=True, exist_ok=True)
     path = state / "config.toml"
-    controlled = {"data_root", "runtime_dir", "host", "port", "mode"}
+    controlled = {"data_root", "runtime_dir", "host", "port", "mode", "public_origin"}
     lines = [
         "# Uncomment a line (remove its leading #) to change that setting.",
         "# Save this file, then click Stop, then Start in the launcher to apply changes.",
         "# Commented values show defaults at file creation; omitted settings follow current defaults.",
         "# If you lower memory budgets, set response_bytes below each budget as well.",
-        "# The launcher controls the acquisition folder, runtime, host, port, and mode.",
+        "# The launcher controls the acquisition folder, runtime, host, port, mode, and public origin.",
         "# Paths in TOML should use forward slashes, for example C:/ToFScope/saved.",
         "[tofscope]",
     ]
@@ -167,11 +167,14 @@ class ServiceController:
 
 
 def run_worker(arguments):
+    from dataclasses import replace
+
     from tofscope.cli import run_service
     from tofscope.config import load_settings
 
     folder, runtime, port, config = arguments
     settings = load_settings(config, cli={"data_root": folder, "runtime_dir": runtime, "port": int(port), "mode": "local", "host": "127.0.0.1"})
+    settings = replace(settings, public_origin=None)
     shutdown = threading.Event()
 
     def wait_for_parent():

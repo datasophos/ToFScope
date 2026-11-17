@@ -74,6 +74,21 @@ class LauncherTests(unittest.TestCase):
                 run_worker(arguments)
             self.assertEqual([call.args[0].response_bytes for call in run.call_args_list], [100, 200])
 
+    def test_worker_uses_local_origin_with_discovered_hosted_configuration(self):
+        from unittest.mock import patch
+
+        from tofscope.windows_launcher import run_worker
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            system = state / "system.toml"
+            system.write_text('[tofscope]\npublic_origin = "https://example.org"\n')
+            config = state / "config.toml"
+            config.write_text("[tofscope]\n")
+            with (patch("tofscope.config.config_paths", return_value=[system]),
+                  patch("tofscope.cli.run_service") as run, patch("threading.Thread")):
+                run_worker([str(state), str(state / "runtime"), "1234", str(config)])
+            self.assertIsNone(run.call_args.args[0].public_origin)
+
     def test_preferences_roundtrip_and_invalid_preferences(self):
         with tempfile.TemporaryDirectory() as directory:
             state = Path(directory)

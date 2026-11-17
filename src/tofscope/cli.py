@@ -19,7 +19,7 @@ import uvicorn
 
 from tofscope import __version__
 from tofscope.api.app import create_app
-from tofscope.config import load_settings
+from tofscope.config import load_settings_with_sources
 
 
 def asset_status():
@@ -79,7 +79,10 @@ def run_service(settings, browser=False, shutdown_event=None):
             target=open_after_ready, args=(url, secret, stop), daemon=True
         ).start()
     try:
-        print(f"ToFScope Explore {__version__}: {url} (original acquisitions read only)", flush=True)
+        print(
+            f"ToFScope Explore {__version__}: {url} (original acquisitions read only)",
+            flush=True,
+        )
         server = uvicorn.Server(
             uvicorn.Config(
                 create_app(settings, bootstrap_secret=secret),
@@ -92,11 +95,13 @@ def run_service(settings, browser=False, shutdown_event=None):
             )
         )
         if shutdown_event is not None:
+
             def watch_shutdown():
                 while not stop.is_set():
                     if shutdown_event.wait(0.1):
                         server.should_exit = True
                         return
+
             threading.Thread(target=watch_shutdown, daemon=True).start()
         server.run(sockets=[sock])
     finally:
@@ -107,7 +112,9 @@ def run_service(settings, browser=False, shutdown_event=None):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(description="ToFScope Explore; original acquisitions are read only")
+    p = argparse.ArgumentParser(
+        description="ToFScope Explore; original acquisitions are read only"
+    )
     p.add_argument(
         "command", nargs="?", choices=["serve", "doctor", "open"], default="serve"
     )
@@ -120,13 +127,15 @@ def main(argv=None):
     p.add_argument("--port", type=int)
     p.add_argument("--mode", choices=["local", "proxy"])
     p.add_argument("--no-browser", action="store_true")
-    p.add_argument("--json", action="store_true", help="Print the doctor report as JSON")
+    p.add_argument(
+        "--json", action="store_true", help="Print the doctor report as JSON"
+    )
     p.add_argument("--version", action="version", version=__version__)
     a = p.parse_args(argv)
     if a.json and a.command != "doctor":
         p.error("--json is only available with doctor")
     try:
-        settings = load_settings(
+        settings, config_files = load_settings_with_sources(
             a.config,
             cli={
                 k: getattr(a, k)
@@ -146,6 +155,7 @@ def main(argv=None):
             if a.json:
                 public = asdict(settings)
                 public.update(
+                    config_files=[str(path) for path in config_files],
                     version=__version__,
                     asset_version=assets["version"],
                     scope="Explore-only",
@@ -155,7 +165,13 @@ def main(argv=None):
                 )
                 print(json.dumps(public, default=str, indent=2))
             else:
-                print("Everything looks good: configuration loaded and frontend assets verified.")
+                print(
+                    "Everything looks good: configuration loaded and frontend assets verified."
+                )
+                print(
+                    "Configuration files: "
+                    + (", ".join(map(str, config_files)) if config_files else "none")
+                )
             return 0
         if a.command == "open":
             credential = json.loads((settings.runtime_dir / "launch.json").read_text())
@@ -168,7 +184,7 @@ def main(argv=None):
         )
         run_service(settings, browser=not a.no_browser and not explicit_serve)
         return 0
-    except (ValueError, OSError) as exc:
+    except (ValueError, TypeError, OSError) as exc:
         print(f"ToFScope: {exc}", file=sys.stderr)
         return 2
 

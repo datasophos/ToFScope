@@ -24,7 +24,9 @@ class CLITests(unittest.TestCase):
             settings = Settings(Path(d), runtime_dir=Path(d) / "runtime", port=port)
 
             def serve(*, sockets):
-                credential = json.loads((settings.runtime_dir / "launch.json").read_text())
+                credential = json.loads(
+                    (settings.runtime_dir / "launch.json").read_text()
+                )
                 self.assertTrue(credential["secret"])
 
             with (
@@ -79,9 +81,16 @@ class CLITests(unittest.TestCase):
             )
             run.assert_called_once()
             browser.assert_not_called()
+
     def test_doctor_reports_success_and_supports_json(self):
         with tempfile.TemporaryDirectory() as d:
-            args = ["doctor", "--data-root", d, "--runtime-dir", str(Path(d) / "runtime")]
+            args = [
+                "doctor",
+                "--data-root",
+                d,
+                "--runtime-dir",
+                str(Path(d) / "runtime"),
+            ]
             output = io.StringIO()
             with redirect_stdout(output):
                 self.assertEqual(main(args), 0)
@@ -95,11 +104,40 @@ class CLITests(unittest.TestCase):
             self.assertEqual(Path(report["data_root"]), Path(d).resolve())
             self.assertIn("asset_version", report)
 
+    def test_doctor_reports_loaded_configuration_files(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            config = root / "config.toml"
+            config.write_text("[tofscope]\nport = 8888\n")
+            args = [
+                "doctor",
+                "--config",
+                str(config),
+                "--data-root",
+                d,
+                "--runtime-dir",
+                str(root / "runtime"),
+            ]
+            with patch("tofscope.config.config_paths", return_value=[]):
+                output = io.StringIO()
+                with redirect_stdout(output):
+                    self.assertEqual(main([*args, "--json"]), 0)
+                report = json.loads(output.getvalue())
+                self.assertEqual(report["config_files"], [str(config)])
+                self.assertEqual(report["port"], 8888)
+                output = io.StringIO()
+                with redirect_stdout(output):
+                    self.assertEqual(main(args), 0)
+                self.assertIn(str(config), output.getvalue())
+
     def test_doctor_reports_asset_failure(self):
         with tempfile.TemporaryDirectory() as d:
             output = io.StringIO()
             with (
-                patch("tofscope.cli.asset_status", side_effect=ValueError("Assets missing")),
+                patch(
+                    "tofscope.cli.asset_status",
+                    side_effect=ValueError("Assets missing"),
+                ),
                 redirect_stdout(io.StringIO()),
                 redirect_stderr(output),
             ):
@@ -151,13 +189,32 @@ class CLITests(unittest.TestCase):
         from urllib.error import URLError
 
         from tofscope.cli import open_after_ready
-        response=MagicMock();response.__enter__.return_value.status=200
-        with patch('tofscope.cli.urllib.request.urlopen',side_effect=[URLError('starting'),response]) as fetch,patch('tofscope.cli.webbrowser.open') as browser:
-            open_after_ready('http://127.0.0.1:8765','test-token',Event());self.assertEqual(fetch.call_count,2);browser.assert_called_once()
+
+        response = MagicMock()
+        response.__enter__.return_value.status = 200
+        with (
+            patch(
+                "tofscope.cli.urllib.request.urlopen",
+                side_effect=[URLError("starting"), response],
+            ) as fetch,
+            patch("tofscope.cli.webbrowser.open") as browser,
+        ):
+            open_after_ready("http://127.0.0.1:8765", "test-token", Event())
+            self.assertEqual(fetch.call_count, 2)
+            browser.assert_called_once()
+
     def test_occupied_port_never_opens_browser(self):
         from tofscope.cli import run_service
         from tofscope.config import Settings
-        with tempfile.TemporaryDirectory() as d,patch('tofscope.cli.socket.socket') as socket,patch('tofscope.cli.webbrowser.open') as browser:
-            socket.return_value.bind.side_effect=OSError('occupied')
-            with self.assertRaisesRegex(ValueError,'Port'):run_service(Settings(Path(d),runtime_dir=Path(d)/'runtime'),browser=True)
+
+        with (
+            tempfile.TemporaryDirectory() as d,
+            patch("tofscope.cli.socket.socket") as socket,
+            patch("tofscope.cli.webbrowser.open") as browser,
+        ):
+            socket.return_value.bind.side_effect = OSError("occupied")
+            with self.assertRaisesRegex(ValueError, "Port"):
+                run_service(
+                    Settings(Path(d), runtime_dir=Path(d) / "runtime"), browser=True
+                )
             browser.assert_not_called()
