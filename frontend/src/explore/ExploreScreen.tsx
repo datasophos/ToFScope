@@ -20,6 +20,14 @@ import { useSignalEditor } from "./useSignalEditor";
 import { ViewingDepths, availableFrames } from "./ViewingDepths";
 import { ROIControls } from "./ROIControls";
 import { ImageDisplayControls } from "./ImageDisplayControls";
+import { useSubvolumeSpectrum } from "./useSubvolumeSpectrum";
+import { SpectrumActions } from "./SpectrumActions";
+import {
+  downloadSpectrumCsv,
+  spectrumIsOutOfDate,
+  spectrumSelection,
+  subvolumePanel,
+} from "./subvolumeSpectrum";
 import {
   roiFromBounds,
   roiBounds,
@@ -56,7 +64,18 @@ export function ExploreScreen({
     panelStates,
   } = useAnalysis(initial);
   const editor = useSignalEditor(a, refresh);
+  const spectrum = useSubvolumeSpectrum(a);
+  const spectrumCurrent =
+    !!spectrum.result &&
+    spectrum.result.dataset_generation === a.dataset.generation &&
+    !spectrumIsOutOfDate(spectrum.result, a);
+  const calculateTooltip = spectrumCurrent
+    ? "This ROI spectrum has already been calculated."
+    : spectrum.result
+      ? "Spectrum out of date: the selected ROI or frames changed. Update ROI to match the current selection."
+      : undefined;
   const busy =
+    spectrum.busy ||
     editor.submitting ||
     a.signals.some(
       (row) =>
@@ -137,6 +156,13 @@ export function ExploreScreen({
       image: (patch.image ?? latest.display.image) as "sims" | "se",
     })).catch(() => {});
   const panels = data?.panels;
+  const spectrumPanel =
+    spectrum.showSelected &&
+    spectrum.result &&
+    panels?.spectrum &&
+    spectrum.result.dataset_generation === a.dataset.generation
+      ? subvolumePanel(panels.spectrum, spectrum.result)
+      : panels?.spectrum;
   const seSize: [number, number] | undefined =
     panels?.ion?.axes.length === 2
       ? [panels.ion.axes[0].values.length, panels.ion.axes[1].values.length]
@@ -145,7 +171,7 @@ export function ExploreScreen({
   const interval = d?.intervals[d.selectedInterval];
   const spectrumMode = d
     ? `${d.signalId ? "Editing" : "Creating"} ${d.name}`
-    : "Viewing spectrum";
+    : "";
   const draftSelect = (values: number[]) => {
     if (d && !d.submittedJobId)
       editor.patchDraft({
@@ -395,8 +421,69 @@ export function ExploreScreen({
                   maximized={false}
                   expanded={max === "spectrum"}
                   title="Mass spectrum"
+                  toolbarControls={
+                    <button
+                      className="plot-csv-button"
+                      aria-label="Mass spectrum CSV"
+                      title="Export mass spectrum CSV"
+                      disabled={!spectrumPanel?.series?.length}
+                      onClick={() =>
+                        spectrumPanel &&
+                        downloadSpectrumCsv(
+                          spectrumPanel,
+                          a.dataset.name ||
+                            a.dataset.relative_path.split(/[\\/]/).pop() ||
+                            "",
+                          spectrum.showSelected ? spectrum.result : null,
+                        )
+                      }
+                    >
+                      CSV
+                    </button>
+                  }
                   help={help.spectrum}
-                  panel={panels?.spectrum}
+                  panel={spectrumPanel}
+                  status={
+                    spectrum.busy ||
+                    (spectrum.showSelected && spectrum.result) ? (
+                      <>
+                        {spectrum.showSelected && spectrum.result && (
+                          <span>
+                            Selected spectrum ·{" "}
+                            {spectrumSelection(spectrum.result)}{" "}
+                          </span>
+                        )}
+                        {spectrum.busy && (
+                          <div className="spectrum-progress" role="status">
+                            <span>Calculating ROI spectrum</span>
+                            <progress
+                              aria-label="ROI spectrum calculation progress"
+                              max={spectrum.job?.total || 1}
+                              value={
+                                spectrum.job?.total
+                                  ? spectrum.job.done
+                                  : undefined
+                              }
+                            />
+                            {spectrum.job?.total ? (
+                              <span>
+                                {spectrum.job.done} / {spectrum.job.total}{" "}
+                                frames
+                              </span>
+                            ) : (
+                              <span>Preparing…</span>
+                            )}
+                            <button
+                              onClick={() => void spectrum.cancel()}
+                              disabled={!spectrum.job}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : undefined
+                  }
                   selectionMode={d ? "select" : "zoom"}
                   selection={interval?.map(Number)}
                   selectionWindows={d?.intervals.map(
@@ -415,18 +502,79 @@ export function ExploreScreen({
                   }
                   headingControls={
                     <>
-                      <span className="plot-status">
-                        {spectrumMode}
-                        {d?.submittedJobId ? " · calculating" : ""}
-                      </span>
+                      <div
+                        className="spectrum-source"
+                        role="group"
+                        aria-label="Spectrum source"
+                      >
+                        <button
+                          aria-pressed={!spectrum.showSelected}
+                          onClick={() => spectrum.setShowSelected(false)}
+                        >
+                          Total sum
+                        </button>
+                        <span
+                          title={
+                            !spectrum.result
+                              ? "Calculate an ROI spectrum to view it."
+                              : undefined
+                          }
+                        >
+                          <button
+                            aria-pressed={spectrum.showSelected}
+                            disabled={!spectrum.result}
+                            onClick={() => spectrum.setShowSelected(true)}
+                          >
+                            ROI
+                          </button>
+                        </span>
+                      </div>
+                      {d && (
+                        <span className="plot-status">
+                          {spectrumMode}
+                          {d.submittedJobId ? " · calculating" : ""}
+                        </span>
+                      )}
+                      {!spectrum.busy && (
+                        <span
+                          title={calculateTooltip}
+                          tabIndex={spectrumCurrent ? 0 : undefined}
+                        >
+                          <button
+                            onClick={() => void spectrum.calculate()}
+                            disabled={pendingCommands > 0 || spectrumCurrent}
+                            title={calculateTooltip}
+                            aria-description={
+                              !spectrumCurrent && spectrum.result
+                                ? calculateTooltip
+                                : undefined
+                            }
+                          >
+                            {spectrum.result && !spectrumCurrent && (
+                              <span
+                                className="spectrum-outdated"
+                                aria-hidden="true"
+                              >
+                                ⚠
+                              </span>
+                            )}{" "}
+                            {spectrum.result && !spectrumCurrent
+                              ? "Update ROI"
+                              : "Calculate ROI"}
+                          </button>
+                        </span>
+                      )}
+                      {spectrum.error && (
+                        <span role="alert">{spectrum.error}</span>
+                      )}
                       {!d && (
-                        <>
+                        <SpectrumActions>
                           <button onClick={editor.openNew}>
                             Create signal
                           </button>
                           <IdentifyDialog
                             analysis={a}
-                            spectrum={panels?.spectrum}
+                            spectrum={spectrumPanel}
                             send={send}
                             active={active}
                             onDraft={editor.openIdentified}
@@ -437,7 +585,7 @@ export function ExploreScreen({
                             active={active}
                             refresh={refresh}
                           />
-                        </>
+                        </SpectrumActions>
                       )}
                     </>
                   }

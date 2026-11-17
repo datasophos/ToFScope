@@ -1,3 +1,4 @@
+import { openSpectrumAction } from "./spectrum-actions";
 import { test, expect } from "@playwright/test";
 
 test("ROI outline updates after drawing and exact edits without reloading the ion image", async ({
@@ -124,10 +125,7 @@ test("double-clicking the mass spectrum restores its full horizontal range", asy
   await expect(overlay).not.toHaveAttribute("data-x-range", full!);
   await overlay.dblclick();
   await expect(overlay).toHaveAttribute("data-x-range", full!);
-  await page
-    .getByTestId("panel-spectrum")
-    .getByRole("button", { name: "Create signal", exact: true })
-    .click();
+  await openSpectrumAction(page, "Create signal");
   await page.getByLabel("Mass lower 1", { exact: true }).fill("1.25");
   await page.getByLabel("Mass upper 1", { exact: true }).fill("2.75");
   await overlay.dblclick();

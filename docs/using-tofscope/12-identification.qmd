@@ -23,14 +23,14 @@ signal shares are not quantitative composition. See this
 
 ## Open the identification tools
 
-Use [**Identify peak**](#identification-open) or [**Isotope measurements**](#measurement-open) above the mass spectrum.
+Open [**Analyze**](#identification-open) above the mass spectrum, then choose **Identify peak** or **Isotope measurements**.
 
 ```{=html}
 <figure class="figure">
   <div class="explore-overview">
     <img src="../assets/tofscope-explore.png" alt="The Explore workspace, with identification controls above the mass spectrum.">
-    <span id="identification-open" class="explore-highlight" style="left:47.8%;top:21.6%;width:5.1%;height:3%" aria-hidden="true"></span>
-    <span id="measurement-open" class="explore-highlight" style="left:53.5%;top:21.6%;width:8.5%;height:3%" aria-hidden="true"></span>
+    <span id="identification-open" class="explore-highlight" style="left:49.1%;top:21.7%;width:4.3%;height:3%" aria-hidden="true"></span>
+    <span id="measurement-open" class="explore-highlight" style="left:49.1%;top:21.7%;width:4.3%;height:3%" aria-hidden="true"></span>
   </div>
   <figcaption class="figure-caption">Open identification and isotope measurements from the mass spectrum header.</figcaption>
 </figure>

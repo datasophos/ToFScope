@@ -91,7 +91,7 @@ test("keyboard and pinned help dismiss without changing analysis state", async (
   });
   await massHelp.focus();
   await expect(tooltip).toContainText(
-    "mass spectrum stored in the data acquisition",
+    "total sum spectrum is stored in the file",
   );
   await page.keyboard.press("Escape");
   await expect(tooltip).toBeHidden();

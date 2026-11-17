@@ -1,3 +1,4 @@
+import { openSpectrumAction } from "./spectrum-actions";
 import { test, expect } from "@playwright/test";
 
 test("atomic annotation preserves labels and explicit measurement becomes stale", async ({
@@ -12,13 +13,13 @@ test("atomic annotation preserves labels and explicit measurement becomes stale"
     .first()
     .click();
   await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
-  await page
-    .getByRole("button", { name: "Identify peak", exact: true })
-    .click();
+  await openSpectrumAction(page, "Identify peak");
   const dialog = page.getByRole("dialog", { name: "Atomic identification" });
   await expect(dialog.getByText(/pre-alpha/i)).toHaveCount(0);
   await expect(dialog.getByLabel("Tolerance unit")).toHaveValue("Th");
-  await expect(dialog.getByRole("option", { name: "Absolute m/z difference" })).toBeAttached();
+  await expect(
+    dialog.getByRole("option", { name: "Absolute m/z difference" }),
+  ).toBeAttached();
   await dialog.getByLabel("Measured m/z", { exact: true }).fill("26.981");
   await dialog
     .getByRole("button", { name: "Find candidates", exact: true })
@@ -34,14 +35,16 @@ test("atomic annotation preserves labels and explicit measurement becomes stale"
     dialog.getByText("Assigned Al-27:+1", { exact: true }),
   ).toBeVisible();
   await dialog.getByRole("button", { name: "Close", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Isotope measurements", exact: true })
-    .click();
+  await openSpectrumAction(page, "Isotope measurements");
   const measurements = page.getByRole("dialog", {
     name: "Isotope measurements",
     exact: true,
   });
-  await expect(measurements.getByText(/pre-alpha: isotope measurements have not been thoroughly tested/i)).toBeVisible();
+  await expect(
+    measurements.getByText(
+      /pre-alpha: isotope measurements have not been thoroughly tested/i,
+    ),
+  ).toBeVisible();
   await measurements.getByRole("checkbox").first().check();
   await measurements
     .getByRole("button", { name: "Measure", exact: true })
@@ -54,9 +57,7 @@ test("atomic annotation preserves labels and explicit measurement becomes stale"
     .getByRole("button", { name: "Close", exact: true })
     .click();
   await page.getByRole("button", { name: "Single frame", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Isotope measurements", exact: true })
-    .click();
+  await openSpectrumAction(page, "Isotope measurements");
   await expect(measurements.getByText(/Out of date/)).toBeVisible();
 });
 
@@ -72,9 +73,7 @@ test("exact identification window creates an assigned raw comparison and exports
     .first()
     .click();
   await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
-  await page
-    .getByRole("button", { name: "Identify peak", exact: true })
-    .click();
+  await openSpectrumAction(page, "Identify peak");
   const dialog = page.getByRole("dialog", { name: "Atomic identification" });
   await dialog.getByLabel("Measured m/z", { exact: true }).fill("2.014");
   await dialog
@@ -83,14 +82,10 @@ test("exact identification window creates an assigned raw comparison and exports
   await dialog.getByRole("radio", { name: "H-2:+1", exact: true }).check();
   await dialog.getByLabel("Lower m/z", { exact: true }).fill("1");
   await dialog.getByLabel("Upper m/z", { exact: true }).fill("2");
-  await dialog
-    .getByRole("button", { name: "Add signal", exact: true })
-    .click();
+  await dialog.getByRole("button", { name: "Add signal", exact: true }).click();
   await expect(dialog).not.toBeVisible();
   await expect(page.locator(".profile-legend")).toContainText("H-2:+1");
-  await page
-    .getByRole("button", { name: "Isotope measurements", exact: true })
-    .click();
+  await openSpectrumAction(page, "Isotope measurements");
   const measurements = page.getByRole("dialog", {
     name: "Isotope measurements",
     exact: true,
@@ -116,9 +111,7 @@ test("exact identification window creates an assigned raw comparison and exports
   await measurements
     .getByRole("button", { name: "Close", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Identify peak", exact: true })
-    .click();
+  await openSpectrumAction(page, "Identify peak");
   await page.screenshot({
     path: test.info().outputPath("atomic-identification.png"),
   });
@@ -154,9 +147,7 @@ test("identification uses log scale, spaced fields and natural-abundance orderin
   await page
     .getByRole("button", { name: "Use linear y scale", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Identify peak", exact: true })
-    .click();
+  await openSpectrumAction(page, "Identify peak");
   const dialog = page.getByRole("dialog", { name: "Atomic identification" });
   const spectrum = dialog.getByTestId("panel-identification");
   await expect(spectrum).toHaveAttribute("data-y-scale", "log");
@@ -250,9 +241,7 @@ test("spectrum picks search immediately with current settings and discard older 
     .first()
     .click();
   await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
-  await page
-    .getByRole("button", { name: "Identify peak", exact: true })
-    .click();
+  await openSpectrumAction(page, "Identify peak");
   const dialog = page.getByRole("dialog", { name: "Atomic identification" });
   await dialog.getByLabel("Tolerance", { exact: true }).fill("0.2");
   await dialog.getByLabel("+2", { exact: true }).check();
@@ -327,9 +316,7 @@ test("search settings immediately refresh candidates with the updated values", a
     .first()
     .click();
   await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
-  await page
-    .getByRole("button", { name: "Identify peak", exact: true })
-    .click();
+  await openSpectrumAction(page, "Identify peak");
   const dialog = page.getByRole("dialog", { name: "Atomic identification" });
   await dialog.getByLabel("Measured m/z", { exact: true }).fill("2.014");
   const search = async (change: () => Promise<unknown>, expected: object) => {
@@ -397,9 +384,7 @@ test("Apply window retains the chosen isotope through a renamed draft and measur
     .first()
     .click();
   await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
-  await page
-    .getByRole("button", { name: "Identify peak", exact: true })
-    .click();
+  await openSpectrumAction(page, "Identify peak");
   const identify = page.getByRole("dialog", { name: "Atomic identification" });
   await identify
     .getByLabel("Measured m/z", { exact: true })
@@ -432,9 +417,7 @@ test("Apply window retains the chosen isotope through a renamed draft and measur
     measured_mz: 2.014123456789,
   });
   await expect(draft).toBeHidden();
-  await page
-    .getByRole("button", { name: "Isotope measurements", exact: true })
-    .click();
+  await openSpectrumAction(page, "Isotope measurements");
   const measurements = page.getByRole("dialog", {
     name: "Isotope measurements",
     exact: true,

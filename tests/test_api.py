@@ -28,6 +28,20 @@ class APITests(unittest.TestCase):
         self.assertIn('local copy', response.json()['message'])
         self.assertNotIn(str(self.settings.data_root), response.text)
 
+    def test_subvolume_spectrum_job_and_result_are_owner_scoped(self):
+        analysis = self.client.post('/api/v1/analyses', headers=self.a, json={'relative_path': 'a.h5'}).json()
+        endpoint = f"/api/v1/analyses/{analysis['id']}/spectrum"
+        payload = {'request_id': 'spectrum', 'expected_revision': analysis['revision'],
+                   'dataset_generation': analysis['dataset']['generation']}
+        response = self.client.post(endpoint, headers=self.a, json=payload)
+        self.assertEqual(response.status_code, 202, response.text)
+        job = self.client.app.state.services.jobs.wait('a', response.json()['id'], 5)
+        self.assertEqual(job.status, 'succeeded', job.safe_error)
+        result = self.client.get(endpoint, headers=self.a)
+        self.assertEqual(result.status_code, 200, result.text)
+        self.assertEqual(result.json()['values'], [0, 1.5, 1.5, 1.5, .75, .75])
+        self.assertEqual(self.client.get(endpoint, headers=self.b).status_code, 404)
+
     def test_ownership_revisions_and_safe_errors(self):
         c = self.client
         self.assertEqual(c.get("/api/v1/analyses").status_code, 401)

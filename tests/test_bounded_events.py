@@ -48,6 +48,29 @@ class BoundedEventTests(unittest.TestCase):
         self.assertEqual(self.budget.physical_bytes, 0)
         self.assertLessEqual(len(requests), 16, "Reserve scratch in batches, not for every pixel")
 
+    def test_spatial_selection_reads_only_selected_cells(self):
+        with h5py.File(self.path, "r") as f:
+            raw = f["events"]
+            with admitted_events(raw, 0, self.reserve, roi=(2, 4, 1, 3)) as events:
+                self.assertEqual(events.shape, (3, 3))
+                for y in range(3):
+                    for x in range(3):
+                        i = y * 3 + x
+                        offset, length = events.offsets[i], events.lengths[i]
+                        np.testing.assert_array_equal(
+                            events.samples[offset:offset + length], raw[0, y + 1, x + 2]
+                        )
+
+    def test_unselected_large_cell_does_not_consume_roi_budget(self):
+        with h5py.File(self.path, 'w') as f:
+            raw = f.create_dataset('events', (1, 1, 2), dtype=h5py.vlen_dtype(np.dtype('u4')))
+            raw[0, 0, 0] = np.ones(100000, dtype='u4')
+            raw[0, 0, 1] = np.array([7], dtype='u4')
+        self.budget.settings = replace(self.settings, global_bytes=100000, user_bytes=100000, analysis_bytes=100000)
+        with h5py.File(self.path, 'r') as f, admitted_events(f['events'], 0, self.reserve, roi=(1, 1, 0, 0)) as events:
+            np.testing.assert_array_equal(events.samples[:1], [7])
+        self.assertEqual(self.budget.physical_bytes, 0)
+
     def test_oversized_cell_is_refused_before_payload_allocation_and_releases_budget(self):
         with h5py.File(self.path, "w") as f:
             f.create_dataset("events", (1, 1, 1), dtype=h5py.vlen_dtype(np.dtype("u4")))[0, 0, 0] = np.ones(100000, dtype="u4")

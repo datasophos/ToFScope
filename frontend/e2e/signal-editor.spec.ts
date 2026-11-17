@@ -10,7 +10,9 @@ test("explicit spectrum modes, dirty-draft choice, precise bounds and independen
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
   const spectrum = page.getByTestId("panel-spectrum");
-  await expect(spectrum).toContainText("Viewing spectrum");
+  await expect(
+    spectrum.getByRole("button", { name: "Total sum", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
   const overlay = spectrum.getByTestId("selection-overlay");
   await expect(overlay).toBeVisible();
   const before = await overlay.getAttribute("data-x-range"),

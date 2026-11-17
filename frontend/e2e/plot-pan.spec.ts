@@ -1,3 +1,4 @@
+import { openSpectrumAction } from "./spectrum-actions";
 import { test, expect } from "@playwright/test";
 
 test("panning a zoomed spectrum preserves width and signal draft intervals", async ({
@@ -21,9 +22,7 @@ test("panning a zoomed spectrum preserves width and signal draft intervals", asy
   const before = (await overlay.getAttribute("data-x-range"))!
     .split(",")
     .map(Number);
-  await panel
-    .getByRole("button", { name: "Create signal", exact: true })
-    .click();
+  await openSpectrumAction(page, "Create signal");
   await page.getByLabel("Mass lower 1", { exact: true }).fill("1.123456789");
   await page.getByLabel("Mass upper 1", { exact: true }).fill("2.987654321");
   const pan = panel.getByRole("button", { name: "Pan", exact: true });
@@ -82,9 +81,7 @@ for (const key of ["Control", "Meta"]) {
     await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
     for (const name of ["spectrum", "profile", "identification"]) {
       if (name === "identification")
-        await page
-          .getByRole("button", { name: "Identify peak", exact: true })
-          .click();
+        await openSpectrumAction(page, "Identify peak");
       const panel = page.getByTestId(`panel-${name}`);
       const overlay = panel.getByTestId("selection-overlay");
       const pan = panel.getByRole("button", { name: "Pan", exact: true });

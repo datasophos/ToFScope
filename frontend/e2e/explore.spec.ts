@@ -81,11 +81,12 @@ test("independent files, exact Explore state, union calculation and offline down
     page
       .getByTestId("panel-spectrum")
       .locator("header")
-      .getByRole("button", { name: "Create signal", exact: true }),
+      .locator("summary")
+      .filter({ hasText: "Analyze" }),
   ).toBeVisible();
   await expect(
     page.getByTestId("panel-spectrum").locator("header"),
-  ).toContainText("Viewing spectrum");
+  ).toContainText("Total sum");
   await expect(
     page
       .locator(".masthead")

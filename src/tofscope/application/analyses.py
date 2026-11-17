@@ -58,6 +58,8 @@ class AnalysisEntry:
     tokens: dict = field(default_factory=dict)
     leases: dict = field(default_factory=dict)
     closed: bool = False
+    spectrum: object = None
+    spectrum_job_id: str | None = None
 
 
 class AnalysisService:
@@ -255,6 +257,8 @@ class AnalysisService:
         for lease in e.leases.values():
             lease.release()
         e.leases.clear()
+        e.spectrum = None
+        e.spectrum_job_id = None
 
     def close(self, owner, aid, expected_revision=None):
         e = self.entry(owner, aid)

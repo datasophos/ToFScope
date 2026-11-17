@@ -4,7 +4,7 @@ import os
 from contextlib import ExitStack, asynccontextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 from urllib.parse import quote
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
@@ -70,6 +70,7 @@ class Services:
     preparations: object = None
     identification: object = None
     volumes: object = None
+    spectra: object = None
 
 
 def build_services(settings):
@@ -96,6 +97,8 @@ def build_services(settings):
     services.preparations = PreparationService(repo, jobs, services.saves.files)
     from tofscope.application.identification import IdentificationService
     services.identification = IdentificationService(ws, explore, cache, jobs)
+    from tofscope.application.spectra import SpectrumService
+    services.spectra = SpectrumService(ws, explore, cache, jobs)
     from tofscope.presentation.volumes import VolumePresenter
     services.volumes = VolumePresenter(ws, repo, cache, settings)
     return services
@@ -361,6 +364,22 @@ def create_app(settings, services=None, bootstrap_secret=None):
     @app.post('/api/v1/analyses/{aid}/measurements', response_model=JobSnapshot, status_code=202)
     def measure_isotopes(aid: str, body: MeasureIsotopes, o=Depends(owner), s=Depends(svc)):
         return s.identification.measure(o, aid, body, body.signal_ids)
+
+    from tofscope.api.schemas import RevisionEnvelope
+    from tofscope.application.spectra import SpectrumResult
+
+    @app.post('/api/v1/analyses/{aid}/spectrum', response_model=JobSnapshot, status_code=202)
+    def submit_spectrum(aid: str, body: RevisionEnvelope, o: Annotated[str, Depends(owner)], s: Annotated[Services, Depends(svc)]):
+        return s.spectra.submit(o, aid, body)
+
+    @app.get('/api/v1/analyses/{aid}/spectrum', response_model=SpectrumResult | None)
+    def spectrum_result(aid: str, o: Annotated[str, Depends(owner)], s: Annotated[Services, Depends(svc)]):
+        entry = s.analyses.entry(o, aid)
+        with entry.lock:
+            bins = 0 if entry.spectrum is None else entry.spectrum[-1].size
+            # Conversion to Python floats and dataclass copying both need scratch.
+            with s.cache.budget.reserve(o, aid, int(bins * 96 + 4096)):
+                return managed_json(o, aid, s, lambda: s.spectra.result(o, aid))
 
     @app.get('/api/v1/analyses/{aid}/measurements', response_model=MeasurementResult | None)
     def isotope_results(aid: str, o=Depends(owner), s=Depends(svc)):

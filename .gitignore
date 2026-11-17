@@ -13,6 +13,7 @@ frontend/test-results/
 frontend/playwright-report/
 
 *.h5
+/.demo-data/
 
 # Quarto-generated supporting assets
 *_files/

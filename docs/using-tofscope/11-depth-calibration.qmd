@@ -29,7 +29,7 @@ Select [**Depth calibration…**](#calibration-open) in the **Viewing depths** s
 ```{=html}
 <figure class="figure">
   <div class="explore-overview">
-    <img src="../assets/tofscope-depth-calibration.svg" alt="Depth calibration editor with a profile, a frame 390 anchor at 1200 nm, and an anchor table.">
+    <img src="../assets/tofscope-depth-calibration.svg" alt="Depth calibration editor with a profile, a frame 64 anchor at 120 nm, and an anchor table.">
     <span id="calibration-profile" class="explore-highlight" style="left:13%;top:22.5%;width:81%;height:16%" aria-hidden="true"></span>
     <span id="calibration-frame" class="explore-highlight" style="left:2%;top:52.7%;width:14.5%;height:6.6%" aria-hidden="true"></span>
     <span id="calibration-known-depth" class="explore-highlight" style="left:17%;top:52.7%;width:29%;height:6.6%" aria-hidden="true"></span>
@@ -38,7 +38,7 @@ Select [**Depth calibration…**](#calibration-open) in the **Viewing depths** s
     <span id="calibration-anchor-table" class="explore-highlight" style="left:2%;top:72%;width:77%;height:11%" aria-hidden="true"></span>
     <span id="calibration-done" class="explore-highlight" style="left:2%;top:93.5%;width:8.5%;height:4.2%" aria-hidden="true"></span>
   </div>
-  <figcaption class="figure-caption">The editor shows an anchor at frame 390 with a known depth of 1200 nm.</figcaption>
+  <figcaption class="figure-caption">The editor shows an anchor at frame 64 with a known depth of 120 nm.</figcaption>
 </figure>
 ```
 

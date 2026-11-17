@@ -1,3 +1,4 @@
+import { openSpectrumAction } from "./spectrum-actions";
 import { test, expect } from "@playwright/test";
 
 test("saving waits for a pending signal rename", async ({ page }) => {
@@ -132,10 +133,7 @@ test("a clean saved analysis still protects an uncommitted draft on close", asyn
   await page
     .getByRole("button", { name: "Close save dialog", exact: true })
     .click();
-  await page
-    .getByTestId("panel-spectrum")
-    .getByRole("button", { name: "Create signal", exact: true })
-    .click();
+  await openSpectrumAction(page, "Create signal");
   await expect(
     page.getByRole("button", { name: "Save as…", exact: true }),
   ).toBeDisabled();
@@ -225,10 +223,7 @@ test("hidden union results reopen with exact profiles and no new integration", a
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
-  await page
-    .getByTestId("panel-spectrum")
-    .getByRole("button", { name: "Create signal", exact: true })
-    .click();
+  await openSpectrumAction(page, "Create signal");
   await page.getByLabel("Signal name", { exact: true }).fill("Union");
   await page.getByLabel("Mass lower 1", { exact: true }).fill("1");
   await page.getByLabel("Mass upper 1", { exact: true }).fill("2");
@@ -514,10 +509,7 @@ test("disjoint full-frame save explains native bounds before and after saving", 
     .getByRole("button", { name: "Open TOFexplorer (.h5) file" })
     .click();
   await page.getByRole("button", { name: "◫ a.h5" }).dblclick();
-  await page
-    .getByTestId("panel-spectrum")
-    .getByRole("button", { name: "Create signal", exact: true })
-    .click();
+  await openSpectrumAction(page, "Create signal");
   await page.getByLabel("Signal name", { exact: true }).fill("Union full");
   await page.getByLabel("Mass lower 1", { exact: true }).fill("1");
   await page.getByLabel("Mass upper 1", { exact: true }).fill("2");

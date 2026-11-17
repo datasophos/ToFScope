@@ -228,6 +228,24 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/analyses/{aid}/spectrum": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Spectrum Result */
+    get: operations["spectrum_result_api_v1_analyses__aid__spectrum_get"];
+    put?: never;
+    /** Submit Spectrum */
+    post: operations["submit_spectrum_api_v1_analyses__aid__spectrum_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/analyses/{aid}/views": {
     parameters: {
       query?: never;
@@ -988,7 +1006,7 @@ export interface components {
        * @default integration
        * @enum {string}
        */
-      kind: "integration" | "save" | "preparation" | "measurement";
+      kind: "integration" | "save" | "preparation" | "measurement" | "spectrum";
       /**
        * Recipe Version
        * @default 0
@@ -1251,6 +1269,15 @@ export interface components {
       location: "acquisition" | "saved";
       /** Relative Path */
       relative_path: string;
+      /** Request Id */
+      request_id: string;
+    };
+    /** RevisionEnvelope */
+    RevisionEnvelope: {
+      /** Dataset Generation */
+      dataset_generation: string;
+      /** Expected Revision */
+      expected_revision: number;
       /** Request Id */
       request_id: string;
     };
@@ -1631,6 +1658,19 @@ export interface components {
        * @default 2
        */
       tile_rows: number;
+    };
+    /** SpectrumResult */
+    SpectrumResult: {
+      /** Dataset Generation */
+      dataset_generation: string;
+      /** Frames */
+      frames: [number, number];
+      /** Job Id */
+      job_id: string;
+      /** Roi */
+      roi: [number, number, number, number];
+      /** Values */
+      values: number[];
     };
     /** SubmitJob */
     SubmitJob: {
@@ -2213,6 +2253,72 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["SaveCopy"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["JobSnapshot"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  spectrum_result_api_v1_analyses__aid__spectrum_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        aid: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SpectrumResult"] | null;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  submit_spectrum_api_v1_analyses__aid__spectrum_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        aid: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RevisionEnvelope"];
       };
     };
     responses: {

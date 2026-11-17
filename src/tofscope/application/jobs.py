@@ -39,7 +39,7 @@ class JobSnapshot:
     done: int = 0
     total: int = 0
     safe_error: str | None = None
-    kind: Literal["integration", "save", "preparation", "measurement"] = "integration"
+    kind: Literal["integration", "save", "preparation", "measurement", "spectrum"] = "integration"
     stage: str = ""
     saved_file: SavedFile | None = None
     saved_revision: int | None = None
@@ -74,6 +74,7 @@ class JobService:
         self.save_handler = None
         self.preparation_handler = None
         self.measurement_handler = None
+        self.spectrum_handler = None
         self.threads = [
             Thread(target=self._worker, daemon=True, name=f"tofscope-job-{i}")
             for i in range(settings.workers)
@@ -166,7 +167,7 @@ class JobService:
                     sum(j.snapshot.analysis_id == aid for j in active) >= self.settings.jobs_per_analysis):
                 raise CapacityError('Work queue full; wait or cancel a job.')
             snap = JobSnapshot(str(uuid4()), aid, 'queued', kind=kind, saved_revision=saved_revision)
-            source = task.snapshot.dataset if kind in {'save', 'measurement'} else task.source
+            source = task.snapshot.dataset if kind in {'save', 'measurement', 'spectrum'} else task.source
             self.jobs[snap.id] = Job(snap, owner, source, None, '', 0, 0, referenced=False, task=task)
             self.pending.setdefault(owner, deque()).append(snap.id)
             if owner not in self.users:
@@ -238,10 +239,10 @@ class JobService:
                     return
             lease = None
             try:
-                if j.snapshot.kind in {'save', 'preparation', 'measurement'}:
+                if j.snapshot.kind in {'save', 'preparation', 'measurement', 'spectrum'}:
                     if j.cancelled.is_set():
                         raise InterruptedError()
-                    handler = {'save': self.save_handler, 'preparation': self.preparation_handler, 'measurement': self.measurement_handler}[j.snapshot.kind]
+                    handler = {'save': self.save_handler, 'preparation': self.preparation_handler, 'measurement': self.measurement_handler, 'spectrum': self.spectrum_handler}[j.snapshot.kind]
                     result = handler(j)
                     with self.condition:
                         j.snapshot = replace(j.snapshot, status='succeeded', saved_file=result, done=j.snapshot.total)
@@ -313,7 +314,7 @@ class JobService:
                         status="cancelled" if j.cancelled.is_set() else "obsolete"
                         if "changed" in str(exc).lower()
                         else "failed",
-                        safe_error=("Isotope measurement failed; check source, coverage and memory limits." if j.snapshot.kind == "measurement" else "Preparing raw data failed; check free space, source/calibration and output name." if j.snapshot.kind == "preparation" else "Saving failed; check free space, output name and current analysis revision." if j.snapshot.kind == "save" else "Integration failed; check source/calibration or narrow the frame range.")
+                        safe_error=("Spectrum calculation failed; check raw events, calibration and frame range." if j.snapshot.kind == "spectrum" else "Isotope measurement failed; check source, coverage and memory limits." if j.snapshot.kind == "measurement" else "Preparing raw data failed; check free space, source/calibration and output name." if j.snapshot.kind == "preparation" else "Saving failed; check free space, output name and current analysis revision." if j.snapshot.kind == "save" else "Integration failed; check source/calibration or narrow the frame range.")
                         if not isinstance(exc, CapacityError)
                         else str(exc),
                     )

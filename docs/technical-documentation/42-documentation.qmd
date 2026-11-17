@@ -46,6 +46,23 @@ Diagrams use `{mermaid}` code fences. Rendered diagrams should be inspected in t
 dark modes to ensure they look okay. Shared screenshots and logos live in `docs/assets/` and can be referenced
 from guide pages with `../assets/` paths.
 
+### Regenerate application screenshots
+
+The documentation captures use a deterministic, synthetic MOSFET-like acquisition. Its 128 × 128 pixels and 128 frames include four element channels, layered structures, lateral gate and contact features, raw events, and a secondary-electron image. The fixture is illustrative and does not represent measured data.
+
+From the repository root, install the locked frontend dependencies and Playwright's Chromium, then capture the images:
+
+```bash
+uv sync
+npm --prefix frontend ci
+npm --prefix frontend exec -- playwright install chromium
+uv run python scripts/capture_docs.py
+```
+
+Screenshots are committed assets and are not regenerated automatically during a release. Regenerate them when the application or fixture changes affect the documented views, and review the results before committing. The capture service creates `.demo-data/mosfet-demo.h5` when it is missing. The file is generated with a fixed random seed and is ignored by Git. To regenerate the data deliberately, run `uv run python scripts/docs_capture/generate_demo.py`; the output always goes to that path. The screenshot workflow uses disposable copies for preparation and saving, replaces machine-specific paths in those screenshots with an example path, and writes updated assets only after all captures succeed. It uses a fixed viewport, locale, timezone, and Playwright-managed Chromium. Use the same operating system, fonts, and graphics environment for pixel-identical results; browser and GPU rendering can differ across systems.
+
+Several guide pages place interactive highlights over the images. After UI layout changes, check those highlights against the regenerated screenshots and adjust their percentage positions as needed.
+
 ### Interactive screenshots
 
 Some user-guide screenshots link explanatory text to a highlighted area of the image. The page places an image and
