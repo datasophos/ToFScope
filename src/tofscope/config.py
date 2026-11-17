@@ -139,7 +139,7 @@ def load_settings_with_sources(
             if not required:
                 continue
             raise ValueError(f"Cannot load configuration {path}: {exc}") from exc
-        except (OSError, tomllib.TOMLDecodeError) as exc:
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
             raise ValueError(f"Cannot load configuration {path}: {exc}") from exc
         section = document.get("tofscope", {})
         if not isinstance(section, dict):

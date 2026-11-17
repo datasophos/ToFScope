@@ -55,14 +55,19 @@ class ConfigTests(unittest.TestCase):
 class ConfigDiscoveryTests(unittest.TestCase):
     def test_platform_locations(self):
         from pathlib import Path
+        from tempfile import TemporaryDirectory
 
         from tofscope.config import config_paths
 
         home = Path("/home/example")
-        self.assertEqual(
-            config_paths("linux", {"HOME": str(home), "XDG_CONFIG_HOME": "/custom"}),
-            [Path("/etc/tofscope.toml"), Path("/custom/tofscope/config.toml")],
-        )
+        with TemporaryDirectory() as directory:
+            config_dir = Path(directory) / "custom"
+            self.assertEqual(
+                config_paths(
+                    "linux", {"HOME": str(home), "XDG_CONFIG_HOME": str(config_dir)}
+                ),
+                [Path("/etc/tofscope.toml"), config_dir / "tofscope/config.toml"],
+            )
         self.assertEqual(
             config_paths("darwin", {"HOME": str(home)}),
             [
@@ -172,5 +177,21 @@ class ConfigDiscoveryTests(unittest.TestCase):
                 self.assertRaisesRegex(
                     ValueError, "unreadable.toml.*permission denied"
                 ),
+            ):
+                load_settings_with_sources(env={})
+
+    def test_invalid_utf8_names_config_path(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+        from unittest.mock import patch
+
+        from tofscope.config import load_settings_with_sources
+
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "invalid-encoding.toml"
+            path.write_bytes(b"\xff")
+            with (
+                patch("tofscope.config.config_paths", return_value=[path]),
+                self.assertRaisesRegex(ValueError, "invalid-encoding.toml"),
             ):
                 load_settings_with_sources(env={})
