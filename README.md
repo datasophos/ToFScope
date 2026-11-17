@@ -70,7 +70,7 @@ The [user guide](https://datasophos.github.io/ToFScope/docs/getting-started/inde
 
 ## Current limitations
 
-ToFScope is under active development and is in an alpha state. The application may change substantially prior to a stable 1.0.0 release.
+ToFScope is under active development and is in a beta state. The application may change substantially prior to a stable 1.0.0 release.
 See the [user guide](https://datasophos.github.io/ToFScope/docs/getting-started/index.html) for details.
 If you have ideas of features to add, or notice any bugs, please open an [issue](https://github.com/datasophos/ToFScope/issues)!
 

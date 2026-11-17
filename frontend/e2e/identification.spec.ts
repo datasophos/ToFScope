@@ -15,7 +15,7 @@ test("atomic annotation preserves labels and explicit measurement becomes stale"
   await page.getByRole("button", { name: "◫ a.h5", exact: true }).dblclick();
   await openSpectrumAction(page, "Identify peak");
   const dialog = page.getByRole("dialog", { name: "Atomic identification" });
-  await expect(dialog.getByText(/pre-alpha/i)).toHaveCount(0);
+  await expect(dialog.getByText(/beta/i)).toHaveCount(0);
   await expect(dialog.getByLabel("Tolerance unit")).toHaveValue("Th");
   await expect(
     dialog.getByRole("option", { name: "Absolute m/z difference" }),
@@ -42,7 +42,7 @@ test("atomic annotation preserves labels and explicit measurement becomes stale"
   });
   await expect(
     measurements.getByText(
-      /pre-alpha: isotope measurements have not been thoroughly tested/i,
+      /beta: isotope measurements have not been thoroughly tested/i,
     ),
   ).toBeVisible();
   await measurements.getByRole("checkbox").first().check();

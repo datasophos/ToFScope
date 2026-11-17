@@ -1,13 +1,13 @@
 {
   "assets": {
-    "assets/VtkScene-Cr-Ij_2g.js": "e79de21439b3aadd481ec915510e8e11338d43f4cf1f1315b2a9e5522176d237",
+    "assets/VtkScene-BS8mCaNP.js": "563e236b8ad43b196e02f458c881266e576c09c3c5e699c6da4252a4ca7784f0",
     "assets/datasophos-wordmark.png": "d727f11ef2aa8fe9b0d7780d28e33e0785956ca7f38a23c90c594d56253fad04",
     "assets/favicon.svg": "dcdec3e4480df28e57a9d9fa123347d551765651ab764bb53ec7f13f74f1e3f2",
-    "assets/index-BhVC-eNP.js": "294acdffb842125aab9996ace30bcedbc8bd9b942a01260f4ed676886113945f",
-    "assets/index-DgOZnAOt.css": "af1403c77a7c9633fd365210c3d662ad67d3cd254b174f9c9e784edda693bbda",
-    "index.html": "d45d0e7cd1247a276ac0abbb5dfa61ba07efe9b200e1825f2483351e5f8ff75a",
+    "assets/index-B0OJjk8Z.js": "c26cb91be717e510ac75652091b0a321df32df5a0360312cc3eb9b6516516840",
+    "assets/index-BZ7sfgZr.css": "6b82723aeab144e08665f131fcd9bd248bded510d7538252a8b2b99c2499f301",
+    "index.html": "5044ac7255a5ac45bdd0112c385015668d062bf87ca690d8d1c94107680dc8fe",
     "licenses/matplotlib.txt": "5a1a81ea301728c8bba2933da832c0cd62229daf20893a024ab3d53244468dbc"
   },
-  "source_sha256": "e7706ac021c2a4ede7fdd97a120464376bb4bfce34dbea858248eab376dbd037",
-  "version": "0.4.0"
+  "source_sha256": "3b45477b71326e8d19baef55407ad1218c08ff8ef9e360b3113e6477cc10c4fb",
+  "version": "0.5.0"
 }

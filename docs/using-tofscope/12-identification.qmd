@@ -77,7 +77,7 @@ After selecting a candidate, you can choose one of these actions:
 
 
 ::: {.callout-warning}
-Isotope measurement is a pre-alpha feature and has not been thoroughly tested.
+Isotope measurement is a beta feature and has not been thoroughly tested.
 If this is a feature you are interested in helping to test, please [contact us](https://github.com/datasophos/ToFScope/issues)!
 :::
 
