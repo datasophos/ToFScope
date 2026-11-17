@@ -14,15 +14,17 @@ ToFScope automatically loads configuration files in the following order, when th
 | Platform | System defaults | User settings |
 | --- | --- | --- |
 | Linux and other Unix | `/etc/tofscope.toml` | `$XDG_CONFIG_HOME/tofscope/config.toml`, or `~/.config/tofscope/config.toml` when `XDG_CONFIG_HOME` is unset or relative |
-| macOS | `/Library/Application Support/ToFScope/config.toml` | `~/Library/Application Support/ToFScope/config.toml` |
+| macOS | `/Library/Application Support/ToFScope/config.toml` | `~/Library/Application Support/ToFScope/config.toml`, then `~/.config/tofscope/config.toml` |
 | Windows | `%PROGRAMDATA%\ToFScope\config.toml` | `%LOCALAPPDATA%\ToFScope\config.toml` |
+
+On macOS, the `.config` file overrides the Application Support user file when both exist.
 
 Later sources override earlier ones: built-in defaults, system file, user file, an explicit `--config` file,
 environment variables, then command-line options. Missing automatic files are ignored. An explicitly named missing
 file, an unreadable file, or invalid TOML produces an error naming the file. The Windows portable launcher edits the
 same user file and supplies it explicitly; its selected folder and service settings take precedence.
 
-For example, save the following as `~/.config/tofscope/config.toml` on Linux to retain a memory limit:
+For example, save the following as `~/.config/tofscope/config.toml` on Linux or macOS to retain a memory limit:
 
 ```toml
 [tofscope]

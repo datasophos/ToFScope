@@ -73,6 +73,7 @@ class ConfigDiscoveryTests(unittest.TestCase):
             [
                 Path("/Library/Application Support/ToFScope/config.toml"),
                 home / "Library/Application Support/ToFScope/config.toml",
+                home / ".config/tofscope/config.toml",
             ],
         )
         self.assertEqual(
@@ -88,6 +89,26 @@ class ConfigDiscoveryTests(unittest.TestCase):
                 Path("C:/Users/example/AppData/Local/ToFScope/config.toml"),
             ],
         )
+
+    def test_macos_config_directory_overrides_application_support(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+        from unittest.mock import patch
+
+        from tofscope.config import config_paths, load_settings_with_sources
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            paths = config_paths("darwin", {"HOME": directory})[1:]
+            for path, port in zip(paths, (8000, 8001), strict=True):
+                path.parent.mkdir(parents=True)
+                path.write_text(f"[tofscope]\nport = {port}\n")
+            with patch("tofscope.config.config_paths", return_value=paths):
+                settings, sources = load_settings_with_sources(
+                    env={}, cli={"runtime_dir": root / "runtime"}
+                )
+            self.assertEqual(settings.port, 8001)
+            self.assertEqual(sources, paths)
 
     def test_layers_and_loaded_files(self):
         from pathlib import Path

@@ -103,6 +103,7 @@ def config_paths(platform: str, env: Mapping[str, str]) -> list[Path]:
         return [
             Path("/Library/Application Support/ToFScope/config.toml"),
             home / "Library/Application Support/ToFScope/config.toml",
+            home / ".config/tofscope/config.toml",
         ]
     xdg = Path(env.get("XDG_CONFIG_HOME") or home / ".config")
     if not xdg.is_absolute():
